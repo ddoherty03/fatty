@@ -4,7 +4,7 @@ require "unicode/display_width"
 
 module FatTerm
   class InputBuffer
-    attr_reader :text, :cursor
+    attr_accessor :text, :cursor
 
     def initialize
       @text = +""
@@ -12,14 +12,14 @@ module FatTerm
     end
 
     def insert(str)
-      @text.insert(@cursor, str)
+      text.insert(@cursor, str)
       @cursor += str.length
     end
 
-    def backspace
+    def delete_char_backward
       return if @cursor.zero?
 
-      @text.slice!(@cursor - 1)
+      text.slice!(@cursor - 1)
       @cursor -= 1
     end
 
@@ -28,16 +28,16 @@ module FatTerm
     end
 
     def move_right
-      @cursor += 1 if @cursor < @text.length
+      @cursor += 1 if @cursor < text.length
     end
 
     def clear
-      @text.clear
+      text.clear
       @cursor = 0
     end
 
     def display_width
-      Unicode::DisplayWidth.of(@text)
+      Unicode::DisplayWidth.of(text)
     end
   end
 end
