@@ -1,55 +1,8 @@
 #!/usr/bin/env ruby
 # mode: ruby-mode
+
 # frozen_string_literal: true
 
 require_relative "../lib/fat_term"
 
-screen   = FatTerm::Screen.new
-renderer = FatTerm::Renderer.new(screen)
-
-output = FatTerm::OutputBuffer.new
-
-prompt = FatTerm::Prompt.new { "fat_term> " }
-field  = FatTerm::InputField.new(prompt: prompt)
-
-keymap = FatTerm::Keymaps.emacs
-
-begin
-  loop do
-    renderer.render(
-      output: output,
-      input_field: field
-    )
-
-    event  = screen.read_key
-    action = keymap.resolve(event)
-
-    case action
-    when :cursor_left
-      field.cursor_left
-
-    when :cursor_right
-      field.cursor_right
-
-    when :backspace
-      field.backspace
-
-    when :accept_line
-      line = field.accept_line
-      output.append(line)
-
-    when :interrupt
-      break
-
-    when :resize
-      screen.resize
-
-    else
-      if event&.key.is_a?(String)
-        field.insert(event.key)
-      end
-    end
-  end
-ensure
-  screen.close
-end
+FatTerm::Terminal.new(prompt: FatTerm::Prompt.new { "fat_term:#{Dir.pwd}> " }).go(debug: true)
