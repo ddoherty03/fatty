@@ -5,13 +5,35 @@ module FatTerm
     def self.emacs
       map = KeyMap.new
 
-      map.bind(key: :left,  action: :cursor_left)
-      map.bind(key: :right, action: :cursor_right)
+      # Motion
+      map.bind(key: :f, ctrl: true, action: :forward_char)
+      map.bind(key: :b, ctrl: true, action: :backward_char)
+      map.bind(key: :left,  action: :backward_char)
+      map.bind(key: :right, action: :forward_char)
+      map.bind(key: :f, meta: true, action: :forward_word)
+      map.bind(key: :b, meta: true, action: :backward_word)
+      map.bind(key: :right, meta: true, action: :forward_word)
+      map.bind(key: :left, meta: true, action: :backward_word)
+      map.bind(key: :right, ctrl: true, action: :forward_word)
+      map.bind(key: :left, ctrl: true, action: :backward_word)
 
+      map.bind(key: :a, ctrl: true, action: :bol)
+      map.bind(key: :e, ctrl: true, action: :eol)
+      map.bind(key: :home, action: :bol)
+      map.bind(key: :end, action: :eol)
+
+      # Deletion
+      map.bind(key: :delete, action: :delete_char_forward)
+      map.bind(key: :d, ctrl: true, action: :delete_char_forward)
+      map.bind(key: :backspace, action: :delete_char_backward)
+      map.bind(key: :backspace, ctrl: true, action: :delete_word_backward)
+      map.bind(key: :w, ctrl: true, action: :delete_word_backward)
+      map.bind(key: :d, meta: true, action: :delete_word_forward)
+      map.bind(key: :k, ctrl: true, action: :kill_to_eol)
+
+      # Final States
       map.bind(key: :c, ctrl: true, action: :interrupt)
       map.bind(key: :enter, action: :accept_line)
-
-      map.bind(key: :backspace, action: :backspace)
 
       map
     end
