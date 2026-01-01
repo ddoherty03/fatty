@@ -13,16 +13,17 @@ module FatTerm
     end
 
     def go(debug: false)
+      if debug
+        screen.diagnostic_sink = ->(msg) {
+          output.append(msg)
+        }
+      end
+
       loop do
         renderer.render(
           output: output,
           input_field: field,
         )
-        if debug
-          screen.diagnostic_sink = ->(msg) {
-            output.append(msg)
-          }
-        end
         event = screen.read_key(debug:)
         if debug
           e = event
@@ -40,6 +41,9 @@ module FatTerm
           output.append(line)
         when :interrupt
           break
+        when :interrupt_if_empty
+          @output.append("Field empty?: #{field.empty?}: #{field.buffer.text}")
+          break if field.empty?
         when NilClass
           field.insert(event.text) if event&.text
         else
