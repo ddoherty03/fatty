@@ -13,6 +13,7 @@ module FatTerm
   require_relative "fat_term/renderer"
   require_relative "fat_term/screen"
   require_relative "fat_term/key_event"
+  require_relative "fat_term/curses_coder"
   require_relative "fat_term/key_map"
   require_relative "fat_term/terminal"
 
