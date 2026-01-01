@@ -3,11 +3,12 @@
 
 module FatTerm
   class KeyEvent
-    attr_reader :key, :text, :ctrl, :meta, :shift
+    attr_reader :key, :text, :ctrl, :meta, :shift, :raw
 
-    def initialize(key:, text: nil, ctrl: false, meta: false, shift: false)
+    def initialize(key:, text: nil, raw: nil, ctrl: false, meta: false, shift: false)
       @key  = key          # Symbol or named key
       @text = text         # String to insert (or nil)
+      @raw = raw           # the key (or keys for escape sequences) as returned by Curses
       @ctrl = ctrl
       @meta = meta
       @shift = shift
