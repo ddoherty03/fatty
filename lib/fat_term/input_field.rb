@@ -11,8 +11,13 @@ module FatTerm
 
     def act_on(action)
       return unless action
+      return unless respond_to?(action, true)
 
       send(action)
+    end
+
+    def empty?
+      buffer.text == ''
     end
 
     # Visual cursor X position in the window

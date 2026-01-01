@@ -33,6 +33,7 @@ module FatTerm
 
       # Final States
       map.bind(key: :c, ctrl: true, action: :interrupt)
+      map.bind(key: :d, ctrl: true, action: :interrupt_if_empty)
       map.bind(key: :enter, action: :accept_line)
 
       map
