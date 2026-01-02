@@ -12,3 +12,11 @@
 #+PROPERTY: header-args:bash :exports code :eval no
 
 * Introduction
+
+* Reading Keys
+
+Shift/Ctrl/Meta F-keys are normalized when ncurses provides distinct constants.
+
+* Alerts
+Alerts are short-lived, non-scrolling messages shown below the input line.
+They are intended for user-visible conditions that require attention.
