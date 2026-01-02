@@ -1,8 +1,7 @@
 module FatTerm
   class Terminal
-    attr_reader :screen, :renderer, :output, :alert_panel, :env
-    attr_accessor :prompt, :keymap, :field, :mode
     attr_reader :screen, :renderer, :output, :alert_panel, :env, :key_decoder
+    attr_accessor :prompt, :keymap, :field, :mode, :on_accept
 
     def initialize(prompt: 'fat_term')
       @screen   = FatTerm::Screen.new
@@ -15,6 +14,9 @@ module FatTerm
       @key_decoder = KeyDecoder.new(env: @env, config: FatTerm::Config.keydefs)
       @mode = :insert
       @keymap = Keymaps.emacs
+      @on_accept = ->(line, terminal) {
+        terminal.output.append(line)
+      }
     end
 
     def go(debug: false)
@@ -35,27 +37,24 @@ module FatTerm
         next unless event
 
         action = keymap.resolve(event)
-        output.append("ACTION=#{action.inspect}") if debug
         handled = true
         case action
         when :resize
           screen.resize
         when :accept_line
           line = field.accept_line
-          output.append(line)
+          on_accept.call(line, self)
         when :interrupt
           break
         when :interrupt_if_empty
-          @output.append("Field empty?: #{field.empty?}: #{field.buffer.text}")
           break if field.empty?
         when NilClass
           if event.text
             field.insert(event.text)
           else
-            handled = false   # ← key with no mapping and no text
+            handled = false
           end
         else
-          @output.append("Field action: #{action}")
           field.act_on(action)
         end
         if handled
