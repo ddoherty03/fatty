@@ -37,6 +37,8 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "curses", "~> 1.4"
   spec.add_dependency "unicode-display_width", "~> 2.5"
+  spec.add_dependency "yaml"
+  spec.add_dependency "fat_config"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
