@@ -3,6 +3,31 @@
 
 # frozen_string_literal: true
 
+require 'open3'
 require_relative "../lib/fat_term"
 
-FatTerm::Terminal.new(prompt: FatTerm::Prompt.new { "fat_term:#{Dir.pwd}> " }).go(debug: true)
+term = FatTerm::Terminal.new(prompt: -> { "fat_term:#{Dir.pwd}> " })
+
+term.on_accept = lambda do |line, t|
+  next if line.strip.empty?
+
+  t.output.append("$ #{line}")
+
+  stdout, stderr, status =
+    Open3.capture3("/bin/sh", "-lc", line)
+
+  stdout.each_line { |l| t.output.append(l.chomp) }
+  stderr.each_line { |l| t.output.append(l.chomp) }
+
+  unless status.success?
+    t.alert_panel.show(
+      FatTerm::Alert.new(
+        level: :warning,
+        message: "Command exited with status #{status.exitstatus}",
+        details: { command: line },
+      ),
+    )
+  end
+end
+
+term.go
