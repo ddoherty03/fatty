@@ -49,31 +49,6 @@ module FatTerm
       Curses.close_screen
     end
 
-    # def read_key(decoder: nil, debug: false)
-    #   raw = @input_win.getch
-    #   event = decoder.decode(raw)
-    #   if debug
-    #     diagnostic_sink.call("getch => #{raw.inspect} (#{raw.class}) #{CURSES_TO_EVENT[raw]}")
-    #   end
-    #   event
-      # if ch == 27 || ch == "\e"
-      #   # Handle Meta
-      #   read_meta_key(ch)
-      # elsif CURSES_TO_EVENT.key?(ch)
-      #   # Known curses constants → normalized
-      #   CURSES_TO_EVENT[ch]
-      # elsif ch.is_a?(Integer) && (0..26).include?(ch)
-      #   # ASCII control keys
-      #   KeyEvent.new(key: (ch + 96).chr.to_sym, ctrl: true, raw: ch)
-      # elsif ch.is_a?(String)
-      #   # Printable characters
-      #   KeyEvent.new(key: ch.to_sym, text: ch, raw: ch)
-      # else
-      #   # Unknown integer → preserve
-      #   KeyEvent.new(key: ch, raw: ch)
-      # end
-    # end
-
     def read_raw
       ch = @input_win.getch
       return unless ch
@@ -87,7 +62,7 @@ module FatTerm
 
     def read_meta_sequence(esc)
       nxt = @input_win.getch
-      return esc unless nxt   # bare ESC
+      return esc unless nxt
 
       [esc, nxt]
     end
