@@ -9,7 +9,7 @@ module FatTerm
       @renderer = FatTerm::Renderer.new(@screen)
       @output   = FatTerm::OutputBuffer.new
       @alert_panel = AlertPanel.new
-      @prompt = prompt
+      @prompt = Prompt.ensure(prompt)
       @field  = FatTerm::InputField.new(prompt: @prompt)
       @env = Env.detect
       @key_decoder = KeyDecoder.new(env: @env, config: FatTerm::Config.keydefs)
