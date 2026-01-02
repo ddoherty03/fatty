@@ -2,6 +2,7 @@ module FatTerm
   class Terminal
     attr_reader :screen, :renderer, :output, :alert_panel, :env
     attr_accessor :prompt, :keymap, :field, :mode
+    attr_reader :screen, :renderer, :output, :alert_panel, :env, :key_decoder
 
     def initialize(prompt: 'fat_term')
       @screen   = FatTerm::Screen.new
@@ -29,11 +30,8 @@ module FatTerm
           input_field: field,
           alert: alert_panel.current,
         )
-        event = screen.read_key(decoder: @key_decoder, debug:)
-        if debug
-          e = event
-          @output.append("Event=key:#{e.key}| text:#{e.text}| shift:#{e.shift}| ctrl:#{e.ctrl}| meta:#{e.meta}")
-        end
+        raw = screen.read_raw
+        event = key_decoder.decode(raw)
         next unless event
 
         action = keymap.resolve(event)

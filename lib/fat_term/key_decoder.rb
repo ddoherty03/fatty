@@ -9,13 +9,14 @@ module FatTerm
       load_user_config(config)
     end
 
-    def decode(ch)
-      return unless ch
+    def decode(raw)
+      return unless raw
 
-      if ch.is_a?(Integer) && @map.key?(ch)
-        @map[ch]
+      case raw
+      when Array
+        decode_meta(raw)
       else
-        fallback_decode(ch)
+        decode_single(raw)
       end
     end
 
@@ -23,7 +24,7 @@ module FatTerm
       case ch
       when Integer
         if ch == 27
-          decode_meta
+          decode_meta(ch)
         elsif (0..26).include?(ch)
           KeyEvent.new(key: (ch + 96).chr.to_sym, ctrl: true, raw: ch)
         else
@@ -31,6 +32,35 @@ module FatTerm
         end
       when String
         KeyEvent.new(key: ch.to_sym, text: ch, raw: ch)
+      end
+    end
+
+    def decode_meta((esc, nxt))
+      case nxt
+      when String
+        KeyEvent.new(
+          key: nxt.to_sym,
+          text: nxt,
+          meta: true,
+          raw: [esc, nxt],
+        )
+      when Integer
+        if @map.key?(nxt)
+          evt = @map[nxt].dup
+          evt.meta = true
+          evt.raw  = [esc, nxt]
+          evt
+        else
+          KeyEvent.new(key: nxt, meta: true, raw: [esc, nxt])
+        end
+      end
+    end
+
+    def decode_single(ch)
+      if ch.is_a?(Integer) && @map.key?(ch)
+        @map[ch]
+      else
+        fallback_decode(ch)
       end
     end
 
