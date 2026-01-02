@@ -517,8 +517,10 @@ require_relative "key_event"
 
 module FatTerm
   CURSES_TO_EVENT = {
+    # Special case for TAB.  Curses::KEY_CTRL_I may not get defined on all
+    # platforms.
+    9 => KeyEvent.new(key: :tab, raw: 9),
     Curses::KEY_RESIZE => KeyEvent.new(key: :resize, raw: Curses::KEY_RESIZE),
-    Curses::KEY_CTRL_I => KeyEvent.new(key: :tab, raw: Curses::KEY_CTRL_I),
     Curses::KEY_BTAB => KeyEvent.new(key: :tab, shift: true, raw: Curses::KEY_BTAB),
     Curses::KEY_BACKSPACE => KeyEvent.new(key: :backspace, raw: Curses::KEY_BACKSPACE),
     Curses::KEY_F1 => KeyEvent.new(key: :f1, raw: Curses::KEY_F1),

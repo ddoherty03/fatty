@@ -14,6 +14,10 @@ module FatTerm
       @shift = shift
     end
 
+    def decoded?
+      key.is_a?(Symbol)
+    end
+
     def ctrl?
       @ctrl
     end
