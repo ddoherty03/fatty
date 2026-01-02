@@ -36,7 +36,7 @@ module FatTerm
       map.bind(key: :d, ctrl: true, action: :interrupt_if_empty)
       map.bind(key: :enter, action: :accept_line)
 
-      map
+      map.load_config
     end
   end
 end

@@ -3,7 +3,7 @@
 require_relative 'keymaps/emacs'
 
 module FatTerm
-  class  KeyMap
+  class KeyMap
     def initialize
       @bindings = {}
     end
@@ -20,6 +20,43 @@ module FatTerm
       # specifically is bound.
       @bindings[[event.key, event.ctrl?, event.meta?, event.shift?]] ||
         @bindings[[event.key, false, false, false]]
+    end
+
+    def load_config
+      data = FatTerm::Config.keybindings
+      return self unless data.is_a?(Array)
+
+      data.each_with_index do |entry, idx|
+        bind_entry(entry, idx)
+      end
+      self
+    rescue Psych::SyntaxError => e
+      warn "fat_term: syntax error in keybindings: #{e.message}"
+      self
+    end
+
+    def bind_entry(entry, idx)
+      unless entry.is_a?(Hash)
+        warn "fat_term: invalid keybinding at index #{idx} (not a map)"
+        return
+      end
+
+      key    = entry["key"]
+      action = entry["action"]
+
+      unless key && action
+        warn "fat_term: missing key or action at index #{idx}"
+        return
+      end
+
+      bind(
+        key:    key.to_sym,
+        ctrl:   entry["ctrl"]  || false,
+        meta:   entry["meta"]  || false,
+        shift:  entry["shift"] || false,
+        action: action.to_sym,
+      )
+      self
     end
   end
 end

@@ -1,7 +1,7 @@
 module FatTerm
   class Terminal
     attr_reader :screen, :renderer, :output, :alert_panel, :env
-    attr_accessor :prompt, :keymap, :field
+    attr_accessor :prompt, :keymap, :field, :mode
 
     def initialize(prompt: 'fat_term')
       @screen   = FatTerm::Screen.new
@@ -11,7 +11,8 @@ module FatTerm
       @prompt = prompt
       @field  = FatTerm::InputField.new(prompt: @prompt)
       @env = Env.detect
-      @key_decoder = KeyDecoder.new(env: @env, config: FatTerm.config)
+      @key_decoder = KeyDecoder.new(env: @env, config: FatTerm::Config.keydefs)
+      @mode = :insert
       @keymap = Keymaps.emacs
     end
 
