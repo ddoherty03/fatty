@@ -1,4 +1,7 @@
 * Add snippet suggestion for unrecognized and unbound keys
 * Add history
 * Add completion
-*
+* Add modes for vi-like keybindings
+- will require changing keybindongs.yml format to include a mode qualifier
+- for advanced two-step actions, e.g. dw, will require an action-pending
+  capability
