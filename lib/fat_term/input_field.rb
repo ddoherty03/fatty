@@ -2,11 +2,12 @@
 
 module FatTerm
   class InputField
-    attr_reader :buffer, :prompt
+    attr_reader :buffer, :prompt, :history
 
-    def initialize(prompt:, buffer: InputBuffer.new)
+    def initialize(prompt:, buffer: InputBuffer.new, history: nil)
       @prompt = prompt
       @buffer = buffer
+      @history = history
     end
 
     def act_on(action)
@@ -85,8 +86,9 @@ module FatTerm
     end
 
     def accept_line
-      line = @buffer.text.dup
-      @buffer.clear
+      line = buffer.text
+      history&.add(line)
+      buffer.clear
       line
     end
 
@@ -120,5 +122,24 @@ module FatTerm
       @buffer.text.slice!(@buffer.cursor...i)
     end
 
+    # history actions
+
+    def history_prev
+      return unless history
+
+      replace_with(history.previous(buffer.text))
+    end
+
+    def history_next
+      return unless history
+
+      replace_with(history.next)
+    end
+
+    private
+
+    def replace_with(text)
+      buffer.set(text)
+    end
   end
 end

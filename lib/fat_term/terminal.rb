@@ -3,13 +3,13 @@ module FatTerm
     attr_reader :screen, :renderer, :output, :alert_panel, :env, :key_decoder
     attr_accessor :prompt, :keymap, :field, :mode, :on_accept
 
-    def initialize(prompt: 'fat_term')
+    def initialize(prompt: 'fat_term', history: nil)
       @screen   = FatTerm::Screen.new
       @renderer = FatTerm::Renderer.new(@screen)
       @output   = FatTerm::OutputBuffer.new
       @alert_panel = AlertPanel.new
       @prompt = Prompt.ensure(prompt)
-      @field  = FatTerm::InputField.new(prompt: @prompt)
+      @field  = FatTerm::InputField.new(prompt: @prompt, history: history)
       @env = Env.detect
       @key_decoder = KeyDecoder.new(env: @env, config: FatTerm::Config.keydefs)
       @mode = :insert

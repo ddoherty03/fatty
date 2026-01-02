@@ -31,6 +31,12 @@ module FatTerm
       map.bind(key: :d, meta: true, action: :delete_word_forward)
       map.bind(key: :k, ctrl: true, action: :kill_to_eol)
 
+      # History
+      map.bind(key: :p, ctrl: true, action: :history_prev)
+      map.bind(key: :n, ctrl: true, action: :history_next)
+      map.bind(key: :up, action: :history_prev)
+      map.bind(key: :down, action: :history_next)
+
       # Final States
       map.bind(key: :c, ctrl: true, action: :interrupt)
       map.bind(key: :d, ctrl: true, action: :interrupt_if_empty)

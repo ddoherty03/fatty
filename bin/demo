@@ -6,7 +6,10 @@
 require 'open3'
 require_relative "../lib/fat_term"
 
-term = FatTerm::Terminal.new(prompt: -> { "fat_term:#{Dir.pwd}> " })
+history_path = File.join(File.join(Dir.home, ".config"), "fat_term", "history")
+history = FatTerm::History.new(path: history_path)
+
+term = FatTerm::Terminal.new(prompt: -> { "fat_term:#{Dir.pwd}> " }, history: history)
 
 term.on_accept = lambda do |line, t|
   next if line.strip.empty?

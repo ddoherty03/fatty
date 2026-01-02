@@ -39,5 +39,12 @@ module FatTerm
     def display_width
       Unicode::DisplayWidth.of(text)
     end
+
+    # history support ---
+
+    def set(new_text)
+      @text   = new_text.dup
+      @cursor = @text.length
+    end
   end
 end
