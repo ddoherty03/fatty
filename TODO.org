@@ -1,0 +1,4 @@
+* Add snippet suggestion for unrecognized and unbound keys
+* Add history
+* Add completion
+*
