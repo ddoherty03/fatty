@@ -20,21 +20,6 @@ module FatTerm
       end
     end
 
-    def fallback_decode(ch)
-      case ch
-      when Integer
-        if ch == 27
-          decode_meta(ch)
-        elsif (0..26).include?(ch)
-          KeyEvent.new(key: (ch + 96).chr.to_sym, ctrl: true, raw: ch)
-        else
-          KeyEvent.new(key: ch, raw: ch)
-        end
-      when String
-        KeyEvent.new(key: ch.to_sym, text: ch, raw: ch)
-      end
-    end
-
     def decode_meta((esc, nxt))
       case nxt
       when String
@@ -61,6 +46,21 @@ module FatTerm
         @map[ch]
       else
         fallback_decode(ch)
+      end
+    end
+
+    def fallback_decode(ch)
+      case ch
+      when Integer
+        if ch == 27
+          decode_meta(ch)
+        elsif (0..26).include?(ch)
+          KeyEvent.new(key: (ch + 96).chr.to_sym, ctrl: true, raw: ch)
+        else
+          KeyEvent.new(key: ch, raw: ch)
+        end
+      when String
+        KeyEvent.new(key: ch.to_sym, text: ch, raw: ch)
       end
     end
 
