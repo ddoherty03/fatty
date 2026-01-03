@@ -6,3 +6,10 @@
 - will require changing keybindongs.yml format to include a mode qualifier
 - for advanced two-step actions, e.g. dw, will require an action-pending
   capability
+* Scrollback Navigation (PgUp/PgDn)
+
+* Output Search
+
+* Background Jobs (&)
+
+* SIGINT forwarding to child process
