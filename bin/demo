@@ -11,26 +11,55 @@ history = FatTerm::History.new(path: history_path)
 
 term = FatTerm::Terminal.new(prompt: -> { "fat_term:#{Dir.pwd}> " }, history: history)
 
-term.on_accept = lambda do |line, t|
-  next if line.strip.empty?
+# This on_accept lambda runs the input line as a shell command and sends the
+# result to the output window.  It is tuned to throttle the output so the
+# results display faster.
+term.on_accept = lambda do |line, terminal|
+  line = line.strip
+  return if line.empty?
 
-  t.output.append("$ #{line}")
+  terminal.output.append("$ #{line}")
+  terminal.alert_panel.clear
 
-  stdout, stderr, status =
-    Open3.capture3("/bin/sh", "-lc", line)
+  # One full redraw before command starts
+  terminal.renderer.render(
+    output: terminal.output,
+    input_field: terminal.field,
+    alert: terminal.alert_panel.current,
+  )
 
-  stdout.each_line { |l| t.output.append(l.chomp) }
-  stderr.each_line { |l| t.output.append(l.chomp) }
+  # ~30ms (≈33 FPS max)
+  throttle    = 0.03
+  last_render = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  begin
+    Open3.popen2e(line) do |_, io, _|
+      io.each_line do |raw|
+        terminal.output.append(raw.chomp)
 
-  unless status.success?
-    t.alert_panel.show(
+        now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        if now - last_render >= throttle
+          terminal.renderer.render_output(terminal.output)
+          last_render = now
+        end
+      end
+    end
+  rescue Errno::ENOENT
+    terminal.alert_panel.show(
       FatTerm::Alert.new(
-        level: :warning,
-        message: "Command exited with status #{status.exitstatus}",
+        level: :error,
+        message: "Command not found",
         details: { command: line },
+        sticky: true,
       ),
+    )
+  ensure
+    # Final full redraw after command completes
+    terminal.renderer.render(
+      output: terminal.output,
+      input_field: terminal.field,
+      alert: terminal.alert_panel.current,
     )
   end
 end
 
-term.go
+term.go(debug: true)
