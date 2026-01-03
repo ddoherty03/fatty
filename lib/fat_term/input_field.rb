@@ -14,6 +14,9 @@ module FatTerm
       return unless action
       return unless respond_to?(action, true)
 
+      unless action.to_s.start_with?("history_")
+        history&.reset_cursor
+      end
       send(action)
     end
 
@@ -86,7 +89,7 @@ module FatTerm
     end
 
     def accept_line
-      line = buffer.text
+      line = buffer.text.dup
       history&.add(line)
       buffer.clear
       line
