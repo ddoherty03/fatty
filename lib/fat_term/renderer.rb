@@ -13,20 +13,27 @@ module FatTerm
 
     def render(output:, input_field:, alert: nil)
       render_output(output)
-      render_input_field(input_field)
       render_alert(alert)
+      render_input_field(input_field)
       restore_cursor(input_field)
     end
 
-    private
+    def restore_cursor(field)
+      win = @screen.input_win
+      win.setpos(0, field.cursor_x)
+      win.refresh
+    end
 
     def render_output(output)
       win = @screen.output_win
       win.clear
 
-      lines = output.visible_lines(@screen.rows - 2)
+      height = @screen.rows - 2
+      lines  = output.visible_lines(height)
+
       lines.each_with_index do |line, y|
         win.setpos(y, 0)
+        win.clrtoeol
         win.addstr(line)
       end
 
@@ -38,15 +45,10 @@ module FatTerm
       win.clear
 
       win.setpos(0, 0)
+      win.clrtoeol
       win.addstr(field.prompt_text)
       win.addstr(field.buffer.text)
 
-      win.setpos(0, field.cursor_x)
-      win.refresh
-    end
-
-    def restore_cursor(field)
-      win = @screen.input_win
       win.setpos(0, field.cursor_x)
       win.refresh
     end
@@ -65,6 +67,8 @@ module FatTerm
 
       win.refresh
     end
+
+    private
 
     def alert_attr(alert)
       return Curses::A_REVERSE unless Curses.has_colors?
