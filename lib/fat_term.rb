@@ -23,6 +23,7 @@ module FatTerm
   require_relative "fat_term/key_event"
   require_relative "fat_term/curses_coder"
   require_relative "fat_term/key_map"
+  require_relative "fat_term/viewport"
   require_relative "fat_term/terminal"
 
   class Error < StandardError; end
