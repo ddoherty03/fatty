@@ -8,5 +8,17 @@ module FatTerm
       @details = details  # Hash or String
       @sticky  = sticky   # require explicit dismiss
     end
+
+    def self.info(msg)
+      new(message: msg, level: :info)
+    end
+
+    def self.warning(msg)
+      new(message: msg, level: :warning)
+    end
+
+    def self.error(msg)
+      new(message: msg, level: :error)
+    end
   end
 end
