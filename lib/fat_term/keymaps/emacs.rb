@@ -43,6 +43,14 @@ module FatTerm
       map.bind(key: :enter, action: :accept_line)
       map.bind(key: :j, ctrl: true, action: :accept_line)
 
+      # Paging
+      map.bind(context: :paging, key: :page_up,   action: :page_up)
+      map.bind(context: :paging, key: :page_down, action: :page_down)
+      map.bind(context: :paging, key: :v, ctrl: true, action: :page_down)  # C-v
+      map.bind(context: :paging, key: :v, meta: true, action: :page_up)    # M-v
+      map.bind(context: :paging, key: :g, action: :page_top)
+      map.bind(context: :paging, key: :G, shift: true, action: :page_bottom)
+
       map.load_config
     end
   end
