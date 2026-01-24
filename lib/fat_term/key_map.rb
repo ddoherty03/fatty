@@ -10,6 +10,8 @@ module FatTerm
   # Terminal) and :paging (for controlling the display of output that is
   # longer than the Viewport).  The default keybinding context is :input.
   class KeyMap
+    DEFAULT_CONTEXT = :input
+
     def initialize
       @bindings = {}
     end
@@ -17,6 +19,9 @@ module FatTerm
     # Bind a KeyEvent to an action in the given context.
     def bind(context: :input, key:, ctrl: false, meta: false, shift: false, action: nil)
       raise ArgumentError, "keybinding context must be :input or :paging" unless [:input, :paging].include?(context)
+      raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
+      raise ArgumentError, "key must be a Symbol" unless key.is_a?(Symbol)
+      raise ArgumentError, "action must be a Symbol" unless action.is_a?(Symbol)
 
       @bindings[[context, key, ctrl, meta, shift]] = action
     end
@@ -24,6 +29,7 @@ module FatTerm
     # Return the action associated with the given KeyEvent in the given context.
     def resolve(event, context: :input)
       return unless event
+      raise ArgumentError, "keybinding context must be a Symbol" unless context.is_a?(Symbol)
       raise ArgumentError, "keybinding context must be :input or :paging" unless [:input, :paging].include?(context)
 
       # Return the specific binding, or it there are none, the binding for the
@@ -48,20 +54,22 @@ module FatTerm
       self
     end
 
+    private
+
     # Make a binding from an entry Hash that has keys for context, key (the
     # unmodified key name), the modifiers, 'ctrl', 'meta', and 'shift'.  The
     # valid keynames, apart from all the printable characters on the keyboard,
     # are given in the constant FatTerm::CURSES_TO_EVENT map defined in the
     # curses_coder file.
-    def bind_entry(entry, idx)
+    def bind_entry(entry, idx, default_context: DEFAULT_CONTEXT)
       unless entry.is_a?(Hash)
         warn "fat_term: invalid keybinding at index #{idx} (not a map)"
         return
       end
 
-      key    = entry["key"]
+      key = entry["key"]
       action = entry["action"]
-      context = entry['context']
+      ctx = entry.key?("context") ? entry["context"] : default_context
 
       unless key && action
         warn "fat_term: missing key or action at index #{idx}"
@@ -69,7 +77,7 @@ module FatTerm
       end
 
       bind(
-        context: context.to_sym,
+        context: ctx.to_sym,
         key:    key.to_sym,
         ctrl:   entry["ctrl"]  || false,
         meta:   entry["meta"]  || false,
