@@ -40,26 +40,26 @@ module FatTerm
         expect(e.meta?).to be(false)
       end
 
-      it "decodes printable strings with text payload" do
+      it "decodes printable strings with self text payload" do
         stub_builtin_map
         allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
 
         kd = KeyDecoder.new(env: env)
         e  = kd.decode("a")
 
-        expect(e.key).to be_nil
+        expect(e.key).to eq(:a)
         expect(e.text).to eq("a")
         expect(e.raw).to eq("a")
       end
 
-      it "decodes printable punctuation as self-insert (key nil, text set)" do
+      it "decodes printable punctuation as self-insert (text set)" do
         stub_builtin_map
         allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
 
         kd = KeyDecoder.new(env: env)
         e  = kd.decode("@")
 
-        expect(e.key).to be_nil
+        expect(e.key).to eq(:"@")
         expect(e.text).to eq("@")
         expect(e.raw).to eq("@")
       end

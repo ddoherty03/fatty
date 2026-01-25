@@ -92,11 +92,18 @@ module FatTerm
           KeyEvent.new(key: ch, raw: ch)
         end
       when String
-        # printable self-insert
-        KeyEvent.new(key: nil, text: ch, raw: ch)
+        key =
+          case ch
+          when " "  then :space
+          when "\t" then :tab
+          when "\n", "\r" then :enter
+          else
+            # bindable “literal” key, e.g. "h" => :h, "x" => :x, "." => :"."
+            ch.to_sym
+          end
+        KeyEvent.new(key: key, text: ch, raw: ch)
       end
     end
-
 
     # Add to the @map any keydefs defined by the user for the terminal
     # detected in the environment.  The user config, usually in
