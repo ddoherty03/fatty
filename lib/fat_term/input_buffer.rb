@@ -32,6 +32,8 @@ module FatTerm
   # always an integer between 0 and text.length, inclusive.  All editing
   # operations must preserve this invariant.
   class InputBuffer
+    include Actionable
+
     attr_accessor :text, :cursor, :word_re
 
     DEFAULT_WORD_CHARS = "[[:alnum:]_]"
@@ -47,6 +49,8 @@ module FatTerm
           Regexp.new(word_chars)
         end
     end
+
+    # :category: Queries
 
     def empty?
       text.empty?
@@ -72,20 +76,20 @@ module FatTerm
       text[@cursor..] || ""
     end
 
-    def clear
-      text.clear
+    # category: Actions: Cursor Movement
+
+    desc "Move cursor to the beginning of the line"
+    action :bol do
       @cursor = 0
     end
 
-    def bol
-      @cursor = 0
-    end
-
-    def eol
+    desc "Move cursor to the end of the line"
+    action :eol do
       @cursor = text.length
     end
 
-    def move_word_right
+    desc "Move cursor one word to the right"
+    action :move_word_right do
       chars = text.chars
       i = @cursor
       # skip non-word
@@ -95,7 +99,8 @@ module FatTerm
       @cursor = i
     end
 
-    def move_word_left
+    desc "Move cursor one word to the left"
+    action :move_word_left do
       chars = text.chars
       i = @cursor
 
@@ -108,43 +113,55 @@ module FatTerm
       @cursor = i
     end
 
-    def move_left
+    desc "Move cursor one character to the left"
+    action :move_left do
       @cursor -= 1 if @cursor.positive?
     end
 
-    def move_right
+    desc "Move cursor one character to the right"
+    action :move_right do
       @cursor += 1 if @cursor < text.length
     end
 
-    # Add str at the cursor and move cursor
-    def insert(str)
+    # :category: Actions: Change Buffer
+
+    desc "Clear the buffer"
+    action :clear do
+      text.clear
+      @cursor = 0
+    end
+
+    desc "Add a string at the cursor and move cursor after the inserted text"
+    action :insert do |str|
       text.insert(@cursor, str)
       @cursor += str.length
     end
 
-    # Replace buffer contents with str; move cursor to the end
-    def replace(str)
+    desc "Replace buffer contents with a string and move the cursor to the end"
+    action :replace do |str|
       @text   = str.dup
       @cursor = @text.length
     end
 
-    alias set replace
+    action :set, to: :replace
 
-    def delete_char_backward
+    desc "Delete the character before the cursor"
+    action :delete_char_backward do
       return if @cursor.zero?
 
       text.slice!(@cursor - 1)
       @cursor -= 1
     end
 
-    def delete_char_forward
+    desc "Delete the character after the cursor"
+    action :delete_char_forward do
       return if @cursor == text.length
 
       text.slice!(@cursor, 1)
     end
 
-    # Delete to eol and return deleted string
-    def kill_to_eol
+    desc "Delete to the end of the buffer and return deleted string"
+    action :kill_to_eol do
       return "" if eol?
 
       deleted = text[@cursor..] || ""
@@ -152,8 +169,8 @@ module FatTerm
       deleted
     end
 
-    # Delete to bol and return deleted string
-    def kill_to_bol
+    desc "Delete to the beginning of the buffer and return deleted string"
+    action :kill_to_bol do
       return "" if bol?
 
       deleted = text[0, @cursor] || ""
@@ -162,8 +179,8 @@ module FatTerm
       deleted
     end
 
-    # Delete next word and return deleted string
-    def kill_word_forward
+    desc "Delete word after the cursor and return the deleted string"
+    action :kill_word_forward do
       return "" if eol?
 
       start = @cursor
@@ -175,8 +192,8 @@ module FatTerm
       deleted
     end
 
-    # Delete prior word and return deleted string
-    def kill_word_backward
+    desc "Delete word before the cursor and return the deleted string"
+    action :kill_word_backward do
       return "" if bol?
 
       finish = @cursor
@@ -187,6 +204,8 @@ module FatTerm
       @cursor = start
       deleted
     end
+
+    # :category: Utilities
 
     def display_width
       Unicode::DisplayWidth.of(text)
