@@ -316,11 +316,11 @@ module FatTerm
       expect(b.text).to eq("ab")
       expect(b.cursor).to eq(2)
 
-      expect(b.undo).to be(true)
+      expect(b.undo).to be_truthy
       expect(b.text).to eq("")
       expect(b.cursor).to eq(0)
 
-      expect(b.redo).to be(true)
+      expect(b.redo).to be_truthy
       expect(b.text).to eq("ab")
       expect(b.cursor).to eq(2)
     end
@@ -362,7 +362,7 @@ module FatTerm
       b.bol
       b.delete_char_forward(count: 3)
       expect(b.text).to eq("def")
-      expect(b.undo).to be(true)
+      expect(b.undo).to be_truthy
       expect(b.text).to eq("abcdef")
     end
 
@@ -373,6 +373,59 @@ module FatTerm
       deleted = b.kill_word_forward(count: 2)
       expect(deleted).to eq("foo--bar baz")
       expect(b.text).to eq("")
+    end
+
+    it "replace_span replaces a slice and sets cursor" do
+      b = InputBuffer.new
+      b.replace("hello world")
+      b.replace_span(6, 5, "dan")
+      expect(b.text).to eq("hello dan")
+      expect(b.cursor).to eq("hello ".length + "dan".length)
+    end
+
+    it "replace_range accepts a range" do
+      b = InputBuffer.new
+      b.replace("abcDEFghi")
+      b.replace_range(3...6, "xxx")
+      expect(b.text).to eq("abcxxxghi")
+    end
+
+    it "delete_range deletes range and returns deleted text" do
+      b = InputBuffer.new
+      b.replace("abcdef")
+      b.delete_range(2...5)
+      expect(b.text).to eq("abf")
+      expect(b.cursor).to eq(2)
+    end
+
+    it "delete_range on empty range returns '' and does not create an undo step" do
+      b = InputBuffer.new
+      b.replace("abc")
+      # undo stack size doesn't change after deleting empty range
+      sz_b4_del = b.undo_size
+      expect(b.delete_range(1...1)).to eq("")
+      sz_aft_del = b.undo_size
+      expect(sz_b4_del).to eq(sz_aft_del)
+    end
+
+    it "handles inclusive and exclusive ranges correctly" do
+      b = InputBuffer.new
+      b.replace("abcdef")
+
+      # exclusive range: delete cde
+      deleted = b.delete_range(2...5)
+      expect(deleted).to eq("cde")
+      expect(b.text).to eq("abf")
+      expect(b.cursor).to eq(2)
+
+      # reset
+      b.replace("abcdef")
+
+      # inclusive range: delete cde (2..4)
+      deleted = b.delete_range(2..4)
+      expect(deleted).to eq("cde")
+      expect(b.text).to eq("abf")
+      expect(b.cursor).to eq(2)
     end
   end
 end

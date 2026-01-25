@@ -87,6 +87,9 @@ module FatTerm
       !@redo_stack.empty?
     end
 
+    def undo_size
+      @undo_stack.size
+    end
 
     # category: Actions: Cursor Movement
 
@@ -211,6 +214,7 @@ module FatTerm
       with_undo do
         n.times do
           break if @cursor.zero?
+
           text.slice!(@cursor - 1)
           @cursor -= 1
         end
@@ -232,75 +236,172 @@ module FatTerm
       end
     end
 
+    desc "Replace a from start, length characters; move cursor to end of insertion"
+    action :replace_span do |start, length, str|
+      start  = start.to_i
+      length = length.to_i
+      str    = str.to_s
+
+      # clamp start within [0..text.length]
+      start = 0 if start.negative?
+      start = text.length if start > text.length
+      length = 0 if length.negative?
+
+      # clamp length to available content
+      max_len = text.length - start
+      length = max_len if length > max_len
+
+      with_undo do
+        text.slice!(start, length) if length.positive?
+        text.insert(start, str) unless str.empty?
+        @cursor = start + str.length
+      end
+    end
+
+    desc "Replace the text in the given Range with str; move cursor to end of insertion"
+    action :replace_range do |range, str|
+      r = range
+      raise ActionError, "range required" unless r.is_a?(Range)
+
+      start = r.begin.to_i
+      finish = r.end.to_i
+      finish += 1 if r.exclude_end? == false # inclusive range
+
+      replace_span(start, finish - start, str)
+    end
+
+    desc "Delete the given Range and return the deleted string"
+    action :delete_range do |range|
+      r = clamp_range(range)
+      return "" if r.begin == r.end
+
+      deleted = text[r] || ""
+      replace_range(r, "")
+      deleted
+    end
+
     desc "Delete to the end of the buffer and return deleted string"
     action :kill_to_eol do
       return "" if eol?
 
-      deleted = nil
-      with_undo do
-        deleted = text[@cursor..] || ""
-        text.slice!(@cursor..)
-      end
-      deleted
+      delete_range(cursor...text.length)
     end
 
     desc "Delete to the beginning of the buffer and return deleted string"
     action :kill_to_bol do
       return "" if bol?
 
-      deleted = nil
-      with_undo do
-        deleted = text[0, @cursor] || ""
-        text.slice!(0, @cursor)
-        @cursor = 0
-      end
-      deleted
+      delete_range(0...cursor).tap { @cursor = 0 }
     end
 
-    desc "Delete word after the cursor and return the deleted string"
+    desc "Kill count words after the cursor and return the deleted string"
     action :kill_word_forward do |count: 1|
       n = count.to_i
       return "" if n <= 0 || eol?
 
-      deleted = +""
-      with_undo do
-        n.times do
-          break if eol?
+      start = cursor
+      finish = start
 
-          start = @cursor
-          move_word_right_once
-          finish = @cursor
-          deleted << (text[start, finish - start] || "")
-          text.slice!(start, finish - start)
-          @cursor = start
-        end
+      n.times do
+        break if finish >= text.length
+
+        span = word_span_forward(finish)
+        break if span.begin == span.end
+
+        finish = span.end
       end
+
+      deleted = delete_range(start...finish)
+      @cursor = start
       deleted
     end
 
-    desc "Delete word before the cursor and return the deleted string"
+    desc "Kill count words befpre the cursor and return the deleted string"
     action :kill_word_backward do |count: 1|
       n = count.to_i
       return "" if n <= 0 || bol?
 
-      deleted = +""
-      with_undo do
-        n.times do
-          break if bol?
+      finish = cursor
+      start = finish
 
-          finish = @cursor
-          move_word_left_once
-          start = @cursor
-          chunk = text[start, finish - start] || ""
-          deleted = chunk + deleted
-          text.slice!(start, finish - start)
-          @cursor = start
-        end
+      n.times do
+        break if start <= 0
+
+        span = word_span_backward(start)
+        break if span.begin == span.end
+
+        start = span.begin
       end
+
+      deleted = delete_range(start...finish)
+      @cursor = start
       deleted
     end
 
+    # :category: Undo and Redo helpers
+
+    def undo
+      return if @undo_stack.empty?
+
+      @redo_stack << snapshot
+      restore(@undo_stack.pop)
+    end
+
+    def redo
+      return if @redo_stack.empty?
+
+      @undo_stack << snapshot
+      restore(@redo_stack.pop)
+    end
+
     # :category: Utilities
+
+    def display_width
+      Unicode::DisplayWidth.of(text)
+    end
+
+    private
+
+    def clamp_range(range)
+      raise ArgumentError, "range required" unless range.is_a?(Range)
+
+      len = text.length
+      s = range.begin.to_i
+      e = range.end.to_i
+      e += 1 unless range.exclude_end?
+
+      s = 0 if s < 0
+      s = len if s > len
+      e = 0 if e < 0
+      e = len if e > len
+      e = s if e < s
+
+      s...e
+    end
+
+    def word_span_forward(from = cursor)
+      chars = text.chars
+      i = from
+
+      i += 1 while i < chars.length && !word_char?(chars[i])
+      i += 1 while i < chars.length && word_char?(chars[i])
+
+      from...i
+    end
+
+    def word_span_backward(from = cursor)
+      chars = text.chars
+      i = from - 1
+      return from...from if i < 0
+
+      # skip non-word
+      i -= 1 while i > 0 && !word_char?(chars[i])
+      # skip word
+      i -= 1 while i > 0 && word_char?(chars[i])
+
+      start = i == 0 && word_char?(chars[i]) ? 0 : i + 1
+      start...from
+    end
 
     def snapshot
       [@text.dup, @cursor]
@@ -309,6 +410,7 @@ module FatTerm
     def restore(snap)
       @text, @cursor = snap
       clamp_cursor!
+      @text
     end
 
     def clamp_cursor!
@@ -317,34 +419,12 @@ module FatTerm
       @cursor = max if @cursor > max
     end
 
-    def undo
-      return false if @undo_stack.empty?
-
-      @redo_stack << snapshot
-      restore(@undo_stack.pop)
-      true
-    end
-
-    def redo
-      return false if @redo_stack.empty?
-
-      @undo_stack << snapshot
-      restore(@redo_stack.pop)
-      true
-    end
-
     def with_undo
       @undo_stack << snapshot
       @undo_stack.shift while @undo_stack.length > @undo_limit
       @redo_stack.clear
       yield
     end
-
-    def display_width
-      Unicode::DisplayWidth.of(text)
-    end
-
-    private
 
     def word_char?(ch)
       @word_re.match?(ch)
