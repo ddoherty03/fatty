@@ -131,6 +131,11 @@ module FatTerm
       @cursor = 0
     end
 
+    desc "Insert character(s) at point"
+    action :self_insert do |str|
+      insert(str)
+    end
+
     desc "Add a string at the cursor and move cursor after the inserted text"
     action :insert do |str|
       text.insert(@cursor, str)
