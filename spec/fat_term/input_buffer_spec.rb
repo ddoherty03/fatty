@@ -309,5 +309,70 @@ module FatTerm
       expect(b.text).to eq("e") # removed only the combining mark
       expect(b.cursor).to eq(1)
     end
+
+    it "undo/redo restores text and cursor for insert" do
+      b = InputBuffer.new
+      b.insert("ab")
+      expect(b.text).to eq("ab")
+      expect(b.cursor).to eq(2)
+
+      expect(b.undo).to be(true)
+      expect(b.text).to eq("")
+      expect(b.cursor).to eq(0)
+
+      expect(b.redo).to be(true)
+      expect(b.text).to eq("ab")
+      expect(b.cursor).to eq(2)
+    end
+
+    it "redo stack is cleared by a new edit after undo" do
+      b = InputBuffer.new
+      b.insert("ab")
+      b.undo
+      expect(b.can_redo?).to be(true)
+
+      b.insert("x")
+      expect(b.can_redo?).to be(false)
+    end
+
+    it "cursor motion does not create undo points" do
+      b = InputBuffer.new
+      b.insert("ab")
+      b.move_left
+      b.move_left
+      expect(b.cursor).to eq(0)
+
+      # undo should undo the insert, not the motion
+      b.undo
+      expect(b.text).to eq("")
+      expect(b.cursor).to eq(0)
+    end
+
+    it "move_word_right repeats and clamps" do
+      b = InputBuffer.new(word_chars: "[[:alnum:]_-]")
+      b.replace("foo--bar   baz")
+      b.bol
+      b.move_word_right(count: 2)
+      expect(b.cursor).to eq("foo--bar   baz".length)
+    end
+
+    it "delete_char_forward supports count and is one undo step" do
+      b = InputBuffer.new
+      b.replace("abcdef")
+      b.bol
+      b.delete_char_forward(count: 3)
+      expect(b.text).to eq("def")
+      expect(b.undo).to be(true)
+      expect(b.text).to eq("abcdef")
+    end
+
+    it "kill_word_forward supports count and returns concatenated deleted text" do
+      b = InputBuffer.new(word_chars: "[[:alnum:]_-]")
+      b.replace("foo--bar baz")
+      b.bol
+      deleted = b.kill_word_forward(count: 2)
+      expect(deleted).to eq("foo--bar baz")
+      expect(b.text).to eq("")
+    end
   end
 end

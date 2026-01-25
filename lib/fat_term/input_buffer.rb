@@ -38,7 +38,7 @@ module FatTerm
 
     DEFAULT_WORD_CHARS = "[[:alnum:]_]"
 
-    def initialize(word_chars: DEFAULT_WORD_CHARS, word_re: nil)
+    def initialize(word_chars: DEFAULT_WORD_CHARS, word_re: nil, undo_limit: 1_000)
       @text = +""
       @cursor = 0
       @word_re =
@@ -48,6 +48,9 @@ module FatTerm
           # word_chars is a fragment like "[[:alnum:]_]" or "[[:alnum:]_-]"
           Regexp.new(word_chars)
         end
+      @undo_limit = undo_limit
+      @undo_stack = []
+      @redo_stack = []
     end
 
     # :category: Queries
@@ -76,6 +79,27 @@ module FatTerm
       text[@cursor..] || ""
     end
 
+    def can_undo?
+      !@undo_stack.empty?
+    end
+
+    def can_redo?
+      !@redo_stack.empty?
+    end
+
+
+    # category: Actions: Cursor Movement
+
+    desc "Undo the most recent buffer edit, text and cursor. Returns true/false."
+    action :undo do
+      undo
+    end
+
+    desc "Redo the most recently undone edit. Returns true/false."
+    action :redo do
+      redo
+    end
+
     # category: Actions: Cursor Movement
 
     desc "Move cursor to the beginning of the line"
@@ -88,8 +112,7 @@ module FatTerm
       @cursor = text.length
     end
 
-    desc "Move cursor one word to the right"
-    action :move_word_right do
+    def move_word_right_once
       chars = text.chars
       i = @cursor
       # skip non-word
@@ -98,74 +121,126 @@ module FatTerm
       i += 1 while i < chars.length && word_char?(chars[i])
       @cursor = i
     end
+    private :move_word_right_once
 
-    desc "Move cursor one word to the left"
-    action :move_word_left do
+    desc "Move cursor count words to the right"
+    action :move_word_right do |count: 1|
+      n = count.to_i
+      return if n <= 0
+
+      n.times { move_word_right_once }
+    end
+
+    def move_word_left_once
       chars = text.chars
       i = @cursor
-
       # skip non-word chars to the left
       i -= 1 while i > 0 && !word_char?(chars[i - 1])
-
       # skip word chars to the left
       i -= 1 while i > 0 && word_char?(chars[i - 1])
-
       @cursor = i
     end
+    private :move_word_left_once
 
-    desc "Move cursor one character to the left"
-    action :move_left do
-      @cursor -= 1 if @cursor.positive?
+    desc "Move cursor count words to the left"
+    action :move_word_left do |count: 1|
+      n = count.to_i
+      return if n <= 0
+
+      n.times { move_word_left_once }
     end
 
-    desc "Move cursor one character to the right"
-    action :move_right do
-      @cursor += 1 if @cursor < text.length
+    desc "Move cursor count characters to the left"
+    action :move_left do |count: 1|
+      n = count.to_i
+      return if n <= 0
+
+      @cursor = [@cursor - n, 0].max
+    end
+
+    desc "Move cursor count characters to the right"
+    action :move_right do |count: 1|
+      n = count.to_i
+      return if n <= 0
+
+      @cursor = [@cursor + n, text.length].min
     end
 
     # :category: Actions: Change Buffer
 
     desc "Clear the buffer"
     action :clear do
-      text.clear
-      @cursor = 0
+      return if text.empty? && @cursor.zero?
+
+      with_undo do
+        text.clear
+        @cursor = 0
+      end
     end
 
-    desc "Add a string at the cursor and move cursor after the inserted text"
-    action :insert do |str|
-      text.insert(@cursor, str)
-      @cursor += str.length
+    desc "Add a count copies of string at the cursor and move cursor after the inserted text"
+    action :insert do |str, count: 1|
+      s = str.to_s
+      n = count.to_i
+      return if s.empty? || n <= 0
+
+      with_undo do
+        payload = (s * n)
+        text.insert(@cursor, payload)
+        @cursor += payload.length
+      end
     end
 
     desc "Replace buffer contents with a string and move the cursor to the end"
     action :replace do |str|
-      @text   = str.dup
-      @cursor = @text.length
+      str = str.to_s
+      with_undo do
+        @text = str.dup
+        @cursor = @text.length
+      end
     end
 
     action :set, to: :replace
 
     desc "Delete the character before the cursor"
-    action :delete_char_backward do
+    action :delete_char_backward do |count: 1|
+      n = count.to_i
+      return if n <= 0
       return if @cursor.zero?
 
-      text.slice!(@cursor - 1)
-      @cursor -= 1
+      with_undo do
+        n.times do
+          break if @cursor.zero?
+          text.slice!(@cursor - 1)
+          @cursor -= 1
+        end
+      end
     end
 
-    desc "Delete the character after the cursor"
-    action :delete_char_forward do
+    desc "Delete count characters after the cursor"
+    action :delete_char_forward do |count: 1|
+      n = count.to_i
+      return if n <= 0
       return if @cursor == text.length
 
-      text.slice!(@cursor, 1)
+      with_undo do
+        n.times do
+          break if @cursor == text.length
+
+          text.slice!(@cursor, 1)
+        end
+      end
     end
 
     desc "Delete to the end of the buffer and return deleted string"
     action :kill_to_eol do
       return "" if eol?
 
-      deleted = text[@cursor..] || ""
-      text.slice!(@cursor..)
+      deleted = nil
+      with_undo do
+        deleted = text[@cursor..] || ""
+        text.slice!(@cursor..)
+      end
       deleted
     end
 
@@ -173,39 +248,97 @@ module FatTerm
     action :kill_to_bol do
       return "" if bol?
 
-      deleted = text[0, @cursor] || ""
-      text.slice!(0, @cursor)
-      @cursor = 0
+      deleted = nil
+      with_undo do
+        deleted = text[0, @cursor] || ""
+        text.slice!(0, @cursor)
+        @cursor = 0
+      end
       deleted
     end
 
     desc "Delete word after the cursor and return the deleted string"
-    action :kill_word_forward do
-      return "" if eol?
+    action :kill_word_forward do |count: 1|
+      n = count.to_i
+      return "" if n <= 0 || eol?
 
-      start = @cursor
-      move_word_right
-      finish = @cursor
-      deleted = text[start, finish - start] || ""
-      text.slice!(start, finish - start)
-      @cursor = start
+      deleted = +""
+      with_undo do
+        n.times do
+          break if eol?
+
+          start = @cursor
+          move_word_right_once
+          finish = @cursor
+          deleted << (text[start, finish - start] || "")
+          text.slice!(start, finish - start)
+          @cursor = start
+        end
+      end
       deleted
     end
 
     desc "Delete word before the cursor and return the deleted string"
-    action :kill_word_backward do
-      return "" if bol?
+    action :kill_word_backward do |count: 1|
+      n = count.to_i
+      return "" if n <= 0 || bol?
 
-      finish = @cursor
-      move_word_left
-      start = @cursor
-      deleted = text[start, finish - start] || ""
-      text.slice!(start, finish - start)
-      @cursor = start
+      deleted = +""
+      with_undo do
+        n.times do
+          break if bol?
+
+          finish = @cursor
+          move_word_left_once
+          start = @cursor
+          chunk = text[start, finish - start] || ""
+          deleted = chunk + deleted
+          text.slice!(start, finish - start)
+          @cursor = start
+        end
+      end
       deleted
     end
 
     # :category: Utilities
+
+    def snapshot
+      [@text.dup, @cursor]
+    end
+
+    def restore(snap)
+      @text, @cursor = snap
+      clamp_cursor!
+    end
+
+    def clamp_cursor!
+      @cursor = 0 if @cursor.negative?
+      max = @text.length
+      @cursor = max if @cursor > max
+    end
+
+    def undo
+      return false if @undo_stack.empty?
+
+      @redo_stack << snapshot
+      restore(@undo_stack.pop)
+      true
+    end
+
+    def redo
+      return false if @redo_stack.empty?
+
+      @undo_stack << snapshot
+      restore(@redo_stack.pop)
+      true
+    end
+
+    def with_undo
+      @undo_stack << snapshot
+      @undo_stack.shift while @undo_stack.length > @undo_limit
+      @redo_stack.clear
+      yield
+    end
 
     def display_width
       Unicode::DisplayWidth.of(text)
