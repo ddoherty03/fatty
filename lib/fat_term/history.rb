@@ -4,6 +4,8 @@ module FatTerm
   class History
     DEFAULT_MAX = 10_000
 
+    attr_reader :entries
+
     def initialize(path: nil, max: DEFAULT_MAX)
       @path    = path
       @max     = max
@@ -11,7 +13,7 @@ module FatTerm
       @index   = nil
       @scratch = nil
 
-      load_file if @path
+      load if @path
     end
 
     def add(line)
@@ -25,15 +27,15 @@ module FatTerm
     end
 
     def previous(current)
-      return current if @entries.empty?
+      return current.to_s if @entries.empty?
 
       if @index.nil?
-        @scratch = current
+        @scratch = current.to_s
         @index = @entries.length - 1
-      elsif @index > 0
-        @index -= 1
+        return @entries[@index]
       end
 
+      @index -= 1 if @index.positive?
       @entries[@index]
     end
 
@@ -44,8 +46,9 @@ module FatTerm
         @index += 1
         @entries[@index]
       else
+        scratch = @scratch
         reset_cursor
-        @scratch || ""
+        scratch || ""
       end
     end
 
@@ -56,7 +59,7 @@ module FatTerm
 
     private
 
-    def load_file
+    def load
       return unless File.exist?(@path)
 
       File.foreach(@path) do |line|
