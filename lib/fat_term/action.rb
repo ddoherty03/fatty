@@ -6,6 +6,14 @@ module FatTerm
   module Actions
     @defs = {} # { Symbol => { owner:, on:, doc:, method: } }
 
+    def self.snapshot
+      @defs.dup
+    end
+
+    def self.restore(snapshot)
+      @defs = snapshot
+    end
+
     def self.reset!
       @defs.clear
     end

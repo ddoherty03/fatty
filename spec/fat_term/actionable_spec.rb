@@ -2,8 +2,14 @@
 
 module FatTerm
   RSpec.describe Actionable do
-    before do
-      FatTerm::Actions.reset!
+    around do |ex|
+      saved = FatTerm::Actions.snapshot
+      begin
+        FatTerm::Actions.reset!
+        ex.run
+      ensure
+        FatTerm::Actions.restore(saved)
+      end
     end
 
     it "defines an instance method when action is given a block" do
@@ -151,7 +157,7 @@ module FatTerm
 
     it "unknown action raises" do
       ctx = ActionContext.new(buffer: Object.new)
-      expect { FatTerm::Actions.call(:__t_no_such_action, ctx) }.to raise_error(ArgumentError)
+      expect { FatTerm::Actions.call(:__t_no_such_action, ctx) }.to raise_error(ActionError)
     end
 
     it "alias can be declared before the target method (delegator fallback)" do
