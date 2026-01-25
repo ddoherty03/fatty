@@ -2,8 +2,17 @@
 
 module FatTerm
   class Prompt
-    def initialize(&block)
-      @block = block
+    DEFAULT = "> "
+
+    def initialize(value = nil, &block)
+      @block =
+        if block
+          block
+        elsif value
+          -> { value.to_s }
+        else
+          -> { DEFAULT }
+        end
     end
 
     def text
