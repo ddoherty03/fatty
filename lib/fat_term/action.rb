@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module FatTerm
+  class ActionError < StandardError; end
+
   module Actions
     @defs = {} # { Symbol => { owner:, on:, doc:, method: } }
 
@@ -15,7 +17,7 @@ module FatTerm
     class << self
       def register(name, owner:, on:, method_name: name, doc: nil)
         key = name.to_sym
-        raise ArgumentError, "action already registered: #{key}" if @defs.key?(key)
+        raise ActionError, "action already registered: #{key}" if @defs.key?(key)
 
         @defs[key] = {
           owner: owner,
@@ -27,10 +29,10 @@ module FatTerm
 
       def call(name, ctx, *args)
         key = name.to_sym
-        defn = @defs[key] or raise ArgumentError, "Unknown action: #{key}"
+        defn = @defs[key] or raise ActionError, "Unknown action: #{key}"
 
         target = ctx.public_send(defn[:on])
-        raise ArgumentError, "ctx.#{defn[:on]} is nil for action #{key}" unless target
+        raise ActionError, "ctx.#{defn[:on]} is nil for action #{key}" unless target
 
         target.public_send(defn[:method], *args)
       end
