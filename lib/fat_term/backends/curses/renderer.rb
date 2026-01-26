@@ -1,8 +1,35 @@
 # frozen_string_literal: true
 
 module FatTerm
-  # All interaction with the user's terminal via curses is handled by the
-  # Renderer class.
+  # The Curses Renderer is responsible for drawing FatTerm views using curses.
+  #
+  # Renderer provides the drawing API used by View objects.  Views never call
+  # curses directly; instead, they request drawing operations from the Renderer.
+  #
+  # Responsibilities:
+  #   - translate high-level draw requests into curses window operations
+  #   - apply colors, attributes, and cursor placement
+  #   - respect layout information provided by FatTerm::Screen
+  #   - refresh windows at frame boundaries
+  #
+  # Renderer deliberately does NOT:
+  #   - read keyboard or mouse input
+  #   - decode raw key sequences
+  #   - manage session state
+  #   - decide which views should be rendered
+  #
+  # In the architecture:
+  #
+  #   Session  → owns state
+  #   View     → decides *what* to draw
+  #   Renderer → decides *how* to draw
+  #   Context  → owns curses and window lifecycle
+  #
+  # Terminal coordinates rendering by collecting Views from active Sessions,
+  # ordering them by z-index, and invoking Renderer methods during each frame.
+  #
+  # Renderer is backend-specific.  Other renderers may exist in the future
+  # (e.g., ANSI, headless, test), but Views and Sessions remain unchanged.
   class Renderer
     DETAIL_ORDER = %i[terminal key ctrl meta shift].freeze
     ALERT_INFO_PAIR    = 1
