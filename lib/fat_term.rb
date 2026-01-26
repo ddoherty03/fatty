@@ -26,6 +26,8 @@ module FatTerm
   require_relative "fat_term/curses_coder"
   require_relative "fat_term/key_map"
   require_relative "fat_term/viewport"
+  require_relative "fat_term/session"
+  require_relative "fat_term/view"
   require_relative "fat_term/terminal"
 
   class Error < StandardError; end
