@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module FatTerm
+  # All interaction with the user's terminal via curses is handled by the
+  # Renderer class.
   class Renderer
     DETAIL_ORDER = %i[terminal key ctrl meta shift].freeze
     ALERT_INFO_PAIR    = 1
@@ -11,10 +13,10 @@ module FatTerm
       @screen = screen
     end
 
-    def render(output:, input_field:, alert: nil)
-      render_output(output)
-      render_alert(alert)
+    def render(output:, input_field:, alert:, viewport:)
+      render_output(output, viewport:)
       render_input_field(input_field)
+      render_alert(alert)
       restore_cursor(input_field)
     end
 
@@ -24,12 +26,11 @@ module FatTerm
       win.refresh
     end
 
-    def render_output(output)
+    def render_output(output, viewport:)
       win = @screen.output_win
       win.clear
 
-      height = @screen.rows - 2
-      lines  = output.visible_lines(height)
+      lines = viewport.slice(output.lines)
 
       lines.each_with_index do |line, y|
         win.setpos(y, 0)

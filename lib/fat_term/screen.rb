@@ -48,23 +48,5 @@ module FatTerm
     def close
       Curses.close_screen
     end
-
-    def read_raw
-      ch = @input_win.getch
-      return unless ch
-
-      if ch.is_a?(Integer) && ch == 27
-        read_meta_sequence(ch)
-      else
-        ch
-      end
-    end
-
-    def read_meta_sequence(esc)
-      nxt = @input_win.getch
-      return esc unless nxt
-
-      [esc, nxt]
-    end
   end
 end
