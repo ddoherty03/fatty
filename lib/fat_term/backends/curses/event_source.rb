@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-require "curses"
-
 module FatTerm
   module Backends
     module Curses
       class EventSource
-        def initialize(window_provider:, key_decoder:)
-          @window_provider = window_provider
+        attr_reader :context, :key_decoder
+
+        def initialize(context:, key_decoder:)
+          @context = context
           @key_decoder = key_decoder
         end
 
@@ -21,21 +21,20 @@ module FatTerm
         private
 
         def window
-          @window_provider.call
+          context.input_win
         end
 
         def read_raw
-          win = window
-          return unless win
+          return unless window
 
-          ch = win.getch
+          ch = window.getch
           return unless ch
 
           if ch.is_a?(Integer) && ch == 27
-            nxt = win.getch
-            return 27 unless nxt
+            nxt = window.getch
+            return ch unless nxt
 
-            [27, nxt]
+            [ch, nxt]
           else
             ch
           end
