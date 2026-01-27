@@ -24,7 +24,7 @@ module FatTerm
     attr_reader :buffer, :prompt, :history
 
     def initialize(prompt:, buffer: nil, history: nil)
-      @prompt  = prompt
+      @prompt  = Prompt.ensure(prompt)
       @history = history
 
       @buffer =
