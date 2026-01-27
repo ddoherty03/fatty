@@ -12,31 +12,69 @@ module FatTerm
   class KeyMap
     DEFAULT_CONTEXT = :input
 
+    def self.registered_contexts
+      @registered_contexts ||= [DEFAULT_CONTEXT, :paging]
+    end
+
+    # Register a context (optionally before/after another for precedence/printing)
+    def self.register_context(ctx, before: nil, after: nil)
+      ctx = ctx.to_s.to_sym
+      list = registered_contexts
+      return ctx if list.include?(ctx)
+
+      if before
+        i = list.index(before.to_s.to_sym) || 0
+        list.insert(i, ctx)
+      elsif after
+        i = list.index(after.to_s.to_sym)
+        i ? list.insert(i + 1, ctx) : list << ctx
+      else
+        list << ctx
+      end
+
+      ctx
+    end
+
     def initialize
-      @bindings = {}
+      @bindings = Hash.new { |h, ctx| h[ctx] = {} }
     end
 
     # Bind a KeyEvent to an action in the given context.
     def bind(context: :input, key:, ctrl: false, meta: false, shift: false, action: nil)
-      raise ArgumentError, "keybinding context must be :input or :paging" unless [:input, :paging].include?(context)
       raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
       raise ArgumentError, "key must be a Symbol" unless key.is_a?(Symbol)
       raise ArgumentError, "action must be a Symbol" unless action.is_a?(Symbol)
 
-      @bindings[[context, key, ctrl, meta, shift]] = action
+      self.class.register_context(context)
+
+      evt = KeyEvent.new(
+        key:,
+        ctrl: truthy?(ctrl),
+        meta: truthy?(meta),
+        shift: truthy?(shift),
+      )
+      @bindings[context][evt] = action
     end
 
-    # Return the action associated with the given KeyEvent in the given context.
-    def resolve(event, context: :input)
+    # Return the action associated with the given KeyEvent in the given contexts.
+    def resolve(event, contexts: [])
       return unless event
-      raise ArgumentError, "keybinding context must be a Symbol" unless context.is_a?(Symbol)
-      raise ArgumentError, "keybinding context must be :input or :paging" unless [:input, :paging].include?(context)
 
-      # Return the specific binding, or it there are none, the binding for the
-      # unmodified key.  Thus C-Home will do the same thing as Home unless it
-      # specifically is bound.
-      @bindings[[context, event.key, event.ctrl?, event.meta?, event.shift?]] ||
-        @bindings[[context, event.key, false, false, false]]
+      ctxs = normalize_contexts(contexts)
+      result = nil
+      ctxs.each do |ctx|
+        map = @bindings.fetch(ctx, nil)
+        next unless map
+
+        result = map[event]
+        break if result
+      end
+      result
+    end
+
+    # Return all contexts currently used in this instance
+    def contexts
+      @bindings.keys
     end
 
     # Make the bindings from the user's config file, usually at
@@ -85,6 +123,32 @@ module FatTerm
         action: action.to_sym,
       )
       self
+    end
+
+    # Allow the user to supply an empty Array or nil to search all contexts.
+    def normalize_contexts(contexts)
+      case contexts
+      when Array
+        if contexts.empty?
+          self.class.registered_contexts
+        else
+          contexts.compact.map { |c| c.to_s.to_sym }
+        end
+      when String, Symbol
+        [contexts.to_s.to_sym]
+      when NilClass
+        self.class.registered_contexts
+      else
+        raise ArgumentError, "contexts must be Symbol/String, Array, or nil"
+      end
+    end
+
+    def truthy?(str)
+      return false unless str
+      return true if str == true
+      return true if str.to_s.match?(/\At/i)
+
+      false
     end
   end
 end
