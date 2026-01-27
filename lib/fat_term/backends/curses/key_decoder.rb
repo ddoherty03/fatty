@@ -83,7 +83,11 @@ module FatTerm
         def fallback_decode(ch)
           case ch
           when Integer
-            if ch == 0
+            # Many Ruby curses builds return Integers for printable characters
+            # (e.g. 97 for "a"). Treat printable ASCII as self-inserting text.
+            if (32..126).cover?(ch)
+              fallback_decode(ch.chr, raw: ch)
+            elsif ch == 0
               # Ctrl-@ => NUL
               KeyEvent.new(key: :'@', ctrl: true, raw: ch)
             elsif (1..26).cover?(ch)
