@@ -1,92 +1,75 @@
 # frozen_string_literal: true
 
 module FatTerm
-  # Base class for stateful controllers in the Terminal runtime.
+  # Base class for stateful runtime components.
   #
-  # Sessions:
-  # - own mutable state (the "Model")
-  # - receive semantic Events (KeyEvent/MouseEvent/ResizeEvent/etc.)
-  # - update state via Actions (Actionable) or direct Ruby methods
-  # - may enqueue commands for the runtime to perform (side effects)
+  # Charm/Bubbletea-style contract:
   #
-  # This is intentionally lightweight; it sets conventions and provides
-  # helpers, without forcing strict FP/MVU.
+  #   init(terminal:)               => [self, commands]
+  #   update(message, terminal:)    => [self, commands]
+  #   view(screen:, renderer:, terminal:) => renders only (no return contract)
+  #
+  # Where `commands` is an Array (possibly empty). Terminal is responsible for
+  # executing commands after each update cycle.
   class Session
-    # The current keymap for this session (used by the runtime when routing
-    # events to actions).  Allow the runtime to change this.
-    attr_accessor :keymap
-
-    # Views owned by this session (pure renderers).
     attr_reader :views
 
-    # Runtime commands emitted by this session.
-    attr_reader :commands
-
-    # Context symbol used when resolving bindings (e.g., :input, :paging,
-    # :completion). The runtime is free to override.
-    attr_accessor :context
-
-    def initialize(keymap: nil, context: :default, views: [])
-      @keymap = keymap
-      @context = context.to_sym
+    def initialize(views: [])
       @views = Array(views)
-      @commands = []
-      @active = true
     end
 
-    def active?
-      @active
+    # Called once when the session becomes active (e.g. pushed).
+    # Subclasses may override to kick off timers/async work, etc.
+    def init(terminal:)
+      [self, []]
     end
 
-    def focus!
-      @active = true
-      self
+    # Handle a message (KeyEvent/MouseEvent/ResizeEvent/TickEvent/Command, etc.)
+    # and return [self, commands].
+    def update(_message, terminal:)
+      [self, []]
     end
 
-    def blur!
-      @active = false
-      self
-    end
-
-    # Enqueue a command for the runtime. Commands are opaque to Session; they
-    # are interpreted by Terminal (or a future Runtime).
-    def emit(command)
-      @commands << command
-      self
-    end
-
-    # Drain and clear any commands.
-    def drain_commands
-      cmds = @commands
-      @commands = []
-      cmds
-    end
-
-    # Primary hook: update the session based on an Event.
+    # Render the session.
     #
-    # Implementations should return one of:
-    # - :handled    (event consumed)
-    # - :unhandled  (not for this session)
-    # - a Symbol action name (optional convenience)
+    # By default, renders all views belonging to the session, ordered by z-index.
+    # Subclasses can override, but should not mutate state here.
+    def view(screen:, renderer:, terminal:)
+      views.sort_by(&:z).each do |v|
+        v.render(screen:, renderer:, terminal:, session: self)
+      end
+    end
+
+    # Normalize a return value into the Charm tuple: [self, commands].
     #
-    # The base class provides a small helper for the common case where the
-    # runtime already resolved an action.
-    def update(_event, terminal:)
-      raise NotImplementedError, "#{self.class} must implement #update"
-    end
+    # Accepts:
+    #   nil                  => [self, []]
+    #   command              => [self, [command]]
+    #   [command, ...]       => [self, [...]]
+    #   [self, commands]     => [self, Array(commands)]
+    #
+    # Useful while migrating older sessions; Terminal can call this on whatever
+    # `update` returns to get a uniform shape.
+    def pack(ret)
+      return [self, []] if ret.nil?
 
-    # Convenience: perform a named action using the ActionContext.
-    def call_action(action, ctx, *args)
-      Actions.call(action, ctx, *args)
-      :handled
-    rescue ActionError
-      :unhandled
-    end
+      # Already a Charm tuple
+      if ret.is_a?(Array) && ret.length == 2 && ret[0].equal?(self)
+        return [self, Array(ret[1])]
+      end
 
-    # Allow runtime to attach additional views.
-    def add_view(view)
-      @views << view
-      self
+      # Disambiguate:
+      #   - [:beep] is a single command
+      #   - [[:beep], [:open, "x"]] is a list of commands
+      if ret.is_a?(Array)
+        if ret.first.is_a?(Symbol)
+          return [self, [ret]]
+        else
+          return [self, ret]
+        end
+      end
+
+      [self, [ret]]
     end
   end
 end

@@ -4,127 +4,107 @@ require "spec_helper"
 
 module FatTerm
   RSpec.describe Session do
+    let(:terminal)  { instance_double(Terminal) }
+    let(:screen)    { instance_double(Screen) }
+    let(:renderer)  { instance_double(Backends::Curses::Renderer) }
+
+    describe "#init" do
+      it "returns [self, []] by default" do
+        s = Session.new
+        model, commands = s.init(terminal:)
+
+        expect(model).to be(s)
+        expect(commands).to eq([])
+      end
+    end
+
     describe "#update" do
-      it "is abstract by default" do
+      it "returns [self, []] by default" do
         s = Session.new
-        expect { s.update(:event, terminal: :terminal) }.to raise_error(NotImplementedError)
+        model, commands = s.update(:message, terminal:)
+
+        expect(model).to be(s)
+        expect(commands).to eq([])
       end
     end
 
-    describe "commands" do
-      it "starts with an empty command queue" do
-        s = Session.new
-        expect(s.commands).to eq([])
+    describe "#view" do
+      it "renders its views in ascending z order" do
+        v1 = instance_double(View, z: 10)
+        v2 = instance_double(View, z: 0)
+        v3 = instance_double(View, z: 5)
+
+        s = Session.new(views: [v1, v2, v3])
+
+        allow(v1).to receive(:render)
+        allow(v2).to receive(:render)
+        allow(v3).to receive(:render)
+
+        s.view(screen:, renderer:, terminal:)
+
+        expect(v2).to have_received(:render).ordered
+        expect(v3).to have_received(:render).ordered
+        expect(v1).to have_received(:render).ordered
       end
 
-      it "emit appends commands" do
+      it "does nothing if it has no views" do
         s = Session.new
-        s.emit([:beep])
-        s.emit([:open, "file.txt"])
-
-        expect(s.commands).to eq([[:beep], [:open, "file.txt"]])
-      end
-
-      it "drain_commands returns commands and clears the queue" do
-        s = Session.new
-        s.emit([:beep])
-        s.emit([:open, "file.txt"])
-
-        drained = s.drain_commands
-        expect(drained).to eq([[:beep], [:open, "file.txt"]])
-        expect(s.commands).to eq([])
-      end
-
-      it "drain_commands returns a fresh array (caller can't mutate internal queue)" do
-        s = Session.new
-        s.emit([:beep])
-
-        drained = s.drain_commands
-        drained << [:oops]
-
-        expect(s.commands).to eq([])
+        expect { s.view(screen:, renderer:, terminal:) }.not_to raise_error
       end
     end
 
-    describe "focus" do
-      it "is active by default" do
+    describe "#pack" do
+      it "normalizes nil to [self, []]" do
         s = Session.new
-        expect(s).to be_active
+        model, commands = s.pack(nil)
+
+        expect(model).to be(s)
+        expect(commands).to eq([])
       end
 
-      it "blur! marks inactive; focus! marks active" do
+      it "wraps a single command into [self, [command]]" do
         s = Session.new
+        cmd = [:beep]
 
-        s.blur!
-        expect(s).not_to be_active
+        model, commands = s.pack(cmd)
 
-        s.focus!
-        expect(s).to be_active
+        expect(model).to be(s)
+        expect(commands).to eq([cmd])
       end
 
-      it "focus!/blur! return self for chaining" do
+      it "passes through an array of commands as [self, commands]" do
         s = Session.new
-        expect(s.blur!).to be(s)
-        expect(s.focus!).to be(s)
-      end
-    end
+        cmds = [[:beep], [:open, "file.txt"]]
 
-    describe "views" do
-      it "accepts initial views" do
-        v1 = instance_double(View)
-        v2 = instance_double(View)
+        model, commands = s.pack(cmds)
 
-        s = Session.new(views: [v1, v2])
-        expect(s.views).to eq([v1, v2])
+        expect(model).to be(s)
+        expect(commands).to eq(cmds)
       end
 
-      it "defaults to an empty views list" do
+      it "accepts a Charm tuple [self, commands]" do
         s = Session.new
-        expect(s.views).to eq([])
+        cmds = [[:beep]]
+
+        model, commands = s.pack([s, cmds])
+
+        expect(model).to be(s)
+        expect(commands).to eq(cmds)
       end
 
-      it "add_view appends a view and returns self" do
-        v = instance_double(View)
+      it "coerces tuple commands to an array (nil => [])" do
         s = Session.new
+        model, commands = s.pack([s, nil])
 
-        expect(s.add_view(v)).to be(s)
-        expect(s.views).to eq([v])
-      end
-    end
-
-    describe "keymap" do
-      it "stores the keymap provided at initialization" do
-        km = instance_double(KeyMap)
-        s = Session.new(keymap: km)
-        expect(s.keymap).to be(km)
+        expect(model).to be(s)
+        expect(commands).to eq([])
       end
 
-      it "allows the runtime to replace the keymap" do
-        km1 = instance_double(KeyMap)
-        km2 = instance_double(KeyMap)
-
-        s = Session.new(keymap: km1)
-        s.keymap = km2
-
-        expect(s.keymap).to be(km2)
-      end
-    end
-
-    describe "context" do
-      it "defaults to :default" do
+      it "treats [:cmd] as a single command, not a commands list" do
         s = Session.new
-        expect(s.context).to eq(:default)
-      end
-
-      it "coerces context to a symbol when provided" do
-        s = Session.new(context: "input")
-        expect(s.context).to eq(:input)
-      end
-
-      it "allows changing context" do
-        s = Session.new(context: :input)
-        s.context = :completion
-        expect(s.context).to eq(:completion)
+        model, commands = s.pack([:beep])
+        expect(model).to be(s)
+        expect(commands).to eq([[:beep]])
       end
     end
   end

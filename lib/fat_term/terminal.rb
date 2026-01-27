@@ -2,147 +2,183 @@
 
 module FatTerm
   class Terminal
-    attr_reader :sessions, :alert_panel
-    attr_accessor :running
+    # Commands are plain Ruby arrays for now.
+    #
+    # Suggested shapes:
+    #
+    # Terminal/runtime commands:
+    #   [:terminal, :quit]
+    #   [:terminal, :push, session]
+    #   [:terminal, :pop]
+    #
+    # Session-targeted commands (no special casing):
+    #   [:send, :alert, :show, { level: :warning, message: "No matches" }]
+    #   [:send, :alert, :clear, {}]
+    #
+    # You can add more later; Terminal only needs a small dispatcher.
 
-    def initialize(renderer:, screen:, alert_panel: nil)
-      @renderer = renderer
+    attr_reader :screen, :renderer, :event_source
+
+    def initialize(screen:, renderer:, event_source:)
       @screen = screen
-      @sessions = []
+      @renderer = renderer
+      @event_source = event_source
+
       @running = false
 
-      @alert_panel = alert_panel || AlertPanel.new
-      @alert_view = Views::AlertView.new(panel: @alert_panel, z: 1_000)
+      @stack = []          # focus stack (top receives input)
+      @pinned = []         # always rendered, never focused unless you choose
+      @sessions_by_id = {} # id => session
     end
 
-    # --- Main loop (event_source is injectable) ---------------------------
+    # --- Session management ------------------------------------------------
 
-    # event_source must respond to #next_event(terminal:) and return:
-    # - an Event instance, or
-    # - nil if no event available right now
-    def go(event_source:)
-      @running = true
-
-      redraw
-
-      while @running
-        event = event_source.next_event
-
-        if event
-          dispatch_event(event)
-          apply_all_commands
-          redraw
-        else
-          # If you later add TickEvent, you can generate it here.
-          # For now, no busy loop: let event_source block or sleep.
-        end
-      end
-    ensure
-      @running = false
-    end
-
-    # --- Session stack ----------------------------------------------------
-
-    def push_session(session)
-      @sessions << session
-      session.focus!
+    def push(session)
+      @stack << session
+      register(session)
+      _model, commands = session.init(terminal: self)
+      apply_commands(commands)
       session
     end
 
-    def pop_session
-      s = @sessions.pop
-      @sessions.last&.focus!
-      s
+    def pop
+      @stack.pop
+    end
+
+    def pin(session)
+      @pinned << session
+      register(session)
+      _model, commands = session.init(terminal: self)
+      apply_commands(commands)
+      session
     end
 
     def focused_session
-      @sessions.last
+      @stack.last
     end
 
-    def each_active_session
-      @sessions.each { |s| yield s if s.active? }
+    def register(session)
+      return unless session.respond_to?(:id)
+      return if session.id.nil?
+
+      @sessions_by_id[session.id] = session
     end
 
-    # --- Event dispatch ---------------------------------------------------
+    def find_session(id)
+      @sessions_by_id[id]
+    end
 
-    def dispatch_event(event)
+    # --- Runtime -----------------------------------------------------------
+
+    def go
+      @running = true
+
+      while @running
+        msg = event_source.next_event
+        if msg
+          dispatch_message(msg)
+        else
+          # If you later add ticks, you can inject TickEvent here.
+          # For now: just keep looping.
+        end
+
+        render_frame
+      end
+    end
+
+    def quit
+      @running = false
+    end
+
+    # --- Dispatch ----------------------------------------------------------
+
+    def dispatch_message(message)
       s = focused_session
       return unless s
 
-      result = s.update(event, terminal: self)
-      result
+      model, commands = s.update(message, terminal: self)
+      # Charm convention: model returned, but we don't need to replace the object
+      # unless you later choose immutable sessions.
+      register(model) if model && model != s
+
+      apply_commands(commands)
     end
 
-    # --- Command handling -------------------------------------------------
-
-    def apply_all_commands
-      # Drain in stack order; top-most sessions likely emit most commands,
-      # but draining all keeps behavior consistent.
-      @sessions.each do |s|
-        s.drain_commands.each { |cmd| apply_command(cmd) }
+    def apply_commands(commands)
+      Array(commands).each do |cmd|
+        apply_command(cmd)
       end
     end
 
     def apply_command(cmd)
-      type, *rest = cmd
+      return if cmd.nil?
 
-      case type
-      when :quit
-        @running = false
+      # Allow sessions still returning non-normalized forms during migration.
+      # If someone passes [self, commands] here by mistake, unpack it.
+      if cmd.is_a?(Array) && cmd.length == 2 && cmd[0].respond_to?(:update)
+        apply_commands(cmd[1])
+        return
+      end
 
-      when :push_session
-        session = rest.fetch(0)
-        push_session(session)
+      unless cmd.is_a?(Array) && cmd.first.is_a?(Symbol)
+        raise ArgumentError, "command must be an Array starting with a Symbol, got: #{cmd.inspect}"
+      end
 
-      when :pop_session
-        pop_session
-
-      when :alert
-        payload = rest.fetch(0)
-        # payload: { level:, text:, ttl: optional }
-        @alert_panel.show(**payload)
-
-      when :alert_clear
-        @alert_panel.clear
-
-      # Nice-to-have even in early demos
-      when :beep
-        @renderer.beep if @renderer.respond_to?(:beep)
-
+      case cmd[0]
+      when :terminal
+        apply_terminal_command(cmd)
+      when :send
+        apply_send_command(cmd)
       else
-        # Keep unknown commands visible during dev.
-        @alert_panel.show(level: :warn, text: "Unknown command: #{cmd.inspect}")
+        raise ArgumentError, "unknown command domain #{cmd[0].inspect} (cmd=#{cmd.inspect})"
       end
     end
 
-    # --- Redraw -----------------------------------------------------------
+    def apply_terminal_command(cmd)
+      _, name, *rest = cmd
 
-    def redraw
-      @renderer.begin_frame(screen: @screen)
-
-      # Collect views from active sessions + global overlays
-      views = []
-      each_active_session { |s| views.concat(s.views) }
-      views << @alert_view if @alert_panel.visible?
-
-      views.sort_by!(&:z)
-      views.each do |v|
-        v.render(screen: @screen, renderer: @renderer, terminal: self, session: owning_session_for(v))
+      case name
+      when :quit
+        quit
+      when :push
+        session = rest.fetch(0)
+        push(session)
+      when :pop
+        pop
+      else
+        raise ArgumentError, "unknown terminal command #{name.inspect} (cmd=#{cmd.inspect})"
       end
-
-      @renderer.end_frame(screen: @screen)
     end
 
-    private
+    # [:send, target_id, message_name, payload_hash]
+    def apply_send_command(cmd)
+      _, target_id, message_name, payload = cmd
 
-    # For now we pass the focused session as "session:" to all views,
-    # but some views may want their owning session.
-    # This is a seam you can refine later.
-    def owning_session_for(view)
-      @sessions.reverse_each do |s|
-        return s if s.views.include?(view)
+      session = find_session(target_id)
+      raise ArgumentError, "no session registered with id=#{target_id.inspect}" unless session
+
+      payload ||= {}
+      unless payload.is_a?(Hash)
+        raise ArgumentError, "send payload must be a Hash, got: #{payload.inspect}"
       end
-      focused_session
+
+      # Deliver as a uniform "command message" array for now.
+      # Sessions can pattern-match it in #update.
+      message = [:cmd, message_name, payload]
+
+      _model, commands = session.update(message, terminal: self)
+      apply_commands(commands)
+    end
+
+    # --- Rendering ---------------------------------------------------------
+
+    def render_frame
+      # Render pinned sessions first, then stack sessions.
+      # Within each session, its views handle their own z-order.
+      sessions = @pinned + @stack
+      sessions.each do |s|
+        s.view(screen: screen, renderer: renderer, terminal: self)
+      end
     end
   end
 end
