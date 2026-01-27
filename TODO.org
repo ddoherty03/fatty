@@ -1,14 +1,17 @@
 * Add snippet suggestion for unrecognized and unbound keys
-* Add history
+* Add cut and paste
+* DONE Add history
+CLOSED: [2026-01-27 Tue 05:44]
 * Add completion
-* Add undo
+* DONE Add undo
+CLOSED: [2026-01-27 Tue 05:44]
 * Add modes for vi-like keybindings
 - will require changing keybindongs.yml format to include a mode qualifier
 - for advanced two-step actions, e.g. dw, will require an action-pending
   capability
 * Scrollback Navigation (PgUp/PgDn)
 
-* Output Search
+* Add Output Search
 
 * Background Jobs (&)
 
