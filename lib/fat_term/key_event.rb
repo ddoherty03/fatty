@@ -17,7 +17,20 @@ module FatTerm
       @meta = meta
       @shift = shift
       # invariant: chorded keys do not self-insert
-      @text  = (ctrl || meta) ? nil : text
+      @text = ctrl || meta ? nil : text
+    end
+
+    def ==(other)
+      other.is_a?(KeyEvent) &&
+        key == other.key &&
+        ctrl == other.ctrl &&
+        meta == other.meta &&
+        shift == other.shift
+    end
+    alias_method :eql?, :==
+
+    def hash
+      [key, ctrl, meta, shift].hash
     end
 
     def decoded?
