@@ -73,6 +73,9 @@ module FatTerm
     def go
       @running = true
 
+      # First frame, so the UI appears before the first input event.
+      render_frame
+
       while @running
         msg = event_source.next_event
         if msg

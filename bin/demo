@@ -3,63 +3,31 @@
 
 # frozen_string_literal: true
 
-require 'open3'
 require_relative "../lib/fat_term"
 
-history_path = File.join(File.join(Dir.home, ".config"), "fat_term", "history")
-history = FatTerm::History.new(path: history_path)
+ctx = FatTerm::Backends::Curses::Context.new
 
-term = FatTerm::Terminal.new(prompt: -> { "fat_term:#{Dir.pwd}> " }, history: history)
+begin
+  ctx.start
 
-# This on_accept lambda runs the input line as a shell command and sends the
-# result to the output window.  It is tuned to throttle the output so the
-# results display faster.
-term.on_accept = lambda do |line, terminal|
-  line = line.strip
-  return if line.empty?
+  screen = FatTerm::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols)
+  ctx.apply_layout(screen)
 
-  terminal.output.append("$ #{line}")
-  terminal.alert_panel.clear
+  renderer = FatTerm::Backends::Curses::Renderer.new(context: ctx, screen: screen)
 
-  # One full redraw before command starts
-  terminal.renderer.render(
-    output: terminal.output,
-    input_field: terminal.field,
-    alert: terminal.alert_panel.current,
-  )
+  env = FatTerm::Env.detect
+  key_decoder = FatTerm::Backends::Curses::KeyDecoder.new(env: env)
+  event_source = FatTerm::Backends::Curses::EventSource.new(context: ctx, key_decoder: key_decoder)
 
-  # ~30ms (≈33 FPS max)
-  throttle    = 0.03
-  last_render = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-  begin
-    Open3.popen2e(line) do |_, io, _|
-      io.each_line do |raw|
-        terminal.output.append(raw.chomp)
+  terminal = FatTerm::Terminal.new(screen: screen, renderer: renderer, event_source: event_source)
 
-        now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        if now - last_render >= throttle
-          terminal.renderer.render_output(terminal.output)
-          last_render = now
-        end
-      end
-    end
-  rescue Errno::ENOENT
-    terminal.alert_panel.show(
-      FatTerm::Alert.new(
-        level: :error,
-        message: "Command not found",
-        details: { command: line },
-        sticky: true,
-      ),
-    )
-  ensure
-    # Final full redraw after command completes
-    terminal.renderer.render(
-      output: terminal.output,
-      input_field: terminal.field,
-      alert: terminal.alert_panel.current,
-    )
-  end
+  # Pinned overlay session for alerts.
+  terminal.pin(FatTerm::Sessions::AlertSession.new)
+
+  # Focused interactive session.
+  terminal.push(FatTerm::Sessions::ShellSession.new(prompt: -> { Dir.pwd + '> '}))
+
+  terminal.go
+ensure
+  ctx.close
 end
-
-term.go(debug: true)
