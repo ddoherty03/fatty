@@ -6,17 +6,6 @@ module FatTerm
       Prompt.new { text }
     end
 
-    # before do
-    #   # Keep tests isolated if Actions is global
-    #   FatTerm::Actions.reset! if FatTerm::Actions.respond_to?(:reset!)
-    #   # Ensure InputBuffer actions are registered if your library does this lazily.
-    #   # If InputBuffer registers actions at class-load time, this is unnecessary.
-    #   # (No-op if already registered.)
-    #   if InputBuffer.respond_to?(:register_actions!)
-    #     InputBuffer.register_actions!
-    #   end
-    # end
-
     it "starts empty with prompt text" do
       f = InputField.new(prompt: prompt("p> "))
       expect(f.prompt_text).to eq("p> ")
@@ -47,6 +36,27 @@ module FatTerm
 
       # History has no public entries reader in some versions; assert behavior:
       expect(h.previous("")).to eq("hello")
+    end
+
+    it "act_on falls back to calling buffer methods when the action isn't registered" do
+      FatTerm::Actions.reset!  # simulate minimal load / no registration
+
+      buf = FatTerm::InputBuffer.new
+      field = FatTerm::InputField.new(buffer: buf, prompt: prompt('hello $ '))
+
+      field.act_on(:insert, "xxxxx")
+      expect(buf.text).to eq("xxxxx")
+    end
+
+    it "act_on raises ActionError when neither registry nor target responds" do
+      FatTerm::Actions.reset!
+
+      buf = FatTerm::InputBuffer.new
+      field = FatTerm::InputField.new(buffer: buf, prompt: prompt('hello $ '))
+
+      expect {
+        field.act_on(:definitely_not_real)
+      }.to raise_error(FatTerm::ActionError, /Unknown action: definitely_not_real/i)
     end
 
     it "history_prev replaces buffer with previous entry" do
