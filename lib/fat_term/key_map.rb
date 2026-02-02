@@ -41,6 +41,9 @@ module FatTerm
 
     # Bind a KeyEvent to an action in the given context.
     def bind(context: :input, key:, ctrl: false, meta: false, shift: false, action: nil)
+      arg_str = "context: #{context}, key: #{key}, ctrl: #{ctrl}, meta: #{meta}, shift: #{shift}, action: #{action}"
+      FatTerm.log("KeyMap#bind(#{arg_str})")
+
       raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
       raise ArgumentError, "key must be a Symbol" unless key.is_a?(Symbol)
       raise ArgumentError, "action must be a Symbol" unless action.is_a?(Symbol)

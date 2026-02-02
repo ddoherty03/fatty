@@ -31,10 +31,22 @@ module FatTerm
           return unless window
 
           ch = window.getch
+          FatTerm.log(:curses_getch,
+                      ch_class: ch.class.name,
+                      ch_inspect: ch.inspect,
+                      ch_int: (ch.is_a?(Integer) ? ch : nil),
+                      ch_chr: (ch.is_a?(Integer) && ch.between?(0, 255) ? ch.chr : nil)
+                     )
           return unless ch
 
           if ch.is_a?(Integer) && ch == 27
             nxt = window.getch
+            FatTerm.log(:curses_getch,
+                        ch_class: ch.class.name,
+                        ch_inspect: ch.inspect,
+                        ch_int: (ch.is_a?(Integer) ? ch : nil),
+                        ch_chr: (ch.is_a?(Integer) && ch.between?(0, 255) ? ch.chr : nil)
+                       )
             return ch unless nxt
 
             [ch, nxt]

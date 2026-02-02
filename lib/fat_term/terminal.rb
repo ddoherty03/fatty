@@ -29,6 +29,7 @@ module FatTerm
       @stack = []          # focus stack (top receives input)
       @pinned = []         # always rendered, never focused unless you choose
       @sessions_by_id = {} # id => session
+      @logger = FatTerm::Logger.configure(level: ::Logger::DEBUG)
     end
 
     # --- Session management ------------------------------------------------
