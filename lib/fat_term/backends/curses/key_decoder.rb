@@ -130,7 +130,7 @@ module FatTerm
           return unless section
 
           section.each do |code, spec|
-            @map[Integer(code)] = KeyEvent.new(**normalize_spec(spec))
+            @map[Integer(code.to_s)] = KeyEvent.new(**normalize_spec(spec))
           end
         end
 
