@@ -7,6 +7,7 @@ require 'debug'
 # Gem Overview (extracted from README.org by gem_docs)
 #
 # * Introduction
+#
 module FatTerm
   require_relative "fat_term/version"
   require_relative "fat_term/env"
