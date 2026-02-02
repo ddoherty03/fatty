@@ -99,12 +99,22 @@ module FatTerm
       s = focused_session
       return unless s
 
+      # Clear transient alerts on the next user keypress.
+      if key_event_message?(message) && find_session(:alert)
+        apply_command([:send, :alert, :clear, {}])
+      end
+
       model, commands = s.update(message, terminal: self)
       # Charm convention: model returned, but we don't need to replace the object
       # unless you later choose immutable sessions.
       register(model) if model && model != s
 
       apply_commands(commands)
+    end
+
+    # Return whether message is a key message
+    def key_event_message?(message)
+      message.is_a?(Array) && message[0] == :key
     end
 
     def apply_commands(commands)

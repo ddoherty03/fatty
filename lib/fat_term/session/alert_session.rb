@@ -28,7 +28,7 @@ module FatTerm
           case name
           when :show
             level = (payload[:level] || :info).to_sym
-            text  = payload[:message].to_s
+            text  = (payload[:message] || payload[:text]).to_s
             @current = FatTerm::Alert.new(level: level, message: text)
           when :clear
             @current = nil

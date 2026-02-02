@@ -33,7 +33,8 @@ module FatTerm
       # Renderer is backend-specific.  Other renderers may exist in the future
       # (e.g., ANSI, headless, test), but Views and Sessions remain unchanged.
       class Renderer
-        attr_reader :context, :screen
+        attr_reader :context
+        attr_accessor :screen
 
         DETAIL_ORDER = %i[terminal key ctrl meta shift].freeze
         ALERT_INFO_PAIR    = 1
@@ -89,22 +90,30 @@ module FatTerm
         def render_alert(alert)
           win = context.alert_win
           win.clear
+          win.setpos(0, 0)
+          win.clrtoeol
 
-          return win.refresh unless alert
-
-          attr = alert_attr(alert)
-          win.attron(attr) do
-            text = format_alert(alert)
-            win.addstr(text.ljust(@screen.cols))
+          if alert.nil?
+            # Always draw a bar so the "panel" is visible even when empty.
+            if ::Curses.has_colors?
+              win.attron(::Curses.color_pair(ALERT_INFO_PAIR)) { win.addstr(" ".ljust(@screen.cols)) }
+            else
+              win.attron(::Curses::A_REVERSE) { win.addstr(" ".ljust(@screen.cols)) }
+            end
+          else
+            attr = alert_attr(alert)
+            win.attron(attr) do
+              text = format_alert(alert)
+              win.addstr(text.ljust(@screen.cols))
+            end
           end
-
           win.refresh
         end
 
         private
 
         def alert_attr(alert)
-          return Curses::A_REVERSE unless Curses.has_colors?
+          return ::Curses::A_REVERSE unless ::Curses.has_colors?
 
           pair =
             case alert.level
@@ -113,27 +122,32 @@ module FatTerm
             else               ALERT_INFO_PAIR
             end
 
-          Curses.color_pair(pair)
+          ::Curses.color_pair(pair)
         end
 
         def format_alert(alert)
-          parts = []
-
-          parts <<
+          icon =
             case alert.level
             when :warning then "⚠"
             when :error   then "✖"
-            else "ℹ"
+            else               "ℹ"
             end
-          parts << alert.message
 
-          if alert.details && !alert.details.empty?
-            details = DETAIL_ORDER.filter_map do |k|
-              "#{k}=#{alert.details[k]} (#{alert.details[k].class})" if alert.details.key?(k)
-            end.join(" ")
+          msg = alert.message.to_s
+
+          details_str = ""
+          if alert.details.respond_to?(:empty?) ? !alert.details.empty? : !!alert.details
+            if alert.details.is_a?(Hash)
+              details_str =
+                " (" +
+                DETAIL_ORDER.filter_map { |k| "#{k}=#{alert.details[k]}" if alert.details.key?(k) }.join(" ") +
+                ")"
+            else
+              details_str = " (#{alert.details})"
+            end
           end
-          parts << "(#{details})"
-          parts.join(" ")
+
+          "  #{icon} #{msg}#{details_str}"
         end
       end
     end
