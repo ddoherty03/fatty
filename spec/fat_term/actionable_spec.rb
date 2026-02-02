@@ -12,174 +12,265 @@ module FatTerm
       end
     end
 
-    it "defines an instance method when action is given a block" do
-      klass = Class.new do
-        include FatTerm::Actionable
-
-        action_on :buffer
-
-        action :__t_insert do |str|
-          @text ||= +""
-          @text << str
-        end
-
-        def text
-          @text ||= +""
-        end
-      end
-
-      obj = klass.new
-      obj.__t_insert("a")
-      obj.__t_insert("b")
-      expect(obj.text).to eq("ab")
+    def defn(name)
+      FatTerm::Actions.lookup(name)
     end
 
-    it "registers an action and dispatches it via Actions.call" do
-      klass = Class.new do
-        include FatTerm::Actionable
+    describe "action class method" do
+      it "defines an instance method when action is given a block" do
+        klass = Class.new do
+          include FatTerm::Actionable
 
-        action_on :buffer
+          action_on :buffer
 
-        action :__t_bol do
-          @cursor = 0
+          action :__t_insert do |str|
+            @text ||= +""
+            @text << str
+          end
+
+          def text
+            @text ||= +""
+          end
         end
 
-        def cursor = @cursor
+        obj = klass.new
+        obj.__t_insert("a")
+        obj.__t_insert("b")
+        expect(obj.text).to eq("ab")
       end
 
-      buf = klass.new
-      buf.instance_variable_set(:@cursor, 5)
-      ctx = ActionContext.new(buffer: buf)
+      it "registers an action and dispatches it via Actions.call" do
+        klass = Class.new do
+          include FatTerm::Actionable
 
-      FatTerm::Actions.call(:__t_bol, ctx)
-      expect(buf.cursor).to eq(0)
-    end
+          action_on :buffer
 
-    it "uses on: to select the target in ctx" do
-      buffer_klass = Class.new do
-        include FatTerm::Actionable
+          action :__t_bol do
+            @cursor = 0
+          end
 
-        action_on :buffer
-
-        action :__t_buf_mark do
-          @marked = true
+          def cursor = @cursor
         end
 
-        def marked? = !!@marked
+        expect(defn(:__t_bol)).to include(owner: klass, on: :buffer, method: :__t_bol)
+
+        buf = klass.new
+        buf.instance_variable_set(:@cursor, 5)
+        ctx = ActionContext.new(buffer: buf)
+
+        FatTerm::Actions.call(:__t_bol, ctx)
+        expect(buf.cursor).to eq(0)
       end
 
-      field_klass = Class.new do
-        include FatTerm::Actionable
+      it "registers an alias action name to a different method with to:" do
+        klass = Class.new do
+          include FatTerm::Actionable
 
-        action_on :field
+          action_on :buffer
 
-        action :__t_field_mark, on: :field do
-          @marked = true
+          def move_left
+            :ok
+          end
+
+          action :backward_char, to: :move_left
         end
 
-        def marked? = !!@marked
+        expect(defn(:backward_char)).to include(owner: klass, on: :buffer, method: :move_left)
+        expect(klass.new.backward_char).to eq(:ok)
       end
 
-      buf = buffer_klass.new
-      fld = field_klass.new
-      ctx = ActionContext.new(buffer: buf, field: fld)
+      it "supports alias form: action :set, to: :replace defines #set and registers action" do
+        klass = Class.new do
+          include FatTerm::Actionable
 
-      FatTerm::Actions.call(:__t_buf_mark, ctx)
-      FatTerm::Actions.call(:__t_field_mark, ctx)
+          action_on :buffer
 
-      expect(buf.marked?).to be(true)
-      expect(fld.marked?).to be(true)
-    end
+          action :replace do |str|
+            @text = str.dup
+          end
 
-    it "supports alias form: action :set, to: :replace defines #set and registers action" do
-      klass = Class.new do
-        include FatTerm::Actionable
+          action :set, to: :replace
 
-        action_on :buffer
-
-        action :replace do |str|
-          @text = str.dup
+          def text = @text
         end
 
-        action :set, to: :replace
+        obj = klass.new
+        obj.set("hello")
+        expect(obj.text).to eq("hello")
 
-        def text = @text
+        ctx = ActionContext.new(buffer: obj)
+        FatTerm::Actions.call(:set, ctx, "world")
+        expect(obj.text).to eq("world")
       end
 
-      obj = klass.new
-      obj.set("hello")
-      expect(obj.text).to eq("hello")
+      it "registers an action and defines the underlying method when given a block" do
+        klass = Class.new do
+          include FatTerm::Actionable
 
-      ctx = ActionContext.new(buffer: obj)
-      FatTerm::Actions.call(:set, ctx, "world")
-      expect(obj.text).to eq("world")
-    end
+          action_on :buffer
 
-    it "desc applies to the next action only and then resets" do
-      Class.new do
-        include FatTerm::Actionable
+          action :bol do
+            @cursor = 0
+          end
 
-        action_on :buffer
-
-        desc "first doc"
-        action :__t_first do
+          attr_reader :cursor
         end
-        action :__t_second do
-        end
+
+        expect(defn(:bol)).to include(owner: klass, on: :buffer, method: :bol)
+
+        obj = klass.new
+        obj.bol
+        expect(obj.cursor).to eq(0)
       end
 
-      first  = FatTerm::Actions.lookup(:__t_first)
-      second = FatTerm::Actions.lookup(:__t_second)
-      first_doc =
-        first.respond_to?(:doc) ? first.doc : first[:doc]
-      second_doc =
-        second.respond_to?(:doc) ? second.doc : second[:doc]
+      it "uses on: to select the target in ctx" do
+        buffer_klass = Class.new do
+          include FatTerm::Actionable
 
-      expect(first_doc).to eq("first doc")
-      expect(second_doc).to be_nil
-    end
+          action_on :buffer
 
-    it "action doc: kwarg is used when no desc is provided" do
-      Class.new do
-        include FatTerm::Actionable
+          action :__t_buf_mark do
+            @marked = true
+          end
 
-        action_on :buffer
-
-        action :__t_doc_kw, doc: "kw doc" do
-        end
-      end
-      entry = FatTerm::Actions.lookup(:__t_doc_kw)
-      doc =
-        entry.respond_to?(:doc) ? entry.doc : entry[:doc]
-
-      expect(doc).to eq("kw doc")
-    end
-
-    it "unknown action raises" do
-      ctx = ActionContext.new(buffer: Object.new)
-      expect { FatTerm::Actions.call(:__t_no_such_action, ctx) }.to raise_error(ActionError)
-    end
-
-    it "alias can be declared before the target method (delegator fallback)" do
-      klass = Class.new do
-        include FatTerm::Actionable
-
-        action_on :buffer
-
-        # alias first
-        action :__t_set, to: :__t_replace
-
-        # define later
-        action :__t_replace do |str|
-          @text = str.dup
+          def marked? = !!@marked
         end
 
-        def text = @text
+        field_klass = Class.new do
+          include FatTerm::Actionable
+
+          action_on :field
+
+          action :__t_field_mark, on: :field do
+            @marked = true
+          end
+
+          def marked? = !!@marked
+        end
+
+        buf = buffer_klass.new
+        fld = field_klass.new
+        ctx = ActionContext.new(buffer: buf, field: fld)
+
+        FatTerm::Actions.call(:__t_buf_mark, ctx)
+        FatTerm::Actions.call(:__t_field_mark, ctx)
+
+        expect(buf.marked?).to be(true)
+        expect(fld.marked?).to be(true)
       end
 
-      obj = klass.new
-      obj.__t_set("x")
-      expect(obj.text).to eq("x")
+      it "desc applies to the next action only and then resets" do
+        Class.new do
+          include FatTerm::Actionable
+
+          action_on :buffer
+
+          desc "first doc"
+          action :__t_first do
+          end
+          action :__t_second do
+          end
+        end
+
+        first  = FatTerm::Actions.lookup(:__t_first)
+        second = FatTerm::Actions.lookup(:__t_second)
+        first_doc =
+          first.respond_to?(:doc) ? first.doc : first[:doc]
+        second_doc =
+          second.respond_to?(:doc) ? second.doc : second[:doc]
+
+        expect(first_doc).to eq("first doc")
+        expect(second_doc).to be_nil
+      end
+
+      it "uses desc() as the doc for the next action and consumes it" do
+        Class.new do
+          include FatTerm::Actionable
+
+          action_on :buffer
+
+          desc "beginning of line"
+          action :bol do
+            :ok
+          end
+
+          action :eol do
+            :ok
+          end
+        end
+
+        expect(defn(:bol)[:doc]).to eq("beginning of line")
+        expect(defn(:eol)[:doc]).to be_nil
+      end
+
+      it "action doc: kwarg is used when no desc is provided" do
+        Class.new do
+          include FatTerm::Actionable
+
+          action_on :buffer
+
+          action :__t_doc_kw, doc: "kw doc" do
+          end
+        end
+        entry = FatTerm::Actions.lookup(:__t_doc_kw)
+        doc =
+          entry.respond_to?(:doc) ? entry.doc : entry[:doc]
+
+        expect(doc).to eq("kw doc")
+      end
+
+      it "infers default action target from class name, including special cases" do
+        # special-cased name -> :buffer
+        Class.new do
+          include FatTerm::Actionable
+
+          def self.name = "FatTerm::InputBuffer"
+          action :bol do
+            :ok
+          end
+        end
+
+        expect(defn(:bol)[:on]).to eq(:buffer)
+
+        # generic CamelCase -> snake_case
+        Class.new do
+          include FatTerm::Actionable
+
+          def self.name = "FatTerm::FooBar"
+          action :zap do
+            :ok
+          end
+        end
+
+        expect(defn(:zap)[:on]).to eq(:foo_bar)
+      end
+
+      it "unknown action raises" do
+        ctx = ActionContext.new(buffer: Object.new)
+        expect { FatTerm::Actions.call(:__t_no_such_action, ctx) }.to raise_error(ActionError)
+      end
+
+      it "alias can be declared before the target method (delegator fallback)" do
+        klass = Class.new do
+          include FatTerm::Actionable
+
+          action_on :buffer
+
+          # alias first
+          action :__t_set, to: :__t_replace
+
+          # define later
+          action :__t_replace do |str|
+            @text = str.dup
+          end
+
+          def text = @text
+        end
+
+        obj = klass.new
+        obj.__t_set("x")
+        expect(obj.text).to eq("x")
+      end
     end
   end
 end

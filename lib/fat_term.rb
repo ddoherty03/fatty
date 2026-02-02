@@ -12,6 +12,7 @@ module FatTerm
   require_relative "fat_term/env"
   require_relative "fat_term/config"
   require_relative "fat_term/action"
+  require_relative "fat_term/actionable"
   require_relative "fat_term/history"
   require_relative "fat_term/input_buffer"
   require_relative "fat_term/input_field"
