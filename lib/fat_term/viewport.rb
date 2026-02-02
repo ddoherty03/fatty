@@ -29,7 +29,7 @@ module FatTerm
     end
 
     def clamp!(lines)
-      @top = [[@top, 0].max, max_top(lines.size)].min
+      @top = @top.clamp(0, max_top(lines.size))
     end
 
     def scroll_up(lines, n = 1)
@@ -52,6 +52,16 @@ module FatTerm
 
     def page_down(lines)
       scroll_down(lines, @height)
+    end
+
+    # Jump to the very top.
+    def page_top
+      @top = 0
+    end
+
+    # Jump to the very bottom.
+    def page_bottom(lines)
+      @top = max_top(lines.length)
     end
 
     def reset
