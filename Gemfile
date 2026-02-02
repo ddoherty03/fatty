@@ -16,6 +16,4 @@ group :development do
   gem 'rubocop-ddoherty', git: 'https://github.com/ddoherty03/rubocop-ddoherty.git', branch: 'master', require: false
   gem 'simplecov'
   gem "gem_docs", '>=0.3.1'
-
-  gem "fat_config", path: "../fat_config"
 end
