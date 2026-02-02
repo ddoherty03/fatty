@@ -41,9 +41,7 @@ module FatTerm
     # - Resets history cursor for non-history actions
     # - Executes the registered action via FatTerm::Actions
     #
-    # NOTE: Printable character insertion is usually handled by the input loop
-    # (Actions.call(:insert, ctx, ch)) rather than mapping in keybindings.
-    def act_on(action, *args, ctx: nil)
+    def act_on(action, *args, ctx: nil, **kwargs)
       return unless action
 
       history&.reset_cursor unless action.to_s.start_with?("history_")
@@ -53,7 +51,16 @@ module FatTerm
         field: self,
       )
 
-      FatTerm::Actions.call(action, ctx, *args)
+      if FatTerm::Actions.registered?(action)
+        FatTerm::Actions.call(action, ctx, *args, **kwargs)
+      elsif buffer.respond_to?(action)
+        # Fallback: call on buffer if it responds, else on the field.
+        buffer.public_send(action, *args, **kwargs)
+      elsif respond_to?(action)
+        public_send(action, *args, **kwargs)
+      else
+        raise FatTerm::ActionError, "Unknown action: #{action}"
+      end
     end
 
     # category: Queries

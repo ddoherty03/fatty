@@ -26,7 +26,22 @@ module FatTerm
 
     # Handle a message (KeyEvent/MouseEvent/ResizeEvent/TickEvent/Command, etc.)
     # and return [self, commands].
-    def update(_message, terminal:)
+    def update(message, terminal:)
+      case message[0]
+      when :key
+        update_key(message[1], terminal:)
+      when :cmd
+        update_cmd(message[1], message[2], terminal:)
+      else
+        [self, []]
+      end
+    end
+
+    def update_key(_ev, terminal:)
+      [self, []]
+    end
+
+    def update_cmd(_name, _payload, terminal:)
       [self, []]
     end
 

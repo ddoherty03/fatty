@@ -15,7 +15,10 @@ module FatTerm
           raw = read_raw
           return unless raw
 
-          @key_decoder.decode(raw) # => KeyEvent (or nil)
+          ev = @key_decoder.decode(raw)
+          return unless ev
+
+          [:key, ev]
         end
 
         private

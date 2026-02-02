@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "open3"
+require 'fileutils'
 
 module FatTerm
   module Sessions
@@ -11,17 +12,27 @@ module FatTerm
     #   - execute shell commands on Enter
     #   - emit alert commands instead of owning alert state
     class ShellSession < Session
-      attr_reader :output, :field, :viewport
+      attr_reader :output, :field, :viewport, :keymap
 
-      def initialize(prompt: "sh> ")
+      def initialize(prompt: "sh> ", history_path: nil)
         super(views: [])
 
         @output = FatTerm::OutputBuffer.new
-        @field  = FatTerm::InputField.new(prompt: prompt)
+        @history = FatTerm::History.new(path: history_path || default_history_path)
+        @field = FatTerm::InputField.new(prompt: prompt, history: @history)
 
         # Viewport height depends on screen; initialize to something sane and
         # refresh in #init.
         @viewport = FatTerm::Viewport.new(height: 10)
+
+        @keymap = FatTerm::Keymaps.emacs
+      end
+
+      def default_history_path
+        base = ENV["XDG_STATE_HOME"] || File.join(Dir.home, ".local", "state")
+        dir  = File.join(base, "fat_term")
+        FileUtils.mkdir_p(dir)
+        File.join(dir, "history")
       end
 
       def init(terminal:)
@@ -30,9 +41,18 @@ module FatTerm
       end
 
       def update(message, terminal:)
-        return handle_key(message, terminal:) if message.is_a?(FatTerm::KeyEvent)
+        type, payload = message
 
-        [self, []]
+        case type
+        when :key
+          handle_key(payload, terminal:)
+        else
+          [self, []]
+        end
+      end
+
+      def update_key(ev, terminal:)
+        handle_key(ev, terminal:)
       end
 
       def view(screen:, renderer:, terminal:)
@@ -50,53 +70,72 @@ module FatTerm
           return [self, []]
         end
 
-        # Quit
-        if ev.ctrl? && ev.key == :c
-          return [self, [[:terminal, :quit]]]
-        end
+        action = resolve_action(ev)
 
-        # Paging (very small initial set)
-        case ev.key
-        when :page_up
-          @viewport.page_up(@output.lines)
-          return [self, []]
-        when :page_down
-          @viewport.page_down(@output.lines)
-          return [self, []]
-        when :up
-          @viewport.scroll_up(@output.lines)
-          return [self, []]
-        when :down
-          @viewport.scroll_down(@output.lines)
-          return [self, []]
+        # Not bound? Printable => insert.
+        result = nil
+        if action.nil?
+          if ev.text && !ev.text.empty? && ev.text != "\n" && ev.text != "\r"
+            @field.act_on(:insert, ev.text)
+            result = [self, []]
+          else
+            # Unmapped and not printable ⇒ surface to user (don’t silently ignore).
+            result = [self, [alert_cmd(:info, "Unbound key: #{ev}", ev: ev)]]
+          end
+        else
+          result = apply_action(action, ev, terminal:)
         end
+        result
+      end
 
-        case ev.key
-        when :backspace
-          @field.act_on(:delete_char_backward, count: 1)
-          return [self, []]
-        when :delete
-          @field.act_on(:delete_char_forward, count: 1)
-          return [self, []]
-        when :left
-          @field.act_on(:move_left, count: 1)
-          return [self, []]
-        when :right
-          @field.act_on(:move_right, count: 1)
-          return [self, []]
-        when :home
-          @field.act_on(:bol)
-          return [self, []]
-        when :end
-          @field.act_on(:eol)
-          return [self, []]
-        when :enter
+      def resolve_action(ev)
+        if paging_mode?
+          @keymap.resolve(ev, contexts: :paging) || @keymap.resolve(ev, contexts: :input)
+        else
+          @keymap.resolve(ev, contexts: :input)
+        end
+      end
+
+      def paging_mode?
+        lines = @output.lines
+        return false if lines.length <= @viewport.height
+
+        !@viewport.at_bottom?(lines.length)
+      end
+
+      def apply_action(action, ev, terminal:)
+        case action
+        when :accept_line
           return accept_line(terminal)
-        end
+        when :interrupt
+          return [self, [[:terminal, :quit]]]
+        when :interrupt_if_empty
+          return [self, [[:terminal, :quit]]] if @field.empty?
 
-        # Self-insert
-        if ev.text && !ev.text.empty? && ev.text != "\n" && ev.text != "\r"
-          @field.act_on(:insert, ev.text)
+          @field.act_on(:delete_char_forward)
+          return [self, []]
+
+        # Viewport actions
+        when :page_up
+          @viewport.page_up(@output.lines) and return [self, []]
+        when :page_down
+          @viewport.page_down(@output.lines) and return [self, []]
+        when :scroll_up
+          @viewport.scroll_up(@output.lines) and return [self, []]
+        when :scroll_down
+          @viewport.scroll_down(@output.lines) and return [self, []]
+        when :page_top
+          @viewport.page_top and return [self, []]
+        when :page_bottom
+          @viewport.page_bottom(@output.lines) and return [self, []]
+        end
+        @viewport.clamp!(@output.lines)
+
+        # Editor action (buffer/field)
+        begin
+          @field.act_on(action)
+        rescue FatTerm::ActionError => e
+          return [self, [alert_cmd(:error, e.message, ev: ev)]]
         end
 
         [self, []]
@@ -127,8 +166,27 @@ module FatTerm
           @viewport.scroll_to_bottom(@output.lines) if at_bottom
           [self, [[:send, :alert, :clear, {}]]]
         rescue Errno::ENOENT
-          [self, [[:send, :alert, :show, { level: :error, message: "Command not found" }]]]
+          [self, [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]]
         end
+      end
+
+      def alert_cmd(level, message, ev: nil)
+        details =
+          if ev
+            {
+              key: ev.key,
+              ctrl: ev.respond_to?(:ctrl?) ? ev.ctrl? : ev.ctrl,
+              meta: ev.respond_to?(:meta?) ? ev.meta? : ev.meta,
+              shift: ev.respond_to?(:shift?) ? ev.shift? : ev.shift,
+              text: ev.text
+            }
+          else
+            {}
+          end
+
+        # This assumes your Terminal dispatch layer already knows how to route
+        # :send messages to pinned sessions by name (you likely already have this).
+        [:send, :alert, :show, { level: level, message: message, details: details }]
       end
 
       def handle_resize(terminal)
