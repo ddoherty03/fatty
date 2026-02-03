@@ -29,7 +29,7 @@ module FatTerm
       # If the decoder gives us a control character as an integer (1..26),
       # canonicalize it to ctrl+letter so keymaps and display behave nicely.
       arg_str = "key: `#{key}`, text: `#{text}`, raw: `#{raw}`, ctrl: `#{ctrl}`, meta: `#{meta}`, shift: `#{shift}`"
-      FatTerm.log("#{self.class}#new(#{arg_str})")
+      FatTerm.log("#{self.class}#new(#{arg_str})", tag: :keyevent)
       if key.is_a?(Integer)
         if CTRL_CODE_TO_LETTER.key?(key)
           key = CTRL_CODE_TO_LETTER[key]
@@ -48,7 +48,7 @@ module FatTerm
       @text = ctrl || meta ? nil : text
       arg_str = "#{self.class}->key: `#{@key}`, text: `#{@text}`, raw: `#{@raw}`," \
         "ctrl: #{@ctrl}, meta: #{@meta}, shift: #{@shift})"
-      FatTerm.log(arg_str)
+      FatTerm.log(arg_str, tag: :keyevent)
     end
 
     def to_s

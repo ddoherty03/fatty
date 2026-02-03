@@ -20,7 +20,7 @@ module FatTerm
         # Return a KeyEvent object based on the raw keyboard input as returned by
         # Screen#read_raw.
         def decode(raw)
-          FatTerm.log("in #{self.class}#decode(raw: #{raw})")
+          FatTerm.log("#{self.class}#decode(raw: #{raw})", tag: :keycode)
           return unless raw
 
           case raw
@@ -37,7 +37,7 @@ module FatTerm
         # escape code followed by another key, nxt, which can be either a String
         # or an Integer.
         def decode_meta((esc, nxt))
-          FatTerm.log("in #{self.class}#decode_meta(esc: #{esc}, nxt: #{nxt})")
+          FatTerm.log("#{self.class}#decode_meta(esc: #{esc}, nxt: #{nxt})", tag: :keycode)
           case nxt
           when String
             # Meta + printable => action key, not self-insert
@@ -75,9 +75,9 @@ module FatTerm
         # The single character might be the ASCII ESCAPE (27), in which case, we
         # have a meta sequence that needs handling.
         def decode_single(ch)
-          FatTerm.log("in #{self.class}#decode_single(ch: #{ch})")
+          FatTerm.log("#{self.class}#decode_single(ch: #{ch})", tag: :keycode)
           if ch.is_a?(Integer) && @map.key?(ch)
-            FatTerm.log("#{self.class}#decode_single: #{ch} found in @map -> #{@map[ch]}")
+            FatTerm.log("#{self.class}#decode_single: #{ch} found in @map -> #{@map[ch]}", tag: :keycode)
             @map[ch]
           else
             fallback_decode(ch)
@@ -85,7 +85,7 @@ module FatTerm
         end
 
         def fallback_decode(ch)
-          FatTerm.log("in #{self.class}#fallback_decode(ch: #{ch})")
+          FatTerm.log("#{self.class}#fallback_decode(ch: #{ch})", tag: :keycode)
           case ch
           when Integer
             # Many Ruby curses builds return Integers for printable characters
@@ -122,7 +122,7 @@ module FatTerm
         # different terminal programs process keys.
         def load_user_config
           config = FatTerm::Config.keydefs
-          FatTerm.log("#{self.class}#load_user_config(keydefs config: #{config})")
+          FatTerm.log("#{self.class}#load_user_config(keydefs config: #{config})", tag: :keycode)
           return unless config
 
           terminal = @env[:terminal]
@@ -138,7 +138,7 @@ module FatTerm
         # constant FatTerm::CUSRSES_TO_EVENT.  These can be overridden by the the
         # user config in #load_user_config.
         def load_builtin_map
-          FatTerm.log("in #{self.class}#load_builtin_map from CURSES_TO_EVENT")
+          FatTerm.log("#{self.class}#load_builtin_map from CURSES_TO_EVENT", tag: :keycode)
           CURSES_TO_EVENT.each do |code, event|
             @map[code] = event
           end

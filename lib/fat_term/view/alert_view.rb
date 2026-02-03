@@ -14,6 +14,7 @@ module FatTerm
 
       def render(screen:, renderer:, terminal:, session:)
         return unless @panel.visible?
+        super()
 
         alert = @panel.current
         renderer.render_alert(alert)

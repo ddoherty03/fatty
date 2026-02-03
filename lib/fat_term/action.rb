@@ -27,6 +27,8 @@ module FatTerm
     end
 
     def self.register(name, owner:, on:, method_name: name, doc: nil)
+      arg_str = "Action.register: name: #{name}, on: #{on}, method_name: #{method_name}, doc: #{doc}"
+      FatTerm.log("Action.register(#{arg_str})", tag: :action)
       key = name.to_sym
       raise ActionError, "action already registered: #{key}" if @defs.key?(key)
 
@@ -39,6 +41,8 @@ module FatTerm
     end
 
     def self.call(name, ctx, *args, **kwargs)
+      arg_str = "name: #{name}, ctx: #{ctx}, args: #{args}, kwargs: #{kwargs}"
+      FatTerm.log("Action.call(#{arg_str})", tag: :action)
       key = name.to_sym
       defn = @defs[key] or raise ActionError, "Unknown action: #{key}"
 

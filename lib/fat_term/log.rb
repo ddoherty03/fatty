@@ -15,30 +15,57 @@ module FatTerm
     #
     #   FatTerm.log(:decode_getch, ch: 27, note: "escape")
     #
+    #   Supported tags are:
+    #     - keycode:: raw curses input / bytes / ESC buffering
+    #     - keyevent:: constructed KeyEvent normalization (ctrl/meta mapping)
+    #     - keybinding:: KeyMap#resolve hits/misses, contexts used
+    #     - action:: Actions.call, target selection, unknown action
+    #     - command:: Terminal.apply_command / :send dispatches
+    #     - session:: session update calls, mode/context stack changes
+    #     - render:: viewports, layout sizes, redraw triggers
+    #     - perf:: timings, frame time, slow paths
+    #     - all:: All of the above
+    #
     def self.log(event = nil, level: :debug, tag: nil, **data)
       return unless logger
 
-      # Category gating
-      tags = FatTerm::Config.config[:log][:tags] || [:all]
-      if tag && tags && tags != "all"
-        tags = Array(tags).map(&:to_s)
-        return unless tags.include?(tag.to_s)
+      tags = FatTerm::Config.config.dig(:log, :tags) || [:all]
+      tags = Array(tags).map(&:to_sym)
+
+      if tag && !tags.include?(:all)
+        return unless tags.include?(tag.to_sym)
       end
 
-      lvl = level.to_sym
-      payload =
-        if data.empty?
-          # Allow plain strings naturally
-          { event: event&.to_s, tag: tag }
-        else
-          { event: event&.to_s, tag: tag }.merge(data)
-        end
+      payload = { event: event&.to_s, tag: tag&.to_s }.merge(data)
 
-      # Logger takes a string. Encode as JSON by default if the formatter is JSON,
-      # or just pass a single-line string payload.
-      logger.public_send(lvl.to_sym) { payload.to_json }
-    rescue NoMethodError
-      # If level is unsupported or logger missing, ignore.
+      logger.add(severity(level)) { payload.to_json }
+    rescue StandardError => ex
+      # Last-ditch: never let logging take down the app.
+      begin
+        logger&.add(::Logger::FATAL) do
+          { event: "logger_error", err: ex.class.name, msg: ex.message, bt: ex.backtrace&.take(10) }.to_json
+        end
+      rescue StandardError
+        # swallow
+      end
+    end
+
+    # Translate our severity symbols to those expected by ::Logger.
+    def severity(sym)
+      case sym.to_sym
+      when :debug
+        ::Logger::DEBUG
+      when :info
+        ::Logger::INFO
+      when :warn
+        ::Logger::WARN
+      when :error
+        ::Logger::ERROR
+      when :fatal
+        ::Logger::FATAL
+      else
+        ::Logger::UNKNOWN
+      end
     end
 
     # One-stop configuration. You can pass an IO, a path, or use STDERR.

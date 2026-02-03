@@ -34,7 +34,8 @@ module FatTerm
 
     # --- Session management ------------------------------------------------
 
-    def push(session)
+   def push(session)
+      FatTerm.log("Terminal.push(#{session})", tag: :session)
       @stack << session
       register(session)
       _model, commands = session.init(terminal: self)
@@ -43,10 +44,12 @@ module FatTerm
     end
 
     def pop
+      FatTerm.log("Terminal.pop -> #{@stack.last}", tag: :session)
       @stack.pop
     end
 
     def pin(session)
+      FatTerm.log("Terminal.pin(#{session})", tag: :session)
       @pinned << session
       register(session)
       _model, commands = session.init(terminal: self)
@@ -125,6 +128,7 @@ module FatTerm
     end
 
     def apply_command(cmd)
+      FatTerm.log("Terminal.apply_command(#{cmd})", tag: :command)
       return if cmd.nil?
 
       # Allow sessions still returning non-normalized forms during migration.

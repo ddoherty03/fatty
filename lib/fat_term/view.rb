@@ -24,7 +24,7 @@ module FatTerm
     # Arguments intentionally mirror our current world (Terminal + Renderer),
     # but are keyworded to make future evolution non-breaking.
     def render(screen:, renderer:, terminal:, session:)
-      raise NotImplementedError, "#{self.class} must implement #render"
+      FatTerm::Logger.log(:view, tag: :render, screen: screen, terminal: terminal, session: session)
     end
   end
 end

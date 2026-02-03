@@ -32,6 +32,7 @@ module FatTerm
 
           ch = window.getch
           FatTerm.log(:curses_getch,
+                      tag: :keycode,
                       ch_class: ch.class.name,
                       ch_inspect: ch.inspect,
                       ch_int: (ch.is_a?(Integer) ? ch : nil),
@@ -42,6 +43,7 @@ module FatTerm
           if ch.is_a?(Integer) && ch == 27
             nxt = window.getch
             FatTerm.log(:curses_getch,
+                        tag: :keycode,
                         ch_class: ch.class.name,
                         ch_inspect: ch.inspect,
                         ch_int: (ch.is_a?(Integer) ? ch : nil),
