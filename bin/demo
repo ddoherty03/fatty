@@ -22,10 +22,10 @@ begin
   terminal = FatTerm::Terminal.new(screen: screen, renderer: renderer, event_source: event_source)
 
   # Pinned overlay session for alerts.
-  terminal.pin(FatTerm::Sessions::AlertSession.new)
+  terminal.pin(FatTerm::AlertSession.new)
 
   # Focused interactive session.
-  terminal.push(FatTerm::Sessions::ShellSession.new(prompt: -> { Dir.pwd + '> '}))
+  terminal.push(FatTerm::ShellSession.new(prompt: -> { Dir.pwd + '> '}))
 
   terminal.go
 ensure
