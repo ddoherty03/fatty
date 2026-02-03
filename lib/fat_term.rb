@@ -12,7 +12,7 @@ module FatTerm
   require_relative "fat_term/version"
   require_relative "fat_term/env"
   require_relative "fat_term/config"
-  require_relative "fat_term/log"
+  require_relative "fat_term/logger"
   require_relative "fat_term/action"
   require_relative "fat_term/actionable"
   require_relative "fat_term/history"

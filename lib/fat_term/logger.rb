@@ -14,7 +14,7 @@ module FatTerm
     def self.configure(level: :info, json: true, progname: "fat_term")
       path =
         if FatTerm::Config.config.dig(:log, :file)
-          File.expand_path(FatTerm::Config.dig(:log, :file))
+          File.expand_path(FatTerm::Config.config.dig(:log, :file))
         elsif ENV['XDG_STATE_HOME']
           File.expand_path(File.join(ENV['XDG_STATE_HOME'], 'fat_term', 'fat_term.log'))
         else
@@ -27,7 +27,9 @@ module FatTerm
         return self.logger = nil
       end
 
-      self.logger = ::Logger.new(File.open(path, "a"))
+      io = File.open(path, "a")
+      io.sync = true
+      self.logger = ::Logger.new(io)
       logger.level = severity(level)
       logger.progname = progname
       logger.formatter = json ? JsonFormatter.new : TextFormatter.new
@@ -61,14 +63,14 @@ module FatTerm
 
       payload = { event: event&.to_s, tag: tag&.to_s }.merge(data)
 
-      logger.add(self.class.severity(level)) { payload.to_json }
+      logger.add(severity(level)) { payload.to_json }
     rescue StandardError => ex
       # Last-ditch: never let logging take down the app.
       begin
         logger&.add(::Logger::FATAL) do
           { event: "logger_error", err: ex.class.name, msg: ex.message, bt: ex.backtrace&.take(10) }.to_json
         end
-      rescue StandardError
+      rescue StandardError => ex
         # swallow
       end
     end
@@ -92,10 +94,10 @@ module FatTerm
     end
 
     class JsonFormatter < ::Logger::Formatter
-      def call(severity, time, progname, msg)
+      def call(level, time, progname, msg)
         rec = {
           t: time.utc.iso8601(6),
-          sev: severity,
+          sev: level,
           prog: progname
         }
 
@@ -117,9 +119,9 @@ module FatTerm
     end
 
     class TextFormatter < ::Logger::Formatter
-      def call(severity, time, progname, msg)
+      def call(level, time, progname, msg)
         ts = time.utc.iso8601(6)
-        "#{ts} #{severity} #{progname} #{msg}\n"
+        "#{ts} #{level} #{progname} #{msg}\n"
       end
     end
   end
