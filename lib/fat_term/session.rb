@@ -5,8 +5,8 @@ module FatTerm
   #
   # Charm/Bubbletea-style contract:
   #
-  #   init(terminal:)               => [self, commands]
-  #   update(message, terminal:)    => [self, commands]
+  #   init(terminal:)               => commands
+  #   update(message, terminal:)    => commands
   #   view(screen:, renderer:, terminal:) => renders only (no return contract)
   #
   # Where `commands` is an Array (possibly empty). Terminal is responsible for
@@ -21,11 +21,10 @@ module FatTerm
     # Called once when the session becomes active (e.g. pushed).
     # Subclasses may override to kick off timers/async work, etc.
     def init(terminal:)
-      [self, []]
+      []
     end
 
-    # Handle a message (KeyEvent/MouseEvent/ResizeEvent/TickEvent/Command, etc.)
-    # and return [self, commands].
+    # Handle a message and return commands.
     def update(message, terminal:)
       case message[0]
       when :key
@@ -33,16 +32,16 @@ module FatTerm
       when :cmd
         update_cmd(message[1], message[2], terminal:)
       else
-        [self, []]
+        []
       end
     end
 
     def update_key(_ev, terminal:)
-      [self, []]
+      []
     end
 
     def update_cmd(_name, _payload, terminal:)
-      [self, []]
+      []
     end
 
     # Render the session.
@@ -54,37 +53,9 @@ module FatTerm
         v.render(screen:, renderer:, terminal:, session: self)
       end
     end
-
-    # Normalize a return value into the Charm tuple: [self, commands].
-    #
-    # Accepts:
-    #   nil                  => [self, []]
-    #   command              => [self, [command]]
-    #   [command, ...]       => [self, [...]]
-    #   [self, commands]     => [self, Array(commands)]
-    #
-    # Useful while migrating older sessions; Terminal can call this on whatever
-    # `update` returns to get a uniform shape.
-    def pack(ret)
-      return [self, []] if ret.nil?
-
-      # Already a Charm tuple
-      if ret.is_a?(Array) && ret.length == 2 && ret[0].equal?(self)
-        return [self, Array(ret[1])]
-      end
-
-      # Disambiguate:
-      #   - [:beep] is a single command
-      #   - [[:beep], [:open, "x"]] is a list of commands
-      if ret.is_a?(Array)
-        if ret.first.is_a?(Symbol)
-          return [self, [ret]]
-        else
-          return [self, ret]
-        end
-      end
-
-      [self, [ret]]
-    end
   end
 end
+
+require_relative "session/alert_session"
+require_relative "session/input_session"
+require_relative "session/shell_session"

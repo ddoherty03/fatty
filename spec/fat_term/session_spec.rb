@@ -11,19 +11,17 @@ module FatTerm
     describe "#init" do
       it "returns [self, []] by default" do
         s = Session.new
-        model, commands = s.init(terminal:)
+        commands = s.init(terminal:)
 
-        expect(model).to be(s)
         expect(commands).to eq([])
       end
     end
 
     describe "#update" do
-      it "returns [self, []] by default" do
+      it "returns [] by default" do
         s = Session.new
-        model, commands = s.update(:message, terminal:)
+        commands = s.update(:message, terminal:)
 
-        expect(model).to be(s)
         expect(commands).to eq([])
       end
     end
@@ -50,61 +48,6 @@ module FatTerm
       it "does nothing if it has no views" do
         s = Session.new
         expect { s.view(screen:, renderer:, terminal:) }.not_to raise_error
-      end
-    end
-
-    describe "#pack" do
-      it "normalizes nil to [self, []]" do
-        s = Session.new
-        model, commands = s.pack(nil)
-
-        expect(model).to be(s)
-        expect(commands).to eq([])
-      end
-
-      it "wraps a single command into [self, [command]]" do
-        s = Session.new
-        cmd = [:beep]
-
-        model, commands = s.pack(cmd)
-
-        expect(model).to be(s)
-        expect(commands).to eq([cmd])
-      end
-
-      it "passes through an array of commands as [self, commands]" do
-        s = Session.new
-        cmds = [[:beep], [:open, "file.txt"]]
-
-        model, commands = s.pack(cmds)
-
-        expect(model).to be(s)
-        expect(commands).to eq(cmds)
-      end
-
-      it "accepts a Charm tuple [self, commands]" do
-        s = Session.new
-        cmds = [[:beep]]
-
-        model, commands = s.pack([s, cmds])
-
-        expect(model).to be(s)
-        expect(commands).to eq(cmds)
-      end
-
-      it "coerces tuple commands to an array (nil => [])" do
-        s = Session.new
-        model, commands = s.pack([s, nil])
-
-        expect(model).to be(s)
-        expect(commands).to eq([])
-      end
-
-      it "treats [:cmd] as a single command, not a commands list" do
-        s = Session.new
-        model, commands = s.pack([:beep])
-        expect(model).to be(s)
-        expect(commands).to eq([[:beep]])
       end
     end
   end

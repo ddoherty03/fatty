@@ -34,11 +34,11 @@ module FatTerm
 
     # --- Session management ------------------------------------------------
 
-   def push(session)
+    def push(session)
       FatTerm.log("Terminal.push(#{session})", tag: :session)
       @stack << session
       register(session)
-      _model, commands = session.init(terminal: self)
+      commands = session.init(terminal: self)
       apply_commands(commands)
       session
     end
@@ -52,7 +52,7 @@ module FatTerm
       FatTerm.log("Terminal.pin(#{session})", tag: :session)
       @pinned << session
       register(session)
-      _model, commands = session.init(terminal: self)
+      commands = session.init(terminal: self)
       apply_commands(commands)
       session
     end
@@ -108,11 +108,7 @@ module FatTerm
         apply_command([:send, :alert, :clear, {}])
       end
 
-      model, commands = s.update(message, terminal: self)
-      # Charm convention: model returned, but we don't need to replace the object
-      # unless you later choose immutable sessions.
-      register(model) if model && model != s
-
+      commands = s.update(message, terminal: self)
       apply_commands(commands)
     end
 
@@ -127,15 +123,16 @@ module FatTerm
       end
     end
 
+    # A command is either bound for this Terminal (first element :terminal) or
+    # it's meant to be forwarded to a Session (first element :send).  This
+    # method routes the command to its proper destination.
     def apply_command(cmd)
       FatTerm.log("Terminal.apply_command(#{cmd})", tag: :command)
       return if cmd.nil?
 
-      # Allow sessions still returning non-normalized forms during migration.
-      # If someone passes [self, commands] here by mistake, unpack it.
+      # TODO: remove after transition to commands-only messages.
       if cmd.is_a?(Array) && cmd.length == 2 && cmd[0].respond_to?(:update)
-        apply_commands(cmd[1])
-        return
+        raise ArgumentError, "session returned [model, commands]; migrate to commands-only: #{cmd.inspect}"
       end
 
       unless cmd.is_a?(Array) && cmd.first.is_a?(Symbol)
@@ -152,6 +149,7 @@ module FatTerm
       end
     end
 
+    # Apply a command meant to be applied by this Terminal
     def apply_terminal_command(cmd)
       _, name, *rest = cmd
 
@@ -168,12 +166,13 @@ module FatTerm
       end
     end
 
-    # [:send, target_id, message_name, payload_hash]
+    # Forwar a command meant to be applied by a
+    # [:send, recipient, message_name, payload_hash]
     def apply_send_command(cmd)
-      _, target_id, message_name, payload = cmd
+      _, recipient, message_name, payload = cmd
 
-      session = find_session(target_id)
-      raise ArgumentError, "no session registered with id=#{target_id.inspect}" unless session
+      session = find_session(recipient)
+      raise ArgumentError, "no session registered with id=#{recipient.inspect}" unless session
 
       payload ||= {}
       unless payload.is_a?(Hash)
@@ -184,7 +183,7 @@ module FatTerm
       # Sessions can pattern-match it in #update.
       message = [:cmd, message_name, payload]
 
-      _model, commands = session.update(message, terminal: self)
+      commands = session.update(message, terminal: self)
       apply_commands(commands)
     end
 
