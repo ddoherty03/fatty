@@ -15,15 +15,15 @@ module FatTerm
 
     def initialize(prompt: "sh> ", history_path: nil)
       super(views: [
-              FatTerm::Views::OutputView.new(z: 0),
-              FatTerm::Views::InputView.new(z: 10),
-              FatTerm::Views::CursorView.new(z: 100),
-            ])
-      @output   = FatTerm::OutputBuffer.new
-      @history  = FatTerm::History.new(path: history_path || default_history_path)
-      @field    = FatTerm::InputField.new(prompt: prompt, history: @history)
-      @viewport = FatTerm::Viewport.new(height: 10)
-      @keymap   = FatTerm::Keymaps.emacs
+        OutputView.new(z: 0),
+        InputView.new(z: 10),
+        CursorView.new(z: 100),
+      ])
+      @output   = OutputBuffer.new
+      @history  = History.new(path: history_path || default_history_path)
+      @field    = InputField.new(prompt: prompt, history: @history)
+      @viewport = Viewport.new(height: 10)
+      @keymap   = Keymaps.emacs
     end
 
     def default_history_path

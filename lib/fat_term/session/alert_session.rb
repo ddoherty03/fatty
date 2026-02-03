@@ -12,7 +12,7 @@ module FatTerm
     attr_reader :current
 
     def initialize
-      super(views: [FatTerm::Views::AlertView.new(z: 1_000)])
+      super(views: [FatTerm::AlertView.new(z: 1_000)])
       @current = nil
     end
 
