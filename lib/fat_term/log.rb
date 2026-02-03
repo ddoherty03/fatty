@@ -74,8 +74,8 @@ module FatTerm
     #
     def self.configure(level: :info, json: true, progname: "fat_term")
       path =
-        if FatTerm::Config.config[:log][:file]
-          File.expand_path(FatTerm::Config.config[:log][:file])
+        if FatTerm::Config.config.dig(:log, :file)
+          File.expand_path(FatTerm::Config.dig(:log, :file))
         elsif ENV['XDG_STATE_HOME']
           File.expand_path(File.join(ENV['XDG_STATE_HOME'], 'fat_term', 'fat_term.log'))
         else
@@ -95,10 +95,10 @@ module FatTerm
         ::Logger::INFO
       end
       self.logger = ::Logger.new(File.open(path, "a"))
-      self.logger.level = level
-      self.logger.progname = progname
-      self.logger.formatter = json ? JsonFormatter.new : TextFormatter.new
-      self.logger
+      logger.level = level
+      logger.progname = progname
+      logger.formatter = json ? JsonFormatter.new : TextFormatter.new
+      logger
     end
 
     class JsonFormatter < ::Logger::Formatter
