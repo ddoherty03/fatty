@@ -11,6 +11,29 @@ module FatTerm
       attr_accessor :logger
     end
 
+    def self.configure(level: :info, json: true, progname: "fat_term")
+      path =
+        if FatTerm::Config.config.dig(:log, :file)
+          File.expand_path(FatTerm::Config.dig(:log, :file))
+        elsif ENV['XDG_STATE_HOME']
+          File.expand_path(File.join(ENV['XDG_STATE_HOME'], 'fat_term', 'fat_term.log'))
+        else
+          File.expand_path(File.join('~/.state/fat_term', 'fat_term.log'))
+        end
+      dir = File.dirname(path)
+      FileUtils.mkdir_p(dir)
+      FileUtils.touch(path)
+      unless File.readable?(path) && File.writable?(path)
+        return self.logger = nil
+      end
+
+      self.logger = ::Logger.new(File.open(path, "a"))
+      logger.level = severity(level)
+      logger.progname = progname
+      logger.formatter = json ? JsonFormatter.new : TextFormatter.new
+      logger
+    end
+
     # Convenience: log structured events without repeating formatting.
     #
     #   FatTerm.log(:decode_getch, ch: 27, note: "escape")
@@ -38,7 +61,7 @@ module FatTerm
 
       payload = { event: event&.to_s, tag: tag&.to_s }.merge(data)
 
-      logger.add(severity(level)) { payload.to_json }
+      logger.add(self.class.severity(level)) { payload.to_json }
     rescue StandardError => ex
       # Last-ditch: never let logging take down the app.
       begin
@@ -51,8 +74,8 @@ module FatTerm
     end
 
     # Translate our severity symbols to those expected by ::Logger.
-    def severity(sym)
-      case sym.to_sym
+    def self.severity(sym)
+      case sym
       when :debug
         ::Logger::DEBUG
       when :info
@@ -64,41 +87,8 @@ module FatTerm
       when :fatal
         ::Logger::FATAL
       else
-        ::Logger::UNKNOWN
-      end
-    end
-
-    # One-stop configuration. You can pass an IO, a path, or use STDERR.
-    #
-    #   FatTerm.configure_logger(path: "/tmp/fat_term.log", level: Logger::DEBUG, json: true)
-    #
-    def self.configure(level: :info, json: true, progname: "fat_term")
-      path =
-        if FatTerm::Config.config.dig(:log, :file)
-          File.expand_path(FatTerm::Config.dig(:log, :file))
-        elsif ENV['XDG_STATE_HOME']
-          File.expand_path(File.join(ENV['XDG_STATE_HOME'], 'fat_term', 'fat_term.log'))
-        else
-          File.expand_path(File.join('~/.state/fat_term', 'fat_term.log'))
-        end
-      dir = File.dirname(path)
-      FileUtils.mkdir_p(dir)
-      FileUtils.touch(path)
-      unless File.readable?(path) && File.writable?(path)
-        return self.logger = nil
-      end
-
-      case level
-      when 'debug', :debug
         ::Logger::DEBUG
-      else
-        ::Logger::INFO
       end
-      self.logger = ::Logger.new(File.open(path, "a"))
-      logger.level = level
-      logger.progname = progname
-      logger.formatter = json ? JsonFormatter.new : TextFormatter.new
-      logger
     end
 
     class JsonFormatter < ::Logger::Formatter
