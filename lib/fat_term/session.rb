@@ -18,6 +18,11 @@ module FatTerm
       @views = Array(views)
     end
 
+    def add_view(view)
+      @views << view
+      view
+    end
+
     # Called once when the session becomes active (e.g. pushed).
     # Subclasses may override to kick off timers/async work, etc.
     def init(terminal:)

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module FatTerm
-  class InputView < FatTerm::View
+  class CursorView < FatTerm::View
     def draw(screen:, renderer:, terminal:, session:)
-      renderer.render_input_field(session.field)
+      renderer.restore_cursor(session.field)
     end
   end
 end

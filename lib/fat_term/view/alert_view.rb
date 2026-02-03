@@ -1,24 +1,14 @@
 # frozen_string_literal: true
 
 module FatTerm
-  module Views
-    # AlertView renders the AlertPanel as a bottom-line overlay.
-    #
-    # It is deliberately "dumb": it reads the panel state and delegates all
-    # drawing to the injected renderer.
-    class AlertView < View
-      def initialize(panel:, id: "alert", z: 1_000)
-        super(id:, z:)
-        @panel = panel
-      end
+  class AlertView < FatTerm::View
+    def initialize(id: "alert", z: 1_000, log: false)
+      super(id: id, z: z, log: log)
+    end
 
-      def render(screen:, renderer:, terminal:, session:)
-        return unless @panel.visible?
-        super()
-
-        alert = @panel.current
-        renderer.render_alert(alert)
-      end
+    def draw(screen:, renderer:, terminal:, session:)
+      # session is AlertSession; it owns `current`
+      renderer.render_alert(session.current)
     end
   end
 end

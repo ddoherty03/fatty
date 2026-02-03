@@ -1,30 +1,38 @@
 # frozen_string_literal: true
 
 module FatTerm
-  # Base class for pure-ish renderers.
-  #
-  # Views should:
-  # - read session state (and/or other model objects)
-  # - draw via Screen/Renderer (curses writes)
-  # - avoid mutating session state
-  #
-  # The runtime decides when to call views; a view can optionally advertise a
-  # z-index for layering.
   class View
-    attr_reader :id
-    attr_reader :z
+    attr_reader :id, :z
 
-    def initialize(id: nil, z: 0)
-      @id = id || self.class.name.split("::").last
-      @z = Integer(z)
+    def initialize(id: nil, z: 0, log: false)
+      @id = (id || self.class.name.split("::").last).to_s
+      @z  = Integer(z)
+      @log = !!log
     end
 
-    # Render the view.
-    #
-    # Arguments intentionally mirror our current world (Terminal + Renderer),
-    # but are keyworded to make future evolution non-breaking.
+    # Render wrapper: logs once, then delegates to #draw.
+    # Subclasses implement #draw.
     def render(screen:, renderer:, terminal:, session:)
-      FatTerm::Logger.log(:view, tag: :render, screen: screen, terminal: terminal, session: session)
+      if @log
+        FatTerm.log(
+          "View.render",
+          tag: :render,
+          view: id,
+          z: z,
+          session: session.respond_to?(:id) ? session.id : session.class.name,
+        )
+      end
+
+      draw(screen:, renderer:, terminal:, session:)
+    end
+
+    def draw(screen:, renderer:, terminal:, session:)
+      raise NotImplementedError, "#{self.class} must implement #draw"
     end
   end
 end
+
+require_relative "view/output_view"
+require_relative "view/alert_view"
+require_relative "view/input_view"
+require_relative "view/cursor_view"

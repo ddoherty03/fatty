@@ -31,10 +31,8 @@ module FatTerm
   require_relative "fat_term/prompt"
   require_relative "fat_term/screen"
   require_relative "fat_term/viewport"
-  require_relative "fat_term/session"
-  require_relative "fat_term/session/alert_session"
-  require_relative "fat_term/session/shell_session"
   require_relative "fat_term/view"
+  require_relative "fat_term/session"
   require_relative "fat_term/terminal"
 
   class Error < StandardError; end
