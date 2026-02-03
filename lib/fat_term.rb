@@ -27,12 +27,11 @@ module FatTerm
   require_relative "fat_term/backends/curses/key_decoder"
   require_relative "fat_term/backends/curses/event_source"
   require_relative "fat_term/backends/curses/context"
-  require_relative "fat_term/alert_panel"
   require_relative "fat_term/prompt"
   require_relative "fat_term/screen"
   require_relative "fat_term/viewport"
-  require_relative "fat_term/view"
-  require_relative "fat_term/session"
+  require_relative "fat_term/views"
+  require_relative "fat_term/sessions"
   require_relative "fat_term/terminal"
 
   class Error < StandardError; end
