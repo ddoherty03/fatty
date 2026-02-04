@@ -7,7 +7,12 @@ module FatTerm
     end
 
     def self.keybindings
-      FatConfig::Reader.new('fat_term').read('keybindings')[:keybindings]
+      kb_cfg = FatConfig::Reader.new('fat_term').read('keybindings')
+      if kb_cfg.key?(:keybindings)
+        kb_cfg[:keybindings]
+      else
+        {}
+      end
     end
 
     def self.config
