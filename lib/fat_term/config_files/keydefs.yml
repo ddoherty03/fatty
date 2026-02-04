@@ -1,0 +1,23 @@
+terminal:
+  konsole:
+    map:
+      556: ...
+
+  kitty:
+    map:
+      577: ...
+
+  tmux:
+    map:
+      555:
+        key: left
+        meta: true
+      570:
+        key: right
+        meta: true
+      557:
+        key: left
+        ctrl: true
+      572:
+        key: right
+        ctrl: true

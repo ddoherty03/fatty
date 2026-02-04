@@ -1,0 +1,28 @@
+# This file is for user-defined keybindings.  Each binding can look like this:
+#
+# - key: <KEYNAME>
+#   context: input/paging (input)
+#   ctrl: true/false (false)
+#   meta: true/false (false)
+#   shift: true/false (false)
+#   action: <FatTerm action> (noop)
+
+- key: left
+  meta: true
+  action: backward_word
+
+- key: right
+  meta: true
+  action: forward_word
+
+- key: space
+  context: paging
+  action: page_down
+
+- key: backspace
+  context: paging
+  action: page_up
+
+- mouse: scroll_up
+  context: paging
+  action: page_up
