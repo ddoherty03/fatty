@@ -49,19 +49,14 @@ module FatTerm
         expect(cfg).to be_a(Hash)
       end
 
-      it "raises when config.yml is invalid YAML" do
-        write_cfg(
-          ENV["XDG_CONFIG_HOME"],
-          "config",
-          "log: [this is not valid yaml",
-        )
+      it "rescues FatConfig::ParseError, records an error, and returns {} for config.yml" do
+        Config.clear_errors!
 
-        expect {
-          Config.config
-        }.to raise_error do |err|
-          # Don’t lock class yet; inspect first
-          expect(err.class.name).to match(/FatConfig|Parse|YAML/)
-        end
+        write_cfg(ENV["XDG_CONFIG_HOME"], "config", "log: [broken")
+
+        expect { Config.config }.not_to raise_error
+        expect(Config.config).to eq({})
+        expect(Config.errors.map { |h| h[:file] }).to include("config")
       end
     end
 
@@ -128,18 +123,14 @@ module FatTerm
         expect(defs).to eq({})
       end
 
-      it "raises when keydefs.yml is invalid YAML" do
-        write_cfg(
-          ENV["XDG_CONFIG_HOME"],
-          "keydefs",
-          "terminal: [this is not valid yaml",
-        )
+      it "rescues FatConfig::ParseError, records an error, and returns {} for invalid keydefs.yml" do
+        Config.clear_errors!
 
-        expect {
-          Config.keydefs
-        }.to raise_error do |err|
-          expect(err.class.name).to match(/FatConfig|Parse|YAML/)
-        end
+        write_cfg(ENV["XDG_CONFIG_HOME"], "keydefs", "log: [broken")
+
+        expect { Config.keydefs }.not_to raise_error
+        expect(Config.keydefs).to eq({})
+        expect(Config.errors.map { |h| h[:file] }).to include("keydefs")
       end
     end
 
@@ -175,19 +166,17 @@ module FatTerm
 
       it "returns empty Hash when keybindings.yml is missing" do
         bindings = Config.keybindings
-        expect(bindings).to eq({})
+        expect(bindings).to eq([])
       end
 
-      it "raises when keybindings.yml is invalid YAML" do
-        write_cfg(
-          ENV["XDG_CONFIG_HOME"],
-          "keybindings",
-          "keybindings: [this is broken"
-        )
+      it "rescues FatConfig::ParseError, records an error, and returns {} for invalid keybindings.yml" do
+        Config.clear_errors!
 
-        expect {
-          Config.keybindings
-        }.to raise_error FatConfig::ParseError
+        write_cfg(ENV["XDG_CONFIG_HOME"], "keybindings", "log: [broken")
+
+        expect { Config.keybindings }.not_to raise_error
+        expect(Config.keybindings).to eq([])
+        expect(Config.errors.map { |h| h[:file] }).to include("keybindings")
       end
     end
   end
