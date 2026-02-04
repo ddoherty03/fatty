@@ -38,5 +38,24 @@ module FatTerm
       p = Prompt.new { 123 }
       expect(p.text).to eq("123")
     end
+
+    it "ensures that a Proc becomes a Prompt" do
+      expect(Prompt.ensure(-> {"XX"})).to be_a(Prompt)
+    end
+
+    it "ensures that any #to_s responding object becomes a Prompt" do
+      class Junk
+        def to_s
+          "willy wonka"
+        end
+      end
+      expect(Prompt.ensure(Junk.new)).to be_a(Prompt)
+    end
+
+    it "ensures that any non-#to_s responding object becomes default '> '" do
+      class Junk2
+      end
+      expect(Prompt.ensure(Junk2.new).text).to eq('> ')
+    end
   end
 end

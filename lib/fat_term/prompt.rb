@@ -26,7 +26,7 @@ module FatTerm
       when Proc
         Prompt.new(&p)
       else
-        Prompt.new { p.respond_to?(:to_s) ? p.to_s : "" }
+        Prompt.new { "> " }
       end
     end
   end
