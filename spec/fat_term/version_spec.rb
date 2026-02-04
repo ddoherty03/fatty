@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module FatTerm
-  RSpec.describe VERSION do
+  RSpec.describe 'VERSION' do
     it 'has a version number' do
       expect(VERSION).to match(/\d+\.\d+\.\d+/)
     end
