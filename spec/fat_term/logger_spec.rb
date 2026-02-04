@@ -174,10 +174,6 @@ module FatTerm
 
         Logger.log(:evt, level: :info, tag: :render, foo: 1)
 
-        # Ensure content is committed (you already discovered close is the most reliable)
-        Logger.logger.close
-        Logger.logger = nil
-
         lines = read_lines(path)
         expect(lines).not_to be_empty
         expect(lines.last).to include("INFO fat_term_spec")
