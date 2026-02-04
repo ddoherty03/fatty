@@ -2,15 +2,17 @@
 
 module FatTerm
   class History
-    DEFAULT_MAX = 10_000
+    DEFAULT_HISTORY_FILE = File.expand_path("~/.fat_term_history")
+    DEFAULT_HISTORY_MAX = 10_000
 
     attr_reader :entries
 
-    def initialize(path: nil, max: DEFAULT_MAX)
-      @path    = path
-      @max     = max
+    def initialize(path: nil, max: nil)
+      @path = path || Config.config.dig(:history, :file) || DEFAULT_HISTORY_FILE
+      @path = File.expand_path(@path)
+      @max = max&.to_i || Config.config.dig(:history, :max)&.to_i || DEFAULT_HISTORY_MAX
       @entries = []
-      @index   = nil
+      @index = nil
       @scratch = nil
 
       load if @path
