@@ -24,6 +24,20 @@ module FatTerm
 
         expect(commands).to eq([])
       end
+
+      it "dispatches key messages and returns [] by default" do
+        s = Session.new
+        commands = s.update([:key, :doit], terminal:)
+
+        expect(commands).to eq([])
+      end
+
+      it "dispatches cmd messages and returns [] by default" do
+        s = Session.new
+        commands = s.update([:cmd, :doit], terminal:)
+
+        expect(commands).to eq([])
+      end
     end
 
     describe "#view" do
@@ -43,6 +57,27 @@ module FatTerm
         expect(v2).to have_received(:render).ordered
         expect(v3).to have_received(:render).ordered
         expect(v1).to have_received(:render).ordered
+      end
+
+      describe "#add_view" do
+        it "renders its views in ascending z order" do
+          v1 = instance_double(View, z: 10)
+          v2 = instance_double(View, z: 0)
+
+          s = Session.new(views: [v1, v2])
+          v3 = instance_double(View, z: 5)
+          s.add_view(v3)
+
+          allow(v1).to receive(:render)
+          allow(v2).to receive(:render)
+          allow(v3).to receive(:render)
+
+          s.view(screen:, renderer:, terminal:)
+
+          expect(v2).to have_received(:render).ordered
+          expect(v3).to have_received(:render).ordered
+          expect(v1).to have_received(:render).ordered
+        end
       end
 
       it "does nothing if it has no views" do
