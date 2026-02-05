@@ -1,33 +1,20 @@
 #!/usr/bin/env ruby
-# mode: ruby-mode
-
 # frozen_string_literal: true
 
 require_relative "../lib/fat_term"
+require "open3"
 
-ctx = FatTerm::Backends::Curses::Context.new
+prompt = FatTerm::Prompt.new { "#{Dir.pwd}> " }
 
-begin
-  ctx.start
-
-  screen = FatTerm::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols)
-  ctx.apply_layout(screen)
-
-  renderer = FatTerm::Backends::Curses::Renderer.new(context: ctx, screen: screen)
-
-  env = FatTerm::Env.detect
-  key_decoder = FatTerm::Backends::Curses::KeyDecoder.new(env: env)
-  event_source = FatTerm::Backends::Curses::EventSource.new(context: ctx, key_decoder: key_decoder)
-
-  terminal = FatTerm::Terminal.new(screen: screen, renderer: renderer, event_source: event_source)
-
-  # Pinned overlay session for alerts.
-  terminal.pin(FatTerm::AlertSession.new)
-
-  # Focused interactive session.
-  terminal.push(FatTerm::ShellSession.new(prompt: -> { Dir.pwd + '> '}))
-
-  terminal.go
-ensure
-  ctx.close
-end
+FatTerm::Terminal.new(
+  prompt: prompt,
+  on_accept: ->(line, terminal:, session:) do
+    # append command + output, preserve viewport behavior however you prefer
+    session.output.append("#{prompt.text} #{line}\n")
+    out, _ = Open3.capture2e(line)
+    session.output.append(out)
+    [[:send, :alert, :clear, {}]]
+  rescue Errno::ENOENT
+    [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
+  end
+).go

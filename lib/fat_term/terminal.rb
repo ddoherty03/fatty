@@ -19,17 +19,28 @@ module FatTerm
 
     attr_reader :screen, :renderer, :event_source
 
-    def initialize(screen:, renderer:, event_source:)
-      @screen = screen
-      @renderer = renderer
-      @event_source = event_source
+    # def initialize(screen:, renderer:, event_source:)
+    #   @screen = screen
+    #   @renderer = renderer
+    #   @event_source = event_source
+
+    #   @running = false
+
+    #   @stack = []          # focus stack (top receives input)
+    #   @pinned = []         # always rendered, never focused unless you choose
+    #   @sessions_by_id = {} # id => session
+    #   @logger = FatTerm::Logger.configure(level: FatTerm::Config.config.dig(:log, :level))
+    # end
+
+    def initialize(prompt: "> ", on_accept: nil, env: nil)
+      @prompt = Prompt.ensure(prompt)
+      @on_accept = on_accept
+      @env = env
 
       @running = false
-
-      @stack = []          # focus stack (top receives input)
-      @pinned = []         # always rendered, never focused unless you choose
-      @sessions_by_id = {} # id => session
-      @logger = FatTerm::Logger.configure(level: FatTerm::Config.config.dig(:log, :level))
+      @stack = []
+      @pinned = []
+      @sessions_by_id = {}
     end
 
     # --- Session management ------------------------------------------------
@@ -75,22 +86,58 @@ module FatTerm
     # --- Runtime -----------------------------------------------------------
 
     def go
-      @running = true
+      preflight!
+      start_curses!
+      install_default_sessions!
 
-      # First frame, so the UI appears before the first input event.
+      @running = true
       render_frame
 
       while @running
         msg = event_source.next_event
-        if msg
-          dispatch_message(msg)
-        else
-          # If you later add ticks, you can inject TickEvent here.
-          # For now: just keep looping.
-        end
-
+        dispatch_message(msg) if msg
         render_frame
       end
+    ensure
+      @ctx&.close
+    end
+
+    private
+
+    def preflight!
+      cfg = FatTerm::Config.config
+      FatTerm::Config.keydefs
+      FatTerm::Config.keybindings
+      FatTerm::Logger.configure(level: cfg.dig(:log, :level))
+    rescue FatConfig::ParseError => ex
+      $stderr.puts "fat_term: configuration error: #{ex.message}"
+      exit(1)
+    end
+
+    def start_curses!
+      @ctx = FatTerm::Backends::Curses::Context.new
+      @ctx.start
+
+      @screen = FatTerm::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols)
+      @ctx.apply_layout(@screen)
+
+      @renderer = FatTerm::Backends::Curses::Renderer.new(context: @ctx, screen: @screen)
+
+      env = @env || FatTerm::Env.detect
+      key_decoder = FatTerm::Backends::Curses::KeyDecoder.new(env: env)
+      @event_source = FatTerm::Backends::Curses::EventSource.new(context: @ctx, key_decoder: key_decoder)
+
+      self
+    end
+
+    def install_default_sessions!
+      pin(FatTerm::AlertSession.new)
+      push(
+        FatTerm::ShellSession.new(
+          prompt: @prompt,
+          on_accept: @on_accept,
+        )
+      )
     end
 
     def quit
