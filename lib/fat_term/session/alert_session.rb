@@ -20,25 +20,18 @@ module FatTerm
       :alert
     end
 
-    def update(message, terminal:)
-      if message.is_a?(Array) && message[0] == :cmd
-        name = message[1]
-        payload = message[2] || {}
-
-        case name
-        when :show
-          show_from_payload(payload)
-        when :clear
-          @current = nil unless @current&.sticky?
-        end
+    def update_cmd(name, payload, terminal:)
+      payload ||= {}
+      case name
+      when :show
+        show_from_payload(payload)
+      when :clear
+        @current = nil unless @current&.sticky?
       end
-
       []
     end
 
-    def view(screen:, renderer:, terminal:)
-      renderer.render_alert(@current)
-    end
+    private
 
     def show_from_payload(payload)
       return if payload.nil?
