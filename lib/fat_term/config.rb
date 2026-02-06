@@ -7,26 +7,12 @@ module FatTerm
     # including the location of the log file.
     def self.config
       FatConfig::Reader.new('fat_term').read('config')
-    rescue FatConfig::ParseError => ex
-      begin
-        FatConfig::Reader.new("fat_term").read("config", verbose: true)
-      rescue StandardError
-        # ignore secondary failure; we only wanted diagnostic output
-      end
-      raise ex
     end
 
     # Read in the keydefs.yml config file that maps numeric keycodes returned
     # by curses but not assigned a key name.
     def self.keydefs
       FatConfig::Reader.new('fat_term').read('keydefs')
-    rescue FatConfig::ParseError => ex
-      begin
-        FatConfig::Reader.new('fat_term').read('keydefs', verbose: true)
-      rescue StandardError
-        # ignore secondary failure; we only wanted diagnostic output
-      end
-      raise ex
     end
 
     # Read in the keybindings.yml config file that maps key names (together
@@ -38,13 +24,6 @@ module FatTerm
 
       bindings = kb_cfg[:keybindings]
       Array(bindings)
-    rescue FatConfig::ParseError => ex
-      begin
-        FatConfig::Reader.new("fat_term").read("keybindings", verbose: true)
-      rescue StandardError
-        # ignore secondary failure; we only wanted diagnostic output
-      end
-      raise ex
     end
   end
 end

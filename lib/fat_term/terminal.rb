@@ -110,7 +110,7 @@ module FatTerm
       FatTerm::Config.keybindings
       FatTerm::Logger.configure(level: cfg.dig(:log, :level))
     rescue FatConfig::ParseError => ex
-      $stderr.puts "fat_term: configuration error: #{ex.message}"
+      warn "fat_term: configuration error: #{ex.message}"
       exit(1)
     end
 

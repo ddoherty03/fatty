@@ -2,6 +2,7 @@
 
 require "tmpdir"
 require "fileutils"
+require "stringio"
 
 module FatTerm
   RSpec.describe "FatTerm::Config with real FatConfig::Reader" do
@@ -49,14 +50,9 @@ module FatTerm
         expect(cfg).to be_a(Hash)
       end
 
-      it "rescues FatConfig::ParseError, records an error, and returns {} for config.yml" do
-        Config.clear_errors!
-
-        write_cfg(ENV["XDG_CONFIG_HOME"], "config", "log: [broken")
-
-        expect { Config.config }.not_to raise_error
-        expect(Config.config).to eq({})
-        expect(Config.errors.map { |h| h[:file] }).to include("config")
+      it "raises FatConfig::ParseError for invalid config.yml, warns and exits" do
+        write_cfg(ENV["XDG_CONFIG_HOME"], "config", "log--- : [broken")
+        expect { Config.config }.to raise_error(/YAML parse error/i)
       end
     end
 
@@ -123,14 +119,9 @@ module FatTerm
         expect(defs).to eq({})
       end
 
-      it "rescues FatConfig::ParseError, records an error, and returns {} for invalid keydefs.yml" do
-        Config.clear_errors!
-
+      it "raises FatConfig::ParseError for invalid keydefs.yml" do
         write_cfg(ENV["XDG_CONFIG_HOME"], "keydefs", "log: [broken")
-
-        expect { Config.keydefs }.not_to raise_error
-        expect(Config.keydefs).to eq({})
-        expect(Config.errors.map { |h| h[:file] }).to include("keydefs")
+        expect { Config.keydefs }.to raise_error(/YAML parse error/i)
       end
     end
 
@@ -169,14 +160,9 @@ module FatTerm
         expect(bindings).to eq([])
       end
 
-      it "rescues FatConfig::ParseError, records an error, and returns {} for invalid keybindings.yml" do
-        Config.clear_errors!
-
+      it "re-raises FatConfig::ParseError for invalid keybindings.yml (after verbose retry)" do
         write_cfg(ENV["XDG_CONFIG_HOME"], "keybindings", "log: [broken")
-
-        expect { Config.keybindings }.not_to raise_error
-        expect(Config.keybindings).to eq([])
-        expect(Config.errors.map { |h| h[:file] }).to include("keybindings")
+        expect { Config.keybindings }.to raise_error(/YAML parse error/i)
       end
     end
   end
