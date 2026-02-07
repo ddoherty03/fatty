@@ -81,7 +81,32 @@ module FatTerm
           win.setpos(0, 0)
           win.clrtoeol
           win.addstr(field.prompt_text)
-          win.addstr(field.buffer.text)
+
+          buf = field.buffer
+          text = buf.text.to_s
+
+          region =
+            if buf.respond_to?(:region_range)
+              buf.region_range
+            end
+
+          if region && region.begin < region.end
+            # Render the buffer in three parts, before region, region, and
+            # after region.
+            max = text.length
+            s = region.begin.clamp(0, max)
+            e = region.end.clamp(0, max)
+
+            before = text[0...s].to_s
+            mid    = text[s...e].to_s
+            after  = text[e..].to_s
+
+            win.addstr(before)
+            win.attron(::Curses::A_REVERSE) { win.addstr(mid) }
+            win.addstr(after)
+          else
+            win.addstr(text)
+          end
 
           win.setpos(0, field.cursor_x)
           win.refresh

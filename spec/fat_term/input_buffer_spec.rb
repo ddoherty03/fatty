@@ -427,5 +427,84 @@ module FatTerm
       expect(b.text).to eq("abf")
       expect(b.cursor).to eq(2)
     end
+
+    describe "kill ring and yanking" do
+      it "supports mark + region_range" do
+        b = InputBuffer.new
+        b.replace("abcdef")
+        b.bol
+        b.set_mark
+        b.move_right(count: 3)
+
+        r = b.region_range
+        expect(r).to eq(0...3)
+      end
+
+      it "kill_region deletes region, clears mark, and yanks it back" do
+        b = InputBuffer.new
+        b.replace("abcdef")
+        b.bol
+        b.set_mark
+        b.move_right(count: 3)
+
+        expect(b.kill_region).to eq("abc")
+        expect(b.text).to eq("def")
+        expect(b.cursor).to eq(0)
+        expect(b.region_active?).to be(false)
+
+        expect(b.yank).to eq("abc")
+        expect(b.text).to eq("abcdef")
+        expect(b.cursor).to eq(3)
+      end
+
+      it "copy_region does not delete but is yankable" do
+        b = InputBuffer.new
+        b.replace("abcdef")
+        b.bol
+        b.set_mark
+        b.move_right(count: 2)
+
+        expect(b.copy_region).to eq("ab")
+        expect(b.text).to eq("abcdef")
+        b.eol
+        expect(b.yank).to eq("ab")
+        expect(b.text).to eq("abcdefab")
+      end
+
+      it "replace_region replaces active region and clears mark" do
+        b = InputBuffer.new
+        b.replace("abcdef")
+        b.bol
+        b.set_mark
+        b.move_right(count: 3)
+
+        expect(b.region_active?).to be(true)
+        b.replace_region("Z")
+
+        expect(b.text).to eq("Zdef")
+        expect(b.cursor).to eq(1)
+        expect(b.region_active?).to be(false)
+
+        b.replace_region("Q")
+        expect(b.text).to eq("ZQdef")
+      end
+
+      it "yank_pop cycles the kill ring by replacing the last yanked text" do
+        b = InputBuffer.new
+        b.replace("hello ")
+        b.eol
+
+        b.insert("X")
+        b.kill_word_backward # kills "X"
+        b.insert("Y")
+        b.kill_word_backward # kills "Y" (now most recent)
+
+        expect(b.yank).to eq("Y")
+        expect(b.text).to eq("hello Y")
+
+        expect(b.yank_pop).to eq("X")
+        expect(b.text).to eq("hello X")
+      end
+    end
   end
 end

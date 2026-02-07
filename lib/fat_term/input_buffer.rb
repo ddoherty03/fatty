@@ -34,13 +34,15 @@ module FatTerm
   class InputBuffer
     include Actionable
 
+    attr_reader :mark
     attr_accessor :text, :cursor, :word_re
 
     DEFAULT_WORD_CHARS = "[[:alnum:]_]"
 
-    def initialize(word_chars: DEFAULT_WORD_CHARS, word_re: nil, undo_limit: 1_000)
+    def initialize(word_chars: DEFAULT_WORD_CHARS, word_re: nil, undo_limit: 1_000, kill_ring_max: 60)
       @text = +""
       @cursor = 0
+      @mark = nil
       @word_re =
         if word_re
           word_re
@@ -51,6 +53,11 @@ module FatTerm
       @undo_limit = undo_limit
       @undo_stack = []
       @redo_stack = []
+
+      @kill_ring = []
+      @kill_ring_max = kill_ring_max
+      @last_yank_len = 0
+      @last_yank_action = nil
     end
 
     # :category: Queries
@@ -89,6 +96,22 @@ module FatTerm
 
     def undo_size
       @undo_stack.size
+    end
+
+    def region_active?
+      !!@mark && @mark != @cursor
+    end
+
+    def region_range
+      r = nil
+      if region_active?
+        a = @mark
+        b = @cursor
+        s = [a, b].min
+        e = [a, b].max
+        r = clamp_range(s...e)
+      end
+      r
     end
 
     # category: Actions: Cursor Movement
@@ -169,6 +192,18 @@ module FatTerm
       @cursor = [@cursor + n, text.length].min
     end
 
+    # :category: Actions: Region
+
+    desc "Set the mark at the current cursor position (activates region)."
+    action :set_mark do
+      @mark = @cursor
+    end
+
+    desc "Clear the mark (deactivates region)."
+    action :clear_mark do
+      @mark = nil
+    end
+
     # :category: Actions: Change Buffer
 
     desc "Clear the buffer"
@@ -176,6 +211,8 @@ module FatTerm
       return if text.empty? && @cursor.zero?
 
       with_undo do
+        @mark = nil
+        @last_action = nil
         text.clear
         @cursor = 0
       end
@@ -188,6 +225,7 @@ module FatTerm
       return if s.empty? || n <= 0
 
       with_undo do
+        @last_action = nil
         payload = (s * n)
         text.insert(@cursor, payload)
         @cursor += payload.length
@@ -198,8 +236,10 @@ module FatTerm
     action :replace do |str|
       str = str.to_s
       with_undo do
+        @last_action = nil
         @text = str.dup
         @cursor = @text.length
+        clamp_mark!
       end
     end
 
@@ -252,10 +292,25 @@ module FatTerm
       length = max_len if length > max_len
 
       with_undo do
+        @last_action = nil
         text.slice!(start, length) if length.positive?
         text.insert(start, str) unless str.empty?
         @cursor = start + str.length
+        adjust_mark_for_replace_span!(start, length, str.length)
       end
+    end
+
+    desc "If region is active, replace it; otherwise insert at cursor."
+    action :replace_region do |str|
+      s = str.to_s
+      r = region_range
+      if r
+        replace_span(r.begin, r.end - r.begin, s)
+        @mark = nil
+      else
+        insert(s)
+      end
+      s
     end
 
     desc "Replace the text in the given Range with str; move cursor to end of insertion"
@@ -284,14 +339,21 @@ module FatTerm
     action :kill_to_eol do
       return "" if eol?
 
-      delete_range(cursor...text.length)
+      killed = delete_range(cursor...text.length)
+      push_kill(killed)
+      @last_action = :kill
+      killed
     end
 
     desc "Delete to the beginning of the buffer and return deleted string"
     action :kill_to_bol do
       return "" if bol?
 
-      delete_range(0...cursor).tap { @cursor = 0 }
+      killed = delete_range(0...cursor)
+      @cursor = 0
+      push_kill(killed)
+      @last_action = :kill
+      killed
     end
 
     desc "Kill count words after the cursor and return the deleted string"
@@ -313,6 +375,8 @@ module FatTerm
 
       deleted = delete_range(start...finish)
       @cursor = start
+      push_kill(deleted)
+      @last_action = :kill
       deleted
     end
 
@@ -335,7 +399,71 @@ module FatTerm
 
       deleted = delete_range(start...finish)
       @cursor = start
+      push_kill(deleted)
+      @last_action = :kill
       deleted
+    end
+
+    desc "Kill the active region and return deleted text; pushes to kill ring."
+    action :kill_region do
+      r = region_range
+      return "" unless r
+
+      deleted = delete_range(r)
+      @cursor = r.begin
+      @mark = nil
+      push_kill(deleted)
+      @last_action = :kill
+      deleted
+    end
+
+    desc "Copy the active region and return copied text; pushes to kill ring."
+    action :copy_region do
+      r = region_range
+      return "" unless r
+
+      copied = text[r] || ""
+      push_kill(copied)
+      @last_action = :kill
+      copied
+    end
+
+    desc "Yank (paste) the most recent kill at the cursor."
+    action :yank do
+      y = @kill_ring.first.to_s
+      return "" if y.empty?
+
+      with_undo do
+        text.insert(@cursor, y)
+        @cursor += y.length
+        adjust_mark_for_replace_span!(@cursor - y.length, 0, y.length)
+      end
+
+      @last_yank_len = y.length
+      @last_action = :yank
+      y
+    end
+
+    desc "Replace the last yanked text with the previous kill ring entry."
+    action :yank_pop do
+      return "" unless @last_action == :yank
+      return "" if @kill_ring.length < 2
+      return "" if @last_yank_len <= 0
+
+      # rotate ring: move first to end, use new first
+      first = @kill_ring.shift
+      @kill_ring << first
+      y = @kill_ring.first.to_s
+
+      with_undo do
+        start = @cursor - @last_yank_len
+        start = 0 if start < 0
+        replace_span(start, @last_yank_len, y)
+      end
+
+      @last_yank_len = y.length
+      @last_action = :yank
+      y
     end
 
     # :category: Undo and Redo helpers
@@ -419,11 +547,48 @@ module FatTerm
       @cursor = max if @cursor > max
     end
 
+    def clamp_mark!
+      if @mark
+        @mark = 0 if @mark.negative?
+        max = @text.length
+        @mark = max if @mark > max
+      end
+    end
+
+    def adjust_mark_for_replace_span!(start, removed_len, inserted_len)
+      return unless @mark
+
+      s = start.to_i
+      rem = removed_len.to_i
+      ins = inserted_len.to_i
+      delta = ins - rem
+
+      if s <= @mark
+        if @mark < s + rem
+          # mark was inside removed region; snap to end of inserted region
+          @mark = s + ins
+        else
+          @mark += delta
+        end
+      end
+
+      clamp_mark!
+    end
+
+    def push_kill(str)
+      s = str.to_s
+      return if s.empty?
+
+      @kill_ring.unshift(s)
+      @kill_ring.pop while @kill_ring.length > @kill_ring_max
+    end
+
     def with_undo
       @undo_stack << snapshot
       @undo_stack.shift while @undo_stack.length > @undo_limit
       @redo_stack.clear
       yield
+      clamp_mark!
     end
 
     def word_char?(ch)
