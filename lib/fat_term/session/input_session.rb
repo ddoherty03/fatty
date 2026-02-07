@@ -25,7 +25,7 @@ module FatTerm
       end
 
       ctx = action_context(terminal:, event:)
-      Actions.call(action, ctx, *args)
+      @field.act_on(action, *args, ctx: ctx)
       :handled
     rescue ActionError
       :unhandled
@@ -33,12 +33,22 @@ module FatTerm
 
     private
 
-    # Keep this as a seam: today you might delegate to Terminal;
-    # later Terminal can become the sole binding resolver.
-    def resolve_action(event, terminal:)
-      return unless keymap
+    # Here event is what is returned by the KeyMap, which can either be a
+    # simple name of an action or an Array with the action name as the first
+    # element and any args as the remaining element.  Thus allows us to bind
+    # keys like digit arguments to an Array that passed the digit as the
+    # argument.
+    def resolve_action(event)
+      return [nil, []] unless keymap
 
-      keymap.lookup(context: context, event: event)
+      resolved = keymap.lookup(context: context, event: event)
+      return [nil, []] unless resolved
+
+      if resolved.is_a?(Array)
+        [resolved[0], resolved[1..] || []]
+      else
+        [resolved, []]
+      end
     end
 
     def action_context(terminal:, event:)
