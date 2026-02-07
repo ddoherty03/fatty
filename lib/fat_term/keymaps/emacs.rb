@@ -22,6 +22,12 @@ module FatTerm
       map.bind(key: :home, action: :bol)
       map.bind(key: :end, action: :eol)
 
+      # Region / Mark
+      map.bind(key: :space, ctrl: true, action: :set_mark)
+      map.bind(key: :g, ctrl: true, action: :clear_mark)
+      map.bind(key: :w, ctrl: true, action: :kill_region)
+      map.bind(key: :w, meta: true, action: :copy_region)
+
       # Deletion
       map.bind(key: :delete, action: :delete_char_forward)
       map.bind(key: :d, ctrl: true, action: :delete_char_forward)
@@ -30,6 +36,23 @@ module FatTerm
       map.bind(key: :w, ctrl: true, action: :kill_word_backward)
       map.bind(key: :d, meta: true, action: :kill_word_forward)
       map.bind(key: :k, ctrl: true, action: :kill_to_eol)
+
+      # Yank / Kill ring
+      map.bind(key: :y, ctrl: true, action: :yank)
+      map.bind(key: :y, meta: true, action: :yank_pop)
+
+      # Counts (prefix arg)
+      map.bind(key: :u, ctrl: true, action: :universal_argument)
+      map.bind(key: :'0', meta: true, action: [:meta_digit, 0])
+      map.bind(key: :'1', meta: true, action: [:meta_digit, 1])
+      map.bind(key: :'2', meta: true, action: [:meta_digit, 2])
+      map.bind(key: :'3', meta: true, action: [:meta_digit, 3])
+      map.bind(key: :'4', meta: true, action: [:meta_digit, 4])
+      map.bind(key: :'5', meta: true, action: [:meta_digit, 5])
+      map.bind(key: :'6', meta: true, action: [:meta_digit, 6])
+      map.bind(key: :'7', meta: true, action: [:meta_digit, 7])
+      map.bind(key: :'8', meta: true, action: [:meta_digit, 8])
+      map.bind(key: :'9', meta: true, action: [:meta_digit, 9])
 
       # History
       map.bind(key: :p, ctrl: true, action: :history_prev)
