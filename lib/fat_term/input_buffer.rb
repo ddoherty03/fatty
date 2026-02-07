@@ -57,7 +57,7 @@ module FatTerm
       @kill_ring = []
       @kill_ring_max = kill_ring_max
       @last_yank_len = 0
-      @last_yank_action = nil
+      @last_action = nil
     end
 
     # :category: Queries
@@ -114,6 +114,17 @@ module FatTerm
       r
     end
 
+    # Return whether the action with name takes a count: parameter.
+    def countable?(name)
+      return false unless respond_to?(name)
+
+      params = method(name).parameters
+      params.any? { |kind, key| kind == :key && key == :count } ||
+        params.any? { |kind, key| kind == :keyreq && key == :count }
+    rescue NameError
+      false
+    end
+
     # category: Actions: Cursor Movement
 
     desc "Undo the most recent buffer edit, text and cursor. Returns true/false."
@@ -151,10 +162,7 @@ module FatTerm
 
     desc "Move cursor count words to the right"
     action :move_word_right do |count: 1|
-      n = count.to_i
-      return if n <= 0
-
-      n.times { move_word_right_once }
+      repeat(count) { move_word_right_once }
     end
 
     def move_word_left_once
@@ -170,25 +178,18 @@ module FatTerm
 
     desc "Move cursor count words to the left"
     action :move_word_left do |count: 1|
-      n = count.to_i
-      return if n <= 0
-
-      n.times { move_word_left_once }
+      repeat(count) { move_word_left_once }
     end
 
     desc "Move cursor count characters to the left"
     action :move_left do |count: 1|
-      n = count.to_i
-      return if n <= 0
-
+      n = normalize_count(count)
       @cursor = [@cursor - n, 0].max
     end
 
     desc "Move cursor count characters to the right"
     action :move_right do |count: 1|
-      n = count.to_i
-      return if n <= 0
-
+      n = normalize_count(count)
       @cursor = [@cursor + n, text.length].min
     end
 
@@ -221,8 +222,8 @@ module FatTerm
     desc "Add a count copies of string at the cursor and move cursor after the inserted text"
     action :insert do |str, count: 1|
       s = str.to_s
-      n = count.to_i
-      return if s.empty? || n <= 0
+      n = normalize_count(count)
+      return if s.empty?
 
       with_undo do
         @last_action = nil
@@ -247,12 +248,11 @@ module FatTerm
 
     desc "Delete the character before the cursor"
     action :delete_char_backward do |count: 1|
-      n = count.to_i
-      return if n <= 0
+      n = normalize_count(count)
       return if @cursor.zero?
 
       with_undo do
-        n.times do
+        repeat(n) do
           break if @cursor.zero?
 
           text.slice!(@cursor - 1)
@@ -263,12 +263,11 @@ module FatTerm
 
     desc "Delete count characters after the cursor"
     action :delete_char_forward do |count: 1|
-      n = count.to_i
-      return if n <= 0
+      n = normalize_count(count)
       return if @cursor == text.length
 
       with_undo do
-        n.times do
+        repeat(n) do
           break if @cursor == text.length
 
           text.slice!(@cursor, 1)
@@ -358,18 +357,16 @@ module FatTerm
 
     desc "Kill count words after the cursor and return the deleted string"
     action :kill_word_forward do |count: 1|
-      n = count.to_i
-      return "" if n <= 0 || eol?
+      n = normalize_count(count)
+      return "" if eol?
 
       start = cursor
       finish = start
-
-      n.times do
+      repeat(n) do
         break if finish >= text.length
 
         span = word_span_forward(finish)
         break if span.begin == span.end
-
         finish = span.end
       end
 
@@ -382,13 +379,12 @@ module FatTerm
 
     desc "Kill count words befpre the cursor and return the deleted string"
     action :kill_word_backward do |count: 1|
-      n = count.to_i
-      return "" if n <= 0 || bol?
+      n = normalize_count(count)
+      return "" if bol?
 
       finish = cursor
       start = finish
-
-      n.times do
+      repeat(n) do
         break if start <= 0
 
         span = word_span_backward(start)
@@ -445,16 +441,18 @@ module FatTerm
     end
 
     desc "Replace the last yanked text with the previous kill ring entry."
-    action :yank_pop do
+    action :yank_pop do |count: 1|
       return "" unless @last_action == :yank
       return "" if @kill_ring.length < 2
       return "" if @last_yank_len <= 0
 
-      # rotate ring: move first to end, use new first
-      first = @kill_ring.shift
-      @kill_ring << first
-      y = @kill_ring.first.to_s
-
+      n = normalize_count(count)
+      y = ""
+      repeat(n) do
+        first = @kill_ring.shift
+        @kill_ring << first
+        y = @kill_ring.first.to_s
+      end
       with_undo do
         start = @cursor - @last_yank_len
         start = 0 if start < 0
@@ -489,6 +487,28 @@ module FatTerm
     end
 
     private
+
+    def normalize_count(count)
+      n =
+        begin
+          Integer(count)
+        rescue StandardError
+          1
+        end
+      n = 1 if n < 1
+      n
+    end
+
+    def repeat(count = 1)
+      n = normalize_count(count)
+      result = nil
+      i = 0
+      while i < n
+        result = yield
+        i += 1
+      end
+      result
+    end
 
     def clamp_range(range)
       raise ArgumentError, "range required" unless range.is_a?(Range)

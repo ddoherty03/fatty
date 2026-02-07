@@ -121,6 +121,44 @@ module FatTerm
       expect(f.buffer.text).to eq("")
     end
 
+    it "accumulates universal argument (C-u) and applies it as count to the next action" do
+      f = InputField.new(prompt: prompt("> "))
+      f.act_on(:insert, "abcdef")
+      expect(f.buffer.cursor).to eq(6)
+
+      f.act_on(:universal_argument)
+      expect(f.pending_count).to eq(4)
+
+      f.act_on(:move_left)
+      expect(f.buffer.cursor).to eq(2)
+      expect(f.pending_count).to be_nil
+    end
+
+    it "universal_argument multiplies by 4 each time" do
+      f = InputField.new(prompt: prompt("> "))
+      f.act_on(:universal_argument)
+      f.act_on(:universal_argument)
+      expect(f.pending_count).to eq(16)
+
+      f.act_on(:insert, "x")
+      expect(f.buffer.text).to eq("x" * 16)
+      expect(f.pending_count).to be_nil
+    end
+
+    it "accumulates meta digits and applies the resulting number as count" do
+      f = InputField.new(prompt: prompt("> "))
+      f.act_on(:insert, "abcdef")
+      expect(f.buffer.cursor).to eq(6)
+
+      f.act_on(:meta_digit, 1)
+      f.act_on(:meta_digit, 2)
+      expect(f.pending_count).to eq(12)
+
+      f.act_on(:move_left)
+      expect(f.buffer.cursor).to eq(0)
+      expect(f.pending_count).to be_nil
+    end
+
     it "raises ArgumentError for unknown actions" do
       f = InputField.new(prompt: prompt("> "))
       expect { f.act_on(:no_such_action) }.to raise_error(ActionError)
