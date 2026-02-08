@@ -37,6 +37,12 @@ module FatTerm
       map.bind(key: :d, meta: true, action: :kill_word_forward)
       map.bind(key: :k, ctrl: true, action: :kill_to_eol)
 
+      # Undo / Redo
+      map.bind(key: :/, ctrl: true, action: :undo)
+      map.bind(key: :_, ctrl: true, action: :undo)
+      map.bind(key: :/, ctrl: true, meta: true, action: :redo)
+      map.bind(key: :/, meta: true, action: :redo)
+
       # Yank / Kill ring
       map.bind(key: :y, ctrl: true, action: :yank)
       map.bind(key: :y, meta: true, action: :yank_pop)
