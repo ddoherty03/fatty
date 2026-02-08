@@ -46,7 +46,9 @@ module FatTerm
 
       raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
       raise ArgumentError, "key must be a Symbol" unless key.is_a?(Symbol)
-      raise ArgumentError, "action must be a Symbol" unless action.is_a?(Symbol)
+      unless action.is_a?(Symbol) || (action.is_a?(Array) && action.first.is_a?(Symbol))
+        raise ArgumentError, "action must be a Symbol or [Symbol, *args]"
+      end
 
       self.class.register_context(context)
 
@@ -76,6 +78,21 @@ module FatTerm
       end
       FatTerm.log("KeyMap.resolve: -> #{result.inspect}", tag: :keybinding)
       result
+    end
+
+    # Return the [action, [args]] form of the binding, adding an empty args
+    # array for actions with no args.
+    def resolve_action(event, contexts: [])
+      binding = resolve(event, contexts: contexts)
+      return [nil, []] unless binding
+
+      if binding.is_a?(Array)
+        FatTerm.log("KeyMap.resolve_action: action: #{binding[0].inspect}, args: #{binding[1..].inspect}", tag: :keymap)
+        [binding[0], binding[1..] || []]
+      else
+        FatTerm.log("KeyMap.resolve_action: action: #{binding.inspect}, args: []", tag: :keymap)
+        [binding, []]
+      end
     end
 
     # Return all contexts currently used in this instance
