@@ -77,6 +77,7 @@ module FatTerm
 
     def paging_mode?
       lines = output.lines
+      viewport.clamp!(lines)
       return false if lines.length <= viewport.height
 
       !viewport.at_bottom?(lines.length)
