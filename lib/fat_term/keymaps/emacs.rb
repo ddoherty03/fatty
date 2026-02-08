@@ -24,6 +24,7 @@ module FatTerm
 
       # Region / Mark
       map.bind(key: :space, ctrl: true, action: :set_mark)
+      map.bind(key: :'@', ctrl: true, action: :set_mark)
       map.bind(key: :g, ctrl: true, action: :clear_mark)
       map.bind(key: :w, ctrl: true, action: :kill_region)
       map.bind(key: :w, meta: true, action: :copy_region)
