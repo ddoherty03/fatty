@@ -78,13 +78,33 @@ module FatTerm
           FatTerm.log("#{self.class}#decode_single(ch: #{ch})", tag: :keycode)
           if ch.is_a?(Integer) && @map.key?(ch)
             FatTerm.log("#{self.class}#decode_single: #{ch} found in @map -> #{@map[ch]}", tag: :keycode)
-            @map[ch]
+            ev = @map[ch]
+
+            # Some terminals/configs map printable ASCII keycodes (like 97 for "a")
+            # through keydefs. Those KeyEvents often have nil text, which breaks
+            # self-insert in sessions that fall back on ev.text.
+            if ev.respond_to?(:text) && ev.text.nil? &&
+               ev.respond_to?(:ctrl?) && ev.respond_to?(:meta?) &&
+               !ev.ctrl? && !ev.meta? &&
+               ch.between?(32, 126)
+
+              KeyEvent.new(
+                key:   ev.key,
+                text:  ch.chr,
+                ctrl:  ev.ctrl?,
+                meta:  ev.meta?,
+                shift: ev.shift?,
+                raw:   ch,
+              )
+            else
+              ev
+            end
           else
             fallback_decode(ch)
           end
         end
 
-        def fallback_decode(ch)
+        def fallback_decode(ch, raw: nil)
           FatTerm.log("#{self.class}#fallback_decode(ch: #{ch})", tag: :keycode)
           case ch
           when Integer
@@ -92,6 +112,9 @@ module FatTerm
             # (e.g. 97 for "a"). Treat printable ASCII as self-inserting text.
             if (32..126).cover?(ch)
               fallback_decode(ch.chr, raw: ch)
+            elsif ch == 10 || ch == 130
+              # Enter can arrive as LF (10) or CR (13). Do this BEFORE ctrl-letter mapping.
+              KeyEvent.new(key: :enter, text: "\n", raw: ch)
             elsif ch == 0
               # Ctrl-@ => NUL
               KeyEvent.new(key: :'@', ctrl: true, raw: ch)
