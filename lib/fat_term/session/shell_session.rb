@@ -46,12 +46,20 @@ module FatTerm
       end
 
       action = resolve_action(ev)
+    # Save any state we want saved on quit, error, etc.
+    def persist!(terminal:)
+      return unless @history.respond_to?(:save!)
 
       if action.nil?
         if ev.text && !ev.text.empty? && ev.text != "\n" && ev.text != "\r"
           @field.act_on(:insert, ev.text)
           return []
         end
+      FatTerm.log("ShellSession.persist!: saving history", tag: :session)
+      @history.save!
+    rescue => e
+      FatTerm.log("ShellSession.persist!: failed to save history: #{e.class}: #{e.message}", tag: :error)
+    end
 
         return [alert_cmd(:info, "Unbound key: #{ev}", ev: ev)]
       end

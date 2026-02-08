@@ -39,6 +39,11 @@ module FatTerm
       else
         []
       end
+
+    # Save any state we want saved on quit, error, etc.
+    def persist!(terminal:)
+    end
+
     end
 
     def update_key(_ev, terminal:)

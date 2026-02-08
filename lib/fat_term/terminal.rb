@@ -145,6 +145,18 @@ module FatTerm
       )
     end
 
+    def persist_sessions!
+      sessions = []
+      sessions << @focused_session if @focused_session
+      sessions.concat(@sessions) if defined?(@sessions) && @sessions
+
+      sessions.uniq.each do |s|
+        next unless s.respond_to?(:persist!)
+
+        s.persist!(terminal: self)
+      end
+    end
+
     def quit
       @running = false
     end
@@ -160,7 +172,10 @@ module FatTerm
         apply_command([:send, :alert, :clear, {}])
       end
 
+      FatTerm.log("Terminal.dispatch_message: #{message.inspect}", tag: :dispatch)
       commands = s.update(message, terminal: self)
+      FatTerm.log("Terminal.dispatch_message: session=#{s.class} -> cmds=#{commands.inspect}", tag: :dispatch)
+
       apply_commands(commands)
     end
 
@@ -207,6 +222,7 @@ module FatTerm
 
       case name
       when :quit
+        persist_sessions!
         quit
       when :push
         session = rest.fetch(0)
