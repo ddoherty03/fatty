@@ -98,7 +98,12 @@ module FatTerm
         dispatch_message(msg) if msg
         render_frame
       end
+    rescue => e
+      FatTerm.log("Terminal.run: fatal error #{e.class}: #{e.message}", tag: :error)
+      FatTerm.log(e.backtrace.join("\n"), tag: :error) if e.backtrace
+      raise
     ensure
+      persist_sessions!
       @ctx&.close
     end
 

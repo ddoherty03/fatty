@@ -52,7 +52,12 @@ module FatTerm
         buffer: buffer,
         field: self,
       )
+      FatTerm.log(
+        "InputField.act_on: action=#{action} args=#{args.inspect} pending_count=#{@pending_count}",
+        tag: :count,
+      )
       kwargs = add_count_to_args(action, kwargs, @pending_count)
+      FatTerm.log("InputField.act_on: args_with_count=#{kwargs}", tag: :count)
       if FatTerm::Actions.registered?(action)
         FatTerm::Actions.call(action, ctx, *args, **kwargs)
       elsif buffer.respond_to?(action)

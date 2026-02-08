@@ -74,6 +74,7 @@ module FatTerm
         result = map[event]
         break if result
       end
+      FatTerm.log("KeyMap.resolve: -> #{result.inspect}", tag: :keybinding)
       result
     end
 
