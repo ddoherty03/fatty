@@ -9,7 +9,7 @@ module FatTerm
           stub_const(
             "FatTerm::CURSES_TO_EVENT",
             {
-              9   => KeyEvent.new(key: :tab, raw: 9),
+              9 => KeyEvent.new(key: :tab, raw: 9),
               260 => KeyEvent.new(key: :left, raw: 260),
               261 => KeyEvent.new(key: :right, raw: 261),
             },
@@ -61,9 +61,9 @@ module FatTerm
             kd = KeyDecoder.new(env: env)
             e  = kd.decode("@")
 
-            expect(e.key).to eq(:"@")
-            expect(e.text).to eq("@")
-            expect(e.raw).to eq("@")
+            expect(e.key).to eq(:'@')
+            expect(e.text).to eq('@')
+            expect(e.raw).to eq('@')
           end
 
           it "treats tab (9) as an action key (:tab) with no text" do
@@ -148,7 +148,7 @@ module FatTerm
             kd = KeyDecoder.new(env: env)
             e  = kd.decode(0)
 
-            expect(e.key).to eq(:"@")
+            expect(e.key).to eq(:'@')
             expect(e.ctrl?).to be(true)
             expect(e.meta?).to be(false)
             expect(e.text).to be_nil
@@ -162,7 +162,7 @@ module FatTerm
             kd = KeyDecoder.new(env: env)
             e  = kd.decode([27, 0])
 
-            expect(e.key).to eq(:"@")
+            expect(e.key).to eq(:'@')
             expect(e.ctrl?).to be(true)
             expect(e.meta?).to be(true)
             expect(e.text).to be_nil
@@ -181,27 +181,40 @@ module FatTerm
             expect(e.raw).to eq(999)
             expect(e.decoded?).to be(false)
           end
+
+          it "provides text for printable ASCII even when a keydef maps the integer code" do
+            decoder = FatTerm::Backends::Curses::KeyDecoder.new(env: { terminal: :test })
+            # Simulate a user keydef that maps 97 ("a") to a KeyEvent without text.
+            decoder.instance_variable_set(:@map, { 97 => FatTerm::KeyEvent.new(key: :a, raw: 97) })
+
+            ev = decoder.decode(97)
+
+            expect(ev.key).to eq(:a)
+            expect(ev.text).to eq("a")
+            expect(ev.ctrl?).to be(false)
+            expect(ev.meta?).to be(false)
+          end
         end
 
         describe "user keydefs override" do
           it "overrides built-in map for the current terminal" do
             stub_builtin_map
 
-            allow(FatTerm::Config).to receive(:keydefs).and_return(
-                                        {
-                                          terminal: {
-                                            xterm: {
-                                              map: {
-                                                "260" => { "key" => "right" }, # swap left->right
-                                              },
-                                            },
-                                          },
-                                        },
-                                      )
-
+            allow(FatTerm::Config)
+              .to receive(:keydefs)
+                    .and_return(
+                      {
+                        terminal: {
+                          xterm: {
+                            map: {
+                              "260" => { "key" => "right" }, # swap left->right
+                            },
+                          },
+                        },
+                      },
+                    )
             kd = KeyDecoder.new(env: env(:xterm))
             e  = kd.decode(260)
-
             expect(e.key).to eq(:right)
           end
 
@@ -218,17 +231,19 @@ module FatTerm
           it "normalizes spec key string to symbol" do
             stub_builtin_map
 
-            allow(FatTerm::Config).to receive(:keydefs).and_return(
-                                        {
-                                          terminal: {
-                                            xterm: {
-                                              map: {
-                                                "999" => { "key" => "home", "shift" => true, "ctrl" => false },
-                                              },
-                                            },
-                                          },
-                                        },
-                                      )
+            allow(FatTerm::Config)
+              .to receive(:keydefs)
+                    .and_return(
+                      {
+                        terminal: {
+                          xterm: {
+                            map: {
+                              "999" => { "key" => "home", "shift" => true, "ctrl" => false },
+                            },
+                          },
+                        },
+                      },
+                    )
 
             kd = KeyDecoder.new(env: env(:xterm))
             e  = kd.decode(999)
@@ -241,17 +256,19 @@ module FatTerm
           it "applies modifiers from user keydefs spec" do
             stub_builtin_map
 
-            allow(FatTerm::Config).to receive(:keydefs).and_return(
-                                        {
-                                          terminal: {
-                                            xterm: {
-                                              map: {
-                                                "260" => { "key" => "left", "ctrl" => true, "shift" => true },
-                                              },
-                                            },
-                                          },
-                                        },
-                                      )
+            allow(FatTerm::Config)
+              .to receive(:keydefs)
+                    .and_return(
+                      {
+                        terminal: {
+                          xterm: {
+                            map: {
+                              "260" => { "key" => "left", "ctrl" => true, "shift" => true },
+                            },
+                          },
+                        },
+                      },
+                    )
 
             kd = KeyDecoder.new(env: env(:xterm))
             e  = kd.decode(260)
@@ -266,17 +283,19 @@ module FatTerm
           it "allows user keydefs to remap tab code to another action key" do
             stub_builtin_map
 
-            allow(FatTerm::Config).to receive(:keydefs).and_return(
-                                        {
-                                          terminal: {
-                                            xterm: {
-                                              map: {
-                                                "9" => { "key" => "right" },
-                                              },
-                                            },
-                                          },
-                                        },
-                                      )
+            allow(FatTerm::Config)
+              .to receive(:keydefs)
+                    .and_return(
+                      {
+                        terminal: {
+                          xterm: {
+                            map: {
+                              "9" => { "key" => "right" },
+                            },
+                          },
+                        },
+                      },
+                    )
 
             kd = KeyDecoder.new(env: env(:xterm))
             e  = kd.decode(9)
