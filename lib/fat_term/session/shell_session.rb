@@ -28,7 +28,19 @@ module FatTerm
     end
 
     def update_key(ev, terminal:)
-      handle_key(ev, terminal:)
+      FatTerm.log("ShellSession.update_key (unbound): key=#{ev.key.inspect} ctrl=#{ev.ctrl?} meta=#{ev.meta?} raw=#{ev.raw.inspect}", tag: :session)
+      if ev.key == :resize
+        handle_resize(terminal)
+        []
+      elsif ev.key == :enter || ev.key == :return
+        # safety: if somehow not bound, still accept
+        accept_line(terminal)
+      elsif ev.text && !ev.text.empty? && ev.text != "\n" && ev.text != "\r"
+        @field.act_on(:insert, ev.text)
+        []
+      else
+        [alert_cmd(:info, "Unbound key: #{ev}", ev: ev)]
+      end
     end
 
     def view(screen:, renderer:, terminal:)
@@ -37,42 +49,36 @@ module FatTerm
       renderer.restore_cursor(@field)
     end
 
-    private
-
-    def handle_key(ev, terminal:)
-      if ev.key == :resize
-        handle_resize(terminal)
-        return []
-      end
-
-      action = resolve_action(ev)
     # Save any state we want saved on quit, error, etc.
     def persist!(terminal:)
       return unless @history.respond_to?(:save!)
 
-      if action.nil?
-        if ev.text && !ev.text.empty? && ev.text != "\n" && ev.text != "\r"
-          @field.act_on(:insert, ev.text)
-          return []
-        end
       FatTerm.log("ShellSession.persist!: saving history", tag: :session)
       @history.save!
     rescue => e
       FatTerm.log("ShellSession.persist!: failed to save history: #{e.class}: #{e.message}", tag: :error)
     end
 
-        return [alert_cmd(:info, "Unbound key: #{ev}", ev: ev)]
-      end
+    private
 
-      apply_action(action, ev, terminal:)
+    def handle_action(action, args, terminal:, event:)
+      FatTerm.log(
+        "ShellSession.handle_action: action=#{action.inspect} args=#{args.inspect} key=#{event.key.inspect}",
+        tag: :keymap,
+      )
+      apply_action(action, args, event, terminal: terminal)
     end
 
+    # Override from Session class only to add paging context to the front of
+    # the KeyMap context list when paging.
     def resolve_action(ev)
-      if paging_mode?
-        @keymap.resolve(ev, contexts: :paging) || @keymap.resolve(ev, contexts: :input)
-      else
-        @keymap.resolve(ev, contexts: :input)
-      end
+      ctxs =
+        if paging_mode?
+          [:paging, :input]
+        else
+          [:input]
+        end
+      @keymap.resolve_action(ev, contexts: ctxs)
     end
 
     def paging_mode?
@@ -83,7 +89,7 @@ module FatTerm
       !viewport.at_bottom?(lines.length)
     end
 
-    def apply_action(action, ev, terminal:)
+    def apply_action(action, args, ev, terminal:)
       case action
       when :accept_line
         accept_line(terminal)
@@ -118,7 +124,7 @@ module FatTerm
       else
         viewport.clamp!(output.lines)
         begin
-          @field.act_on(action)
+          @field.act_on(action, *args)
         rescue FatTerm::ActionError => e
           return [alert_cmd(:error, e.message, ev: ev)]
         end

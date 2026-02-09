@@ -11,45 +11,36 @@ module FatTerm
       @on_accept = on_accept
     end
 
-    # It receives semantic events and applies actions.
-    #
-    # Return :handled or :unhandled.
-    def update(event, terminal:)
-      action, args = resolve_action(event)
-      return :unhandled unless action
+    # Unbound keys land here.
+    def update_key(ev, terminal:)
+      if ev.text && !ev.text.empty? && ev.text != "\n" && ev.text != "\r"
+        ctx = action_context(terminal: terminal, event: ev)
+        @field.act_on(:insert, ev.text, ctx: ctx)
+      end
+      []
+    end
+
+    # Bound keys land here because Session#update resolves via keymap first.
+    def handle_action(action, args, terminal:, event:)
+      FatTerm.log(
+        "InputSession.handle_action: action=#{action.inspect} args=#{args.inspect} key=#{event.key.inspect} ctrl=#{event.ctrl?} meta=#{event.meta?}",
+        tag: :keymap
+      )
 
       if action.to_sym == :accept_line
         line = @field.accept_line
-        @on_accept ? @on_accept.call(line, self, terminal) : emit([:accept_line, line])
-        return :handled
+        return Array(@on_accept ? @on_accept.call(line, self, terminal) : emit([:accept_line, line]))
       end
 
-      ctx = action_context(terminal:, event:)
+      ctx = action_context(terminal: terminal, event: event)
       @field.act_on(action, *args, ctx: ctx)
-      :handled
-    rescue ActionError
-      :unhandled
+      []
+    rescue ActionError => e
+      FatTerm.log("InputSession.handle_action: ActionError #{e.message}", tag: :keymap)
+      []
     end
 
     private
-
-    # Here event is what is returned by the KeyMap, which can either be a
-    # simple name of an action or an Array with the action name as the first
-    # element and any args as the remaining element.  Thus allows us to bind
-    # keys like digit arguments to an Array that passed the digit as the
-    # argument.
-    def resolve_action(event)
-      return [nil, []] unless keymap
-
-      resolved = keymap.lookup(context: context, event: event)
-      return [nil, []] unless resolved
-
-      if resolved.is_a?(Array)
-        [resolved[0], resolved[1..] || []]
-      else
-        [resolved, []]
-      end
-    end
 
     def action_context(terminal:, event:)
       # Adapt this to whatever ActionContext class you already have.
