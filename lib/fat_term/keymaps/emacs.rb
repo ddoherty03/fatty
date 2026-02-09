@@ -22,13 +22,6 @@ module FatTerm
       map.bind(key: :home, action: :bol)
       map.bind(key: :end, action: :eol)
 
-      # Region / Mark
-      map.bind(key: :space, ctrl: true, action: :set_mark)
-      map.bind(key: :'@', ctrl: true, action: :set_mark)
-      map.bind(key: :g, ctrl: true, action: :clear_mark)
-      map.bind(key: :w, ctrl: true, action: :kill_region)
-      map.bind(key: :w, meta: true, action: :copy_region)
-
       # Deletion
       map.bind(key: :delete, action: :delete_char_forward)
       map.bind(key: :d, ctrl: true, action: :delete_char_forward)
@@ -43,6 +36,13 @@ module FatTerm
       map.bind(key: :_, ctrl: true, action: :undo)
       map.bind(key: :/, ctrl: true, meta: true, action: :redo)
       map.bind(key: :/, meta: true, action: :redo)
+
+      # Region / Mark
+      map.bind(key: :space, ctrl: true, action: :set_mark)
+      map.bind(key: :'@', ctrl: true, action: :set_mark)
+      map.bind(key: :g, ctrl: true, action: :clear_mark)
+      map.bind(key: :w, ctrl: true, action: :kill_region)
+      map.bind(key: :w, meta: true, action: :copy_region)
 
       # Yank / Kill ring
       map.bind(key: :y, ctrl: true, action: :yank)
