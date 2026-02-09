@@ -104,7 +104,7 @@ module FatTerm
       raise
     ensure
       persist_sessions!
-      @ctx&.close
+      stop_curses!
     end
 
     private
@@ -135,14 +135,21 @@ module FatTerm
       self
     end
 
+    def stop_curses!
+      @ctx&.close
+    ensure
+      begin
+        $stdout.write("\e[0m")  # SGR reset
+        $stdout.write("\e[0 q") # DECSCUSR: restore terminal default cursor
+        $stdout.flush
+      rescue StandardError
+        # best-effort cleanup
+      end
+    end
+
     def install_default_sessions!
       pin(FatTerm::AlertSession.new)
-      push(
-        FatTerm::ShellSession.new(
-          prompt: @prompt,
-          on_accept: @on_accept,
-        )
-      )
+      push(FatTerm::ShellSession.new(prompt: @prompt, on_accept: @on_accept))
     end
 
     def persist_sessions!
