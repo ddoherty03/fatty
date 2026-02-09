@@ -11,10 +11,11 @@ module FatTerm
       attr_accessor :logger
     end
 
-    def self.configure(level: :info, json: true, progname: "fat_term")
+    def self.configure
+      cfg = FatTerm::Config.config
       path =
-        if FatTerm::Config.config.dig(:log, :file)
-          File.expand_path(FatTerm::Config.config.dig(:log, :file))
+        if cfg.dig(:log, :file)
+          File.expand_path(cfg.dig(:log, :file))
         elsif ENV['XDG_STATE_HOME']
           File.expand_path(File.join(ENV['XDG_STATE_HOME'], 'fat_term', 'fat_term.log'))
         else
@@ -30,9 +31,16 @@ module FatTerm
       io = File.open(path, "a")
       io.sync = true
       self.logger = ::Logger.new(io)
-      logger.level = severity(level)
-      logger.progname = progname
-      logger.formatter = json ? JsonFormatter.new : TextFormatter.new
+      logger.level = severity(cfg.dig(:log, :level))
+      logger.formatter =
+        if cfg.dig(:log, :format).nil?
+          JsonFormatter.new
+        elsif cfg.dig(:log, :format)&.to_sym == :json
+          JsonFormatter.new
+        else
+          TextFormatter.new
+        end
+      logger.progname = FatTerm::Config.progname || 'fat_term'
       logger
     end
 
@@ -77,16 +85,21 @@ module FatTerm
 
     # Translate our severity symbols to those expected by ::Logger.
     def self.severity(sym)
-      case sym
+      case sym&.to_sym
       when :debug
+        # This is 0
         ::Logger::DEBUG
       when :info
+        # This is 1
         ::Logger::INFO
       when :warn
+        # This is 2
         ::Logger::WARN
       when :error
+        # This is 3
         ::Logger::ERROR
       when :fatal
+        # This is 4
         ::Logger::FATAL
       else
         ::Logger::DEBUG
@@ -129,5 +142,25 @@ module FatTerm
   # So we can just call FatTerm.log
   def self.log(event = nil, level: :debug, **data)
     Logger.log(event, level: level, **data)
+  end
+
+  def self.debug(event, tag: nil, **data)
+    Logger.log(event, level: :debug, tag: tag, **data)
+  end
+
+  def self.info(event, tag: nil, **data)
+    Logger.log(event, level: :info, tag: tag, **data)
+  end
+
+  def self.warn(event, tag: nil, **data)
+    Logger.log(event, level: :warn, tag: tag, **data)
+  end
+
+  def self.error(event, tag: nil, **data)
+    Logger.log(event, level: :error, tag: tag, **data)
+  end
+
+  def self.fatal(event, tag: nil, **data)
+    Logger.log(event, level: :fatal, tag: tag, **data)
   end
 end

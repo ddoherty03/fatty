@@ -19,19 +19,6 @@ module FatTerm
 
     attr_reader :screen, :renderer, :event_source
 
-    # def initialize(screen:, renderer:, event_source:)
-    #   @screen = screen
-    #   @renderer = renderer
-    #   @event_source = event_source
-
-    #   @running = false
-
-    #   @stack = []          # focus stack (top receives input)
-    #   @pinned = []         # always rendered, never focused unless you choose
-    #   @sessions_by_id = {} # id => session
-    #   @logger = FatTerm::Logger.configure(level: FatTerm::Config.config.dig(:log, :level))
-    # end
-
     def initialize(prompt: "> ", on_accept: nil, env: nil)
       @prompt = Prompt.ensure(prompt)
       @on_accept = on_accept
@@ -110,10 +97,10 @@ module FatTerm
     private
 
     def preflight!
-      cfg = FatTerm::Config.config
+      FatTerm::Config.config
       FatTerm::Config.keydefs
       FatTerm::Config.keybindings
-      FatTerm::Logger.configure(level: cfg.dig(:log, :level))
+      FatTerm::Logger.configure
     rescue FatConfig::ParseError => ex
       warn "fat_term: configuration error: #{ex.message}"
       exit(1)
