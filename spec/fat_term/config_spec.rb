@@ -7,7 +7,7 @@ require "stringio"
 module FatTerm
   RSpec.describe "FatTerm::Config with real FatConfig::Reader" do
     def write_cfg(dir, name, content)
-      path = File.join(dir, "fat_term", "#{name}.yml")
+      path = File.join(dir, "#{name}.yml")
       FileUtils.mkdir_p(File.dirname(path))
       File.write(path, content)
       path
@@ -15,18 +15,18 @@ module FatTerm
 
     around do |ex|
       old_xdg = ENV["XDG_CONFIG_HOME"]
-
+      Config.progname = progname
+      Config.dir = nil
       Dir.mktmpdir("fat_term_config") do |tmp|
         ENV["XDG_CONFIG_HOME"] = tmp
         ex.run
       end
     ensure
+      Config.dir = nil
       ENV["XDG_CONFIG_HOME"] = old_xdg
     end
 
-    # ------------------------------------------------------------------
-    # config.yml
-    # ------------------------------------------------------------------
+    let(:progname) { 'spec_app' }
 
     describe 'path names' do
       it "returns default names of the user paths before they exist" do
@@ -40,7 +40,7 @@ module FatTerm
 
       it "returns the actual name of the user path after its exists" do
         write_cfg(
-          ENV["XDG_CONFIG_HOME"],
+          File.join(ENV["XDG_CONFIG_HOME"], progname),
           "config",
           <<~YAML,
             log:
@@ -51,12 +51,11 @@ module FatTerm
         path = Config.user_config_path
         expect(path).to match(/tmp.*config.yml/)
       end
-    end
 
-    describe "config.yml" do
-      it "loads a valid config.yml" do
+      it "returns file from an explicitly set user directory after its exists" do
+        dir = File.join(__dir__, "../tmp/special_config_dir")
         write_cfg(
-          ENV["XDG_CONFIG_HOME"],
+          dir,
           "config",
           <<~YAML,
             log:
@@ -64,7 +63,23 @@ module FatTerm
               tags: [all]
           YAML
         )
+        Config.dir = dir
+        path = Config.user_config_path
+        expect(path).to match(/special_config_dir.*config.yml/)
+      end
+    end
 
+    describe "config.yml" do
+      it "loads a valid config.yml" do
+        write_cfg(
+          File.join(ENV["XDG_CONFIG_HOME"], progname),
+          "config",
+          <<~YAML,
+            log:
+              level: debug
+              tags: [all]
+          YAML
+        )
         cfg = Config.config
         expect(cfg).to be_a(Hash)
         expect(cfg.dig(:log, :level) || cfg.dig("log", "level")).to eq("debug").or eq(:debug)
@@ -76,19 +91,19 @@ module FatTerm
       end
 
       it "raises FatConfig::ParseError for invalid config.yml, warns and exits" do
-        write_cfg(ENV["XDG_CONFIG_HOME"], "config", "log--- : [broken")
+        write_cfg(
+          File.join(ENV["XDG_CONFIG_HOME"], progname),
+          "config",
+          "log--- : [broken",
+        )
         expect { Config.config }.to raise_error(/YAML parse error/i)
       end
     end
 
-    # ------------------------------------------------------------------
-    # keydefs.yml
-    # ------------------------------------------------------------------
-
     describe "keydefs.yml" do
       it "loads structured terminal key definitions" do
         write_cfg(
-          ENV["XDG_CONFIG_HOME"],
+          File.join(ENV["XDG_CONFIG_HOME"], progname),
           "keydefs",
           <<~YAML,
             terminal:
@@ -145,19 +160,19 @@ module FatTerm
       end
 
       it "raises FatConfig::ParseError for invalid keydefs.yml" do
-        write_cfg(ENV["XDG_CONFIG_HOME"], "keydefs", "log: [broken")
+        write_cfg(
+          File.join(ENV["XDG_CONFIG_HOME"], progname),
+          "keydefs",
+          "log: [broken",
+        )
         expect { Config.keydefs }.to raise_error(/YAML parse error/i)
       end
     end
 
-    # ------------------------------------------------------------------
-    # keybindings.yml
-    # ------------------------------------------------------------------
-
     describe "keybindings.yml" do
       it "loads valid keybindings.yml" do
         write_cfg(
-          ENV["XDG_CONFIG_HOME"],
+          File.join(ENV["XDG_CONFIG_HOME"], progname),
           "keybindings",
           <<~YAML,
             - key: left
@@ -186,7 +201,11 @@ module FatTerm
       end
 
       it "re-raises FatConfig::ParseError for invalid keybindings.yml (after verbose retry)" do
-        write_cfg(ENV["XDG_CONFIG_HOME"], "keybindings", "log: [broken")
+        write_cfg(
+          File.join(ENV["XDG_CONFIG_HOME"], progname),
+          "keybindings",
+          "log: [broken",
+        )
         expect { Config.keybindings }.to raise_error(/YAML parse error/i)
       end
     end

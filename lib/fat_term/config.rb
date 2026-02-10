@@ -20,17 +20,17 @@ module FatTerm
     end
 
     def self.progname=(name)
-      @progname = name
+      @progname = name || 'fat_term'
       @reader = nil
     end
 
     def self.user_config_path
-      self.reader ||= FatConfig::Reader.new(progname, user_dir: dir)
+      @reader ||= FatConfig::Reader.new(progname, user_dir: dir)
       reader.config_paths[:user].first || default_user_path('config')
     end
 
     def self.user_keydefs_path
-      self.reader ||= FatConfig::Reader.new(progname)
+      @reader ||= FatConfig::Reader.new(progname)
       reader.config_paths('keydefs')[:user].first || default_user_path('keydefs')
     end
 
