@@ -28,6 +28,31 @@ module FatTerm
     # config.yml
     # ------------------------------------------------------------------
 
+    describe 'path names' do
+      it "returns default names of the user paths before they exist" do
+        path = Config.user_config_path
+        expect(path).to match(/~\/\.config\/.*config.yml/)
+        path = Config.user_keydefs_path
+        expect(path).to match(/keydefs.yml/)
+        path = Config.user_keybindings_path
+        expect(path).to match(/keybindings.yml/)
+      end
+
+      it "returns the actual name of the user path after its exists" do
+        write_cfg(
+          ENV["XDG_CONFIG_HOME"],
+          "config",
+          <<~YAML,
+            log:
+              level: debug
+              tags: [all]
+          YAML
+        )
+        path = Config.user_config_path
+        expect(path).to match(/tmp.*config.yml/)
+      end
+    end
+
     describe "config.yml" do
       it "loads a valid config.yml" do
         write_cfg(

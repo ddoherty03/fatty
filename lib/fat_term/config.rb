@@ -2,16 +2,34 @@
 
 module FatTerm
   module Config
-    @progname = 'fat_term'
     class << self
       attr_accessor :progname
+      attr_accessor :reader
     end
+    @progname = 'fat_term'
+    @reader = nil
 
     # Read in the general configuration for fat_term in config.yml for certain
     # user-adjustable features of fat_term.  One of these is the logging,
     # including the location of the log file.
     def self.config
-      FatConfig::Reader.new(progname).read('config')
+      self.reader ||= FatConfig::Reader.new(progname)
+      reader.read('config')
+    end
+
+    def self.user_config_path
+      self.reader ||= FatConfig::Reader.new(progname)
+      reader.config_paths[:user].first || default_user_path('config')
+    end
+
+    def self.user_keydefs_path
+      self.reader ||= FatConfig::Reader.new(progname)
+      reader.config_paths('keydefs')[:user].first || default_user_path('keydefs')
+    end
+
+    def self.user_keybindings_path
+      self.reader ||= FatConfig::Reader.new(progname)
+      reader.config_paths('keybindings')[:user].first || default_user_path('keybindings')
     end
 
     # Read in the keydefs.yml config file that maps numeric keycodes returned
@@ -29,6 +47,10 @@ module FatTerm
 
       bindings = kb_cfg[:keybindings]
       Array(bindings)
+    end
+
+    def self.default_user_path(name = 'config')
+      "~/.config/#{progname}/#{name}.yml"
     end
   end
 end
