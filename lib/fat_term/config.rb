@@ -3,22 +3,29 @@
 module FatTerm
   module Config
     class << self
-      attr_accessor :progname
-      attr_accessor :reader
+      attr_reader :progname
+      attr_reader :reader
+      attr_accessor :dir
     end
     @progname = 'fat_term'
     @reader = nil
+    @dir = nil
 
     # Read in the general configuration for fat_term in config.yml for certain
     # user-adjustable features of fat_term.  One of these is the logging,
     # including the location of the log file.
     def self.config
-      self.reader ||= FatConfig::Reader.new(progname)
+      @reader ||= FatConfig::Reader.new(progname, user_dir: dir)
       reader.read('config')
     end
 
+    def self.progname=(name)
+      @progname = name
+      @reader = nil
+    end
+
     def self.user_config_path
-      self.reader ||= FatConfig::Reader.new(progname)
+      self.reader ||= FatConfig::Reader.new(progname, user_dir: dir)
       reader.config_paths[:user].first || default_user_path('config')
     end
 
