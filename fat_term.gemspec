@@ -36,7 +36,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "curses", "~> 1.4"
-  spec.add_dependency "fat_config", ">=0.7.1"
+  spec.add_dependency "fat_config", ">=0.8.0"
   spec.add_dependency "unicode-display_width", "~> 2.5"
   spec.add_dependency "yaml"
 
