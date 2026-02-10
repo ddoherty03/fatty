@@ -5,6 +5,7 @@ require "json"
 
 module FatTerm
   RSpec.describe Logger do
+    let(:progname) { 'fat_term_spec' }
     around do |ex|
       # Preserve global logger + env, since FatTerm::Logger is module-global.
       old_logger = Logger.logger
@@ -12,7 +13,7 @@ module FatTerm
 
       Dir.mktmpdir("fat_term_log_spec") do |dir|
         ENV["XDG_STATE_HOME"] = dir
-        FatTerm::Config.progname = 'fat_term_spec'
+        FatTerm::Config.progname = progname
         ex.run
       end
     ensure
@@ -32,13 +33,13 @@ module FatTerm
         logger = Logger.configure
         expect(logger).to be_a(::Logger)
 
-        path = File.join(ENV.fetch("XDG_STATE_HOME"), "fat_term", "fat_term.log")
+        path = File.join(ENV.fetch("XDG_STATE_HOME"), "#{progname}", "#{progname}.log")
         expect(File.exist?(path)).to be(true)
         expect(File.readable?(path)).to be(true)
         expect(File.writable?(path)).to be(true)
       end
 
-      it "uses the configured log file path when log.file is set in config" do
+      it "uses the XDG_STATE_HOME path when set" do
         custom = File.join(ENV.fetch("XDG_STATE_HOME"), "custom_logs", "ft.log")
         allow(FatTerm::Config).to receive(:config).and_return(log: { file: custom })
 
@@ -62,7 +63,7 @@ module FatTerm
           logger = FatTerm::Logger.configure
           expect(logger).to be_a(::Logger)
 
-          expected = File.expand_path("~/.state/fat_term/fat_term.log")
+          expected = File.expand_path("~/.state/#{progname}/#{progname}.log")
           expect(expected).to start_with(tmp_home)
 
           expect(File.exist?(expected)).to be(true)
@@ -159,7 +160,7 @@ module FatTerm
         allow(FatTerm::Config).to receive(:config).and_return({ log: { level: 'debug', format: 'text', tags: [:all] } })
 
         Logger.configure
-        path = File.join(ENV.fetch("XDG_STATE_HOME"), "fat_term", "fat_term.log")
+        path = File.join(ENV.fetch("XDG_STATE_HOME"), progname, "#{progname}.log")
 
         Logger.log(:evt, level: :info, tag: :render, foo: 1)
 
@@ -188,7 +189,7 @@ module FatTerm
                .and_return({ log: { tags: [:all] } })
 
         Logger.configure
-        path = File.join(ENV.fetch("XDG_STATE_HOME"), "fat_term", "fat_term.log")
+        path = File.join(ENV.fetch("XDG_STATE_HOME"), progname, "#{progname}.log")
         Logger.log(:hello, level: :info, tag: :render, foo: 123)
 
         lines = read_lines(path)
@@ -228,7 +229,7 @@ module FatTerm
                             })
 
         Logger.configure
-        path = File.join(ENV.fetch("XDG_STATE_HOME"), "fat_term", "fat_term.log")
+        path = File.join(ENV.fetch("XDG_STATE_HOME"), progname, "#{progname}.log")
 
         Logger.log(:untagged_event, level: :info, foo: "bar")
 

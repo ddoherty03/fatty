@@ -12,14 +12,15 @@ module FatTerm
     end
 
     def self.configure
-      cfg = FatTerm::Config.config
+      progname = FatTerm::Config.progname
+      cfg = FatTerm::Config.config || 'fat_term'
       path =
         if cfg.dig(:log, :file)
           File.expand_path(cfg.dig(:log, :file))
         elsif ENV['XDG_STATE_HOME']
-          File.expand_path(File.join(ENV['XDG_STATE_HOME'], 'fat_term', 'fat_term.log'))
+          File.expand_path(File.join(ENV['XDG_STATE_HOME'], progname, "#{progname}.log"))
         else
-          File.expand_path(File.join('~/.state/fat_term', 'fat_term.log'))
+          File.expand_path(File.join("~/.state/#{progname}", "#{progname}.log"))
         end
       dir = File.dirname(path)
       FileUtils.mkdir_p(dir)
@@ -40,7 +41,7 @@ module FatTerm
         else
           TextFormatter.new
         end
-      logger.progname = FatTerm::Config.progname || 'fat_term'
+      logger.progname = progname
       logger
     end
 
