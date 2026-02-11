@@ -4,7 +4,7 @@ module FatTerm
   module Config
     class << self
       attr_reader :progname
-      attr_reader :reader
+      attr_accessor :reader
       attr_accessor :dir
     end
     @progname = 'fat_term'
