@@ -53,6 +53,7 @@ module FatTerm
       @undo_limit = undo_limit
       @undo_stack = []
       @redo_stack = []
+      @undo_chain = nil
 
       @kill_ring = []
       @kill_ring_max = kill_ring_max
@@ -103,15 +104,13 @@ module FatTerm
     end
 
     def region_range
-      r = nil
       if region_active?
         a = @mark
         b = @cursor
         s = [a, b].min
         e = [a, b].max
-        r = clamp_range(s...e)
+        clamp_range(s...e)
       end
-      r
     end
 
     # Return whether the action with name takes a count: parameter.
@@ -141,15 +140,18 @@ module FatTerm
 
     desc "Move cursor to the beginning of the line"
     action :bol do
+      break_undo_chain!
       @cursor = 0
     end
 
     desc "Move cursor to the end of the line"
     action :eol do
+      break_undo_chain!
       @cursor = text.length
     end
 
     def move_word_right_once
+      break_undo_chain!
       chars = text.chars
       i = @cursor
       # skip non-word
@@ -162,10 +164,12 @@ module FatTerm
 
     desc "Move cursor count words to the right"
     action :move_word_right do |count: 1|
+      break_undo_chain!
       repeat(count) { move_word_right_once }
     end
 
     def move_word_left_once
+      break_undo_chain!
       chars = text.chars
       i = @cursor
       # skip non-word chars to the left
@@ -178,17 +182,20 @@ module FatTerm
 
     desc "Move cursor count words to the left"
     action :move_word_left do |count: 1|
+      break_undo_chain!
       repeat(count) { move_word_left_once }
     end
 
     desc "Move cursor count characters to the left"
     action :move_left do |count: 1|
+      break_undo_chain!
       n = normalize_count(count)
       @cursor = [@cursor - n, 0].max
     end
 
     desc "Move cursor count characters to the right"
     action :move_right do |count: 1|
+      break_undo_chain!
       n = normalize_count(count)
       @cursor = [@cursor + n, text.length].min
     end
@@ -197,11 +204,13 @@ module FatTerm
 
     desc "Set the mark at the current cursor position (activates region)."
     action :set_mark do
+      break_undo_chain!
       @mark = @cursor
     end
 
     desc "Clear the mark (deactivates region)."
     action :clear_mark do
+      break_undo_chain!
       @mark = nil
     end
 
@@ -225,11 +234,25 @@ module FatTerm
       n = normalize_count(count)
       return if s.empty?
 
-      with_undo do
+      with_undo_coalesced(:insert) do
         @last_action = nil
         payload = (s * n)
-        text.insert(@cursor, payload)
-        @cursor += payload.length
+
+        if region_active?
+          r = region_range
+          if r && r.begin < r.end
+            # Replace the selected text
+            text[r] = payload
+            @cursor = r.begin + payload.length
+          else
+            text.insert(@cursor, payload)
+            @cursor += payload.length
+          end
+          clear_mark
+        else
+          text.insert(@cursor, payload)
+          @cursor += payload.length
+        end
       end
     end
 
@@ -275,72 +298,17 @@ module FatTerm
       end
     end
 
-    desc "Replace a from start, length characters; move cursor to end of insertion"
-    action :replace_span do |start, length, str|
-      start  = start.to_i
-      length = length.to_i
-      str    = str.to_s
-
-      # clamp start within [0..text.length]
-      start = 0 if start.negative?
-      start = text.length if start > text.length
-      length = 0 if length.negative?
-
-      # clamp length to available content
-      max_len = text.length - start
-      length = max_len if length > max_len
-
-      with_undo do
-        @last_action = nil
-        text.slice!(start, length) if length.positive?
-        text.insert(start, str) unless str.empty?
-        @cursor = start + str.length
-        adjust_mark_for_replace_span!(start, length, str.length)
-      end
-    end
-
-    desc "If region is active, replace it; otherwise insert at cursor."
-    action :replace_region do |str|
-      s = str.to_s
-      r = region_range
-      if r
-        replace_span(r.begin, r.end - r.begin, s)
-        @mark = nil
-      else
-        insert(s)
-      end
-      s
-    end
-
-    desc "Replace the text in the given Range with str; move cursor to end of insertion"
-    action :replace_range do |range, str|
-      r = range
-      raise ActionError, "range required" unless r.is_a?(Range)
-
-      start = r.begin.to_i
-      finish = r.end.to_i
-      finish += 1 if r.exclude_end? == false # inclusive range
-
-      replace_span(start, finish - start, str)
-    end
-
     desc "Delete the given Range and return the deleted string"
-    action :delete_range do |range|
-      r = clamp_range(range)
-      return "" if r.begin == r.end
-
-      deleted = text[r] || ""
-      replace_range(r, "")
-      deleted
-    end
-
     desc "Delete to the end of the buffer and return deleted string"
     action :kill_to_eol do
       return "" if eol?
 
-      killed = delete_range(cursor...text.length)
-      push_kill(killed)
-      @last_action = :kill
+      killed = ""
+      with_undo do
+        killed = delete_range(cursor...text.length)
+        push_kill(killed)
+        @last_action = :kill
+      end
       killed
     end
 
@@ -348,10 +316,13 @@ module FatTerm
     action :kill_to_bol do
       return "" if bol?
 
-      killed = delete_range(0...cursor)
-      @cursor = 0
-      push_kill(killed)
-      @last_action = :kill
+      killed = ""
+      with_undo do
+        killed = delete_range(0...cursor)
+        @cursor = 0
+        push_kill(killed)
+        @last_action = :kill
+      end
       killed
     end
 
@@ -360,43 +331,48 @@ module FatTerm
       n = normalize_count(count)
       return "" if eol?
 
-      start = cursor
-      finish = start
-      repeat(n) do
-        break if finish >= text.length
+      deleted = ""
+      with_undo do
+        start = cursor
+        finish = start
+        repeat(n) do
+          break if finish >= text.length
 
-        span = word_span_forward(finish)
-        break if span.begin == span.end
-        finish = span.end
+          span = word_span_forward(finish)
+          break if span.begin == span.end
+          finish = span.end
+        end
+
+        deleted = delete_range(start...finish)
+        @cursor = start
+        push_kill(deleted)
+        @last_action = :kill
       end
-
-      deleted = delete_range(start...finish)
-      @cursor = start
-      push_kill(deleted)
-      @last_action = :kill
       deleted
     end
 
-    desc "Kill count words befpre the cursor and return the deleted string"
+    desc "Kill count words before the cursor and return the deleted string"
     action :kill_word_backward do |count: 1|
       n = normalize_count(count)
       return "" if bol?
 
-      finish = cursor
-      start = finish
-      repeat(n) do
-        break if start <= 0
+      deleted = ""
+      with_undo do
+        finish = cursor
+        start = finish
+        repeat(n) do
+          break if start <= 0
 
-        span = word_span_backward(start)
-        break if span.begin == span.end
+          span = word_span_backward(start)
+          break if span.begin == span.end
+          start = span.begin
+        end
 
-        start = span.begin
+        deleted = delete_range(start...finish)
+        @cursor = start
+        push_kill(deleted)
+        @last_action = :kill
       end
-
-      deleted = delete_range(start...finish)
-      @cursor = start
-      push_kill(deleted)
-      @last_action = :kill
       deleted
     end
 
@@ -405,11 +381,14 @@ module FatTerm
       r = region_range
       return "" unless r
 
-      deleted = delete_range(r)
-      @cursor = r.begin
-      @mark = nil
-      push_kill(deleted)
-      @last_action = :kill
+      deleted = ""
+      with_undo do
+        deleted = delete_range(r)
+        @cursor = r.begin
+        @mark = nil
+        push_kill(deleted)
+        @last_action = :kill
+      end
       deleted
     end
 
@@ -418,6 +397,7 @@ module FatTerm
       r = region_range
       return "" unless r
 
+      break_undo_chain!
       copied = text[r] || ""
       push_kill(copied)
       @last_action = :kill
@@ -429,12 +409,14 @@ module FatTerm
       y = @kill_ring.first.to_s
       return "" if y.empty?
 
-      with_undo do
+      base = snapshot
+      with_undo(before: base) do
         text.insert(@cursor, y)
         @cursor += y.length
         adjust_mark_for_replace_span!(@cursor - y.length, 0, y.length)
       end
 
+      @yank_undo_snapshot = base
       @last_yank_len = y.length
       @last_action = :yank
       y
@@ -442,10 +424,11 @@ module FatTerm
 
     desc "Replace the last yanked text with the previous kill ring entry."
     action :yank_pop do |count: 1|
-      return "" unless @last_action == :yank
+      return "" unless @last_action == :yank || @last_action == :yank_pop
       return "" if @kill_ring.length < 2
-      return "" if @last_yank_len <= 0
+      return "" if @last_yank_len.to_i <= 0
 
+      break_undo_chain!
       n = normalize_count(count)
       y = ""
       repeat(n) do
@@ -453,14 +436,25 @@ module FatTerm
         @kill_ring << first
         y = @kill_ring.first.to_s
       end
-      with_undo do
-        start = @cursor - @last_yank_len
-        start = 0 if start < 0
-        replace_span(start, @last_yank_len, y)
-      end
 
+      start = @cursor - @last_yank_len
+      start = 0 if start < 0
+      replace_span(start, @last_yank_len, y)
+
+      # We changed buffer state; redo history is no longer valid.
+      @redo_stack.clear
+
+      # Ensure the undo stack top still represents the "pre-yank" snapshot.
+      if @yank_undo_snapshot
+        # If the most recent undo entry isn't our yank base, replace it.
+        if @undo_stack.empty? || @undo_stack.last != @yank_undo_snapshot
+          @undo_stack << @yank_undo_snapshot
+          @undo_stack.shift while @undo_stack.length > @undo_limit
+        end
+      end
+      clamp_mark!
       @last_yank_len = y.length
-      @last_action = :yank
+      @last_action = :yank_pop
       y
     end
 
@@ -469,6 +463,7 @@ module FatTerm
     def undo
       return if @undo_stack.empty?
 
+      break_undo_chain!
       @redo_stack << snapshot
       restore(@undo_stack.pop)
     end
@@ -476,6 +471,7 @@ module FatTerm
     def redo
       return if @redo_stack.empty?
 
+      break_undo_chain!
       @undo_stack << snapshot
       restore(@redo_stack.pop)
     end
@@ -486,7 +482,119 @@ module FatTerm
       Unicode::DisplayWidth.of(text)
     end
 
+    # Replace a from start, length characters; move cursor to end of insertion
+    def replace_span(start, length, str)
+      start  = start.to_i
+      length = length.to_i
+      str    = str.to_s
+
+      start = 0 if start.negative?
+      start = text.length if start > text.length
+      length = 0 if length.negative?
+
+      max_len = text.length - start
+      length = max_len if length > max_len
+
+      text.slice!(start, length) if length.positive?
+      text.insert(start, str) unless str.empty?
+      @cursor = start + str.length
+      adjust_mark_for_replace_span!(start, length, str.length)
+    end
+
+    # Replace the text in the given Range with str; move cursor to end of
+    # insertion
+    def replace_range(range, str)
+      r = range
+      raise ArgumentError, "range required" unless r.is_a?(Range)
+      raise ArgumentError, "range must have begin and end" if r.begin.nil? || r.end.nil?
+
+      start  = r.begin.to_i
+      finish = r.end.to_i
+      finish += 1 unless r.exclude_end?
+
+      replace_span(start, finish - start, str)
+    end
+
+    # Replace the region with the str
+    def replace_region(str)
+      s = str.to_s
+      r = region_range
+      if r && r.begin < r.end
+        replace_span(r.begin, r.end - r.begin, s)
+        @mark = nil
+      else
+        text.insert(@cursor, s)
+        @cursor += s.length
+      end
+      s
+    end
+
+    def delete_range(range)
+      r = clamp_range(range)
+      raise ArgumentError, "range required" unless r.is_a?(Range)
+      raise ArgumentError, "range must have begin and end" if r.begin.nil? || r.end.nil?
+      return "" if r.begin == r.end
+
+      deleted = text[r] || ""
+      replace_range(r, "")
+      deleted
+    end
+
     private
+
+    def with_undo(before: nil)
+      break_undo_chain!
+      before ||= snapshot
+      yield
+      after = snapshot
+
+      if after != before
+        @undo_stack << before
+        @undo_stack.shift while @undo_stack.length > @undo_limit
+        @redo_stack.clear
+      end
+
+      clamp_mark!
+    end
+
+    # This consolidates a number of actions of the same kind into a single
+    # undo step, especially insert benefits from this since you don't want
+    # each character typed to be a separate undo step.
+    def with_undo_coalesced(kind)
+      before = snapshot
+      chain = @undo_chain
+      start_new =
+        chain.nil? ||
+        chain[:kind] != kind ||
+        chain[:cursor0] != @cursor # cursor must be where the chain expects
+
+      if start_new
+        @undo_stack << before
+        @undo_stack.shift while @undo_stack.length > @undo_limit
+        @redo_stack.clear
+        @undo_chain = { kind: kind, cursor0: @cursor }
+      end
+
+      yield
+
+      # update expected cursor for continued typing
+      @undo_chain[:cursor0] = @cursor if @undo_chain
+      clamp_mark!
+    end
+
+    def break_undo_chain!
+      @undo_chain = nil
+    end
+
+    def snapshot
+      [@text.dup, @cursor]
+    end
+
+    def restore(snap)
+      @text, @cursor = snap
+      clamp_cursor!
+      @text
+    end
 
     def normalize_count(count)
       n =
@@ -551,16 +659,6 @@ module FatTerm
       start...from
     end
 
-    def snapshot
-      [@text.dup, @cursor]
-    end
-
-    def restore(snap)
-      @text, @cursor = snap
-      clamp_cursor!
-      @text
-    end
-
     def clamp_cursor!
       @cursor = 0 if @cursor.negative?
       max = @text.length
@@ -595,20 +693,20 @@ module FatTerm
       clamp_mark!
     end
 
-    def push_kill(str)
+    def push_kill(str, append: true)
       s = str.to_s
       return if s.empty?
 
-      @kill_ring.unshift(s)
+      if @last_action == :kill && !@kill_ring.empty?
+        if append
+          @kill_ring[0] = @kill_ring[0] + s
+        else
+          @kill_ring[0] = s + @kill_ring[0]
+        end
+      else
+        @kill_ring.unshift(s)
+      end
       @kill_ring.pop while @kill_ring.length > @kill_ring_max
-    end
-
-    def with_undo
-      @undo_stack << snapshot
-      @undo_stack.shift while @undo_stack.length > @undo_limit
-      @redo_stack.clear
-      yield
-      clamp_mark!
     end
 
     def word_char?(ch)
