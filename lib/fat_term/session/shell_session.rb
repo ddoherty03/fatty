@@ -39,7 +39,7 @@ module FatTerm
         @field.act_on(:insert, ev.text)
         []
       else
-        [alert_cmd(:info, "Unbound key: #{ev}", ev: ev)]
+        [alert_cmd(:info, "Unbound key: #{ev} (edit config in 'keybindings.yml' to bind)", ev: ev)]
       end
     end
 
