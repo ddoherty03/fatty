@@ -13,6 +13,28 @@ module FatTerm
       File.write(File.join(dir, "#{name}.yml"), content)
     end
 
+    around do |ex|
+      Dir.mktmpdir("fat_term_spec_xdg") do |tmp|
+        old = ENV["XDG_CONFIG_HOME"]
+        ENV["XDG_CONFIG_HOME"] = tmp
+
+        old_reader = FatTerm::Config.reader
+        old_progname = FatTerm::Config.progname
+        old_logger = FatTerm::Logger.logger
+
+        FatTerm::Config.progname = "fat_term"
+        FatTerm::Config.reader = nil
+        FatTerm::Logger.logger = nil
+
+        ex.run
+      ensure
+        FatTerm::Config.reader = old_reader
+        FatTerm::Config.progname = old_progname
+        FatTerm::Logger.logger = old_logger
+        ENV["XDG_CONFIG_HOME"] = old
+      end
+    end
+
     describe "#preflight!" do
       around do |ex|
         Dir.mktmpdir("fat_term_spec_xdg") do |tmp|
@@ -31,7 +53,7 @@ module FatTerm
           xdg,
           app: "fat_term",
           name: "config",
-          content: "log: [broken"
+          content: "log: [broken",
         )
 
         t = Terminal.new
