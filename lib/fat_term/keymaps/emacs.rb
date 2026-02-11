@@ -26,7 +26,7 @@ module FatTerm
       map.bind(key: :delete, action: :delete_char_forward)
       map.bind(key: :d, ctrl: true, action: :delete_char_forward)
       map.bind(key: :backspace, action: :delete_char_backward)
-      map.bind(key: :backspace, ctrl: true, action: :kill_word_backward)
+      map.bind(key: :backspace, meta: true, action: :kill_word_backward)
       map.bind(key: :w, ctrl: true, action: :kill_word_backward)
       map.bind(key: :d, meta: true, action: :kill_word_forward)
       map.bind(key: :k, ctrl: true, action: :kill_to_eol)
