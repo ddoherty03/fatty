@@ -263,7 +263,6 @@ module FatTerm
         @last_action = nil
         @text = str.dup
         @cursor = @text.length
-        clamp_mark!
       end
     end
 
@@ -275,6 +274,7 @@ module FatTerm
       return if @cursor.zero?
 
       with_undo do
+        @last_action = nil
         repeat(n) do
           break if @cursor.zero?
 
@@ -290,6 +290,7 @@ module FatTerm
       return if @cursor == text.length
 
       with_undo do
+        @last_action = nil
         repeat(n) do
           break if @cursor == text.length
 
@@ -400,7 +401,7 @@ module FatTerm
       break_undo_chain!
       copied = text[r] || ""
       push_kill(copied)
-      @last_action = :kill
+      @last_action = :copy
       copied
     end
 
