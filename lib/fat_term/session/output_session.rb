@@ -13,10 +13,11 @@ module FatTerm
     def append_output(text, follow: true)
       ntrim = @output.append(text.to_s)
       @viewport.adjust_for_trim(ntrim)
+      out_lines = @output.lines
       if follow
-        @viewport.page_bottom(lines)
+        @viewport.page_bottom(out_lines)
       else
-        @viewport.clamp!(lines)
+        @viewport.clamp!(out_lines)
       end
       ntrim
     end
