@@ -75,6 +75,10 @@ module FatTerm
       [key, ctrl, meta, shift].hash
     end
 
+    def printable?
+      text && !text.empty? && text != "\n" && text != "\r"
+    end
+
     def decoded?
       key.is_a?(Symbol)
     end

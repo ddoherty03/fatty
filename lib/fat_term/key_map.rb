@@ -80,18 +80,27 @@ module FatTerm
       result
     end
 
-    # Return the [action, [args]] form of the binding, adding an empty args
-    # array for actions with no args.
+    # Return [action, args] where args is always an Array (possibly empty).
     def resolve_action(event, contexts: [])
       binding = resolve(event, contexts: contexts)
-      return [nil, []] unless binding
 
-      if binding.is_a?(Array)
-        FatTerm.log("KeyMap.resolve_action: action: #{binding[0].inspect}, args: #{binding[1..].inspect}", tag: :keymap)
-        [binding[0], binding[1..] || []]
+      if binding
+        if binding.is_a?(Array)
+          action = binding[0]
+          args = binding[1..] || []
+          FatTerm.log("KeyMap.resolve_action: action: #{action.inspect}, args: #{args.inspect}", tag: :keymap)
+          [action, args]
+        else
+          FatTerm.log("KeyMap.resolve_action: action: #{binding.inspect}, args: []", tag: :keymap)
+          [binding, []]
+        end
+      elsif event&.printable?
+        # Default: treat printable characters as a self-insert.  This is
+        # keymap-policy; vim-normal can disable by overriding resolve_action
+        # or using a different keymap.
+        [:self_insert, [event.text]]
       else
-        FatTerm.log("KeyMap.resolve_action: action: #{binding.inspect}, args: []", tag: :keymap)
-        [binding, []]
+        [nil, []]
       end
     end
 
