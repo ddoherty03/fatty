@@ -41,6 +41,21 @@ module FatTerm
         ALERT_WARNING_PAIR = 2
         ALERT_ERROR_PAIR   = 3
 
+        POPUP_BORDER = {
+          tl: "┌", tr: "┐",
+          bl: "└", br: "┘",
+          h:  "─",
+          v:  "│"
+        }.freeze
+
+        POPUP_RESULTS_PAIR  = 10
+        POPUP_INPUT_PAIR    = 11
+        POPUP_FRAME_PAIR    = 12
+        POPUP_SELECTED_PAIR = 13
+
+        POPUP_SELECTED_GUTTER = "▶ "
+        POPUP_UNSELECTED_GUTTER = "  "
+
         def initialize(context:, screen:)
           @context = context
           @screen = screen
@@ -135,30 +150,41 @@ module FatTerm
           win.refresh
         end
 
+        def popup_attr(pair_id, fallback)
+          return fallback unless ::Curses.has_colors?
+
+          ::Curses.color_pair(pair_id)
+        end
+
         def render_popup(session:)
-          # pick geometry
-          cols = ::Curses.cols
-          rows = ::Curses.lines
-
-          width  = [cols - 4, 80].min
-          height = [rows - 4, 12].min
-
-          x = (cols - width) / 2
-          y = (rows - height) / 2
-
           win = session.win
+          width = win.maxx
+          height = win.maxy
           win.clear
-          win.box(?|, ?-)
 
-          # title
+          frame_attr = popup_attr(POPUP_FRAME_PAIR, ::Curses::A_NORMAL)
+          win.attron(frame_attr) do
+            draw_popup_frame(win, width: width, height: height)
+          end
+
+          inner_h = height - 2
+          inner_w = width - 2
+          inner = win.derwin(inner_h, inner_w, 1, 1)
+          inner.erase
+
+          # title (still on the frame)
           if session.title
             win.setpos(0, 2)
             win.addstr(" #{session.title} ")
           end
 
-          # list area: height-3 lines (border + input line)
-          list_h = height - 3
-          list_w = width - 2
+          # list area: inner_h-1 lines (last inner line is input)
+          list_h = inner_h - 1
+          list_w = inner_w
+
+          results_attr  = popup_attr(POPUP_RESULTS_PAIR, ::Curses::A_NORMAL)
+          input_attr    = popup_attr(POPUP_INPUT_PAIR, ::Curses::A_REVERSE)
+          selected_attr = popup_attr(POPUP_SELECTED_PAIR, ::Curses::A_REVERSE)
 
           items = session.filtered
           sel   = session.selected
@@ -168,32 +194,50 @@ module FatTerm
             start = sel - list_h + 1
           end
 
-          (0...list_h).each do |i|
-            idx = start + i
-            win.setpos(1 + i, 1)
-            win.clrtoeol
-            next if idx >= items.length
+          inner.attron(results_attr) do
+            (0...list_h).each do |i|
+              idx = start + i
+              is_sel = (idx == sel)
+              row_attr = is_sel ? selected_attr : results_attr
+              inner.attrset(row_attr)
 
-            s = items[idx].to_s
-            s = s[0...list_w]
+              inner.setpos(i, 0)
+              inner.addstr(" " * list_w)
+              inner.setpos(i, 0)
 
-            if idx == sel
-              win.attron(::Curses::A_REVERSE) { win.addstr(s) }
-            else
-              win.addstr(s)
+              next if idx >= items.length
+
+              gutter = idx == sel ? POPUP_SELECTED_GUTTER : POPUP_UNSELECTED_GUTTER
+              s = items[idx].to_s
+              s = s[0, list_w - gutter.length]
+              row = gutter + s
+
+              if idx == sel
+                inner.attron(selected_attr) { inner.addstr(row.ljust(list_w)) }
+              else
+                inner.addstr(row.ljust(list_w))
+              end
             end
           end
 
-          # input line at bottom
-          win.setpos(height - 2, 1)
-          win.clrtoeol
-          win.addstr(session.field.prompt_text)
-          win.addstr(session.field.buffer.text.to_s)
+          inner.attron(input_attr) do
+            # input line at bottom (inside inner)
+            inner.setpos(inner_h - 1, 0)
+            inner.addstr(" " * list_w)
+            inner.setpos(inner_h - 1, 0)
 
-          # cursor
-          cursor_x = (1 + session.field.cursor_x).clamp(1, width - 2)
-          win.setpos(height - 2, cursor_x)
+            prompt = session.field.prompt_text.to_s
+            text   = session.field.buffer.text.to_s
 
+            line = (prompt + text)[0, list_w]
+            inner.addstr(line.ljust(list_w))
+          end
+
+          # cursor: move in outer window coords
+          cursor_in_inner = session.field.cursor_x.clamp(0, list_w - 1)
+          win.setpos(1 + (inner_h - 1), 1 + cursor_in_inner)
+
+          inner.refresh
           win.refresh
         end
 
@@ -233,8 +277,24 @@ module FatTerm
               details_str = " (#{alert.details})"
             end
           end
-
           "  #{icon} #{msg}#{details_str}"
+        end
+
+        def draw_popup_frame(win, width:, height:)
+          b = POPUP_BORDER
+          # top
+          win.setpos(0, 0)
+          win.addstr(b[:tl] + (b[:h] * (width - 2)) + b[:tr])
+          # sides
+          (1...(height - 1)).each do |y|
+            win.setpos(y, 0)
+            win.addstr(b[:v])
+            win.setpos(y, width - 1)
+            win.addstr(b[:v])
+          end
+          # bottom
+          win.setpos(height - 1, 0)
+          win.addstr(b[:bl] + (b[:h] * (width - 2)) + b[:br])
         end
       end
     end

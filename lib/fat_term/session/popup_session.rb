@@ -1,6 +1,14 @@
+# frozen_string_literal: true
+
 module FatTerm
   class PopUpSession < Session
-    attr_reader :win
+    attr_reader :win, :field, :filtered, :selected, :title
+
+    POPUP_MAX_WIDTH      = 80
+    POPUP_DEFAULT_HEIGHT = 12
+    POPUP_MIN_LIST_H     = 3
+    POPUP_MAX_LIST_H     = 20
+    POPUP_MARGIN         = 2
 
     def initialize(source:, title: nil, prompt: "> ", keymap: Keymaps.emacs)
       super(keymap: keymap)
@@ -14,13 +22,21 @@ module FatTerm
 
       @last_query = nil
 
+      # Frozen popup geometry (computed once on init, based on initial
+      # candidate count).
+      @popup_width = nil
+      @popup_height = nil
+      @popup_list_h = nil
+    end
+
     def keymap_contexts
       [:popup, :input]
     end
 
     def init(terminal:)
-      rebuild_windows!(terminal)
       refresh_items
+      capture_initial_popup_geometry!
+      rebuild_windows!(terminal)
       []
     end
 
@@ -34,17 +50,26 @@ module FatTerm
       @win&.close rescue nil
       cols = ::Curses.cols
       rows = ::Curses.lines
-      width  = [cols - 4, 80].min
-      height = [rows - 4, 12].min
+      width, height = popup_geometry(cols: cols, rows: rows)
       x = (cols - width) / 2
       y = (rows - height) / 2
       @win = ::Curses::Window.new(height, width, y, x)
     end
 
+    def popup_geometry(cols:, rows:)
+      width = @popup_width || POPUP_MAX_WIDTH
+      height = @popup_height || POPUP_DEFAULT_HEIGHT
 
+      max_w = cols - (POPUP_MARGIN * 2)
+      max_h = rows - (POPUP_MARGIN * 2)
 
+      width = max_w if width > max_w
+      height = max_h if height > max_h
 
+      width = 10 if width < 10
+      height = 5 if height < 5
 
+      [width, height]
     end
 
     def handle_action(action, args, terminal:, event:)
@@ -111,6 +136,34 @@ module FatTerm
       renderer.render_popup(session: self)
     end
 
-    attr_reader :field, :filtered, :selected, :title
+    private
+
+    def capture_initial_popup_geometry!
+      return if @popup_height && @popup_width
+
+      count = @filtered.length
+      list_h = count
+      list_h = POPUP_MIN_LIST_H if list_h < POPUP_MIN_LIST_H
+      list_h = POPUP_MAX_LIST_H if list_h > POPUP_MAX_LIST_H
+
+      @popup_list_h = list_h
+      @popup_height = @popup_list_h + 3
+      @popup_width = POPUP_MAX_WIDTH
+    end
+
+    def handle_resize(terminal)
+      rebuild_windows!(terminal)
+      []
+    end
+
+    def action_env(terminal:, event:)
+      ActionEnvironment.new(
+        session: self,
+        terminal: terminal,
+        event: event,
+        field: @field,
+        buffer: @field.buffer,
+      )
+    end
   end
 end
