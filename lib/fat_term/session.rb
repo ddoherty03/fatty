@@ -12,11 +12,10 @@ module FatTerm
   # Where `commands` is an Array (possibly empty). Terminal is responsible for
   # executing commands after each update cycle.
   class Session
-    attr_reader :views, :keymap, :context
+    attr_reader :views, :keymap
 
-    def initialize(keymap: nil, context: :input, views: [])
+    def initialize(keymap: nil, views: [])
       @keymap = keymap
-      @context = context
       @views = Array(views)
     end
 
@@ -34,12 +33,14 @@ module FatTerm
     # Handle a message and return commands.
     def update(message, terminal:)
       FatTerm.log("#{self.class}#update(message -> #{message})", tag: :session)
+
       commands =
         case message[0]
         when :key
           ev = message[1]
           action, args = resolve_action(ev)
-          FatTerm.log("#{self.class}.update: key ev=#{ev.inspect}", tag: :session)
+
+          FatTerm.log("#{self.class}.update: key ev=#{ev.inspect} action=#{action.inspect} args=#{args.inspect}", tag: :session)
 
           if action
             handle_action(action, args, terminal: terminal, event: ev)
@@ -48,11 +49,12 @@ module FatTerm
           end
         when :cmd
           FatTerm.log("#{self.class}.update: cmd message=#{message.inspect}", tag: :session)
-          update_cmd(message[1], message[2], terminal:)
+          update_cmd(message[1], message[2], terminal: terminal)
         else
           FatTerm.log("#{self.class}.update: unknown message[0]=#{message[0].inspect}", tag: :session)
           []
         end
+
       FatTerm.log("#{self.class}.update: commands=#{commands.inspect}", tag: :session)
       commands
     end
@@ -64,7 +66,14 @@ module FatTerm
     def resolve_action(ev)
       return [nil, []] unless keymap
 
-      keymap.resolve_action(ev, contexts: [context])
+      keymap.resolve_action(ev, contexts: keymap_contexts)
+    end
+
+    # Subclasses can override to vary contexts dynamically
+    # (paging/isearch/popup/etc).  Must return an Array of symbols in
+    # precedence order.
+    def keymap_contexts
+      [:input]
     end
 
     # Subclasses override this to react to resolved actions.

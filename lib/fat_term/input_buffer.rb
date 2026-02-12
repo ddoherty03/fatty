@@ -255,6 +255,7 @@ module FatTerm
         end
       end
     end
+    action :self_insert, to: :insert
 
     desc "Replace buffer contents with a string and move the cursor to the end"
     action :replace do |str|
@@ -265,7 +266,6 @@ module FatTerm
         @cursor = @text.length
       end
     end
-
     action :set, to: :replace
 
     desc "Delete the character before the cursor"

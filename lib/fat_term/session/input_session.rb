@@ -4,37 +4,39 @@ module FatTerm
   class InputSession < Session
     attr_reader :field
 
-    # on_accept: ->(line, session, terminal) { ... }
-    def initialize(field:, keymap:, context: :input, views: [], on_accept: nil)
-      super(keymap: keymap, context: context, views: views)
+    # @param on_accept: ->(line, session, terminal) { ... }
+    def initialize(field:, keymap:, views: [], on_accept: nil)
+      super(keymap: keymap, views: views)
       @field = field
       @on_accept = on_accept
     end
 
     # Unbound keys land here.
     def update_key(ev, terminal:)
-      if ev.text && !ev.text.empty? && ev.text != "\n" && ev.text != "\r"
-        ctx = action_context(terminal: terminal, event: ev)
-        @field.act_on(:insert, ev.text, ctx: ctx)
-      end
       []
     end
 
     # Bound keys land here because Session#update resolves via keymap first.
     def handle_action(action, args, terminal:, event:)
       FatTerm.log(
-        "InputSession.handle_action: action=#{action.inspect} args=#{args.inspect} key=#{event.key.inspect} ctrl=#{event.ctrl?} meta=#{event.meta?}",
-        tag: :keymap
+        "InputSession.handle_action: action=#{action.inspect} args=#{args.inspect} " \
+          "key=#{event.key.inspect} ctrl=#{event.ctrl?} meta=#{event.meta?}",
+        tag: :keymap,
       )
 
-      if action.to_sym == :accept_line
+      env = action_env(terminal: terminal, event: event)
+      case action.to_sym
+      when :accept_line
         line = @field.accept_line
-        return Array(@on_accept ? @on_accept.call(line, self, terminal) : emit([:accept_line, line]))
+        if @on_accept
+          Array(@on_accept.call(line, self, terminal))
+        else
+          Array(emit([:accept_line, line]))
+        end
+      else
+        @field.act_on(action, *args, env: env)
+        []
       end
-
-      ctx = action_context(terminal: terminal, event: event)
-      @field.act_on(action, *args, ctx: ctx)
-      []
     rescue ActionError => e
       FatTerm.log("InputSession.handle_action: ActionError #{e.message}", tag: :keymap)
       []
@@ -42,13 +44,13 @@ module FatTerm
 
     private
 
-    def action_context(terminal:, event:)
-      # Adapt this to whatever ActionContext class you already have.
-      if defined?(ActionContext)
-        ActionContext.new(session: self, terminal: terminal, event: event, field: @field)
-      else
-        { session: self, terminal: terminal, event: event, field: @field }
-      end
+    def action_env(terminal:, event:)
+      ActionEnvironment.new(
+        session: self,
+        terminal: terminal,
+        event: event,
+        field: @field,
+      )
     end
   end
 end

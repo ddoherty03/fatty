@@ -5,39 +5,54 @@ require "fileutils"
 
 module FatTerm
   class ShellSession < OutputSession
-    attr_reader :field, :keymap
+    attr_reader :field
 
     def initialize(prompt: "sh> ", on_accept: nil)
       super(
+        keymap: Keymaps.emacs,
         views: [
           FatTerm::OutputView.new(z: 0),
           FatTerm::InputView.new(z: 10),
           FatTerm::CursorView.new(z: 100),
         ]
       )
-
       @history = FatTerm::History.new # you said History now uses config defaults
       @field   = FatTerm::InputField.new(prompt: prompt, history: @history)
-      @keymap  = FatTerm::Keymaps.emacs
       @on_accept = on_accept
     end
 
     def init(terminal:)
-      resize_output!(terminal)
+      resize_output!(terminal: terminal)
       []
+    end
+
+    def keymap_contexts
+      if paging_mode?
+        [:paging, :input]
+      else
+        [:input]
+      end
+    end
+
+    def action_env(terminal:, event:)
+      FatTerm::ActionEnvironment.new(
+        session: self,
+        terminal: terminal,
+        event: event,
+        buffer: @field.buffer,
+        field: @field,
+      )
     end
 
     def update_key(ev, terminal:)
       FatTerm.log("ShellSession.update_key (unbound): key=#{ev.key.inspect} ctrl=#{ev.ctrl?} meta=#{ev.meta?} raw=#{ev.raw.inspect}", tag: :session)
-      if ev.key == :resize
+      case ev.key
+      when :resize
         handle_resize(terminal)
         []
-      elsif ev.key == :enter || ev.key == :return
+      when :enter, :return
         # safety: if somehow not bound, still accept
         accept_line(terminal)
-      elsif ev.text && !ev.text.empty? && ev.text != "\n" && ev.text != "\r"
-        @field.act_on(:insert, ev.text)
-        []
       else
         [alert_cmd(:info, "Unbound key: #{ev} (edit config in 'keybindings.yml' to bind)", ev: ev)]
       end
@@ -65,13 +80,10 @@ module FatTerm
       case name
       when :popup_result
         item = payload.fetch(:item, "").to_s
-        buf = @field.buffer
-        buf.replace_span(0, buf.text.length, item)
-        buf.cursor = buf.text.length
-        []
-      else
-        []
+        env = action_env(terminal: terminal, event: nil)
+        @field.act_on(:replace, item, env: env)
       end
+      []
     end
 
     def handle_action(action, args, terminal:, event:)
@@ -79,19 +91,8 @@ module FatTerm
         "ShellSession.handle_action: action=#{action.inspect} args=#{args.inspect} key=#{event.key.inspect}",
         tag: :keymap,
       )
-      apply_action(action, args, event, terminal: terminal)
-    end
-
-    # Override from Session class only to add paging context to the front of
-    # the KeyMap context list when paging.
-    def resolve_action(ev)
-      ctxs =
-        if paging_mode?
-          [:paging, :input]
-        else
-          [:input]
-        end
-      @keymap.resolve_action(ev, contexts: ctxs)
+      env = action_env(terminal: terminal, event: event)
+      apply_action(action, args, event, terminal: terminal, env: env)
     end
 
     def paging_mode?
@@ -102,7 +103,7 @@ module FatTerm
       !viewport.at_bottom?(lines.length)
     end
 
-    def apply_action(action, args, ev, terminal:)
+    def apply_action(action, args, ev, terminal:, env:)
       case action
       when :accept_line
         accept_line(terminal)
@@ -112,7 +113,7 @@ module FatTerm
         if @field.empty?
           [[:terminal, :quit]]
         else
-          @field.act_on(:delete_char_forward)
+          @field.act_on(:delete_char_forward, env: env)
           []
         end
       when :history_search
@@ -148,7 +149,7 @@ module FatTerm
       else
         viewport.clamp!(output.lines)
         begin
-          @field.act_on(action, *args)
+          @field.act_on(action, *args, env: env)
         rescue FatTerm::ActionError => e
           return [alert_cmd(:error, e.message, ev: ev)]
         end
@@ -188,7 +189,7 @@ module FatTerm
       terminal.screen.resize(rows: rows, cols: cols)
       terminal.renderer.context.apply_layout(terminal.screen)
       terminal.renderer.screen = terminal.screen
-      resize_output!(terminal)
+      resize_output!(terminal: terminal)
     end
 
     def alert_cmd(level, message, ev: nil)

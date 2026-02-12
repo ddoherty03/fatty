@@ -56,7 +56,7 @@ module FatTerm
 
         buf = klass.new
         buf.instance_variable_set(:@cursor, 5)
-        ctx = ActionContext.new(buffer: buf)
+        ctx = ActionEnvironment.new(buffer: buf)
 
         FatTerm::Actions.call(:__t_bol, ctx)
         expect(buf.cursor).to eq(0)
@@ -98,7 +98,7 @@ module FatTerm
         obj.set("hello")
         expect(obj.text).to eq("hello")
 
-        ctx = ActionContext.new(buffer: obj)
+        ctx = ActionEnvironment.new(buffer: obj)
         FatTerm::Actions.call(:set, ctx, "world")
         expect(obj.text).to eq("world")
       end
@@ -150,7 +150,7 @@ module FatTerm
 
         buf = buffer_klass.new
         fld = field_klass.new
-        ctx = ActionContext.new(buffer: buf, field: fld)
+        ctx = ActionEnvironment.new(buffer: buf, field: fld)
 
         FatTerm::Actions.call(:__t_buf_mark, ctx)
         FatTerm::Actions.call(:__t_field_mark, ctx)
@@ -246,7 +246,7 @@ module FatTerm
       end
 
       it "unknown action raises" do
-        ctx = ActionContext.new(buffer: Object.new)
+        ctx = ActionEnvironment.new(buffer: Object.new)
         expect { FatTerm::Actions.call(:__t_no_such_action, ctx) }.to raise_error(ActionError)
       end
 

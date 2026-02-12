@@ -58,6 +58,13 @@ module FatTerm
       session
     end
 
+    def active_session
+      top = @modal_stack.last
+      return top[:session] if top
+
+      focused_session
+    end
+
     def focused_session
       top = @stack.last
       return top[:session] if top.is_a?(Hash)
@@ -178,7 +185,7 @@ module FatTerm
     # --- Dispatch ----------------------------------------------------------
 
     def dispatch_message(message)
-      s = focused_session
+      s = active_session
       return [] unless s
 
       # Clear transient alerts on the next user keypress.

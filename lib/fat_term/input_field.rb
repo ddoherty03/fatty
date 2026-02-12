@@ -43,12 +43,12 @@ module FatTerm
     # - Executes the registered action via FatTerm::Actions
     # - Optionally applies a pending count to the next countable action
     #
-    def act_on(action, *args, ctx: nil, **kwargs)
+    def act_on(action, *args, env: nil, **kwargs)
       return unless action
 
       history&.reset_cursor unless action.to_s.start_with?("history_")
 
-      ctx ||= FatTerm::ActionContext.new(
+      env ||= FatTerm::ActionEnvironment.new(
         buffer: buffer,
         field: self,
       )
@@ -59,7 +59,7 @@ module FatTerm
       kwargs = add_count_to_args(action, kwargs, @pending_count)
       FatTerm.log("InputField.act_on: args_with_count=#{kwargs}", tag: :count)
       if FatTerm::Actions.registered?(action)
-        FatTerm::Actions.call(action, ctx, *args, **kwargs)
+        FatTerm::Actions.call(action, env, *args, **kwargs)
       elsif buffer.respond_to?(action)
         buffer.public_send(action, *args, **kwargs)
       elsif respond_to?(action)

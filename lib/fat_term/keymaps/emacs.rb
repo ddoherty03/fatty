@@ -62,9 +62,14 @@ module FatTerm
       map.bind(key: :'9', meta: true, action: [:meta_digit, 9])
 
       # History
+      map.bind(key: :p, ctrl: true, action: :history_prev)
+      map.bind(key: :n, ctrl: true, action: :history_next)
+      map.bind(key: :up, action: :history_prev)
+      map.bind(key: :down, action: :history_next)
       map.bind(key: :r, ctrl: true, action: :history_search)
 
       # Popup
+      map.bind(context: :popup, key: :c, ctrl: true, action: :popup_cancel)
       map.bind(context: :popup, key: :g, ctrl: true, action: :popup_cancel)
       map.bind(context: :popup, key: :escape, action: :popup_cancel)
       map.bind(context: :popup, key: :enter, action: :popup_accept)

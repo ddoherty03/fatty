@@ -32,7 +32,7 @@ module FatTerm
 
     describe ".call" do
       it "raises ActionsError for unknown Actions" do
-        ctx = ActionContext.new(buffer: Object.new)
+        ctx = ActionEnvironment.new(buffer: Object.new)
 
         expect {
           Actions.call(:nope, ctx)
@@ -42,7 +42,7 @@ module FatTerm
       it "raises ActionsError when ctx target slot is nil" do
         Actions.register(:bol, owner: String, on: :buffer, method_name: :bol, doc: nil)
 
-        ctx = ActionContext.new(buffer: nil)
+        ctx = ActionEnvironment.new(buffer: nil)
 
         expect {
           Actions.call(:bol, ctx)
@@ -60,7 +60,7 @@ module FatTerm
 
         Actions.register(:bol, owner: target.class, on: :buffer, method_name: :bol, doc: nil)
 
-        ctx = ActionContext.new(buffer: target)
+        ctx = ActionEnvironment.new(buffer: target)
 
         Actions.call(:bol, ctx)
         expect(target.called).to be(true)
@@ -84,7 +84,7 @@ module FatTerm
         Actions.register(:delete_char_backward, owner: target.class, on: :buffer, method_name: :delete_char_backward, doc: nil)
         Actions.register(:insert, owner: target.class, on: :buffer, method_name: :insert, doc: nil)
 
-        ctx = ActionContext.new(buffer: target)
+        ctx = ActionEnvironment.new(buffer: target)
 
         Actions.call(:delete_char_backward, ctx, count: 3, unit: :word)
         expect(target.args).to eq([])

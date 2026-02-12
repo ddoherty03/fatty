@@ -3,6 +3,17 @@
 module FatTerm
   class ActionError < StandardError; end
 
+  # For holding the environment in which an action is executed
+  ActionEnvironment = Struct.new(
+    :session,
+    :terminal,
+    :event,
+    :buffer,
+    :field,
+    :pager,
+    keyword_init: true,
+  )
+
   module Actions
     @defs = {} # { Symbol => { owner:, on:, doc:, method: } }
 
@@ -40,14 +51,14 @@ module FatTerm
       }
     end
 
-    def self.call(name, ctx, *args, **kwargs)
-      arg_str = "name: #{name}, ctx: #{ctx}, args: #{args}, kwargs: #{kwargs}"
+    def self.call(name, env, *args, **kwargs)
+      arg_str = "name: #{name}, env: #{env}, args: #{args}, kwargs: #{kwargs}"
       FatTerm.log("Action.call(#{arg_str})", tag: :action)
       key = name.to_sym
       defn = @defs[key] or raise ActionError, "Unknown action: #{key}"
 
-      target = ctx.public_send(defn[:on])
-      raise ActionError, "ctx.#{defn[:on]} is nil for action #{key}" unless target
+      target = env.public_send(defn[:on])
+      raise ActionError, "env.#{defn[:on]} is nil for action #{key}" unless target
 
       target.public_send(defn[:method], *args, **kwargs)
     end
@@ -56,7 +67,4 @@ module FatTerm
       @defs.key?(name.to_sym)
     end
   end
-
-  # Runtime wiring; expand as needed.
-  ActionContext = Struct.new(:buffer, :field, :terminal, :pager, keyword_init: true)
 end

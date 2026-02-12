@@ -2,7 +2,8 @@ module FatTerm
   class PopUpSession < Session
     attr_reader :win
 
-    def initialize(source:, title: nil, prompt: "> ")
+    def initialize(source:, title: nil, prompt: "> ", keymap: Keymaps.emacs)
+      super(keymap: keymap)
       @source = source
       @title = title
       @field = InputField.new(prompt: prompt)
@@ -11,8 +12,10 @@ module FatTerm
       @filtered = []
       @selected = 0
 
-      @keymap = Keymaps.emacs
       @last_query = nil
+
+    def keymap_contexts
+      [:popup, :input]
     end
 
     def init(terminal:)
@@ -21,8 +24,9 @@ module FatTerm
       []
     end
 
-    def handle_resize(terminal)
-      rebuild_windows!(terminal)
+    def update_key(ev, terminal:)
+      return handle_resize(terminal) if ev.key == :resize
+
       []
     end
 
@@ -37,33 +41,16 @@ module FatTerm
       @win = ::Curses::Window.new(height, width, y, x)
     end
 
-    def update(message, terminal:)
-      case message[0]
-      when :key
-        update_key(message[1], terminal: terminal)
-      when :cmd
-        []
-      else
-        []
-      end
+
+
+
+
     end
 
-    def resolve_action(ev)
-      @keymap.resolve_action(ev, contexts: [:popup, :input])
-    end
-
-    def update_key(ev, terminal:)
-      return handle_resize(terminal) if ev.key == :resize
-
-      action, *args = Array(resolve_action(ev))
-      return [] unless action
-
-      apply_action(action, args, ev, terminal: terminal)
-    end
-
-    def apply_action(action, args, ev, terminal:)
-      case action
-      when :popup_cancel
+    def handle_action(action, args, terminal:, event:)
+      env = action_env(terminal: terminal, event: event)
+      case action.to_sym
+      when :popup_cancel, :interrupt
         [[:terminal, :pop_modal]]
       when :popup_accept
         accept_selection
@@ -79,10 +66,13 @@ module FatTerm
         []
       else
         # fallthrough: normal input editing actions
-        @field.act_on(action, *args)
+        @field.act_on(action, *args, env: env)
         refresh_items_if_query_changed
         []
       end
+    rescue ActionError => e
+      FatTerm.log("PopUpSession.handle_action: ActionError #{e.message}", tag: :keymap)
+      []
     end
 
     def accept_selection
@@ -91,8 +81,8 @@ module FatTerm
 
       payload = { item: item, query: @field.buffer.text.to_s, index: @selected }
       [
-        [:terminal, :pop_modal],
-        [:terminal, :send_modal_owner, [:cmd, :popup_result, payload]]
+        [:terminal, :send_modal_owner, [:cmd, :popup_result, payload]],
+        [:terminal, :pop_modal]
       ]
     end
 
@@ -100,14 +90,20 @@ module FatTerm
       q = @field.buffer.text.to_s
       return if q == @last_query
 
-      @last_query = q
+      @last_query = q.dup.freeze
+      FatTerm.debug("popup query changed", tag: :popup, q: q, last: @last_query)
       refresh_items
     end
 
     def refresh_items
       q = @field.buffer.text.to_s
       @items = Array(@source.call(q))
-      @filtered = @items # source already filtered; later you can support “source.all + local filter”
+      @filtered =
+        if q.empty?
+          @items
+        else
+          @items.select { |e| e.to_s.include?(q) }
+        end
       @selected = @selected.clamp(0, [@filtered.length - 1, 0].max)
     end
 

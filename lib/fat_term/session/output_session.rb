@@ -4,8 +4,8 @@ module FatTerm
   class OutputSession < Session
     attr_reader :output, :viewport
 
-    def initialize(**kwargs)
-      super(**kwargs)
+    def initialize(keymap: nil, views: [])
+      super(keymap: keymap, views: views)
       @output   = FatTerm::OutputBuffer.new
       @viewport = FatTerm::Viewport.new(height: 10)
     end
@@ -27,7 +27,7 @@ module FatTerm
       @viewport.reset
     end
 
-    def resize_output!(terminal)
+    def resize_output!(terminal:)
       @viewport.height = terminal.screen.output_rect.rows
       @viewport.clamp!(@output.lines)
     end
