@@ -61,6 +61,19 @@ module FatTerm
 
     private
 
+    def update_cmd(name, payload, terminal:)
+      case name
+      when :popup_result
+        item = payload.fetch(:item, "").to_s
+        buf = @field.buffer
+        buf.replace_span(0, buf.text.length, item)
+        buf.cursor = buf.text.length
+        []
+      else
+        []
+      end
+    end
+
     def handle_action(action, args, terminal:, event:)
       FatTerm.log(
         "ShellSession.handle_action: action=#{action.inspect} args=#{args.inspect} key=#{event.key.inspect}",
@@ -102,7 +115,18 @@ module FatTerm
           @field.act_on(:delete_char_forward)
           []
         end
-        # Viewport actions
+      when :history_search
+        src = ->(q) do
+          entries = @history.entries
+          q = q.to_s
+          if q.empty?
+            entries.last(200).reverse
+          else
+            entries.select { |e| e.include?(q) }.reverse
+          end
+        end
+        popup = FatTerm::PopUpSession.new(source: src, title: "History", prompt: "I-search: ")
+        [[:terminal, :push_modal, popup]]
       when :page_up
         viewport.page_up(output.lines)
         []

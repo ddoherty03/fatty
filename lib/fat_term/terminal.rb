@@ -27,7 +27,10 @@ module FatTerm
       @running = false
       @stack = []
       @pinned = []
+      @sessions = []
+      # @focused_index = 0
       @sessions_by_id = {}
+      @modal_stack = []
     end
 
     # --- Session management ------------------------------------------------
@@ -56,7 +59,10 @@ module FatTerm
     end
 
     def focused_session
-      @stack.last
+      top = @stack.last
+      return top[:session] if top.is_a?(Hash)
+
+      top
     end
 
     def register(session)
@@ -68,6 +74,20 @@ module FatTerm
 
     def find_session(id)
       @sessions_by_id[id]
+    end
+
+    def push_modal(session, owner:)
+      @modal_stack << { session: session, owner: owner }
+      session.init(terminal: self)
+    end
+
+    def pop_modal
+      @modal_stack.pop
+    end
+
+    def modal_owner
+      top = @modal_stack.last
+      top && top[:owner]
     end
 
     # --- Runtime -----------------------------------------------------------
@@ -159,7 +179,7 @@ module FatTerm
 
     def dispatch_message(message)
       s = focused_session
-      return unless s
+      return [] unless s
 
       # Clear transient alerts on the next user keypress.
       if key_event_message?(message) && find_session(:alert)
@@ -191,11 +211,6 @@ module FatTerm
       FatTerm.log("Terminal.apply_command(#{cmd})", tag: :command)
       return if cmd.nil?
 
-      # TODO: remove after transition to commands-only messages.
-      if cmd.is_a?(Array) && cmd.length == 2 && cmd[0].respond_to?(:update)
-        raise ArgumentError, "session returned [model, commands]; migrate to commands-only: #{cmd.inspect}"
-      end
-
       unless cmd.is_a?(Array) && cmd.first.is_a?(Symbol)
         raise ArgumentError, "command must be an Array starting with a Symbol, got: #{cmd.inspect}"
       end
@@ -223,6 +238,16 @@ module FatTerm
         push(session)
       when :pop
         pop
+      when  :push_modal
+        session = rest.fetch(0)
+        push_modal(session, owner: focused_session)
+      when :pop_modal
+        pop_modal
+      when :send_modal_owner
+        msg = rest.fetch(0)
+        owner = modal_owner
+        cmds = owner ? owner.update(msg, terminal: self) : []
+        apply_commands(cmds)
       else
         raise ArgumentError, "unknown terminal command #{name.inspect} (cmd=#{cmd.inspect})"
       end
@@ -257,6 +282,9 @@ module FatTerm
       sessions = @pinned + @stack
       sessions.each do |s|
         s.view(screen: screen, renderer: renderer, terminal: self)
+      end
+      if (top = @modal_stack.last)
+        top[:session].view(screen: screen, renderer: renderer, terminal: self)
       end
     end
   end

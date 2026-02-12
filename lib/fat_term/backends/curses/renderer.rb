@@ -135,6 +135,68 @@ module FatTerm
           win.refresh
         end
 
+        def render_popup(session:)
+          # pick geometry
+          cols = ::Curses.cols
+          rows = ::Curses.lines
+
+          width  = [cols - 4, 80].min
+          height = [rows - 4, 12].min
+
+          x = (cols - width) / 2
+          y = (rows - height) / 2
+
+          win = session.win
+          win.clear
+          win.box(?|, ?-)
+
+          # title
+          if session.title
+            win.setpos(0, 2)
+            win.addstr(" #{session.title} ")
+          end
+
+          # list area: height-3 lines (border + input line)
+          list_h = height - 3
+          list_w = width - 2
+
+          items = session.filtered
+          sel   = session.selected
+
+          start = 0
+          if sel >= list_h
+            start = sel - list_h + 1
+          end
+
+          (0...list_h).each do |i|
+            idx = start + i
+            win.setpos(1 + i, 1)
+            win.clrtoeol
+            next if idx >= items.length
+
+            s = items[idx].to_s
+            s = s[0...list_w]
+
+            if idx == sel
+              win.attron(::Curses::A_REVERSE) { win.addstr(s) }
+            else
+              win.addstr(s)
+            end
+          end
+
+          # input line at bottom
+          win.setpos(height - 2, 1)
+          win.clrtoeol
+          win.addstr(session.field.prompt_text)
+          win.addstr(session.field.buffer.text.to_s)
+
+          # cursor
+          cursor_x = (1 + session.field.cursor_x).clamp(1, width - 2)
+          win.setpos(height - 2, cursor_x)
+
+          win.refresh
+        end
+
         private
 
         def alert_attr(alert)
