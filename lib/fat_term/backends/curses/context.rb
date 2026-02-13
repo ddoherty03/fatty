@@ -63,13 +63,15 @@ module FatTerm
           # keep initialization centralized and avoid cross-layer coupling.
           #
           # Results panel: yellow on blue (your request)
-          ::Curses.init_pair(10, ::Curses::COLOR_YELLOW, ::Curses::COLOR_BLUE)
+          # ::Curses.init_pair(10, ::Curses::COLOR_YELLOW, ::Curses::COLOR_BLUE)
+          ::Curses.init_pair(10, 226, 18)
           # Input line: black on cyan (distinct from results)
           ::Curses.init_pair(11, ::Curses::COLOR_BLACK,  ::Curses::COLOR_CYAN)
           # Frame: white on blue (optional)
           ::Curses.init_pair(12, ::Curses::COLOR_WHITE,  ::Curses::COLOR_BLUE)
           # Selected row: blue on yellow (optional; cleaner than A_REVERSE)
-          ::Curses.init_pair(13, ::Curses::COLOR_BLUE,   ::Curses::COLOR_YELLOW)
+          # ::Curses.init_pair(13, ::Curses::COLOR_BLUE,   ::Curses::COLOR_YELLOW)
+          ::Curses.init_pair(13, 17, 226)
         end
 
         # Allocate or reallocate windows using Screen layout.

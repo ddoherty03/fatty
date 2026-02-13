@@ -117,16 +117,17 @@ module FatTerm
           []
         end
       when :history_search
-        src = ->(q) do
-          entries = @history.entries
-          q = q.to_s
-          if q.empty?
-            entries.last(200).reverse
-          else
-            entries.select { |e| e.include?(q) }.reverse
-          end
+        src = -> do
+          # Oldest -> newest, so newest appears at the bottom of the popup.
+          @history.entries.last(500)
         end
-        popup = FatTerm::PopUpSession.new(source: src, title: "History", prompt: "I-search: ")
+        popup = FatTerm::PopUpSession.new(
+          source: src,
+          title: "History",
+          prompt: "I-search: ",
+          order: :as_given,
+          selection: :bottom,
+        )
         [[:terminal, :push_modal, popup]]
       when :page_up
         viewport.page_up(output.lines)

@@ -188,11 +188,7 @@ module FatTerm
 
           items = session.filtered
           sel   = session.selected
-
-          start = 0
-          if sel >= list_h
-            start = sel - list_h + 1
-          end
+          start = session.scroll_start(list_h: list_h)
 
           inner.attron(results_attr) do
             (0...list_h).each do |i|
