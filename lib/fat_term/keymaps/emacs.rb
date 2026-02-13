@@ -78,6 +78,17 @@ module FatTerm
       map.bind(context: :popup, key: :down, action: :popup_next)
       map.bind(context: :popup, key: :p, ctrl: true, action: :popup_prev)
       map.bind(context: :popup, key: :n, ctrl: true, action: :popup_next)
+      map.bind(context: :popup, key: :page_up, action: :popup_page_up)
+      map.bind(context: :popup, key: :page_down, action: :popup_page_down)
+      map.bind(context: :popup, key: :v, meta: true, action: :popup_page_up)
+      map.bind(context: :popup, key: :v, ctrl: true, action: :popup_page_down)
+      map.bind(context: :popup, key: :home, action: :popup_top)
+      map.bind(context: :popup, key: :end, action: :popup_bottom)
+      map.bind(context: :popup, key: :'<', meta: true, action: :popup_top)
+      map.bind(context: :popup, key: :'>', meta: true, action: :popup_bottom)
+      map.bind(context: :popup, key: :l, ctrl: true, action: :popup_recenter)
+      # map.bind(context: :popup, key: :g, action: :popup_top)
+      # map.bind(context: :popup, key: :G, shift: true, action: :popup_bottom)
 
       # Final States
       map.bind(key: :c, ctrl: true, action: :interrupt)
