@@ -42,11 +42,11 @@ module FatTerm
       it "raises ActionsError when ctx target slot is nil" do
         Actions.register(:bol, owner: String, on: :buffer, method_name: :bol, doc: nil)
 
-        ctx = ActionEnvironment.new(buffer: nil)
+        env = ActionEnvironment.new(buffer: nil)
 
         expect {
-          Actions.call(:bol, ctx)
-        }.to raise_error(ActionError, /ctx\.buffer is nil/i)
+          Actions.call(:bol, env)
+        }.to raise_error(ActionError, /env\.buffer is nil/i)
       end
 
       it "calls the registered method on the ctx target" do
