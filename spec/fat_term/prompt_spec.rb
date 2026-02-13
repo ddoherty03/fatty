@@ -39,23 +39,47 @@ module FatTerm
       expect(p.text).to eq("123")
     end
 
-    it "ensures that a Proc becomes a Prompt" do
-      expect(Prompt.ensure(-> {"XX"})).to be_a(Prompt)
-    end
+    describe ".ensure" do
+      it "returns the same Prompt instance" do
+        p = Prompt.new("X ")
+        expect(Prompt.ensure(p)).to equal(p)
+      end
 
-    it "ensures that any #to_s responding object becomes a Prompt" do
-      class Junk
-        def to_s
-          "willy wonka"
+      it "wraps a Proc as a dynamic prompt" do
+        pr = -> { "Y " }
+        p = Prompt.ensure(pr)
+        expect(p.text).to eq("Y ")
+      end
+
+      it "wraps a string as a fixed prompt" do
+        p = Prompt.ensure("I-search: ")
+        expect(p.text).to eq("I-search: ")
+      end
+
+      it "uses default prompt for nil" do
+        p = Prompt.ensure(nil)
+        expect(p.text).to eq(Prompt::DEFAULT)
+      end
+
+      it "ensures that a Proc becomes a Prompt" do
+        expect(Prompt.ensure(-> {"XX"})).to be_a(Prompt)
+      end
+
+      it "ensures that any other object becomes default '> '" do
+        class Junk2
+        end
+        expect(Prompt.ensure(Junk2.new).text).to eq('> ')
+      end
+
+      it "round-trips ensure through initialize" do
+        values = [nil, "A ", -> { "B " }, Prompt.new("C ")]
+
+        values.each do |v|
+          p = Prompt.ensure(v)
+          expect(p).to be_a(Prompt)
+          expect(p.text).to be_a(String)
         end
       end
-      expect(Prompt.ensure(Junk.new)).to be_a(Prompt)
-    end
-
-    it "ensures that any non-#to_s responding object becomes default '> '" do
-      class Junk2
-      end
-      expect(Prompt.ensure(Junk2.new).text).to eq('> ')
     end
   end
 end

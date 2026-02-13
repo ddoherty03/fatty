@@ -25,8 +25,10 @@ module FatTerm
         p
       when Proc
         Prompt.new(&p)
+      when String
+        Prompt.new(p)
       else
-        Prompt.new { "> " }
+        Prompt.new(DEFAULT)
       end
     end
   end
