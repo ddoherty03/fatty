@@ -116,6 +116,9 @@ module FatTerm
           @field.act_on(:delete_char_forward, env: env)
           []
         end
+      when :clear_output
+        reset_output!
+        []
       when :cycle_theme
         [[:terminal, :cycle_theme]]
       when :history_search
