@@ -10,9 +10,9 @@ FatTerm::Terminal.new(
   prompt: prompt,
   on_accept: ->(line, terminal:, session:) do
     # append command + output, preserve viewport behavior however you prefer
-    session.output.append("#{prompt.text} #{line}\n")
+    session.append_output("#{prompt.text} #{line}\n")
     out, _ = Open3.capture2e(line)
-    session.output.append(out)
+    session.append_output(out)
     [[:send, :alert, :clear, {}]]
   rescue Errno::ENOENT
     [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
