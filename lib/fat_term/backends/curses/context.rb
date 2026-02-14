@@ -51,6 +51,10 @@ module FatTerm
         def setup_colors
           return unless ::Curses.has_colors?
 
+          # Important: ::Curses.colors is not reliable until after start_color.
+          ::Curses.start_color
+          ::Curses.use_default_colors if ::Curses.respond_to?(:use_default_colors)
+
           # Resolve and apply theme/config colors using stable pair IDs from
           # FatTerm::Colors::Pairs.
           #
