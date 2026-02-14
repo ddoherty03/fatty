@@ -68,14 +68,18 @@ module FatTerm
 
         def render_output(output, viewport:)
           win = context.output_win
+          base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
+          win.attrset(base_attr)
+          win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
           win.clear
 
           lines = viewport.slice(output.lines)
 
           lines.each_with_index do |line, y|
             win.setpos(y, 0)
-            win.clrtoeol
+            win.attrset(base_attr)
             win.addstr(line)
+            win.clrtoeol
           end
 
           win.refresh
@@ -83,6 +87,8 @@ module FatTerm
 
         def render_input_field(field)
           win = context.input_win
+          base_attr = pair_attr(:input, fallback: ::Curses::A_NORMAL)
+          win.attrset(base_attr)
           win.clear
 
           win.setpos(0, 0)
@@ -112,7 +118,7 @@ module FatTerm
             region_attr =
               pair_attr(
                 :region,
-                fallback: (::Curses.has_colors? ? ::Curses::A_REVERSE : ::Curses::A_REVERSE)
+                fallback: ::Curses::A_REVERSE,
               )
             win.attron(region_attr) { win.addstr(mid) }
             win.addstr(after)
