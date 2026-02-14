@@ -95,7 +95,7 @@ module FatTerm
         elsif spec_norm.nil?
           DEFAULT_INDEX
         else
-          resolve_stringish(spec_norm.to_s)
+          resolve_stringish(spec_norm.to_s, available_colors: available_colors)
         end
 
       if idx == DEFAULT_INDEX
@@ -105,27 +105,46 @@ module FatTerm
       end
     end
 
-    def self.resolve_stringish(str)
+    def self.resolve_stringish(str, available_colors: 256)
       s = normalize_name(str)
-
-      idx = ANSI_NAMES[s]
-      return idx unless idx.nil?
+      # Disambiguation prefixes:
+      # - "ansi:yellow" forces ANSI 0..15 names
+      # - "x11:yellow" forces X11 rgb.txt lookup
+      #
+      # Without a prefix, prefer X11 names when 256 colors are available so
+      # common names like "yellow" match X11 "#FFFF00" rather than ANSI 3.
+      mode = nil
+      if s.start_with?("ansi:")
+        mode = :ansi
+        s = s.delete_prefix("ansi:")
+      elsif s.start_with?("x11:")
+        mode = :x11
+        s = s.delete_prefix("x11:")
+      end
 
       idx = ALIASES_256[s]
       return idx unless idx.nil?
 
       rgb = parse_hex(s)
-      if rgb
-        xterm_index_for_rgb(rgb[0], rgb[1], rgb[2])
-      else
+      return xterm_index_for_rgb(rgb[0], rgb[1], rgb[2]) if rgb
+
+      prefer_x11 = (mode == :x11) || (mode.nil? && available_colors.to_i >= 256)
+
+      if prefer_x11
         rgb2 = x11_rgb_for_name(s)
-        if rgb2
-          xterm_index_for_rgb(rgb2[0], rgb2[1], rgb2[2])
-        else
-          # Unknown name: treat as default.
-          DEFAULT_INDEX
-        end
+        return xterm_index_for_rgb(rgb2[0], rgb2[1], rgb2[2]) if rgb2
       end
+
+      idx = ANSI_NAMES[s]
+      return idx unless idx.nil?
+
+      unless prefer_x11
+        rgb2 = x11_rgb_for_name(s)
+        return xterm_index_for_rgb(rgb2[0], rgb2[1], rgb2[2]) if rgb2
+      end
+
+      # Unknown name: treat as default.
+      DEFAULT_INDEX
     end
 
     def self.normalize_name(str)

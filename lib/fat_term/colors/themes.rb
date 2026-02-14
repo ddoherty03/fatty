@@ -14,8 +14,8 @@ module FatTerm
       # Roles are intentionally scoped (popup_selection vs region, etc.)
       THEMES = {
         wordperfect: {
-          output: { fg: "white", bg: "default" },
-          input: { fg: "yellow", bg: "default" },
+          output: { fg: "white", bg: "navy" },
+          input: { fg: "white", bg: "default" },
           cursor: { fg: "black", bg: "yellow" },
 
           region: { fg: "navy", bg: "yellow" },
@@ -24,8 +24,8 @@ module FatTerm
           status_warn: { fg: "black", bg: "magenta" },
           status_error: { fg: "white", bg: "red" },
 
-          popup: { fg: "yellow", bg: "navy" },
-          popup_selection: { fg: "navy",   bg: "yellow" },
+          popup: { fg: "white", bg: "navy" },
+          popup_selection: { fg: "navy",   bg: 'yellow' },
           popup_input: { fg: "white",  bg: "dark_blue" },
           popup_frame: { fg: "white",  bg: "navy" },
         },
