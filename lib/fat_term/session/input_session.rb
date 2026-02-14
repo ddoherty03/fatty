@@ -11,6 +11,14 @@ module FatTerm
       @on_accept = on_accept
     end
 
+    def keymap_contexts
+      if paging_mode?
+        [:paging, :input, :terminal]
+      else
+        [:input, :terminal]
+      end
+    end
+
     # Unbound keys land here.
     def update_key(ev, terminal:)
       []
@@ -23,7 +31,6 @@ module FatTerm
           "key=#{event.key.inspect} ctrl=#{event.ctrl?} meta=#{event.meta?}",
         tag: :keymap,
       )
-
       env = action_env(terminal: terminal, event: event)
       case action.to_sym
       when :accept_line
@@ -33,6 +40,8 @@ module FatTerm
         else
           Array(emit([:accept_line, line]))
         end
+      when :cycle_theme
+        [[:terminal, :cycle_theme]]
       else
         @field.act_on(action, *args, env: env)
         []

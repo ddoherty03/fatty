@@ -37,9 +37,6 @@ module FatTerm
         attr_accessor :screen
 
         DETAIL_ORDER = %i[terminal key ctrl meta shift].freeze
-        ALERT_INFO_PAIR    = 1
-        ALERT_WARNING_PAIR = 2
-        ALERT_ERROR_PAIR   = 3
 
         POPUP_BORDER = {
           tl: "┌", tr: "┐",
@@ -47,11 +44,6 @@ module FatTerm
           h:  "─",
           v:  "│"
         }.freeze
-
-        POPUP_RESULTS_PAIR  = 10
-        POPUP_INPUT_PAIR    = 11
-        POPUP_FRAME_PAIR    = 12
-        POPUP_SELECTED_PAIR = 13
 
         POPUP_SELECTED_GUTTER = "▶ "
         POPUP_UNSELECTED_GUTTER = "  "
@@ -117,7 +109,12 @@ module FatTerm
             after  = text[e..].to_s
 
             win.addstr(before)
-            win.attron(::Curses::A_REVERSE) { win.addstr(mid) }
+            region_attr =
+              pair_attr(
+                :region,
+                fallback: (::Curses.has_colors? ? ::Curses::A_REVERSE : ::Curses::A_REVERSE)
+              )
+            win.attron(region_attr) { win.addstr(mid) }
             win.addstr(after)
           else
             win.addstr(text)
@@ -136,7 +133,7 @@ module FatTerm
           if alert.nil?
             # Always draw a bar so the "panel" is visible even when empty.
             if ::Curses.has_colors?
-              win.attron(::Curses.color_pair(ALERT_INFO_PAIR)) { win.addstr(" ".ljust(@screen.cols)) }
+              win.attron(pair_attr(:status_info, fallback: ::Curses::A_REVERSE)) { win.addstr(" ".ljust(@screen.cols)) }
             else
               win.attron(::Curses::A_REVERSE) { win.addstr(" ".ljust(@screen.cols)) }
             end
@@ -150,10 +147,10 @@ module FatTerm
           win.refresh
         end
 
-        def popup_attr(pair_id, fallback)
+        def pair_attr(role, fallback:)
           return fallback unless ::Curses.has_colors?
 
-          ::Curses.color_pair(pair_id)
+          ::Curses.color_pair(FatTerm::Colors::Pairs::ROLE_TO_PAIR.fetch(role))
         end
 
         def render_popup(session:)
@@ -162,7 +159,7 @@ module FatTerm
           height = win.maxy
           win.clear
 
-          frame_attr = popup_attr(POPUP_FRAME_PAIR, ::Curses::A_NORMAL)
+          frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
           win.attron(frame_attr) do
             draw_popup_frame(win, width: width, height: height)
           end
@@ -182,9 +179,9 @@ module FatTerm
           list_h = inner_h - 1
           list_w = inner_w
 
-          results_attr  = popup_attr(POPUP_RESULTS_PAIR, ::Curses::A_NORMAL)
-          input_attr    = popup_attr(POPUP_INPUT_PAIR, ::Curses::A_REVERSE)
-          selected_attr = popup_attr(POPUP_SELECTED_PAIR, ::Curses::A_REVERSE)
+          results_attr  = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
+          input_attr    = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
+          selected_attr = pair_attr(:popup_selection, fallback: ::Curses::A_REVERSE)
 
           items = session.filtered
           sel   = session.selected
@@ -208,11 +205,7 @@ module FatTerm
               s = s[0, list_w - gutter.length]
               row = gutter + s
 
-              if idx == sel
-                inner.attron(selected_attr) { inner.addstr(row.ljust(list_w)) }
-              else
-                inner.addstr(row.ljust(list_w))
-              end
+              inner.addstr(row.ljust(list_w))
             end
           end
 
@@ -237,19 +230,22 @@ module FatTerm
           win.refresh
         end
 
+        def apply_theme!(theme)
+          context.apply_theme!(theme)
+        end
+
         private
 
         def alert_attr(alert)
           return ::Curses::A_REVERSE unless ::Curses.has_colors?
 
-          pair =
+          role =
             case alert.level
-            when :error   then ALERT_ERROR_PAIR
-            when :warning then ALERT_WARNING_PAIR
-            else               ALERT_INFO_PAIR
+            when :error   then :status_error
+            when :warning then :status_warn
+            else               :status_info
             end
-
-          ::Curses.color_pair(pair)
+          pair_attr(role, fallback: ::Curses::A_REVERSE)
         end
 
         def format_alert(alert)

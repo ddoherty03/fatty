@@ -33,7 +33,67 @@ log:
     - render     # viewports, layout sizes, redraw triggers
     - perf       # timings, frame time, slow paths
     # - all        # All of the above
-
 history:
   file: "~/.fat_term_history"
   max: 10_000
+
+# Set specific colors
+ui:
+  color:
+    # Use one of the built-in themes:
+    #   wordperfect
+    #   mono
+    theme: wordperfect
+
+    # --- Optional overrides ---
+    # Any role defined here replaces the theme’s value.
+
+    # Main terminal output area
+    output:
+      fg: white
+      bg: default
+
+    # Input line
+    input:
+      fg: yellow
+      bg: default
+
+    # Cursor (may be ignored by some terminals)
+    cursor:
+      fg: black
+      bg: yellow
+
+    # Selected region (InputField mark/selection)
+    region:
+      fg: navy
+      bg: yellow
+
+    # Status / alerts
+    status_info:
+      fg: black
+      bg: lightyellow      # X11 name
+
+    status_warn:
+      fg: black
+      bg: 208              # integer (orange)
+
+    status_error:
+      fg: white
+      bg: red              # ANSI name
+
+    # Popup window
+    popup:
+      fg: yellow
+      bg: navy             # alias
+
+    popup_selection:
+      fg: navy
+      bg: yellow
+
+    popup_input:
+      fg: "#ffffff"        # hex color
+      bg: dark_blue        # alias
+
+    popup_frame:
+      fg: white
+      bg: navy

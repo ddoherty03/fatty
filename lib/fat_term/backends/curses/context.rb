@@ -51,27 +51,17 @@ module FatTerm
         def setup_colors
           return unless ::Curses.has_colors?
 
-          ::Curses.start_color
-          ::Curses.use_default_colors
-
-          ::Curses.init_pair(1, ::Curses::COLOR_WHITE,  ::Curses::COLOR_BLUE)
-          ::Curses.init_pair(2, ::Curses::COLOR_BLACK,  ::Curses::COLOR_YELLOW)
-          ::Curses.init_pair(3, ::Curses::COLOR_WHITE,  ::Curses::COLOR_RED)
-
-          # Popup theme (basic 8-color palette)
-          # Pair IDs live in the renderer, but we mirror them here as literals to
-          # keep initialization centralized and avoid cross-layer coupling.
+          # Resolve and apply theme/config colors using stable pair IDs from
+          # FatTerm::Colors::Pairs.
           #
-          # Results panel: yellow on blue (your request)
-          # ::Curses.init_pair(10, ::Curses::COLOR_YELLOW, ::Curses::COLOR_BLUE)
-          ::Curses.init_pair(10, 226, 18)
-          # Input line: black on cyan (distinct from results)
-          ::Curses.init_pair(11, ::Curses::COLOR_BLACK,  ::Curses::COLOR_CYAN)
-          # Frame: white on blue (optional)
-          ::Curses.init_pair(12, ::Curses::COLOR_WHITE,  ::Curses::COLOR_BLUE)
-          # Selected row: blue on yellow (optional; cleaner than A_REVERSE)
-          # ::Curses.init_pair(13, ::Curses::COLOR_BLUE,   ::Curses::COLOR_YELLOW)
-          ::Curses.init_pair(13, 17, 226)
+          # Reads:
+          #   FatTerm::Config.config[:ui][:color]
+          #
+          # and falls back to theme defaults (if any).
+          FatTerm::Colors::Palette.apply!(
+            FatTerm::Config.config,
+            available_colors: ::Curses.colors,
+          )
         end
 
         # Allocate or reallocate windows using Screen layout.
@@ -101,6 +91,17 @@ module FatTerm
           close_windows
           ::Curses.close_screen if @started
           @started = false
+        end
+
+        def apply_theme!(theme_name)
+          cfg = FatTerm::Config.config
+
+          # Make sure ui/color exists, then override theme in-memory.
+          ui = cfg[:ui] ||= {}
+          color = ui[:color] ||= {}
+          color[:theme] = theme_name.to_sym
+
+          FatTerm::Colors::Palette.apply!(cfg, available_colors: ::Curses.colors)
         end
 
         private

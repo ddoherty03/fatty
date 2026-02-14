@@ -22,6 +22,7 @@ module FatTerm
   require_relative "fat_term/alert"
   require_relative "fat_term/key_event"
   require_relative "fat_term/key_map"
+  require_relative "fat_term/colors"
   require_relative "fat_term/backends/curses/curses_coder"
   require_relative "fat_term/backends/curses/renderer"
   require_relative "fat_term/backends/curses/key_decoder"

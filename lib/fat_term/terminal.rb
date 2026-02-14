@@ -28,7 +28,6 @@ module FatTerm
       @stack = []
       @pinned = []
       @sessions = []
-      # @focused_index = 0
       @sessions_by_id = {}
       @modal_stack = []
     end
@@ -255,6 +254,10 @@ module FatTerm
         owner = modal_owner
         cmds = owner ? owner.update(msg, terminal: self) : []
         apply_commands(cmds)
+      when :cycle_theme
+        new_theme = FatTerm::Colors::ThemeManager.cycle
+        renderer.apply_theme!(new_theme)
+        apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{new_theme}"}])
       else
         raise ArgumentError, "unknown terminal command #{name.inspect} (cmd=#{cmd.inspect})"
       end

@@ -1,0 +1,5 @@
+require_relative "colors/color"
+require_relative "colors/pairs"
+require_relative "colors/palette"
+require_relative "colors/themes"
+require_relative "colors/theme_manager"

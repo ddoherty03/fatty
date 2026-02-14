@@ -90,6 +90,9 @@ module FatTerm
       # map.bind(context: :popup, key: :g, action: :popup_top)
       # map.bind(context: :popup, key: :G, shift: true, action: :popup_bottom)
 
+      # Themes
+      map.bind(context: :terminal, key: :t, meta: true, ctrl: true, action: :cycle_theme)
+
       # Final States
       map.bind(key: :c, ctrl: true, action: :interrupt)
       map.bind(key: :d, ctrl: true, action: :interrupt_if_empty)

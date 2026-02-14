@@ -28,9 +28,9 @@ module FatTerm
 
     def keymap_contexts
       if paging_mode?
-        [:paging, :input]
+        [:paging, :input, :terminal]
       else
-        [:input]
+        [:input, :terminal]
       end
     end
 
@@ -116,6 +116,8 @@ module FatTerm
           @field.act_on(:delete_char_forward, env: env)
           []
         end
+      when :cycle_theme
+        [[:terminal, :cycle_theme]]
       when :history_search
         src = -> do
           # Oldest -> newest, so newest appears at the bottom of the popup.
@@ -162,6 +164,7 @@ module FatTerm
       line = @field.accept_line.to_s.strip
       return [] if line.empty?
 
+      FatTerm.info("ShellSession: accept_line: #{line}")
       case line
       when "exit", "quit"
         [[:terminal, :quit]]
