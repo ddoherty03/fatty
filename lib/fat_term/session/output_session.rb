@@ -3,14 +3,18 @@
 module FatTerm
   class OutputSession < Session
     attr_reader :output, :viewport
+    attr_accessor :follow_output
 
     def initialize(keymap: nil, views: [])
       super(keymap: keymap, views: views)
       @output   = FatTerm::OutputBuffer.new
       @viewport = FatTerm::Viewport.new(height: 10)
+      @follow_output = true
     end
 
     def append_output(text, follow: true)
+      follow = @follow_output if follow.nil?
+
       ntrim = @output.append(text.to_s)
       @viewport.adjust_for_trim(ntrim)
       out_lines = @output.lines
