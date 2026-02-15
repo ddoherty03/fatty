@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "open3"
+require "pty"
 require "fileutils"
 
 module FatTerm
@@ -135,10 +136,15 @@ module FatTerm
         )
         [[:terminal, :push_modal, popup]]
       when :page_up
+        self.follow_output = false
         viewport.page_up(output.lines)
         []
       when :page_down
         viewport.page_down(output.lines)
+        []
+      when :end_of_output
+        self.follow_output = true
+        viewport.page_bottom(@output.lines)
         []
       when :scroll_up
         viewport.scroll_up(output.lines)
@@ -181,13 +187,41 @@ module FatTerm
         else
           # Default: run as a shell command, preserving viewport behavior via append_output.
           append_output("$ #{line}\n")
-          out, _status = Open3.capture2e(line)
+          # out, _status = Open3.capture2e(line)
+          out, _status = run_command_pty(line)
           append_output(out)
           [[:send, :alert, :clear, {}]]
         end
       end
     rescue Errno::ENOENT
       [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
+    end
+
+    def run_command_pty(line)
+      out = +""
+      status = nil
+
+      begin
+        PTY.spawn(line) do |r, _w, pid|
+        begin
+          r.each do |chunk|
+          out << chunk
+        end
+        rescue Errno::EIO
+          # Normal on PTY EOF for many programs.
+        ensure
+          _pid, status = Process.wait2(pid)
+        end
+      end
+      rescue Errno::ENOENT
+        # Command not found (or exec failure).
+        raise
+      rescue StandardError => ex
+        # Keep shell session resilient; surface error output.
+        out << "#{ex.class}: #{ex}\n"
+      end
+
+      [out, status]
     end
 
     def handle_resize(terminal)

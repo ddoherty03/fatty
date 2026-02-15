@@ -74,14 +74,16 @@ module FatTerm
           win.clear
 
           lines = viewport.slice(output.lines)
-
           lines.each_with_index do |line, y|
             win.setpos(y, 0)
             win.attrset(base_attr)
-            win.addstr(line)
+            win.attrset(base_attr)
+            FatTerm::Ansi.segment(line).each do |text, style|
+              win.attrset(context.ansi_attr(style, fallback_role: :output))
+              win.addstr(text)
+            end
             win.clrtoeol
           end
-
           win.refresh
         end
 
