@@ -48,9 +48,6 @@ module FatTerm
       map.bind(key: :y, ctrl: true, action: :yank)
       map.bind(key: :y, meta: true, action: :yank_pop)
 
-      # Output control
-      map.bind(key: :l, ctrl: true, action: :clear_output)
-
       # Counts (prefix arg)
       map.bind(key: :u, ctrl: true, action: :universal_argument)
       map.bind(key: :'0', meta: true, action: [:meta_digit, 0])
@@ -108,7 +105,8 @@ module FatTerm
       map.bind(key: :page_up,   action: :page_up)
       map.bind(key: :page_down, action: :page_down)
 
-      # Paging
+      # Output control
+      map.bind(key: :l, ctrl: true, action: :clear_output)
       map.bind(context: :paging, key: :page_up,   action: :page_up)
       map.bind(context: :paging, key: :page_down, action: :page_down)
       map.bind(context: :paging, key: :v, ctrl: true, action: :page_down)  # C-v
