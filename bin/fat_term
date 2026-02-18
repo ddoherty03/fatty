@@ -63,10 +63,15 @@ end
 
 if options[:config]
   env = FatTerm::Env.detect
-  terminal = env[:terminal]
+  puts "Terminal detected: #{env[:terminal]}"
 
-  binding.break
-  result = FatTerm.config
+  result = FatTerm::Config.config
+  puts result.to_yaml
+
+  result = FatTerm::Config.keydefs
+  puts result.to_yaml
+
+  result = FatTerm::Config.keybindings
   puts result.to_yaml
   exit 0
 end
@@ -77,42 +82,3 @@ end
 
 warn "fat_term: no command specified (try --env or --config)"
 exit 1
-
-
-
-# ###############################################
-# require "yaml"
-# require "optparse"
-
-# begin
-#   require_relative "../lib/fat_term"
-# rescue LoadError
-#   require "fat_term"
-# end
-
-# options = {}
-
-# parser = OptionParser.new do |opts|
-#   opts.banner = "Usage: fat_term [options]"
-
-#   opts.on("--env", "Print detected terminal environment and exit") do
-#     options[:env] = true
-#   end
-
-#   opts.on("-h", "--help", "Show this help") do
-#     puts opts
-#     exit 0
-#   end
-# end
-
-# parser.parse!(ARGV)
-
-# if options[:env]
-#   env = FatTerm::Env.detect
-#   puts env.to_yaml
-#   exit 0
-# end
-
-# # Future behavior placeholder
-# warn "fat_term: no command specified (try --env)"
-# exit 1
