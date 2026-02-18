@@ -3,17 +3,6 @@
 module FatTerm
   class ActionError < StandardError; end
 
-  # For holding the environment in which an action is executed
-  ActionEnvironment = Struct.new(
-    :session,
-    :terminal,
-    :event,
-    :buffer,
-    :field,
-    :pager,
-    keyword_init: true,
-  )
-
   module Actions
     @defs = {} # { Symbol => { owner:, on:, doc:, method: } }
 
