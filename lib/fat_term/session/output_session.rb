@@ -55,6 +55,22 @@ module FatTerm
       end
     end
 
+    def pager_status_prompt
+      total = @output.lines.length
+      bottom = [@viewport.top + @viewport.height, total].min
+
+      pct =
+        if total.positive?
+          ((bottom * 100.0) / total).round
+        end
+
+      if pct
+        "--More--  #{bottom}/#{total} (#{pct}%) "
+      else
+        "--More--  #{bottom} "
+      end
+    end
+
     def reset_pager!
       # Start the next command from the bottom of existing scrollback.
       @viewport.page_bottom(@output.lines)
