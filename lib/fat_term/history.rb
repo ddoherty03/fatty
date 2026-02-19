@@ -20,7 +20,13 @@ module FatTerm
 
     def add(line)
       return if line.strip.empty?
-      return if @entries.last == line
+
+      if @entries.last == line
+        # Even if we don't add duplicates, we still want the next
+        # history_prev to start from "most recent".
+        reset_cursor
+        return
+      end
 
       @entries << line
       truncate!
