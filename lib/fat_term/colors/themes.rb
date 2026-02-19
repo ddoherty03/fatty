@@ -20,7 +20,7 @@ module FatTerm
 
           region: { fg: "navy", bg: "yellow" },
 
-          status_info: { fg: "black", bg: "yellow" },
+          status_info: { fg: "black", bg: "lightgray" },
           status_warn: { fg: "black", bg: "magenta" },
           status_error: { fg: "white", bg: "red" },
 
