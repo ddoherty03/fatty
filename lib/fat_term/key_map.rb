@@ -94,10 +94,10 @@ module FatTerm
           FatTerm.log("KeyMap.resolve_action: action: #{binding.inspect}, args: []", tag: :keymap)
           [binding, []]
         end
-      elsif event&.printable?
-        # Default: treat printable characters as a self-insert.  This is
-        # keymap-policy; vim-normal can disable by overriding resolve_action
-        # or using a different keymap.
+      elsif event&.printable? && (contexts.include?(:input) || contexts.include?(:pager_input))
+        # Default: treat printable characters as a self-insert but only in
+        # those contexts designed to take text input, not contexts like
+        # :paging where keys are meant for control.
         [:self_insert, [event.text]]
       else
         [nil, []]
