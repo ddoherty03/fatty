@@ -59,9 +59,7 @@ module FatTerm
         end.new
 
         Actions.register(:bol, owner: target.class, on: :buffer, method_name: :bol, doc: nil)
-
         ctx = ActionEnvironment.new(buffer: target)
-
         Actions.call(:bol, ctx)
         expect(target.called).to be(true)
       end

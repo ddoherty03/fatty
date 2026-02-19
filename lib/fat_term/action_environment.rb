@@ -25,7 +25,7 @@ module FatTerm
       parts = []
       parts << "session: #{session}" if session
       parts << "terminal: #{terminal}" if terminal
-      parts << "event: #{event.first(90)}" if event
+      parts << "event: #{event.to_s[0..90]}" if event
       parts << "buffer: #{buffer}" if buffer
       parts << "field: #{field}" if field
       parts << "pager: #{pager}" if pager
