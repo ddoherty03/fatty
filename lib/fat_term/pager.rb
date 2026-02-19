@@ -1,10 +1,11 @@
 module FatTerm
   class Pager
     include FatTerm::Actionable
+    action_on :pager
 
     attr_reader :mode
 
-    def initialize(output:, viewport:)
+    def initialize(output:, viewport:, mode: :paging)
       @output   = output
       @viewport = viewport
       # @mode can be :follow, :paging, or :scrolling
@@ -12,8 +13,9 @@ module FatTerm
       # - paging: the viewport displays one page worth of output at a time,
       #   set @pager_active = true,
       # - scrolling: the viewport displays output continuously as it is produced.
-      @mode   = :follow
+      @mode   = mode
       @paused = false
+      @last_total_lines = 0
     end
 
     def paused?
@@ -26,8 +28,12 @@ module FatTerm
 
     # Called by OutputSession after new text is appended.
     def on_append(ntrim:)
+      prev_total = @last_total_lines
+
       @viewport.adjust_for_trim(ntrim)
       lines = @output.lines
+      total = lines.length
+      @last_total_lines = total
 
       case @mode
       when :follow
@@ -35,11 +41,52 @@ module FatTerm
       when :scrolling
         @viewport.clamp!(lines)
       when :paging
+        if @anchor
+          lines = @output.lines
+          total = lines.length
+          produced = total - @anchor
+
+          if produced <= 0
+            return
+          end
+
+          # While producing the first page, keep the viewport pinned to the anchor.
+          @viewport.top = @anchor
+          @viewport.clamp!(lines)
+          if produced >= @viewport.height
+            @paused = true
+          end
+          return
+        end
         if @paused
           @viewport.clamp!(lines)
-        else
-          maybe_pause_at_page_end(lines)
+          return
         end
+        # If everything still fits, just show it (no pause yet).
+        if total <= @viewport.height
+          @viewport.page_bottom(lines)
+          return
+        end
+
+        # First overflow: previously everything fit on one screen (or there was
+        # no prior output). Pause and show the first page.
+        if prev_total <= @viewport.height
+          @paused = true
+          @viewport.page_top
+          @viewport.clamp!(lines)
+          return
+        end
+
+        # If we were at bottom *before* this append, freeze and pause.
+        if @viewport.at_bottom?(prev_total)
+          @paused = true
+          # Freeze on the last full page that existed before new content arrived.
+          frozen = lines[0, prev_total] || []
+          @viewport.page_bottom(frozen)
+          return
+        end
+        # Otherwise user is not at bottom; don't force movement.
+        @viewport.clamp!(lines)
       end
     end
 
@@ -66,15 +113,16 @@ module FatTerm
     desc "Page down in output"
     action :page_down do |count: 1|
       @mode = :paging
-      @paused = false
+      @paused = true
       count.to_i.times { @viewport.page_down(@output.lines) }
-      pause_if_needed
+      @viewport.clamp!(@output.lines)
     end
 
     desc "Jump to end and follow output"
     action :end_of_output do
       @mode = :follow
       @paused = false
+      @anchor = nil
       @viewport.page_bottom(@output.lines)
     end
 
@@ -96,7 +144,7 @@ module FatTerm
 
     desc "Page top"
     action :page_top do
-      @mode = :scrolling
+      @mode = :paging
       @paused = false
       @viewport.page_top
       @viewport.clamp!(@output.lines)
@@ -104,8 +152,8 @@ module FatTerm
 
     desc "Page bottom"
     action :page_bottom do
-      @mode = :scrolling
-      @paused = false
+      @mode = :paging
+      @paused = true
       @viewport.page_bottom(@output.lines)
     end
 
@@ -113,28 +161,28 @@ module FatTerm
     action :paging_to_scrolling do
       @mode = :scrolling
       @paused = false
+      @anchor = nil
       @viewport.clamp!(@output.lines)
     end
 
-    private
-
-    def maybe_pause_at_page_end(lines)
-      @viewport.clamp!(lines)
-      # simplest first cut: if append made us not-at-bottom, pause
-      if lines.length > @viewport.height && !@viewport.at_bottom?(lines.length)
-        @mode = :paging
-        @paused = true
-      else
-        @viewport.page_bottom(lines)
-      end
+    desc "Exit paging and return control to normal input."
+    action :quit_paging do
+      @paused = false
+      @mode = :scrolling if @mode == :paging
+      @anchor = nil
     end
 
-    def pause_if_needed
-      lines = @output.lines
-      @viewport.clamp!(lines)
-      if @mode == :paging && lines.length > @viewport.height && !@viewport.at_bottom?(lines.length)
-        @paused = true
-      end
+    def begin_command!(anchor:)
+      @mode = :paging
+      @paused = false
+      @anchor = anchor
+      @last_total_lines = anchor
+    end
+
+    def reset!(total_lines: 0, mode: :paging)
+      @mode = mode
+      @paused = false
+      @last_total_lines = total_lines
     end
   end
 end

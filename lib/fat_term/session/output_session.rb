@@ -2,27 +2,23 @@
 
 module FatTerm
   class OutputSession < Session
-    attr_reader :output, :viewport
-    attr_accessor :follow_output
+    attr_reader :output, :viewport, :pager, :pager_field
 
     def initialize(keymap: nil, views: [])
       super(keymap: keymap, views: views)
-      @output   = FatTerm::OutputBuffer.new
+      @output   = FatTerm::OutputBuffer.new(max_lines: 500_000)
       @viewport = FatTerm::Viewport.new(height: 10)
-      @follow_output = true
+      mode = FatTerm::Config.config.dig(:output, :mode)&.to_sym || :paging
+      @default_output_mode = mode
+      @pager = FatTerm::Pager.new(output: @output, viewport: @viewport, mode: mode)
+      # Pager minibuffer shown on the last row of the output pane when paging is
+      # active.
+      @pager_field = FatTerm::InputField.new(prompt: -> { pager_status_prompt })
     end
 
-    def append_output(text, follow: true)
-      follow = @follow_output if follow.nil?
-
+    def append_output(text)
       ntrim = @output.append(text.to_s)
-      @viewport.adjust_for_trim(ntrim)
-      out_lines = @output.lines
-      if follow
-        @viewport.page_bottom(out_lines)
-      else
-        @viewport.clamp!(out_lines)
-      end
+      @pager.on_append(ntrim: ntrim)
       ntrim
     end
 
@@ -34,6 +30,35 @@ module FatTerm
     def resize_output!(terminal:)
       @viewport.height = terminal.screen.output_rect.rows
       @viewport.clamp!(@output.lines)
+    end
+
+    def reset_for_command!
+      reset_output!
+      mode = @default_output_mode #FatTerm::Config.config.dig(:output, :mode)&.to_sym || :paging
+      @pager.reset!(mode: mode)
+    end
+
+    # True when the pager is currently holding the screen (i.e., paging mode is
+    # active and the output is paused).
+    def pager_active?
+      @pager.reserve_prompt_row?
+    end
+
+    # When the pager is active, the last output row is reserved for the pager
+    # InputField. This returns the viewport to use for rendering the output
+    # content itself.
+    def pager_viewport
+      if pager_active? && @viewport.height > 1
+        FatTerm::Viewport.new(top: @viewport.top, height: @viewport.height - 1)
+      else
+        @viewport
+      end
+    end
+
+    def reset_pager!
+      # Start the next command from the bottom of existing scrollback.
+      @viewport.page_bottom(@output.lines)
+      @pager.reset!(total_lines: @output.lines.length, mode: @default_output_mode)
     end
   end
 end

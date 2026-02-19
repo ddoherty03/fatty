@@ -107,9 +107,22 @@ module FatTerm
       render_frame
 
       while @running
+        dirty = false
         msg = event_source.next_event
-        dispatch_message(msg) if msg
-        render_frame
+        if msg
+          dispatch_message(msg)
+          dirty = true
+        end
+        s = active_session
+        if s&.respond_to?(:tick)
+          begin
+            dirty ||= !!s.tick(terminal: self)
+          rescue StandardError => e
+            FatTerm.log("Terminal.tick: #{e.class}: #{e.message}", tag: :error)
+            dirty = true
+          end
+        end
+        render_frame if dirty
       end
     rescue => e
       FatTerm.log("Terminal.run: fatal error #{e.class}: #{e.message}", tag: :error)
@@ -127,6 +140,7 @@ module FatTerm
       FatTerm::Config.keydefs
       FatTerm::Config.keybindings
       FatTerm::Logger.configure
+      Thread.report_on_exception = true
     rescue FatConfig::ParseError => ex
       warn "fat_term: configuration error: #{ex.message}"
       exit(1)
@@ -143,8 +157,8 @@ module FatTerm
 
       env = @env || FatTerm::Env.detect
       key_decoder = FatTerm::Backends::Curses::KeyDecoder.new(env: env)
-      @event_source = FatTerm::Backends::Curses::EventSource.new(context: @ctx, key_decoder: key_decoder)
-
+      @event_source =
+        FatTerm::Backends::Curses::EventSource.new(context: @ctx, key_decoder: key_decoder, poll_ms: 50)
       self
     end
 

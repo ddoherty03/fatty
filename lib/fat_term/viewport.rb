@@ -2,7 +2,7 @@
 
 module FatTerm
   class Viewport
-    attr_reader :top
+    attr_accessor :top
     attr_accessor :height
 
     def initialize(top: 0, height:)

@@ -83,7 +83,9 @@ module FatTerm
       map.bind(context: :popup, key: :v, meta: true, action: :popup_page_up)
       map.bind(context: :popup, key: :v, ctrl: true, action: :popup_page_down)
       map.bind(context: :popup, key: :home, action: :popup_top)
+      map.bind(context: :popup, key: :g, action: :popup_top)
       map.bind(context: :popup, key: :end, action: :popup_bottom)
+      map.bind(context: :popup, key: :G, action: :popup_bottom)
       map.bind(context: :popup, key: :'<', meta: true, action: :popup_top)
       map.bind(context: :popup, key: :'>', meta: true, action: :popup_bottom)
       map.bind(context: :popup, key: :l, ctrl: true, action: :popup_recenter)
@@ -107,12 +109,24 @@ module FatTerm
 
       # Output control
       map.bind(key: :l, ctrl: true, action: :clear_output)
-      map.bind(context: :paging, key: :page_up,   action: :page_up)
+      map.bind(context: :paging, key: :page_up, action: :page_up)
+      map.bind(context: :paging, key: :b, action: :page_up)
+      map.bind(context: :paging, key: :u, action: :page_up)
+      map.bind(context: :paging, key: :h, ctrl: true, action: :page_up)
       map.bind(context: :paging, key: :page_down, action: :page_down)
-      map.bind(context: :paging, key: :v, ctrl: true, action: :page_down)  # C-v
-      map.bind(context: :paging, key: :v, meta: true, action: :page_up)    # M-v
+      map.bind(context: :paging, key: :f, action: :page_down)
+      map.bind(context: :paging, key: :d, action: :page_down)
+      map.bind(context: :paging, key: :space, action: :page_down)
+      map.bind(context: :paging, key: :v, ctrl: true, action: :page_down)
+      map.bind(context: :paging, key: :v, meta: true, action: :page_up)
       map.bind(context: :paging, key: :g, action: :page_top)
+      map.bind(context: :paging, key: :home, action: :page_top)
       map.bind(context: :paging, key: :G, shift: true, action: :page_bottom)
+      map.bind(context: :paging, key: :end, action: :page_bottom)
+      map.bind(context: :paging, key: :s, meta: true, action: :paging_to_scrolling)
+      map.bind(context: :paging, key: :c, ctrl: true, action: :quit_paging)
+      map.bind(context: :paging, key: :d, ctrl: true, action: :quit_paging)
+      map.bind(context: :paging, key: :q, action: :quit_paging)
 
       map.load_config
     end

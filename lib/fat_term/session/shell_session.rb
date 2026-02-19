@@ -3,6 +3,7 @@
 require "open3"
 require "pty"
 require "fileutils"
+require "thread"
 
 module FatTerm
   class ShellSession < OutputSession
@@ -20,6 +21,10 @@ module FatTerm
       @history = FatTerm::History.new # you said History now uses config defaults
       @field   = FatTerm::InputField.new(prompt: prompt, history: @history)
       @on_accept = on_accept
+      @pty_queue = Queue.new
+      @pty_thread = nil
+      @pty_reader = nil
+      @suppress_pty = false
     end
 
     def init(terminal:)
@@ -28,7 +33,7 @@ module FatTerm
     end
 
     def keymap_contexts
-      if paging_mode?
+      if pager.paused?
         [:paging, :input, :terminal]
       else
         [:input, :terminal]
@@ -42,11 +47,13 @@ module FatTerm
         event: event,
         buffer: @field.buffer,
         field: @field,
+        pager: pager,
       )
     end
 
     def update_key(ev, terminal:)
-      FatTerm.log("ShellSession.update_key (unbound): key=#{ev.key.inspect} ctrl=#{ev.ctrl?} meta=#{ev.meta?} raw=#{ev.raw.inspect}", tag: :session)
+      key_str = "key=#{ev.key.inspect} ctrl=#{ev.ctrl?} meta=#{ev.meta?} raw=#{ev.raw.inspect}"
+      FatTerm.log("ShellSession.update_key (unbound): #{key_str}", tag: :session)
       case ev.key
       when :resize
         handle_resize(terminal)
@@ -60,9 +67,21 @@ module FatTerm
     end
 
     def view(screen:, renderer:, terminal:)
-      renderer.render_output(output, viewport: viewport)
-      renderer.render_input_field(@field)
-      renderer.restore_cursor(@field)
+      if pager_active?
+        renderer.render_output(output, viewport: pager_viewport)
+        # Reserve the last row of the output pane for a pager minibuffer.
+        # For now it's informational; later it becomes a true minibuffer for
+        # incremental search, etc.
+        renderer.render_pager_field(
+          pager_field,
+          row: screen.output_rect.rows - 1,
+          role: :status_info
+        )
+      else
+        renderer.render_output(output, viewport: viewport)
+        renderer.render_input_field(@field)
+        renderer.restore_cursor(@field)
+      end
     end
 
     # Save any state we want saved on quit, error, etc.
@@ -96,29 +115,43 @@ module FatTerm
       apply_action(action, args, event, terminal: terminal, env: env)
     end
 
-    def paging_mode?
-      lines = output.lines
-      viewport.clamp!(lines)
-      return false if lines.length <= viewport.height
-
-      !viewport.at_bottom?(lines.length)
-    end
-
     def apply_action(action, args, ev, terminal:, env:)
       case action
       when :accept_line
         accept_line(terminal)
       when :interrupt
-        [[:terminal, :quit]]
+        if @pty_pid
+          begin
+            Process.kill("INT", @pty_pid)
+          rescue Errno::ESRCH
+            @pty_pid = nil
+          end
+          []
+        else
+          [[:terminal, :quit]]
+        end
       when :interrupt_if_empty
         if @field.empty?
-          [[:terminal, :quit]]
+          if @pty_pid
+            begin
+              Process.kill("INT", @pty_pid)
+            rescue Errno::ESRCH
+              @pty_pid = nil
+            end
+            []
+          else
+            [[:terminal, :quit]]
+          end
         else
           @field.act_on(:delete_char_forward, env: env)
           []
         end
       when :clear_output
         reset_output!
+        []
+      when :quit_paging
+        pager.act_on(:quit_paging, env: env)
+        stop_command_output!
         []
       when :cycle_theme
         [[:terminal, :cycle_theme]]
@@ -135,38 +168,23 @@ module FatTerm
           selection: :bottom,
         )
         [[:terminal, :push_modal, popup]]
-      when :page_up
-        self.follow_output = false
-        viewport.page_up(output.lines)
-        []
-      when :page_down
-        viewport.page_down(output.lines)
-        []
-      when :end_of_output
-        self.follow_output = true
-        viewport.page_bottom(@output.lines)
-        []
-      when :scroll_up
-        viewport.scroll_up(output.lines)
-        []
-      when :scroll_down
-        viewport.scroll_down(output.lines)
-        []
-      when :page_top
-        viewport.page_top
-        []
-      when :page_bottom
-        viewport.page_bottom(output.lines)
-        []
       else
-        viewport.clamp!(output.lines)
         begin
-          @field.act_on(action, *args, env: env)
+          if pager_action?(action)
+            pager.act_on(action, *args, env: env)
+          else
+            @field.act_on(action, *args, env: env)
+          end
         rescue FatTerm::ActionError => e
           return [alert_cmd(:error, e.message, ev: ev)]
         end
         []
       end
+    end
+
+    def pager_action?(action)
+      spec = FatTerm::Actions.lookup(action) # or whatever you have
+      spec && spec[:on] == :pager
     end
 
     def accept_line(terminal)
@@ -181,15 +199,26 @@ module FatTerm
         reset_output!
         [[:send, :alert, :clear, {}]]
       else
+        # Always start a new command in a clean paging baseline.
+        reset_for_command!
+        anchor = output.lines.length
+        pager.begin_command!(anchor: anchor)
+        append_output("$ #{line}\n")
+        @suppress_pty = false
         if @on_accept
           # callback is expected to return commands (or nil)
           Array(@on_accept.call(line, terminal: terminal, session: self))
         else
-          # Default: run as a shell command, preserving viewport behavior via append_output.
-          append_output("$ #{line}\n")
-          # out, _status = Open3.capture2e(line)
-          out, _status = run_command_pty(line)
-          append_output(out)
+          @pty_thread = Thread.new do
+            begin
+              run_command_pty_stream(line) do |chunk|
+                @pty_queue << chunk
+              end
+            rescue StandardError => ex
+              @pty_queue << "#{ex.class}: #{ex}\n"
+              @pty_queue << (ex.backtrace&.join("\n").to_s + "\n")
+            end
+          end
           [[:send, :alert, :clear, {}]]
         end
       end
@@ -197,31 +226,86 @@ module FatTerm
       [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
     end
 
-    def run_command_pty(line)
-      out = +""
-      status = nil
-
-      begin
-        PTY.spawn(line) do |r, _w, pid|
+    def run_command_pty_stream(line)
+      shell = ENV["SHELL"] || "/bin/sh"
+      PTY.spawn(shell, "-c", line) do |r, _w, pid|
+        @pty_pid = pid
+        @pty_reader = r
         begin
-          r.each do |chunk|
-          out << chunk
+          loop do
+          chunk = r.readpartial(4096)
+          yield chunk
         end
-        rescue Errno::EIO
-          # Normal on PTY EOF for many programs.
+        rescue EOFError, Errno::EIO
+          # normal end-of-pty
         ensure
-          _pid, status = Process.wait2(pid)
+          Process.wait(pid) rescue nil
+          @pty_pid = nil
+          @pty_reader = nil
         end
       end
-      rescue Errno::ENOENT
-        # Command not found (or exec failure).
-        raise
-      rescue StandardError => ex
-        # Keep shell session resilient; surface error output.
-        out << "#{ex.class}: #{ex}\n"
+    rescue Errno::ENOENT
+      raise
+    rescue StandardError => ex
+      yield "#{ex.class}: #{ex}\n"
+      yield(ex.backtrace.join("\n") + "\n") if ex.backtrace
+      @pty_pid = nil
+    end
+
+    # Called by Terminal#go when there is no input message (poll wake-up).
+    # Returns true if any output was appended (dirty).
+    def tick(terminal:)
+      buf    = +""
+      chunks = 0
+      bytes  = 0
+      while chunks < 50 && bytes < 64 * 1024
+        item = (@pty_queue.pop(true) rescue nil)
+        break unless item.is_a?(String)
+
+        buf << item
+        chunks += 1
+        bytes  += item.bytesize
       end
 
-      [out, status]
+      if buf.empty? || @suppress_pty
+        false
+      else
+        append_output(buf)
+        true
+      end
+    end
+
+    def stop_command_output!
+      @suppress_pty = true
+
+      # Drop anything already queued so the screen doesn't change after quitting.
+      begin
+        loop do
+        @pty_queue.pop(true)
+      end
+      rescue ThreadError
+        # queue empty
+      end
+
+      # Try to stop the child, then close the reader to force the PTY loop to exit.
+      if @pty_pid
+        begin
+          Process.kill("INT", @pty_pid)
+        rescue Errno::ESRCH
+          @pty_pid = nil
+        end
+      end
+
+      if @pty_reader
+        begin
+          @pty_reader.close
+        rescue StandardError
+          # ignore
+        ensure
+          @pty_reader = nil
+        end
+      end
+      nil
     end
 
     def handle_resize(terminal)

@@ -10,7 +10,7 @@ module FatTerm
     def initialize(max_lines: DEFAULT_MAX_LINES)
       @lines = []
       @scroll = 0
-      @max_lines = DEFAULT_MAX_LINES
+      @max_lines = Integer(max_lines)
     end
 
     # Append each line of the text, possibly containing multiple lines, to the

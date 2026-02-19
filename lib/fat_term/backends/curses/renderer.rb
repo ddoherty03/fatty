@@ -132,6 +132,28 @@ module FatTerm
           win.refresh
         end
 
+        # Render an InputField-like status line inside the output window.
+        #
+        # Used for pager mode ("--More--" etc.). It intentionally does not move
+        # the cursor; ShellSession decides whether to show a cursor in paging
+        # vs input mode.
+        def render_pager_field(field, row:, role: :status_info)
+          win = context.output_win
+          cols = @screen.cols
+
+          attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
+          win.setpos(row, 0)
+          win.attrset(attr)
+          win.clrtoeol
+
+          prompt = field.prompt_text.to_s
+          buf_text = field.buffer.text.to_s
+          text = (prompt + buf_text)
+
+          win.addstr(text.ljust(cols)[0, cols])
+          win.refresh
+        end
+
         def render_alert(alert)
           win = context.alert_win
           win.clear
