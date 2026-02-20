@@ -43,7 +43,7 @@ module FatTerm
     end
 
     def scroll_to_bottom(lines)
-      @top = max_top(lines.length)
+      @top = max_top(lines.size)
     end
 
     def page_up(lines)
@@ -61,7 +61,7 @@ module FatTerm
 
     # Jump to the very bottom.
     def page_bottom(lines)
-      @top = max_top(lines.length)
+      @top = max_top(lines.size)
     end
 
     def reset

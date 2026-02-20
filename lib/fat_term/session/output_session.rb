@@ -57,8 +57,8 @@ module FatTerm
 
     def pager_status_prompt
       total = @output.lines.length
-      bottom = [@viewport.top + @viewport.height, total].min
-
+      visible_h = pager_active? ? pager.page_height : @viewport.height
+      bottom = [@viewport.top + visible_h, total].min
       pct =
         if total.positive?
           ((bottom * 100.0) / total).round
