@@ -34,7 +34,7 @@ module FatTerm
           return unless win
 
           # Make getch return nil periodically so Terminal can keep rendering,
-          # which allows PTY output appended from background threads to appear.
+          # which allows output to animate smoothly.
           win.timeout = @poll_ms if win.respond_to?(:timeout=)
         end
 

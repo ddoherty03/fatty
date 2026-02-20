@@ -11,14 +11,22 @@ module FatTerm
       mode = FatTerm::Config.config.dig(:output, :mode)&.to_sym || :paging
       @default_output_mode = mode
       @pager = FatTerm::Pager.new(output: @output, viewport: @viewport, mode: mode)
-      # Pager minibuffer shown on the last row of the output pane when paging is
-      # active.
       @pager_field = FatTerm::InputField.new(prompt: -> { pager_status_prompt })
     end
 
-    def append_output(text)
+    def append_output(text, follow: true)
       ntrim = @output.append(text.to_s)
       @pager.on_append(ntrim: ntrim)
+
+      # When callers request follow behavior (scrolling mode),
+      # keep the viewport at the bottom unless paging is actively paused.
+      if follow && !@pager.paused?
+        case @pager.mode
+        when :scrolling
+          @viewport.page_bottom(@output.lines)
+        end
+      end
+
       ntrim
     end
 

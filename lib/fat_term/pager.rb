@@ -8,14 +8,11 @@ module FatTerm
     def initialize(output:, viewport:, mode: :paging)
       @output   = output
       @viewport = viewport
-      # @mode can be :follow, :paging, or :scrolling
-      # - follow: the viewport hugs the last page of output,
+      # @mode can be :paging, or :scrolling
       # - paging: the viewport displays one page worth of output at a time,
-      #   set @pager_active = true,
       # - scrolling: the viewport displays output continuously as it is produced.
       @mode   = mode
       @paused = false
-      @last_total_lines = 0
       @autoscroll = false
     end
 
@@ -42,31 +39,19 @@ module FatTerm
 
     # Called by OutputSession after new text is appended.
     def on_append(ntrim:)
-      prev_total = @last_total_lines
-
       @viewport.adjust_for_trim(ntrim)
       lines = @output.lines
       total = lines.size
-      @last_total_lines = total
 
       case @mode
-      when :follow
-        @viewport.page_bottom(lines)
       when :scrolling
-        if @autoscroll
-          delta = total - prev_total
-          if delta > 0
-            @viewport.scroll_down(lines, delta)
-          else
-            @viewport.clamp!(lines)
-          end
-        else
-          @viewport.clamp!(lines)
-        end
+        # In scrolling mode, the viewport is allowed to move continuously.
+        # Autoscroll animation (after switching from paging -> scrolling) is
+        # driven by #autoscroll_step in ShellSession#tick, not by incremental
+        # scroll deltas during append.
+        @viewport.clamp!(lines)
       when :paging
         if @anchor
-          lines = @output.lines
-          total = lines.size
           produced = total - @anchor
 
           if produced <= 0
@@ -85,28 +70,12 @@ module FatTerm
           @viewport.clamp!(lines)
           return
         end
-        # If everything still fits, just show it (no pause yet).
-        if total <= page_height
-          @viewport.page_bottom(lines)
-          return
-        end
 
-        # First overflow: previously everything fit on one screen (or there was
-        # no prior output). Pause and show the first page.
-        if prev_total <= page_height
+        # No anchor and not yet paused: once the output exceeds a single page,
+        # pause and show the first page.
+        if total > page_height
           @paused = true
           @viewport.page_top
-          @viewport.clamp!(lines)
-          return
-        end
-
-        # If we were at bottom *before* this append, freeze and pause.
-        if @viewport.at_bottom?(prev_total)
-          @paused = true
-          # Freeze on the last full page that existed before new content arrived.
-          frozen = lines[0, prev_total] || []
-          @viewport.page_bottom(frozen)
-          return
         end
         # Otherwise user is not at bottom; don't force movement.
         @viewport.clamp!(lines)
@@ -130,7 +99,7 @@ module FatTerm
       @mode = :paging
       @paused = true
       step = page_height
-      count.to_i.times { @viewport.scroll_down(@output.lines, step) }
+      count.to_i.times { @viewport.scroll_up(@output.lines, step) }
       @viewport.clamp!(@output.lines)
     end
 
@@ -145,7 +114,7 @@ module FatTerm
 
     desc "Jump to end and follow output"
     action :end_of_output do
-      @mode = :follow
+      @mode = :scrolling
       @paused = false
       @anchor = nil
       @viewport.page_bottom(@output.lines)
@@ -205,13 +174,14 @@ module FatTerm
       @mode = :paging
       @paused = false
       @anchor = anchor
-      @last_total_lines = anchor
+      @autoscroll = false
     end
 
     def reset!(total_lines: 0, mode: :paging)
       @mode = mode
       @paused = false
-      @last_total_lines = total_lines
+      @autoscroll = false
+      @anchor = nil
     end
 
     def autoscroll_step(max_lines: 200)
