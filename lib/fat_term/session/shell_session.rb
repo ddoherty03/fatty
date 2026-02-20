@@ -75,7 +75,7 @@ module FatTerm
         renderer.render_pager_field(
           pager_field,
           row: screen.output_rect.rows - 1,
-          role: :status_info
+          role: :status_info,
         )
       else
         renderer.render_output(output, viewport: viewport)
@@ -92,6 +92,34 @@ module FatTerm
       @history.save!
     rescue => e
       FatTerm.log("ShellSession.persist!: failed to save history: #{e.class}: #{e.message}", tag: :error)
+    end
+
+    # Called by Terminal#go when there is no input message (poll wake-up).
+    # Returns true if any visible state changed (dirty).
+    def tick(terminal:)
+      FatTerm.debug("tick: autoscroll?=#{pager.autoscroll?} top=#{viewport.top} total=#{output.lines.length}")
+      buf    = +""
+      chunks = 0
+      bytes  = 0
+
+      while chunks < 50 && bytes < 64 * 1024
+        item = @pty_queue.pop(true) rescue nil
+        break unless item.is_a?(String)
+
+        buf << item
+        chunks += 1
+        bytes  += item.bytesize
+      end
+      moved = pager.autoscroll? ? pager.autoscroll_step : false
+      appended =
+        if buf.empty? || @suppress_pty
+          false
+        else
+          append_output(buf)
+          true
+        end
+
+      moved || appended
     end
 
     private
@@ -250,29 +278,6 @@ module FatTerm
       yield "#{ex.class}: #{ex}\n"
       yield(ex.backtrace.join("\n") + "\n") if ex.backtrace
       @pty_pid = nil
-    end
-
-    # Called by Terminal#go when there is no input message (poll wake-up).
-    # Returns true if any output was appended (dirty).
-    def tick(terminal:)
-      buf    = +""
-      chunks = 0
-      bytes  = 0
-      while chunks < 50 && bytes < 64 * 1024
-        item = (@pty_queue.pop(true) rescue nil)
-        break unless item.is_a?(String)
-
-        buf << item
-        chunks += 1
-        bytes  += item.bytesize
-      end
-
-      if buf.empty? || @suppress_pty
-        false
-      else
-        append_output(buf)
-        true
-      end
     end
 
     def stop_command_output!

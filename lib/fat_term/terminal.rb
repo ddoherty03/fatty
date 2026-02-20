@@ -114,13 +114,12 @@ module FatTerm
           dirty = true
         end
         s = active_session
-        if s&.respond_to?(:tick)
-          begin
-            dirty ||= !!s.tick(terminal: self)
-          rescue StandardError => e
-            FatTerm.log("Terminal.tick: #{e.class}: #{e.message}", tag: :error)
-            dirty = true
-          end
+        begin
+          tick_dirty = !!s.tick(terminal: self)
+          dirty ||= tick_dirty
+        rescue StandardError => e
+          FatTerm.log("Terminal.tick: #{e.class}: #{e.message}", tag: :error)
+          dirty = true
         end
         render_frame if dirty
       end
