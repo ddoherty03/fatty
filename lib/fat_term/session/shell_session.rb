@@ -34,7 +34,7 @@ module FatTerm
 
     def keymap_contexts
       if pager.paused?
-        [:paging, :input, :terminal]
+        [:paging, :terminal]
       else
         [:input, :terminal]
       end

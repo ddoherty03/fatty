@@ -63,6 +63,10 @@ module FatTerm
     def persist!(terminal:)
     end
 
+    def tick(terminal:)
+      false
+    end
+
     def resolve_action(ev)
       return [nil, []] unless keymap
 
