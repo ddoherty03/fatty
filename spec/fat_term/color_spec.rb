@@ -7,7 +7,7 @@ module FatTerm
   RSpec.describe Color do
     describe ".resolve" do
       it "accepts ANSI names (case-insensitive, punctuation-insensitive)" do
-        expect(Color.resolve("red", available_colors: 256)).to eq(1)
+        expect(Color.resolve("ansi:red", available_colors: 256)).to eq(1)
         expect(Color.resolve("Bright-Red", available_colors: 256)).to eq(9)
         expect(Color.resolve("bright_red", available_colors: 256)).to eq(9)
       end
