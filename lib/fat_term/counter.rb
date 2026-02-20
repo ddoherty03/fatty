@@ -14,6 +14,7 @@ module FatTerm
 
     def initialize
       @digits = +""
+      @replace_next = false
     end
 
     def active?
@@ -22,6 +23,8 @@ module FatTerm
 
     def clear!
       @digits.clear
+      @replace_next = false
+      self
     end
 
     def digits
@@ -29,9 +32,28 @@ module FatTerm
     end
 
     def push_digit(n)
-      s = n.to_i.to_s
+      if @replace_next
+        @digits.clear
+        @replace_next = false
+      end
       if @digits.length < MAX_DIGITS
-        @digits << s
+        @digits << n.to_i.to_s
+      end
+      self
+    end
+
+    def set(n)
+      @digits = n.to_i.to_s
+      @replace_next = false
+      self
+    end
+
+    def universal_argument!
+      if active?
+        set(value * 4)
+      else
+        set(4)
+        @replace_next = true # next digit replaces the "4"
       end
       self
     end

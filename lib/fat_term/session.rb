@@ -106,6 +106,11 @@ module FatTerm
       counter.clear!
     end
 
+    desc "Universal argument (C-u)"
+    action :universal_argument, on: :session do
+      counter.universal_argument!
+    end
+
     # Render the session.
     #
     # By default, renders all views belonging to the session, ordered by z-index.

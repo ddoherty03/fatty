@@ -19,14 +19,13 @@ module FatTerm
   #   the definition of "word" can be configured in one place (via
   #   =InputBuffer='s word_chars/word_re).
   class InputField
-    include FatTerm::Actionable
+    include Actionable
 
-    attr_reader :buffer, :prompt, :history, :pending_count
+    attr_reader :buffer, :prompt, :history
 
     def initialize(prompt:, buffer: nil, history: nil)
       @prompt  = Prompt.ensure(prompt)
       @history = history
-      @pending_count = nil
 
       @buffer =
         if buffer
@@ -41,7 +40,6 @@ module FatTerm
     # Centralized action dispatch for this field.
     # - Resets history cursor for non-history actions
     # - Executes the registered action via FatTerm::Actions
-    # - Optionally applies a pending count to the next countable action
     #
     def act_on(action, *args, env: nil, **kwargs)
       return unless action
@@ -53,10 +51,9 @@ module FatTerm
         field: self,
       )
       FatTerm.log(
-        "InputField.act_on: action=#{action} args=#{args.inspect} pending_count=#{@pending_count}",
+        "InputField.act_on: action=#{action} args=#{args.inspect}",
         tag: :count,
       )
-      kwargs = add_count_to_args(action, kwargs, @pending_count)
       FatTerm.log("InputField.act_on: args_with_count=#{kwargs}", tag: :count)
       if FatTerm::Actions.registered?(action)
         FatTerm::Actions.call(action, env, *args, **kwargs)
@@ -67,8 +64,6 @@ module FatTerm
       else
         raise FatTerm::ActionError, "Unknown action: #{action}"
       end
-    ensure
-      clear_count unless count_accumulator?(action)
     end
 
     # category: Queries
@@ -88,42 +83,6 @@ module FatTerm
 
     def prompt_width
       prompt_text.length
-    end
-
-    # category: Count (prefix arg)
-
-    desc "Start / extend a universal argument (C-u): 4, 16, 64..."
-    action :universal_argument do
-      if @pending_count
-        @pending_count *= 4
-      else
-        @pending_count = 4
-      end
-      @pending_count
-    end
-
-    desc "Accumulate a digit into the pending count (M-<digit> or after C-u)."
-    action :meta_digit do |digit|
-      digit_argument(digit)
-    end
-
-    desc "Accumulate a digit into the pending count (used by meta_digit)."
-    action :digit_argument do |digit|
-      d = digit.to_i
-      d = 0 if d.negative?
-      d = 9 if d > 9
-
-      if @pending_count
-        @pending_count = (@pending_count * 10) + d
-      else
-        @pending_count = d
-      end
-      @pending_count
-    end
-
-    desc "Clear any pending count."
-    action :clear_count do
-      @pending_count = nil
     end
 
     # category: Actions
@@ -148,28 +107,6 @@ module FatTerm
       return unless history
 
       buffer.replace(history.next)
-    end
-
-    private
-
-    def count_accumulator?(action)
-      return false unless action
-
-      sym = action.to_sym
-      sym == :universal_argument ||
-        sym == :meta_digit ||
-        sym == :digit_argument ||
-        sym == :clear_count
-    end
-
-    def add_count_to_args(action, kwargs, pending_count)
-      new_kwargs = kwargs.dup
-      if !new_kwargs.key?(:count) && pending_count
-        if buffer.respond_to?(action) && buffer.countable?(action)
-          new_kwargs[:count] = pending_count
-        end
-      end
-      new_kwargs
     end
   end
 end
