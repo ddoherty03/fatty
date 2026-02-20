@@ -10,6 +10,8 @@ module FatTerm
       # :ctrl, and :meta, in the KeyEvent so that the KeyMap can assign different
       # actions to the modified keys.
       class KeyDecoder
+        attr_reader :map, :env
+
         def initialize(env:)
           @env = env
           @map = {}
@@ -112,7 +114,7 @@ module FatTerm
             # (e.g. 97 for "a"). Treat printable ASCII as self-inserting text.
             if (32..126).cover?(ch)
               fallback_decode(ch.chr, raw: ch)
-            elsif ch == 10 || ch == 130
+            elsif ch == 10 || ch == 13
               # Enter can arrive as LF (10) or CR (13). Do this BEFORE ctrl-letter mapping.
               KeyEvent.new(key: :enter, text: "\n", raw: ch)
             elsif ch == 0

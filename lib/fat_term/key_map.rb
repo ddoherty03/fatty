@@ -3,6 +3,37 @@
 require_relative 'keymaps/emacs'
 
 module FatTerm
+  # This struct is used as a key into the KeyMap.  It represents only those
+  # parts of the KeyEvent that are relevant for resolving bindings.  It also
+  # normalizes the use of uppercase letters, like 'G' to convert them to a
+  # canonical :g with shift: true.  That way the user can bind either to mean
+  # the same thing.
+  KeyGesture = Struct.new(:key, :ctrl, :meta, :shift, keyword_init: true) do
+    def self.from_event(ev)
+      k = ev&.key
+      ctrl = !!ev&.ctrl
+      meta = !!ev&.meta
+      shift = !!ev&.shift
+
+      if k.is_a?(Symbol)
+        s = k.to_s
+        if s.length == 1
+          ch = s[0]
+          if ('A'..'Z').cover?(ch)
+            # Decoder (or config) used :G. Canonicalize to :g + shift.
+            k = ch.downcase.to_sym
+            shift = true
+          elsif ('a'..'z').cover?(ch)
+            # Decoder used :g. Keep it, but allow explicit shift to mean uppercase.
+            k = ch.to_sym
+          end
+        end
+      end
+
+      new(key: k, ctrl: ctrl, meta: meta, shift: shift)
+    end
+  end
+
   # The KeyMap class maintains the mapping between KeyEvent's and action names
   # that can be handled by Terminal.  Terminal can delegate the action to any
   # of its controlled components or handle the action itself.  Currently,
@@ -10,6 +41,8 @@ module FatTerm
   # Terminal) and :paging (for controlling the display of output that is
   # longer than the Viewport).  The default keybinding context is :input.
   class KeyMap
+    attr_reader :bindings
+
     DEFAULT_CONTEXT = :input
 
     def self.registered_contexts
@@ -58,14 +91,17 @@ module FatTerm
         meta: truthy?(meta),
         shift: truthy?(shift),
       )
-      @bindings[context][evt] = action
+      gest = KeyGesture.from_event(evt)
+      @bindings[context][gest] = action
     end
 
     # Return the action associated with the given KeyEvent in the given contexts.
     def resolve(event, contexts: [])
-      arg_str = "event: #{event}, contexts: #{contexts}"
-      FatTerm.log("KeyMap#resolve(#{arg_str})", tag: :keybinding)
       return unless event
+
+      gest = KeyGesture.from_event(event)
+      arg_str = "event: #{event}, gesture: #{gest}, contexts: #{contexts}"
+      FatTerm.log("KeyMap#resolve(#{arg_str})", tag: :keybinding)
 
       ctxs = normalize_contexts(contexts)
       result = nil
@@ -73,7 +109,7 @@ module FatTerm
         map = @bindings.fetch(ctx, nil)
         next unless map
 
-        result = map[event]
+        result = map[gest]
         break if result
       end
       FatTerm.log("KeyMap.resolve: -> #{result.inspect}", tag: :keybinding)

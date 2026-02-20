@@ -102,11 +102,6 @@ module FatTerm
       map.bind(key: :return, action: :accept_line)
       map.bind(key: :j, ctrl: true, action: :accept_line)
 
-      # Allow PageUp/PageDown even while in :input; Session can interpret
-      # these as viewport actions.
-      map.bind(key: :page_up,   action: :page_up)
-      map.bind(key: :page_down, action: :page_down)
-
       # Output control
       map.bind(key: :l, ctrl: true, action: :clear_output)
       map.bind(context: :paging, key: :page_up, action: :page_up)
@@ -119,10 +114,12 @@ module FatTerm
       map.bind(context: :paging, key: :space, action: :page_down)
       map.bind(context: :paging, key: :v, ctrl: true, action: :page_down)
       map.bind(context: :paging, key: :v, meta: true, action: :page_up)
-      map.bind(context: :paging, key: :g, action: :page_top)
       map.bind(context: :paging, key: :home, action: :page_top)
-      map.bind(context: :paging, key: :G, shift: true, action: :page_bottom)
+      map.bind(context: :paging, key: :g, action: :page_top)
+      map.bind(context: :paging, key: :'<', meta: true, action: :page_top)
       map.bind(context: :paging, key: :end, action: :page_bottom)
+      map.bind(context: :paging, key: :G, action: :page_bottom)
+      map.bind(context: :paging, key: :'>', meta: true, action: :page_bottom)
       map.bind(context: :paging, key: :s, meta: true, action: :paging_to_scrolling)
       map.bind(context: :paging, key: :c, ctrl: true, action: :quit_paging)
       map.bind(context: :paging, key: :d, ctrl: true, action: :quit_paging)
