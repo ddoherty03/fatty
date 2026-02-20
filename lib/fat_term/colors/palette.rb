@@ -94,6 +94,7 @@ module FatTerm
         h = {}
         color_cfg.each do |k, v|
           next if k.to_sym == :theme
+
           h[k.to_sym] = v
         end
         h
@@ -105,11 +106,12 @@ module FatTerm
         out = (a || {}).dup
         (b || {}).each do |k, v|
           ks = k.to_sym
-          if out[ks].is_a?(Hash) && v.is_a?(Hash)
-            out[ks] = out[ks].merge(v)
-          else
-            out[ks] = v
-          end
+          out[ks] =
+            if out[ks].is_a?(Hash) && v.is_a?(Hash)
+              out[ks].merge(v)
+            else
+              v
+            end
         end
         out
       end
@@ -120,7 +122,7 @@ module FatTerm
         :apply!,
         :extract_color_cfg,
         :color_cfg_without_theme,
-        :deep_merge
+        :deep_merge,
       )
     end
   end
