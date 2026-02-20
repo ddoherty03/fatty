@@ -20,6 +20,25 @@ module FatTerm
       @top >= max_top(total_lines)
     end
 
+    def at_top?
+      @top <= 0
+    end
+
+    # 1-based index of the last visible line (clamped), or 0 if no lines.
+    def bottom_index(total_lines)
+      return 0 if total_lines <= 0
+
+      [@top + @height, total_lines].min
+    end
+
+    def position_percent(total_lines)
+      return 100 if total_lines <= 0
+
+      b = bottom_index(total_lines)
+      pct = (b.to_f / total_lines.to_f) * 100.0
+      pct.round
+    end
+
     def slice(lines)
       lines[@top, @height] || []
     end

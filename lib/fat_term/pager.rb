@@ -14,6 +14,7 @@ module FatTerm
       @mode   = mode
       @paused = false
       @autoscroll = false
+      @last_nav_dir = nil
     end
 
     def paused?
@@ -98,6 +99,7 @@ module FatTerm
     action :page_up do |count: 1|
       @mode = :paging
       @paused = true
+      @last_nav_dir = :up
       step = page_height
       count.to_i.times { @viewport.scroll_up(@output.lines, step) }
       @viewport.clamp!(@output.lines)
@@ -107,6 +109,7 @@ module FatTerm
     action :page_down do |count: 1|
       @mode = :paging
       @paused = true
+      @last_nav_dir = :down
       step = page_height
       count.to_i.times { @viewport.scroll_down(@output.lines, step) }
       @viewport.clamp!(@output.lines)
@@ -116,6 +119,7 @@ module FatTerm
     action :end_of_output do
       @mode = :scrolling
       @paused = false
+      @last_nav_dir = :down
       @anchor = nil
       @viewport.page_bottom(@output.lines)
     end
@@ -124,6 +128,7 @@ module FatTerm
     action :scroll_up do |count: 1|
       @mode = :paging
       @paused = true
+      @last_nav_dir = :up
       count.to_i.times { @viewport.scroll_up(@output.lines) }
       @viewport.clamp!(@output.lines)
     end
@@ -132,6 +137,7 @@ module FatTerm
     action :scroll_down do |count: 1|
       @mode = :paging
       @paused = true
+      @last_nav_dir = :down
       count.to_i.times { @viewport.scroll_down(@output.lines) }
       @viewport.clamp!(@output.lines)
     end
@@ -140,6 +146,7 @@ module FatTerm
     action :page_top do
       @mode = :paging
       @paused = true
+      @last_nav_dir = :up
       @viewport.page_top
       @viewport.clamp!(@output.lines)
     end
@@ -148,6 +155,7 @@ module FatTerm
     action :page_bottom do
       @mode = :paging
       @paused = true
+      @last_nav_dir = :down
       @viewport.page_bottom(@output.lines)
     end
 
@@ -157,6 +165,7 @@ module FatTerm
       @mode = :scrolling
       @paused = false
       @anchor = nil
+      @last_nav_dir = :down
       @autoscroll = true
       @viewport.clamp!(@output.lines)
       # Make it visibly start immediately, even if no further appends happen.
@@ -165,6 +174,7 @@ module FatTerm
 
     desc "Toggle between paging and scrolling"
     action :toggle_paging do
+      @last_nav_dir = :down
       if @mode == :paging
         @mode = :scrolling
         @paused = false
@@ -183,6 +193,28 @@ module FatTerm
       @paused = false
       @mode = :scrolling if @mode == :paging
       @anchor = nil
+    end
+
+    def at_top?
+      @viewport.at_top?
+    end
+
+    def at_bottom?
+      @viewport.at_bottom?(@output.lines.size)
+    end
+
+    def nav_arrow
+      if at_top?
+        "⇓"
+      elsif at_bottom?
+        "⇑"
+      elsif @last_nav_dir == :up
+        "⇑"
+      elsif @last_nav_dir == :down
+        "⇓"
+      else
+        ""
+      end
     end
 
     def begin_command!(anchor:)

@@ -73,9 +73,9 @@ module FatTerm
         end
 
       if pct
-        "--More--  #{bottom}/#{total} (#{pct}%) "
+        "  #{pager.nav_arrow} --More--  #{bottom}/#{total} (#{pct}%) "
       else
-        "--More--  #{bottom} "
+        "  #{pager.nav_arrow} --More--  #{bottom} "
       end
     end
 
