@@ -141,8 +141,8 @@ module FatTerm
   end
 
   # So we can just call FatTerm.log
-  def self.log(event = nil, level: :debug, **data)
-    Logger.log(event, level: level, **data)
+  def self.log(event = nil, level: :debug, tag: nil, **data)
+    Logger.log(event, level: level, tag: tag, **data)
   end
 
   def self.debug(event, tag: nil, **data)
