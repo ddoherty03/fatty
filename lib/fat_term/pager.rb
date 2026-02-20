@@ -122,16 +122,16 @@ module FatTerm
 
     desc "Scroll up"
     action :scroll_up do |count: 1|
-      @mode = :scrolling
-      @paused = false
+      @mode = :paging
+      @paused = true
       count.to_i.times { @viewport.scroll_up(@output.lines) }
       @viewport.clamp!(@output.lines)
     end
 
     desc "Scroll down"
     action :scroll_down do |count: 1|
-      @mode = :scrolling
-      @paused = false
+      @mode = :paging
+      @paused = true
       count.to_i.times { @viewport.scroll_down(@output.lines) }
       @viewport.clamp!(@output.lines)
     end
@@ -139,7 +139,7 @@ module FatTerm
     desc "Page top"
     action :page_top do
       @mode = :paging
-      @paused = false
+      @paused = true
       @viewport.page_top
       @viewport.clamp!(@output.lines)
     end
