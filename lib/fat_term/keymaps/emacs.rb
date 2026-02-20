@@ -104,6 +104,10 @@ module FatTerm
 
       # Output control
       map.bind(key: :l, ctrl: true, action: :clear_output)
+      map.bind(context: :paging, key: :up, action: :scroll_up)
+      map.bind(context: :paging, key: :down, action: :scroll_down)
+      map.bind(context: :paging, key: :k, action: :scroll_up)
+      map.bind(context: :paging, key: :j, action: :scroll_down)
       map.bind(context: :paging, key: :page_up, action: :page_up)
       map.bind(context: :paging, key: :b, action: :page_up)
       map.bind(context: :paging, key: :u, action: :page_up)
@@ -120,7 +124,8 @@ module FatTerm
       map.bind(context: :paging, key: :end, action: :page_bottom)
       map.bind(context: :paging, key: :G, action: :page_bottom)
       map.bind(context: :paging, key: :'>', meta: true, action: :page_bottom)
-      map.bind(context: :paging, key: :s, meta: true, action: :paging_to_scrolling)
+      map.bind(context: :paging, key: :s, meta: true, action: :toggle_paging)
+      map.bind(context: :terminal, key: :s, meta: true, action: :toggle_paging)
       map.bind(context: :paging, key: :c, ctrl: true, action: :quit_paging)
       map.bind(context: :paging, key: :d, ctrl: true, action: :quit_paging)
       map.bind(context: :paging, key: :q, action: :quit_paging)

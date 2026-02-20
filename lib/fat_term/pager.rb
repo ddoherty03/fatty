@@ -163,6 +163,21 @@ module FatTerm
       autoscroll_step(max_lines: @viewport.height)
     end
 
+    desc "Toggle between paging and scrolling"
+    action :toggle_paging do
+      if @mode == :paging
+        @mode = :scrolling
+        @paused = false
+        @autoscroll = true   # keep if you like the animated “catch up”
+      else
+        @mode = :paging
+        @paused = true
+        @autoscroll = false
+        @anchor = nil        # ensure no command-anchored paging behavior kicks in
+        @viewport.clamp!(@output.lines)
+      end
+    end
+
     desc "Exit paging and return control to normal input."
     action :quit_paging do
       @paused = false
