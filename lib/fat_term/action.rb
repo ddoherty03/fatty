@@ -49,6 +49,20 @@ module FatTerm
       target = env.public_send(defn[:on])
       raise ActionError, "env.#{defn[:on]} is nil for action #{key}" unless target
 
+      # Inject count: from env.counter when the target accepts it.
+      if env.counter && env.counter.active? && !kwargs.key?(:count)
+        meth = target.method(defn[:method])
+        params = meth.parameters
+
+        accepts_count =
+          params.any? { |(kind, pname)| kind == :key && pname == :count } ||
+          params.any? { |(kind, _pname)| kind == :keyrest }
+
+        if accepts_count
+          kwargs = kwargs.merge(count: env.counter.consume(default: 1))
+        end
+      end
+
       target.public_send(defn[:method], *args, **kwargs)
     end
 

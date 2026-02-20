@@ -3,18 +3,20 @@
 module FatTerm
   # For holding the environment in which an action is executed
   class ActionEnvironment
-    attr_accessor :session, :terminal, :event, :buffer, :field, :pager
+    attr_accessor :session, :terminal, :event, :counter, :buffer, :field, :pager
 
     def initialize(
           session: nil,
           terminal: nil,
+          counter: nil,
           event: nil,
           buffer: nil,
           field: nil,
-          pager:nil
+          pager: nil
         )
       @session = session
       @terminal = terminal
+      @counter = counter
       @event = event
       @buffer = buffer
       @field = field
@@ -25,6 +27,7 @@ module FatTerm
       parts = []
       parts << "session: #{session}" if session
       parts << "terminal: #{terminal}" if terminal
+      parts << "counter: #{counter}" if counter
       parts << "event: #{event.to_s[0..90]}" if event
       parts << "buffer: #{buffer}" if buffer
       parts << "field: #{field}" if field

@@ -330,6 +330,7 @@ module FatTerm
       ActionEnvironment.new(
         session: self,
         terminal: terminal,
+        counter: counter,
         event: event,
         field: @field,
         buffer: @field.buffer,

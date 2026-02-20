@@ -160,6 +160,22 @@ module FatTerm
       self
     end
 
+    # Bind the digits in the given context with either meta, ctrl, neither or
+    # both as the required modifier keys.
+    def bind_digits(context: :input, meta: nil, ctrl: nil)
+      meta = !!meta
+      ctrl = !!ctrl
+      (0..9).each do |n|
+        bind(
+          context: context,
+          key: n.to_s.to_sym,
+          meta: meta,
+          ctrl: ctrl,
+          action: [:count_digit, n],
+        )
+      end
+    end
+
     private
 
     # Make a binding from an entry Hash that has keys for context, key (the

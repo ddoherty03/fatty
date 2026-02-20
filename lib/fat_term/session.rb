@@ -12,11 +12,14 @@ module FatTerm
   # Where `commands` is an Array (possibly empty). Terminal is responsible for
   # executing commands after each update cycle.
   class Session
-    attr_reader :views, :keymap
+    include Actionable
+
+    attr_reader :views, :keymap, :counter
 
     def initialize(keymap: nil, views: [])
       @keymap = keymap
       @views = Array(views)
+      @counter = Counter.new
     end
 
     def add_view(view)
@@ -91,6 +94,16 @@ module FatTerm
 
     def update_cmd(_name, _payload, terminal:)
       []
+    end
+
+    desc "Accumulate a count with a decimal digit"
+    action :count_digit, on: :session do |n|
+      counter.push_digit(n)
+    end
+
+    desc "Clear the accumulated count"
+    action :count_clear, on: :session do
+      counter.clear!
     end
 
     # Render the session.

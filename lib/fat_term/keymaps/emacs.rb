@@ -50,16 +50,9 @@ module FatTerm
 
       # Counts (prefix arg)
       map.bind(key: :u, ctrl: true, action: :universal_argument)
-      map.bind(key: :'0', meta: true, action: [:meta_digit, 0])
-      map.bind(key: :'1', meta: true, action: [:meta_digit, 1])
-      map.bind(key: :'2', meta: true, action: [:meta_digit, 2])
-      map.bind(key: :'3', meta: true, action: [:meta_digit, 3])
-      map.bind(key: :'4', meta: true, action: [:meta_digit, 4])
-      map.bind(key: :'5', meta: true, action: [:meta_digit, 5])
-      map.bind(key: :'6', meta: true, action: [:meta_digit, 6])
-      map.bind(key: :'7', meta: true, action: [:meta_digit, 7])
-      map.bind(key: :'8', meta: true, action: [:meta_digit, 8])
-      map.bind(key: :'9', meta: true, action: [:meta_digit, 9])
+      map.bind_digits(context: :input, meta: true)
+      map.bind_digits(context: :popup)
+      map.bind_digits(context: :paging)
 
       # History
       map.bind(key: :p, ctrl: true, action: :history_prev)

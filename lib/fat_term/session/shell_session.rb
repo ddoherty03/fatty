@@ -50,6 +50,7 @@ module FatTerm
       FatTerm::ActionEnvironment.new(
         session: self,
         terminal: terminal,
+        counter: counter,
         event: event,
         buffer: @field.buffer,
         field: @field,
@@ -146,6 +147,9 @@ module FatTerm
           @field.act_on(:delete_char_forward, env: env)
           []
         end
+      when :prefix_digit
+        counter.push_digit(args.first)
+        []
       when :clear_output
         reset_output!
         []
@@ -194,7 +198,24 @@ module FatTerm
         pager.begin_command!(anchor: anchor)
         append_output("$ #{line}\n", follow: true)
         # @on_accept callback is expected to return commands (or nil)
-        Array(@on_accept.call(line, terminal: terminal, session: self))
+        # Array(@on_accept.call(line, terminal: terminal, session: self))
+        result =
+          if @on_accept
+            @on_accept.call(line, terminal: terminal, session: self)
+          else
+            run_default_command(line)
+          end
+        # Normalize result:
+        # - Array-of-commands => return it
+        # - String output     => append + return alert clear
+        # - nil               => just return alert clear
+        if result.is_a?(Array) && result.first.is_a?(Array) && result.first.first.is_a?(Symbol)
+          result
+        else
+          out = result.to_s
+          append_output(out, follow: true) unless out.empty?
+          [[:send, :alert, :clear, {}]]
+        end
       end
     rescue Errno::ENOENT
       [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
