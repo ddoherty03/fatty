@@ -130,14 +130,14 @@ module FatTerm
       # Paging search (opens SearchSession via ShellSession actions)
       map.bind(context: :paging, key: :/, action: :pager_search_forward)
       map.bind(context: :paging, key: :'?', action: :pager_search_backward)
-      map.bind(context: :paging, key: :r, ctrl: true, action: :pager_search_backward)
-
       # Incremental (string-only) search like Emacs isearch.
       # Regex is intentionally non-incremental (use C-u / or / then toggle).
       map.bind(context: :paging, key: :s, ctrl: true, action: :pager_isearch_forward)
+      map.bind(context: :paging, key: :r, ctrl: true, action: :pager_isearch_backward)
 
       # I-search controls (within ISearchSession)
       map.bind(context: :isearch, key: :s, ctrl: true, action: :isearch_next)
+      map.bind(context: :isearch, key: :r, ctrl: true, action: :isearch_prev)
       map.bind(context: :isearch, key: :g, ctrl: true, action: :popup_cancel)  # or :interrupt
       map.bind(context: :isearch, key: :escape, action: :popup_cancel)          # if your decoder uses :escape
 

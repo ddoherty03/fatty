@@ -43,6 +43,8 @@ module FatTerm
         cmds.concat(cancel!)
       when :isearch_next
         cmds.concat(step_next!)
+      when :isearch_prev
+        cmds.concat(step_prev!)
       else
         @field.act_on(action, *args, env: env)
         cmds.concat(maybe_preview!)
@@ -64,7 +66,8 @@ module FatTerm
     private
 
     def isearch_prompt
-      "I-search: "
+      arrow = (@direction == :backward ? "↑" : "↓")
+      "I-search #{arrow}: "
     end
 
     def accept!
@@ -81,6 +84,11 @@ module FatTerm
 
     def step_next!
       # Step forward in the original direction while staying in preview mode.
+      [[:terminal, :send_modal_owner, [:cmd, :pager_isearch_step, { direction: @direction }]]]
+    end
+
+    def step_prev!
+      @direction = :backward
       [[:terminal, :send_modal_owner, [:cmd, :pager_isearch_step, { direction: @direction }]]]
     end
 

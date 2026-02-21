@@ -203,6 +203,8 @@ module FatTerm
         [[:terminal, :push_modal, FatTerm::SearchSession.new(direction: :backward, regex: regex)]]
       when :pager_isearch_forward
         [[:terminal, :push_modal, FatTerm::ISearchSession.new(direction: :forward)]]
+      when :pager_isearch_backward
+        [[:terminal, :push_modal, FatTerm::ISearchSession.new(direction: :backward)]]
       when :pager_search_next
         result = pager.search_repeat_next!
         handle_search_result(result)
