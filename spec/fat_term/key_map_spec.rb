@@ -46,6 +46,13 @@ module FatTerm
         expect(km.resolve(ev(:enter), contexts: [:input, :paging])).to eq(:submit)
       end
 
+      it "can resolve universal argument (C-u) in paging via :terminal context" do
+        km = FatTerm::Keymaps.emacs
+
+        # ShellSession uses contexts [:paging, :terminal] while paging.
+        expect(km.resolve(ev(:u, ctrl: true), contexts: [:paging, :terminal])).to eq(:universal_argument)
+      end
+
       it "raises if bind is missing an action keyword (explicit) OR action nil" do
         km = KeyMap.new
         expect { km.bind(key: :a, action: nil) }.to raise_error(ArgumentError)

@@ -76,26 +76,18 @@ module FatTerm
     def view(screen:, renderer:, terminal:)
       if pager_active?
         ::Curses.curs_set(0)
-        match = pager.search_last_match
-        highlights =
-          if match
-            { match[:line] => [[match[:from], match[:to]]] }
-          end
+        highlights = pager.search_visible_highlights(viewport: pager_viewport)
         renderer.render_output(output, viewport: pager_viewport, highlights: highlights)
-
-        # Reserve the last row of the output pane for a pager minibuffer.
-        # For now it's informational; later it becomes a true minibuffer for
-        # incremental search, etc.
         renderer.render_pager_field(
           pager_field,
           row: screen.output_rect.rows - 1,
-          role: :status_info,
+          role: :pager_status,
         )
       else
         ::Curses.curs_set(1)
-        renderer.render_output(output, viewport: viewport)
-        renderer.render_input_field(@field)
-        renderer.restore_cursor(@field)
+        renderer.render_output(output, viewport: pager_viewport, highlights: nil)
+        renderer.render_input_field(field)
+        renderer.restore_cursor(field)
       end
     end
 
@@ -194,10 +186,10 @@ module FatTerm
         regex = consume_search_regex_flag
         [[:terminal, :push_modal, FatTerm::SearchSession.new(direction: :backward, regex: regex)]]
       when :pager_search_next
-        result = pager.search_step!(direction: :forward)
+        result = pager.search_repeat_next!
         handle_search_result(result)
       when :pager_search_prev
-        result = pager.search_step!(direction: :backward)
+        result = pager.search_repeat_prev!
         handle_search_result(result)
       else
         begin
@@ -272,10 +264,8 @@ module FatTerm
 
     def consume_search_regex_flag
       regex = false
-      if counter.active?
-        # Emacs-ish convention: C-u before initiating search means "treat input as regex".
-        # We only treat bare universal-argument (4) as this flag.
-        regex = (counter.digits.to_s == "4")
+      if counter.digits.to_s == "4"
+        regex = true
         counter.clear!
       end
       regex

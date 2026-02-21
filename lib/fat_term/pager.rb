@@ -23,8 +23,10 @@ module FatTerm
         pattern: nil,
         regex: false,
         re: nil,
+        original_direction: nil,
         last_direction: nil,
         last: nil, # { line: Integer, from: Integer, to: Integer }
+        last_view_top: nil,
         pending_wrap: nil, # :forward/:backward
       }
     end
@@ -290,6 +292,7 @@ module FatTerm
       @search[:regex] = !!regex
       @search[:re] = re
       @search[:last_direction] = direction.to_sym
+      @search[:original_direction] = direction.to_sym
       @search[:last] = nil
       @search[:pending_wrap] = nil
 
@@ -304,16 +307,25 @@ module FatTerm
       @search[:regex] = false
       @search[:re] = nil
       @search[:last] = nil
+      @search[:original_direction] = nil
       @search[:pending_wrap] = nil
     end
 
     # Steps to the next match in +direction+.
     # If no match exists without wrapping, returns :boundary and requires a
     # second step in the same direction to wrap.
-    def search_step!(direction:, initial: false)
+    # NOTE:
+    # Regex search is strictly line-local.
+    # Matches never span line boundaries even if '.' would
+    # normally match '\n'. This preserves pager navigation,
+    # viewport anchoring, and renderer simplicity.
+    def search_step!(direction:, initial: false, update_origin: true)
       direction = direction.to_sym
       re = @search[:re]
       @search[:last_direction] = direction.to_sym
+      if update_origin
+        @search[:original_direction] = direction.to_sym
+      end
       return { status: :not_found } unless re
 
       lines = @output.lines
@@ -347,6 +359,20 @@ module FatTerm
       { status: :boundary, message: boundary_message(direction: direction) }
     end
 
+    # Vim/less semantics:
+    # - n repeats in the original direction (set by / ? C-s C-r)
+    # - N repeats in the opposite direction
+    def search_repeat_next!
+      dir = (@search[:original_direction] || :forward).to_sym
+      search_step!(direction: dir, update_origin: false)
+    end
+
+    def search_repeat_prev!
+      origin = (@search[:original_direction] || :forward).to_sym
+      dir = (origin == :forward ? :backward : :forward)
+      search_step!(direction: dir, update_origin: false)
+    end
+
     # Exposes the last match for render-layer highlighting.
     # (We only highlight the last match for now; later we can highlight all
     # visible matches.)
@@ -354,9 +380,59 @@ module FatTerm
       @search[:last]
     end
 
+    # Returns highlight ranges for all matches within the given viewport.
+    #
+    # Format:
+    #   {
+    #     abs_line_index => [[from, to, :secondary], [from, to, :secondary], ...,
+    #                       [from, to, :primary]],
+    #     ...
+    #   }
+    #
+    # Ranges are in *visible text* coordinates (ANSI already stripped), matching
+    # the renderer’s slice planner / highlighting behavior.
+    def search_visible_highlights(viewport:)
+      re = @search[:re]
+      return nil unless re
+
+      lines = @output.lines
+      total = lines.length
+      return nil if total.zero?
+
+      top = viewport.top.to_i
+      bottom = viewport.bottom_index(total)
+      current = @search[:last]
+      out = {}
+      (top..bottom).each do |i|
+        text = visible_text(lines[i])
+        next if text.nil? || text.empty?
+
+        ranges = []
+        text.to_enum(:scan, re).each do
+          m = Regexp.last_match
+          ranges << [m.begin(0), m.end(0), :secondary]
+        end
+        next if ranges.empty?
+
+        # Promote the current match to :primary, removing the duplicate secondary
+        # range if present.
+        if current && current[:line].to_i == i
+          cf = current[:from].to_i
+          ct = current[:to].to_i
+          ranges.reject! { |a, b, _role| a == cf && b == ct }
+          ranges << [cf, ct, :primary]
+        end
+        ranges.sort_by!(&:first)
+        out[i] = ranges
+      end
+      out.empty? ? nil : out
+    end
+
     def search_label
       return unless @search[:re]
 
+      # Keep showing the direction of the most recent movement (nice UX),
+      # while repeat semantics depend on original_direction.
       arrow = (@search[:last_direction] == :backward ? "↑" : "↓")
       prefix = @search[:regex] ? "re:" : ""
       pat = @search[:pattern].to_s
@@ -364,6 +440,13 @@ module FatTerm
     end
 
     private
+
+    # Return the visible text for a line, with ANSI escapes removed.
+    # Search offsets are computed in this coordinate space so rendering
+    # highlights align with what the user sees.
+    def visible_text(str)
+      FatTerm::Ansi.segment(str.to_s).map(&:first).join
+    end
 
     def compile_search_regexp(pattern, regex:)
       if regex
@@ -375,24 +458,35 @@ module FatTerm
 
     def search_start_position(direction:, total:, initial:)
       last = @search[:last]
-      if last
-        # Repeat search begins at the point of the last match.
+      # If the user has navigated since the last match (e.g. G/g/PageUp),
+      # repeat search should start from the current viewport edge, not from
+      # the prior match location.
+      viewport_unchanged = (last && @search[:last_view_top] == @viewport.top)
+
+      if last && viewport_unchanged
         if direction == :forward
           { line: last[:line], col: last[:to] }
         else
           { line: last[:line], col: last[:from] }
         end
-      elsif initial
-        if direction == :forward
-          { line: @viewport.top, col: 0 }
-        else
-          { line: @viewport.bottom_index(total), col: 0 }
-        end
       elsif direction == :forward
-        # No previous match, but stepping anyway: use the visible page.
         { line: @viewport.top, col: 0 }
       else
-        { line: @viewport.bottom_index(total), col: 0 }
+        # Use a very large col so scan_backward includes matches on the
+        # starting line (our backward scan treats start_col as an upper bound).
+        li = @viewport.bottom_index(total)
+        { line: li, col: search_start_col_for(li) }
+      end
+    end
+
+    def search_start_col_for(line_index)
+      line = @output.lines[line_index]
+      # Use end-of-line as the backward scan upper bound so the starting line
+      # is included. +1 avoids edge weirdness when match ends exactly at len.
+      if line
+        visible_text(line).chomp.length + 1
+      else
+        1_000_000_000
       end
     end
 
@@ -400,7 +494,8 @@ module FatTerm
       if direction == :forward
         { line: 0, col: 0 }
       else
-        { line: total - 1, col: 0 }
+        li = total - 1
+        { line: li, col: search_start_col_for(li) }
       end
     end
 
@@ -426,7 +521,7 @@ module FatTerm
     def scan_forward(lines, re, start_line, start_col)
       i = start_line.clamp(0, lines.length - 1)
       while i < lines.length
-        text = lines[i].to_s
+        text = visible_text(lines[i])
         from = (i == start_line ? start_col : 0)
         m = re.match(text, from)
         return { line: i, from: m.begin(0), to: m.end(0) } if m
@@ -439,7 +534,7 @@ module FatTerm
     def scan_backward(lines, re, start_line, start_col)
       i = start_line.clamp(0, lines.length - 1)
       while i >= 0
-        text = lines[i].to_s
+        text = visible_text(lines[i])
         # For now, we search the whole line and select the last match.
         # If we're repeating within the same line, restrict to before start_col.
         limit = (i == start_line ? start_col : nil)
@@ -468,6 +563,7 @@ module FatTerm
       # Position the match line near the middle when possible.
       half = (@viewport.height / 2)
       @viewport.top = [line - half, 0].max
+      @search[:last_view_top] = @viewport.top
     end
   end
 end

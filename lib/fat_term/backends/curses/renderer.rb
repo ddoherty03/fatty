@@ -85,6 +85,7 @@ module FatTerm
           win = context.output_win
           base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
           hi_attr = pair_attr(:search_highlight, fallback: ::Curses::A_REVERSE)
+          hi2_attr = pair_attr(:search_highlight_secondary, fallback: hi_attr)
           win.attrset(base_attr)
           win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
           win.clear
@@ -93,10 +94,20 @@ module FatTerm
           lines.each_with_index do |line, y|
             abs_line = viewport.top + y
             ranges = highlight_ranges_for_line(highlights, abs_line)
+            # Convert [from,to,role] → [from,to,attr]
+            ranges =
+              Array(ranges).map do |from, to, role|
+                attr =
+                  case role
+                  when :secondary then hi2_attr
+                  else hi_attr # :primary (or nil)
+                  end
+                [from.to_i, to.to_i, attr]
+              end
 
             win.setpos(y, 0)
             win.attrset(base_attr)
-            slices = build_line_slices(line, ranges: ranges, hi_attr: hi_attr) do |style|
+            slices = build_line_slices(line, ranges: ranges) do |style|
               context.ansi_attr(style, fallback_role: :output)
             end
             render_slices(win, slices)
@@ -157,11 +168,13 @@ module FatTerm
         # vs input mode.
         def render_pager_field(field, row:, role: :status_info)
           win = context.output_win
-          cols = @screen.cols
+          cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
 
           attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
+
           win.setpos(row, 0)
           win.attrset(attr)
+          win.bkgdset(attr) if win.respond_to?(:bkgdset)
           win.clrtoeol
 
           prompt = field.prompt_text.to_s
@@ -171,7 +184,6 @@ module FatTerm
           win.addstr(text.ljust(cols)[0, cols])
           win.refresh
         end
-
         def render_alert(alert)
           win = context.alert_win
           win.clear
@@ -290,7 +302,22 @@ module FatTerm
           raw = highlights[abs_line]
           return [] unless raw
 
-          ranges = Array(raw).map { |r| [r[0].to_i, r[1].to_i] }
+          # Accept any of:
+          #   [[from,to], ...]
+          #   [[from,to,:primary], [from,to,:secondary], ...]
+          #   [{from:, to:, role:}, ...]
+          ranges =
+            Array(raw).map do |r|
+            if r.is_a?(Hash)
+              [r[:from].to_i, r[:to].to_i, (r[:role] || :primary).to_sym]
+            else
+              a = r[0].to_i
+              b = r[1].to_i
+              role = (r[2] || :primary).to_sym
+              [a, b, role]
+            end
+          end
+
           ranges.sort_by!(&:first)
           ranges
         end
@@ -299,11 +326,12 @@ module FatTerm
         #
         # Returns an array of [attr, text] slices.
         #
-        # ranges are plain-text indices: [[from, to], ...]
-        # hi_attr is the curses attr to apply to highlighted text
+        # Yields each ANSI style hash and expects an attr back for non-highlight text.
+        # ranges are plain-text indices:
+        #   [[from, to, attr], ...]
         #
         # Yields each ANSI style hash and expects an attr back for non-highlight text.
-        def build_line_slices(line, ranges:, hi_attr:)
+        def build_line_slices(line, ranges:)
           slices = []
           return slices if line.nil?
 
@@ -342,7 +370,7 @@ module FatTerm
                 # highlighted portion
                 upto = [r[1], seg_to].min - seg_from
                 upto = text.length if upto > text.length
-                emit_slice(slices, hi_attr, text.slice(cursor, upto - cursor).to_s)
+                emit_slice(slices, r[2], text.slice(cursor, upto - cursor).to_s)
                 cursor = upto
 
                 # consume this range if we reached/passed its end

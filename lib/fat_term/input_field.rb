@@ -37,6 +37,10 @@ module FatTerm
         end
     end
 
+    def prompt=(prompt)
+      @prompt = Prompt.ensure(prompt)
+    end
+
     # Centralized action dispatch for this field.
     # - Resets history cursor for non-history actions
     # - Executes the registered action via FatTerm::Actions

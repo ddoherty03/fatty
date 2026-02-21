@@ -42,6 +42,8 @@ module FatTerm
         accept_search
       when :popup_cancel, :interrupt
         [[:terminal, :pop_modal]]
+      when :search_toggle_regex
+        toggle_regex
       when :search_step_forward
         step_search(:forward)
       when :search_step_backward
@@ -64,6 +66,12 @@ module FatTerm
         role: :search,
       )
       renderer.restore_output_cursor(@field, row: row)
+    end
+
+    def toggle_regex
+      @regex = !@regex
+      @field.prompt = search_prompt(direction: @direction, regex: @regex)
+      []
     end
 
     private

@@ -53,6 +53,10 @@ module FatTerm
       map.bind_digits(context: :input, meta: true)
       map.bind_digits(context: :popup)
       map.bind_digits(context: :paging)
+      # ShellSession uses contexts [:paging, :terminal] while the pager is
+      # active. Bind C-u in :terminal so it works as a prefix during paging
+      # (e.g. C-u / to start a regex search).
+      map.bind(context: :terminal, key: :u, ctrl: true, action: :universal_argument)
 
       # History
       map.bind(key: :p, ctrl: true, action: :history_prev)
@@ -136,6 +140,8 @@ module FatTerm
       # Search minibuffer stepping (does not depend on initial / vs ? direction)
       map.bind(context: :search, key: :s, ctrl: true, action: :search_step_forward)
       map.bind(context: :search, key: :r, ctrl: true, action: :search_step_backward)
+
+      map.bind(context: :search, key: :r, meta: true, action: :search_toggle_regex)
 
       map.load_config
     end
