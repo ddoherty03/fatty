@@ -132,6 +132,22 @@ module FatTerm
         direction = (payload[:direction] || :forward).to_sym
         result = pager.search_step!(direction: direction)
         cmds.concat(handle_search_result(result))
+      when :pager_isearch_update
+        pattern = payload.fetch(:pattern, "").to_s
+        direction = (payload[:direction] || :forward).to_sym
+        result = pager.isearch_update!(pattern: pattern, direction: direction)
+        cmds.concat(handle_search_result(result))
+      when :pager_isearch_step
+        direction = (payload[:direction] || :forward).to_sym
+        result = pager.isearch_step!(direction: direction)
+        cmds.concat(handle_search_result(result))
+      when :pager_isearch_cancel
+        pager.isearch_cancel!
+      when :pager_isearch_commit
+        pattern = payload.fetch(:pattern, "").to_s
+        direction = (payload[:direction] || :forward).to_sym
+        result = pager.isearch_commit!(pattern: pattern, direction: direction)
+        cmds.concat(handle_search_result(result))
       end
       cmds
     end
@@ -185,6 +201,8 @@ module FatTerm
       when :pager_search_backward
         regex = consume_search_regex_flag
         [[:terminal, :push_modal, FatTerm::SearchSession.new(direction: :backward, regex: regex)]]
+      when :pager_isearch_forward
+        [[:terminal, :push_modal, FatTerm::ISearchSession.new(direction: :forward)]]
       when :pager_search_next
         result = pager.search_repeat_next!
         handle_search_result(result)

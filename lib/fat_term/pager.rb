@@ -439,7 +439,81 @@ module FatTerm
       "#{arrow} #{prefix}#{pat}"
     end
 
+    def isearch_update!(pattern:, direction:)
+      ensure_isearch_snapshot!
+      pattern = pattern.to_s
+
+      result =
+        if pattern.strip.empty?
+          restore_isearch_anchor!
+          @search[:re] = nil
+          @search[:pattern] = nil
+          @search[:last] = nil
+          @search[:pending_wrap] = nil
+          { status: :not_found }
+        else
+          re = compile_search_regexp(pattern, regex: false)
+          @search[:pattern] = pattern
+          @search[:regex] = false
+          @search[:re] = re
+          @search[:last_direction] = direction.to_sym
+
+          initial = @search[:last].nil?
+          search_step!(direction: direction, initial: initial, update_origin: false)
+        end
+
+      result
+    rescue RegexpError => e
+      { status: :not_found, message: "Invalid regexp: #{e.message}" }
+    end
+
+    def isearch_step!(direction:)
+      ensure_isearch_snapshot!
+      search_step!(direction: direction, initial: false, update_origin: false)
+    end
+
+    def isearch_cancel!
+      if @isearch_snapshot
+        @viewport.top = @isearch_snapshot[:viewport_top]
+        @search = @isearch_snapshot[:search]
+        @isearch_snapshot = nil
+      end
+      nil
+    end
+
+    def isearch_commit!(pattern:, direction:)
+      ensure_isearch_snapshot!
+      pattern = pattern.to_s
+      if pattern.strip.empty?
+        isearch_cancel!
+        return { status: :not_found }
+      end
+      result = isearch_update!(pattern: pattern, direction: direction)
+      if result[:status] == :moved
+        @search[:original_direction] = direction.to_sym
+        @search[:pending_wrap] = nil
+      end
+      @isearch_snapshot = nil
+      result
+    end
+
     private
+
+    def ensure_isearch_snapshot!
+      return if @isearch_snapshot
+
+      @isearch_snapshot = {
+        viewport_top: @viewport.top,
+        # Deep-ish copy of the search hash so we can restore cleanly.
+        search: @search.dup,
+      }
+    end
+
+    def restore_isearch_anchor!
+      if @isearch_snapshot
+        @viewport.top = @isearch_snapshot[:viewport_top]
+      end
+    end
 
     # Return the visible text for a line, with ANSI escapes removed.
     # Search offsets are computed in this coordinate space so rendering
