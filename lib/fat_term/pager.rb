@@ -380,6 +380,10 @@ module FatTerm
       @search[:last]
     end
 
+    def search_pattern
+      @search[:pattern].to_s
+    end
+
     # Returns highlight ranges for all matches within the given viewport.
     #
     # Format:

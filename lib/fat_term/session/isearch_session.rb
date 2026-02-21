@@ -7,11 +7,12 @@ module FatTerm
     DEFAULT_ISEARCH_HISTORY_FILE = File.expand_path("~/.fat_term_search_history")
     DEFAULT_ISEARCH_HISTORY_MAX  = 200
 
-    def initialize(direction: :forward, history_path: nil, history_max: nil)
+    def initialize(direction: :forward, last_pattern: nil, history_path: nil, history_max: nil)
       super(keymap: Keymaps.emacs, views: [])
 
       @direction = direction.to_sym
       @last_text = nil
+      @last_pattern = last_pattern.to_s
 
       history = FatTerm::History.new(
         path: history_path || DEFAULT_ISEARCH_HISTORY_FILE,
@@ -83,13 +84,39 @@ module FatTerm
     end
 
     def step_next!
-      # Step forward in the original direction while staying in preview mode.
-      [[:terminal, :send_modal_owner, [:cmd, :pager_isearch_step, { direction: @direction }]]]
+      @direction = :forward
+      cmds = []
+      cmds.concat(prefill_last_pattern_if_empty!)
+      cmds << [:terminal, :send_modal_owner, [:cmd, :pager_isearch_step, { direction: @direction }]]
+      cmds
     end
 
     def step_prev!
       @direction = :backward
-      [[:terminal, :send_modal_owner, [:cmd, :pager_isearch_step, { direction: @direction }]]]
+      cmds = []
+      cmds.concat(prefill_last_pattern_if_empty!)
+      cmds << [:terminal, :send_modal_owner, [:cmd, :pager_isearch_step, { direction: @direction }]]
+      cmds
+    end
+
+    def prefill_last_pattern_if_empty!
+      current = @field.buffer.text.to_s
+      pat = @last_pattern.to_s
+      return [] unless current.empty?
+      return [] if pat.strip.empty?
+
+      env = ActionEnvironment.new(
+        session: self,
+        terminal: nil,
+        counter: counter,
+        event: nil,
+        buffer: @field.buffer,
+        field: @field,
+      )
+
+      # Replace buffer contents with the last pattern, then preview immediately.
+      @field.act_on(:replace, pat, env: env)
+      maybe_preview!
     end
 
     def maybe_preview!
@@ -102,7 +129,7 @@ module FatTerm
           :terminal,
           :send_modal_owner,
           [:cmd, :pager_isearch_update, { pattern: text, direction: @direction }],
-       ]
+        ]
       ]
     end
   end
