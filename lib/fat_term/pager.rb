@@ -530,7 +530,14 @@ module FatTerm
       if regex
         Regexp.new(pattern)
       else
-        Regexp.new(Regexp.escape(pattern))
+        # Case insensitive unless there are uppercase letters in pattern.
+        flags =
+          if pattern.match?(/[[:upper]]/)
+            0
+          else
+            Regexp::IGNORECASE
+          end
+        Regexp.new(Regexp.escape(pattern), flags)
       end
     end
 
