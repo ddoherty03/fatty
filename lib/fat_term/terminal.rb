@@ -84,6 +84,7 @@ module FatTerm
 
     def push_modal(session, owner:)
       @modal_stack << { session: session, owner: owner }
+      register(session)
       session.init(terminal: self)
     end
 

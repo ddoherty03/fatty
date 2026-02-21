@@ -4,6 +4,8 @@ module FatTerm
   class ISearchSession < Session
     attr_reader :field, :direction
 
+    def id = :isearch
+
     DEFAULT_ISEARCH_HISTORY_FILE = File.expand_path("~/.fat_term_search_history")
     DEFAULT_ISEARCH_HISTORY_MAX  = 200
 
@@ -11,6 +13,7 @@ module FatTerm
       super(keymap: Keymaps.emacs, views: [])
 
       @direction = direction.to_sym
+      @failed = false
       @last_text = nil
       @last_pattern = last_pattern.to_s
 
@@ -18,12 +21,21 @@ module FatTerm
         path: history_path || DEFAULT_ISEARCH_HISTORY_FILE,
         max: history_max || DEFAULT_ISEARCH_HISTORY_MAX,
       )
-
       @field = FatTerm::InputField.new(prompt: isearch_prompt, history: history)
     end
 
     def keymap_contexts
       [:isearch, :input, :terminal]
+    end
+
+    def update_cmd(name, payload, terminal:)
+      cmds = []
+      case name
+      when :isearch_set_failed
+        @failed = !!payload[:failed]
+        @field.prompt = isearch_prompt
+      end
+      cmds
     end
 
     def handle_action(action, args, terminal:, event:)
@@ -67,8 +79,9 @@ module FatTerm
     private
 
     def isearch_prompt
-      arrow = (@direction == :backward ? "↑" : "↓")
-      "I-search #{arrow}: "
+      base = @failed ? "Failing I-search: " : "I-search: "
+      arrow = @direction == :backward ? "↑ " : "↓ "
+      arrow + base
     end
 
     def accept!
