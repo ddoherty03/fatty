@@ -39,10 +39,12 @@ module FatTerm
         DETAIL_ORDER = %i[terminal key ctrl meta shift].freeze
 
         POPUP_BORDER = {
-          tl: "┌", tr: "┐",
-          bl: "└", br: "┘",
-          h:  "─",
-          v:  "│"
+          tl: "┌",
+          tr: "┐",
+          bl: "└",
+          br: "┘",
+          h: "─",
+          v: "│",
         }.freeze
 
         POPUP_SELECTED_GUTTER = "▶ "
@@ -66,22 +68,38 @@ module FatTerm
           win.refresh
         end
 
-        def render_output(output, viewport:)
+        # Restore cursor into the output window at a specific *output-win* row.
+        # `row:` is 0..(screen.output_rect.rows-1), NOT an absolute screen row.
+        def restore_output_cursor(field, row:)
+          win = context.output_win
+          cols = @screen.cols
+
+          x = field.cursor_x.to_i
+          x = x.clamp(0, [cols - 1, 0].max)
+
+          win.setpos(row, x)
+          win.refresh
+        end
+
+        def render_output(output, viewport:, highlights: nil)
           win = context.output_win
           base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
+          hi_attr = pair_attr(:search_highlight, fallback: ::Curses::A_REVERSE)
           win.attrset(base_attr)
           win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
           win.clear
 
           lines = viewport.slice(output.lines)
           lines.each_with_index do |line, y|
+            abs_line = viewport.top + y
+            ranges = highlight_ranges_for_line(highlights, abs_line)
+
             win.setpos(y, 0)
             win.attrset(base_attr)
-            win.attrset(base_attr)
-            FatTerm::Ansi.segment(line).each do |text, style|
-              win.attrset(context.ansi_attr(style, fallback_role: :output))
-              win.addstr(text)
+            slices = build_line_slices(line, ranges: ranges, hi_attr: hi_attr) do |style|
+              context.ansi_attr(style, fallback_role: :output)
             end
+            render_slices(win, slices)
             win.clrtoeol
           end
           win.refresh
@@ -148,7 +166,7 @@ module FatTerm
 
           prompt = field.prompt_text.to_s
           buf_text = field.buffer.text.to_s
-          text = (prompt + buf_text)
+          text = (prompt + buf_text).tr("\r\n", "")
 
           win.addstr(text.ljust(cols)[0, cols])
           win.refresh
@@ -265,6 +283,100 @@ module FatTerm
         end
 
         private
+
+        def highlight_ranges_for_line(highlights, abs_line)
+          return [] unless highlights
+
+          raw = highlights[abs_line]
+          return [] unless raw
+
+          ranges = Array(raw).map { |r| [r[0].to_i, r[1].to_i] }
+          ranges.sort_by!(&:first)
+          ranges
+        end
+
+        # Build a draw plan for a single output line.
+        #
+        # Returns an array of [attr, text] slices.
+        #
+        # ranges are plain-text indices: [[from, to], ...]
+        # hi_attr is the curses attr to apply to highlighted text
+        #
+        # Yields each ANSI style hash and expects an attr back for non-highlight text.
+        def build_line_slices(line, ranges:, hi_attr:)
+          slices = []
+          return slices if line.nil?
+
+          ranges = Array(ranges)
+          pos = 0
+          ri = 0
+
+          FatTerm::Ansi.segment(line).each do |text, style|
+            text = text.to_s
+            seg_attr = yield(style)
+
+            seg_from = pos
+            seg_to   = pos + text.length
+
+            # advance past ranges that end before this segment
+            ri += 1 while ri < ranges.length && ranges[ri][1] <= seg_from
+
+            if ri >= ranges.length
+              emit_slice(slices, seg_attr, text)
+              pos = seg_to
+              next
+            end
+
+            cursor = 0
+            while cursor < text.length
+              gpos = seg_from + cursor
+              r = (ri < ranges.length ? ranges[ri] : nil)
+
+              if r && gpos < r[0]
+                # normal until next range starts
+                upto = [r[0], seg_to].min - seg_from
+                upto = text.length if upto > text.length
+                emit_slice(slices, seg_attr, text.slice(cursor, upto - cursor).to_s)
+                cursor = upto
+              elsif r && gpos >= r[0] && gpos < r[1]
+                # highlighted portion
+                upto = [r[1], seg_to].min - seg_from
+                upto = text.length if upto > text.length
+                emit_slice(slices, hi_attr, text.slice(cursor, upto - cursor).to_s)
+                cursor = upto
+
+                # consume this range if we reached/passed its end
+                if ri < ranges.length && ranges[ri][1] <= (seg_from + cursor)
+                  ri += 1
+                end
+              else
+                # no active range; remainder is normal
+                emit_slice(slices, seg_attr, text.slice(cursor, text.length - cursor).to_s)
+                cursor = text.length
+              end
+            end
+            pos = seg_to
+          end
+          slices
+        end
+
+        def emit_slice(slices, attr, text)
+          return if text.nil? || text.empty?
+
+          last = slices[-1]
+          if last && last[0] == attr
+            last[1] << text
+          else
+            slices << [attr, text.dup]
+          end
+        end
+
+        def render_slices(win, slices)
+          Array(slices).each do |attr, text|
+            win.attrset(attr)
+            win.addstr(text.to_s)
+          end
+        end
 
         def alert_attr(alert)
           return ::Curses::A_REVERSE unless ::Curses.has_colors?

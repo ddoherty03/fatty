@@ -123,6 +123,20 @@ module FatTerm
       map.bind(context: :paging, key: :d, ctrl: true, action: :quit_paging)
       map.bind(context: :paging, key: :q, action: :quit_paging)
 
+      # Paging search (opens SearchSession via ShellSession actions)
+      map.bind(context: :paging, key: :/, action: :pager_search_forward)
+      map.bind(context: :paging, key: :s, ctrl: true, action: :pager_search_forward)
+      map.bind(context: :paging, key: :'?', action: :pager_search_backward)
+      map.bind(context: :paging, key: :r, ctrl: true, action: :pager_search_backward)
+
+      # Repeat last search (no minibuffer)
+      map.bind(context: :paging, key: :n, action: :pager_search_next)
+      map.bind(context: :paging, key: :N, action: :pager_search_prev)
+
+      # Search minibuffer stepping (does not depend on initial / vs ? direction)
+      map.bind(context: :search, key: :s, ctrl: true, action: :search_step_forward)
+      map.bind(context: :search, key: :r, ctrl: true, action: :search_step_backward)
+
       map.load_config
     end
   end

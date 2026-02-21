@@ -24,6 +24,9 @@ module FatTerm
           status_warn: { fg: "black", bg: "magenta" },
           status_error: { fg: "white", bg: "red" },
 
+          search_highlight: { fg: "black", bg: "yellow" },
+          search: { fg: "black", bg: "cyan" },
+
           popup: { fg: "white", bg: "navy" },
           popup_selection: { fg: "navy",   bg: 'yellow' },
           popup_input: { fg: "white",  bg: "dark_blue" },
@@ -40,6 +43,9 @@ module FatTerm
           status_info:  { fg: "#2e3440", bg: "#88c0d0" },
           status_warn:  { fg: "#2e3440", bg: "#ebcb8b" },
           status_error: { fg: "#eceff4", bg: "#bf616a" },
+
+          search_highlight: { fg: "black", bg: "yellow" },
+          search: { fg: "black", bg: "cyan" },
 
           popup:           { fg: "#d8dee9", bg: "#3b4252" },
           popup_selection: { fg: "#2e3440", bg: "#88c0d0" },
@@ -58,6 +64,9 @@ module FatTerm
           status_warn:  { fg: "#002b36", bg: "#cb4b16" },
           status_error: { fg: "#fdf6e3", bg: "#dc322f" },
 
+          search_highlight: { fg: "black", bg: "yellow" },
+          search: { fg: "black", bg: "cyan" },
+
           popup:           { fg: "#839496", bg: "#073642" },
           popup_selection: { fg: "#002b36", bg: "#b58900" },
           popup_input:     { fg: "#93a1a1", bg: "#002b36" },
@@ -70,6 +79,9 @@ module FatTerm
           cursor: { fg: "default", bg: "default" },
 
           region: { fg: "default", bg: "default" },
+
+          search_highlight: { fg: "black", bg: "yellow" },
+          search: { fg: "black", bg: "cyan" },
 
           status_info: { fg: "default", bg: "default" },
           status_warn: { fg: "default", bg: "default" },

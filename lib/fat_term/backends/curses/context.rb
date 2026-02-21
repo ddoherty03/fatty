@@ -87,7 +87,9 @@ module FatTerm
           @input_win  = ::Curses::Window.new(inp.rows, inp.cols, inp.row, inp.col)
           @alert_win  = ::Curses::Window.new(alr.rows, alr.cols, alr.row, alr.col)
 
-          @output_win.scrollok(true)
+          # We do our own viewport/paging; allowing curses to scroll introduces
+          # “mystery” blank lines if a newline slips into output
+          @output_win.scrollok(false)
           @input_win.keypad(true)
 
           self

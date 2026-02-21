@@ -75,7 +75,14 @@ module FatTerm
 
     def view(screen:, renderer:, terminal:)
       if pager_active?
-        renderer.render_output(output, viewport: pager_viewport)
+        ::Curses.curs_set(0)
+        match = pager.search_last_match
+        highlights =
+          if match
+            { match[:line] => [[match[:from], match[:to]]] }
+          end
+        renderer.render_output(output, viewport: pager_viewport, highlights: highlights)
+
         # Reserve the last row of the output pane for a pager minibuffer.
         # For now it's informational; later it becomes a true minibuffer for
         # incremental search, etc.
@@ -85,6 +92,7 @@ module FatTerm
           role: :status_info,
         )
       else
+        ::Curses.curs_set(1)
         renderer.render_output(output, viewport: viewport)
         renderer.render_input_field(@field)
         renderer.restore_cursor(@field)
@@ -108,7 +116,7 @@ module FatTerm
       # Animated autoscroll (e.g. after M-s in paging mode).
       if pager.autoscroll?
         step = [viewport.height / 8, 1].max
-        dirty ||= pager.autoscroll_step(max_lines: step)
+        dirty ||= pager.autoscroll_step?(max_lines: step)
       end
       dirty
     end
@@ -116,13 +124,24 @@ module FatTerm
     private
 
     def update_cmd(name, payload, terminal:)
+      cmds = []
       case name
       when :popup_result
         item = payload.fetch(:item, "").to_s
         env = action_env(terminal: terminal, event: nil)
         @field.act_on(:replace, item, env: env)
+      when :pager_search_set
+        pattern = payload.fetch(:pattern, "").to_s
+        regex = !!payload[:regex]
+        direction = (payload[:direction] || :forward).to_sym
+        result = pager.search_set!(pattern: pattern, regex: regex, direction: direction)
+        cmds.concat(handle_search_result(result))
+      when :pager_search_step
+        direction = (payload[:direction] || :forward).to_sym
+        result = pager.search_step!(direction: direction)
+        cmds.concat(handle_search_result(result))
       end
-      []
+      cmds
     end
 
     def handle_action(action, args, terminal:, event:)
@@ -168,6 +187,18 @@ module FatTerm
           selection: :bottom,
         )
         [[:terminal, :push_modal, popup]]
+      when :pager_search_forward
+        regex = consume_search_regex_flag
+        [[:terminal, :push_modal, FatTerm::SearchSession.new(direction: :forward, regex: regex)]]
+      when :pager_search_backward
+        regex = consume_search_regex_flag
+        [[:terminal, :push_modal, FatTerm::SearchSession.new(direction: :backward, regex: regex)]]
+      when :pager_search_next
+        result = pager.search_step!(direction: :forward)
+        handle_search_result(result)
+      when :pager_search_prev
+        result = pager.search_step!(direction: :backward)
+        handle_search_result(result)
       else
         begin
           # Centralized dispatch: actions declare their target (:buffer/:field/:pager)
@@ -237,6 +268,32 @@ module FatTerm
       terminal.renderer.context.apply_layout(terminal.screen)
       terminal.renderer.screen = terminal.screen
       resize_output!(terminal: terminal)
+    end
+
+    def consume_search_regex_flag
+      regex = false
+      if counter.active?
+        # Emacs-ish convention: C-u before initiating search means "treat input as regex".
+        # We only treat bare universal-argument (4) as this flag.
+        regex = (counter.digits.to_s == "4")
+        counter.clear!
+      end
+      regex
+    end
+
+    def handle_search_result(result)
+      return unless result.is_a?(Hash)
+
+      case result[:status]
+      when :boundary
+        msg = result[:message].to_s
+        msg = "Search reached boundary" if msg.empty?
+        [[:send, :alert, :show, { level: :info, message: msg }]]
+      when :not_found
+        [[:send, :alert, :show, { level: :info, message: "No matches" }]]
+      else
+        []
+      end
     end
 
     def alert_cmd(level, message, ev: nil)

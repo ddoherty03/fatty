@@ -72,10 +72,12 @@ module FatTerm
           ((bottom * 100.0) / total).round
         end
 
+      search = pager.search_label
+      search = "  [#{search}]" if search && !search.empty?
       if pct
-        "  #{pager.nav_arrow} --More--  #{bottom}/#{total} (#{pct}%) "
+        "  #{pager.nav_arrow} --More--  #{bottom}/#{total} (#{pct}%)#{search} "
       else
-        "  #{pager.nav_arrow} --More--  #{bottom} "
+        "  #{pager.nav_arrow} --More--  #{bottom}#{search} "
       end
     end
 
