@@ -12,77 +12,126 @@ module FatTerm
       @path = File.expand_path(@path)
       @max = max&.to_i || Config.config.dig(:history, :max)&.to_i || DEFAULT_HISTORY_MAX
       @entries = []
-      @index = nil
-      @scratch = nil
+      @cursors = {}
 
       load if @path
     end
 
-    def add(line)
-      return if line.strip.empty?
+    def add(text, kind: :command, ctx: nil, stamp: nil)
+      text = text.to_s
+      return if text.strip.empty?
 
-      if @entries.last == line
-        # Even if we don't add duplicates, we still want the next
-        # history_prev to start from "most recent".
-        reset_cursor
-        return
+      kind = kind.to_sym
+      entry = Entry.new(text: text, kind: kind, ctx: ctx, stamp: stamp)
+      last = @entries.last
+      if last && last.text == text && last.kind == kind
+        reset_cursor_for(kind)
+        return text
       end
-
-      @entries << line
+      @entries << entry
       truncate!
-      append_to_file(line)
-      reset_cursor
+      append_to_file(entry)
+      reset_cursor_for(kind)
+      text
     end
 
     def previous(current)
-      return current.to_s if @entries.empty?
-
-      if @index.nil?
-        @scratch = current.to_s
-        @index = @entries.length - 1
-        return @entries[@index]
-      end
-
-      @index -= 1 if @index.positive?
-      @entries[@index]
+      previous_for(:command, current: current)
     end
 
     def next
-      return "" if @entries.empty? || @index.nil?
+      next_for(:command)
+    end
 
-      if @index < @entries.length - 1
-        @index += 1
-        @entries[@index]
+    def reset_cursor
+      reset_cursor_for(:command)
+    end
+
+    def previous_for(*kinds, current)
+      entries = entries_for(*kinds)
+      return current.to_s if entries.empty?
+
+      cursor = cursor_for(*kinds)
+
+      if cursor[:index].nil?
+        cursor[:scratch] = current.to_s
+        cursor[:index] = entries.length - 1
+        return entries[cursor[:index]].text
+      end
+
+      cursor[:index] -= 1 if cursor[:index].positive?
+      entries[cursor[:index]].text
+    end
+
+    def next_for(*kinds)
+      entries = entries_for(*kinds)
+      cursor = cursor_for(*kinds)
+      return "" if entries.empty? || cursor[:index].nil?
+
+      if cursor[:index] < entries.length - 1
+        cursor[:index] += 1
+        entries[cursor[:index]].text
       else
-        scratch = @scratch
-        reset_cursor
+        scratch = cursor[:scratch]
+        reset_cursor_for(*kinds)
         scratch || ""
       end
     end
 
-    def reset_cursor
-      @index = nil
-      @scratch = nil
+    def reset_cursor_for(*kinds)
+      cursor = cursor_for(*kinds)
+      cursor[:index] = nil
+      cursor[:scratch] = nil
     end
 
     private
 
+    def normalize_kinds(*kinds)
+      kinds.flatten.map(&:to_sym).uniq.sort
+    end
+
+    def cursor_for(*kinds)
+      key = normalize_kinds(*kinds)
+      @cursors[key] ||= { index: nil, scratch: nil }
+    end
+
+    def entries_for(*kinds)
+      wanted = normalize_kinds(*kinds)
+      @entries.select { |entry| wanted.include?(entry.kind) }
+    end
+
     def load
+      @entries.clear
+      @cursors.clear
       return unless File.exist?(@path)
 
       File.foreach(@path) do |line|
         line = line.chomp
-        @entries << line unless line.empty?
-      end
+        next if line.empty?
 
+        entry = parse_history_line(line)
+        @entries << entry if entry
+      end
       truncate!
     end
 
-    def append_to_file(line)
+    def parse_history_line(line)
+      hash = JSON.parse(line)
+      Entry.from_h(hash)
+    rescue JSON::ParserError
+      Entry.new(text: line, kind: :command)
+    rescue StandardError
+      nil
+    end
+
+    def append_to_file(entry)
       return unless @path
 
+      dir = File.dirname(@path)
+      FileUtils.mkdir_p(dir) unless Dir.exist?(dir)
+
       File.open(@path, "a") do |f|
-        f.puts(line)
+        f.puts(JSON.generate(entry.to_h))
         f.flush
         f.fsync
       end
@@ -95,6 +144,7 @@ module FatTerm
       return if excess <= 0
 
       @entries.shift(excess)
+      @cursors.clear
     end
   end
 end
