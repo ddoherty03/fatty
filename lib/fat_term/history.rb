@@ -47,7 +47,7 @@ module FatTerm
       reset_cursor_for(:command)
     end
 
-    def previous_for(*kinds, current)
+    def previous_for(*kinds, current:)
       entries = entries_for(*kinds)
       return current.to_s if entries.empty?
 
