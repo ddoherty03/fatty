@@ -9,7 +9,7 @@ module FatTerm
     DEFAULT_ISEARCH_HISTORY_FILE = File.expand_path("~/.fat_term_search_history")
     DEFAULT_ISEARCH_HISTORY_MAX  = 200
 
-    def initialize(direction: :forward, last_pattern: nil, history_path: nil, history_max: nil)
+    def initialize(direction: :forward, last_pattern: nil, history: nil)
       super(keymap: Keymaps.emacs, views: [])
 
       @direction = direction.to_sym
@@ -17,11 +17,12 @@ module FatTerm
       @last_text = nil
       @last_pattern = last_pattern.to_s
 
-      history = FatTerm::History.new(
-        path: history_path || DEFAULT_ISEARCH_HISTORY_FILE,
-        max: history_max || DEFAULT_ISEARCH_HISTORY_MAX,
+      @field = FatTerm::InputField.new(
+        prompt: Prompt.new { isearch_prompt },
+        history: history,
+        history_kind: :search_string,
+        # ? history_ctx: -> { { session: "pager_isearch" } },
       )
-      @field = FatTerm::InputField.new(prompt: isearch_prompt, history: history)
     end
 
     def keymap_contexts

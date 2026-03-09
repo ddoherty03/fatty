@@ -23,9 +23,17 @@ module FatTerm
 
     attr_reader :buffer, :prompt, :history
 
-    def initialize(prompt:, buffer: nil, history: nil)
-      @prompt  = Prompt.ensure(prompt)
+    def initialize(
+      prompt:,
+      buffer: nil,
+      history: nil,
+      history_kind: :command,
+      history_ctx: nil
+    )
+      @prompt = Prompt.ensure(prompt)
       @history = history
+      @history_kind = history_kind
+      @history_ctx = history_ctx
 
       @buffer =
         if buffer
@@ -48,7 +56,7 @@ module FatTerm
     def act_on(action, *args, env: nil, **kwargs)
       return unless action
 
-      history&.reset_cursor unless action.to_s.start_with?("history_")
+      history&.reset_cursor_for(resolve_history_kind) unless action.to_s.start_with?("history_")
 
       env ||= FatTerm::ActionEnvironment.new(
         buffer: buffer,
@@ -94,23 +102,43 @@ module FatTerm
     desc "Accept the current line, add to history, and clear the buffer"
     action :accept_line do
       line = buffer.text.dup
-      history&.add(line)
-      buffer.clear
-      line
+      if history
+        history.add(
+          line,
+          kind: resolve_history_kind,
+          ctx: resolve_history_ctx,
+        )
+        buffer.clear
+        line
+      end
     end
 
     desc "Replace buffer with the previous history entry"
     action :history_prev do
       return unless history
 
-      buffer.replace(history.previous(buffer.text))
+      buffer.replace(history.previous_for(resolve_history_kind, current: buffer.text))
     end
 
     desc "Replace buffer with the next history entry"
     action :history_next do
       return unless history
 
-      buffer.replace(history.next)
+      buffer.replace(history.next_for(resolve_history_kind))
+    end
+
+    private
+
+    def resolve_history_kind
+      value = @history_kind
+      value = instance_exec(&value) if value.respond_to?(:call)
+      value.to_sym
+    end
+
+    def resolve_history_ctx
+      value = @history_ctx
+      value = instance_exec(&value) if value.respond_to?(:call)
+      value.is_a?(Hash) ? value : {}
     end
   end
 end

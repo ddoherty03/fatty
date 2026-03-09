@@ -1,7 +1,16 @@
 # frozen_string_literal: true
 
+require "tmpdir"
+
 module FatTerm
   RSpec.describe InputField do
+    let(:tmpdir) { Dir.mktmpdir }
+    let(:hist_path) { File.join(tmpdir, "history") }
+
+    after do
+      FileUtils.remove_entry(tmpdir) if File.directory?(tmpdir)
+    end
+
     def prompt(text = "> ")
       Prompt.new { text }
     end
@@ -24,7 +33,7 @@ module FatTerm
     end
 
     it "accept_line returns line, clears buffer, and adds to history" do
-      h = History.new
+      h = History.new(path: hist_path)
       f = InputField.new(prompt: prompt("> "), history: h)
 
       f.act_on(:insert, "hello")
@@ -33,9 +42,37 @@ module FatTerm
       expect(line).to eq("hello")
       expect(f.buffer.text).to eq("")
       expect(f.buffer.cursor).to eq(0)
+      expect(h.entries.map(&:text)).to eq(["hello"])
+      expect(h.entries.map(&:kind)).to eq([:command])
+    end
 
-      # History has no public entries reader in some versions; assert behavior:
-      expect(h.previous("")).to eq("hello")
+    it "accept_line adds to history using the configured history_kind" do
+      h = History.new(path: hist_path)
+      f = InputField.new(
+        prompt: prompt("> "),
+        history: h,
+        history_kind: :search_string,
+      )
+
+      f.act_on(:insert, "needle")
+      f.act_on(:accept_line)
+
+      expect(h.entries.map(&:text)).to eq(["needle"])
+      expect(h.entries.map(&:kind)).to eq([:search_string])
+    end
+
+    it "accept_line adds history context from history_ctx" do
+      h = History.new(path: hist_path)
+      f = InputField.new(
+        prompt: prompt("> "),
+        history: h,
+        history_ctx: -> { { session: "pager_search" } },
+      )
+
+      f.act_on(:insert, "needle")
+      f.act_on(:accept_line)
+
+      expect(h.entries.last.ctx).to eq("session" => "pager_search")
     end
 
     it "act_on falls back to calling buffer methods when the action isn't registered" do
@@ -60,7 +97,7 @@ module FatTerm
     end
 
     it "history_prev replaces buffer with previous entry" do
-      h = History.new
+      h = History.new(path: hist_path)
       h.add("one")
       h.add("two")
 
@@ -72,7 +109,7 @@ module FatTerm
     end
 
     it "history_next returns toward scratch, then empty when done" do
-      h = History.new
+      h = History.new(path: hist_path)
       h.add("one")
       h.add("two")
 
@@ -92,6 +129,55 @@ module FatTerm
       expect(f.buffer.text).to eq("")
     end
 
+    it "history actions use a proc-valued history_kind" do
+      h = History.new(path: hist_path)
+      regex = false
+
+      f = InputField.new(
+        prompt: prompt("> "),
+        history: h,
+        history_kind: -> { regex ? :search_regex : :search_string },
+      )
+
+      f.act_on(:insert, "plain")
+      f.act_on(:accept_line)
+
+      regex = true
+      f.act_on(:insert, "re.*")
+      f.act_on(:accept_line)
+
+      expect(h.entries.map(&:text)).to eq(["plain", "re.*"])
+      expect(h.entries.map(&:kind)).to eq([:search_string, :search_regex])
+    end
+
+    it "history_prev and history_next use the configured history_kind" do
+      h = History.new(path: hist_path)
+      h.add("cmd1", kind: :command)
+      h.add("search1", kind: :search_string)
+      h.add("cmd2", kind: :command)
+      h.add("search2", kind: :search_string)
+
+      f = InputField.new(
+        prompt: prompt("> "),
+        history: h,
+        history_kind: :search_string,
+      )
+
+      f.act_on(:insert, "typing")
+
+      f.act_on(:history_prev)
+      expect(f.buffer.text).to eq("search2")
+
+      f.act_on(:history_prev)
+      expect(f.buffer.text).to eq("search1")
+
+      f.act_on(:history_next)
+      expect(f.buffer.text).to eq("search2")
+
+      f.act_on(:history_next)
+      expect(f.buffer.text).to eq("typing")
+    end
+
     it "history actions are no-ops when no history object is provided" do
       f = InputField.new(prompt: prompt("> "))
       f.act_on(:insert, "typing")
@@ -102,7 +188,7 @@ module FatTerm
     end
 
     it "dispatches buffer actions and resets history cursor for non-history actions" do
-      h = History.new
+      h = History.new(path: hist_path)
       h.add("one")
       h.add("two")
 

@@ -6,7 +6,7 @@ module FatTerm
   class ShellSession < OutputSession
     attr_reader :field
 
-    def initialize(prompt: "sh> ", on_accept: nil)
+    def initialize(prompt: "sh> ", on_accept: nil, history_ctx: nil)
       super(
         keymap: Keymaps.emacs,
         views: [
@@ -16,7 +16,13 @@ module FatTerm
         ]
       )
       @history = FatTerm::History.new # you said History now uses config defaults
-      @field   = FatTerm::InputField.new(prompt: prompt, history: @history)
+      @field = FatTerm::InputField.new(
+        prompt: prompt,
+        history: @history,
+        history_kind: :command,
+        history_ctx: history_ctx,
+      )
+
       @on_accept = on_accept
 
       # Default command runner when no on_accept proc is provided.
@@ -187,10 +193,8 @@ module FatTerm
       when :cycle_theme
         [[:terminal, :cycle_theme]]
       when :history_search
-        src = -> do
-          # Oldest -> newest, so newest appears at the bottom of the popup.
-          @history.entries.last(500)
-        end
+        # Oldest -> newest, so newest appears at the bottom of the popup.
+        src = @history.entries.select(&:command?).last(500).map(&:text)
         popup = FatTerm::PopUpSession.new(
           source: src,
           title: "History",
@@ -201,14 +205,26 @@ module FatTerm
         [[:terminal, :push_modal, popup]]
       when :pager_search_forward
         regex = consume_search_regex_flag
-        [[:terminal, :push_modal, FatTerm::SearchSession.new(direction: :forward, regex: regex)]]
+        [[:terminal, :push_modal, FatTerm::SearchSession.new(direction: :forward, regex: regex, history: @history)]]
       when :pager_search_backward
         regex = consume_search_regex_flag
-        [[:terminal, :push_modal, FatTerm::SearchSession.new(direction: :backward, regex: regex)]]
+        [[
+          :terminal,
+          :push_modal,
+          FatTerm::SearchSession.new(direction: :backward, regex: regex, history: @history)
+        ]]
       when :pager_isearch_forward
-        [[:terminal, :push_modal, FatTerm::ISearchSession.new(direction: :forward, last_pattern: pager.search_pattern)]]
+        [[
+          :terminal,
+          :push_modal,
+          FatTerm::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)
+        ]]
       when :pager_isearch_backward
-        [[:terminal, :push_modal, FatTerm::ISearchSession.new(direction: :backward, last_pattern: pager.search_pattern)]]
+        [[
+          :terminal,
+          :push_modal,
+          FatTerm::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)
+        ]]
       when :pager_search_next
         result = pager.search_repeat_next!
         handle_search_result(result)
