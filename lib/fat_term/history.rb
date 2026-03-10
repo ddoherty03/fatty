@@ -48,13 +48,19 @@ module FatTerm
     end
 
     def previous_for(*kinds, current:, ctx: nil)
-      entries = entries_for(*kinds, ctx: ctx)
-      return current.to_s if entries.empty?
-
       cursor = cursor_for(*kinds, ctx: ctx)
+      prefix = cursor[:prefix]
 
       if cursor[:index].nil?
         cursor[:scratch] = current.to_s
+        cursor[:prefix] = current.to_s
+        prefix = cursor[:prefix]
+      end
+
+      entries = entries_for(*kinds, ctx: ctx, prefix: prefix)
+      return current.to_s if entries.empty?
+
+      if cursor[:index].nil?
         cursor[:index] = entries.length - 1
         return entries[cursor[:index]].text
       end
@@ -64,8 +70,8 @@ module FatTerm
     end
 
     def next_for(*kinds, ctx: nil)
-      entries = entries_for(*kinds, ctx: ctx)
       cursor = cursor_for(*kinds, ctx: ctx)
+      entries = entries_for(*kinds, ctx: ctx, prefix: cursor[:prefix])
       return "" if entries.empty? || cursor[:index].nil?
 
       if cursor[:index] < entries.length - 1
@@ -81,7 +87,7 @@ module FatTerm
     def reset_cursor_for(*kinds, ctx: nil)
       cursor = cursor_for(*kinds, ctx: ctx)
       cursor[:index] = nil
-      cursor[:scratch] = nil
+      cursor[:prefix] = nil
     end
 
     private
@@ -109,12 +115,21 @@ module FatTerm
 
     def cursor_for(*kinds, ctx: nil)
       key = [normalize_kinds(*kinds), normalize_ctx(ctx)]
-      @cursors[key] ||= { index: nil, scratch: nil }
+      @cursors[key] ||= { index: nil, scratch: nil, prefix: nil }
     end
 
-    def entries_for(*kinds, ctx: nil)
+    def prefix_match?(entry, prefix)
+      text = prefix.to_s
+      return true if text.empty?
+
+      entry.text.start_with?(text)
+    end
+
+    def entries_for(*kinds, ctx: nil, prefix: nil)
       wanted = normalize_kinds(*kinds)
-      entries = @entries.select { |entry| wanted.include?(entry.kind) }
+      entries = @entries.select do |entry|
+        wanted.include?(entry.kind) && prefix_match?(entry, prefix)
+      end
       preferred = []
       fallback = []
 

@@ -22,7 +22,8 @@ module FatTerm
       keymap: Keymaps.emacs,
       matcher: nil,
       order: :as_given,
-      selection: :preserve
+      selection: :preserve,
+      initial_query: nil
     )
       super(keymap: keymap)
       @source = source
@@ -32,7 +33,10 @@ module FatTerm
 
       @title = title
       @prompt = Prompt.ensure(prompt)
+
       @field = InputField.new(prompt: @prompt)
+      text = initial_query.to_s
+      @field.buffer.replace(text) unless text.empty?
 
       @items = []
       @filtered = []

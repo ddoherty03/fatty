@@ -29,8 +29,7 @@ module FatTerm
       hist.add("one")
       hist.add("two")
 
-      cur = "typing"
-      expect(hist.previous(cur)).to eq("two")
+      expect(hist.previous('')).to eq("two")
       expect(hist.previous("ignored")).to eq("one")
       expect(hist.previous("ignored")).to eq("one")
     end
@@ -39,12 +38,29 @@ module FatTerm
       hist.add("one")
       hist.add("two")
 
-      expect(hist.previous("typing")).to eq("two")
-      expect(hist.previous("ignored")).to eq("one")
+      expect(hist.previous("")).to eq("two")
+      expect(hist.previous("")).to eq("one")
 
       expect(hist.next).to eq("two")
-      expect(hist.next).to eq("typing")
       expect(hist.next).to eq("")
+      expect(hist.next).to eq("")
+    end
+
+    it "uses the current buffer as a prefix for history traversal" do
+      hist.add("git status")
+      hist.add("ls")
+      hist.add("git log")
+      f = FatTerm::InputField.new(prompt: '> ', history: hist)
+
+      f.buffer.replace("git")
+      f.history_prev
+      expect(f.buffer.text).to eq("git log")
+      f.history_prev
+      expect(f.buffer.text).to eq("git status")
+      f.history_next
+      expect(f.buffer.text).to eq("git log")
+      f.history_next
+      expect(f.buffer.text).to eq("git")
     end
 
     it "load reads an existing legacy history file" do
@@ -56,7 +72,7 @@ module FatTerm
 
         expect(h.entries.map(&:text)).to eq(["one", "two"])
         expect(h.entries.map(&:kind)).to eq([:command, :command])
-        expect(h.previous("x")).to eq("two")
+        expect(h.previous("")).to eq("two")
       end
     end
 
@@ -73,7 +89,7 @@ module FatTerm
 
         expect(parsed.map { |row| row["text"] }).to eq(["one", "two"])
         expect(parsed.map { |row| row["kind"] }).to eq(["command", "command"])
-        expect(parsed.all? { |row| row.key?("stamp") }).to eq(true)
+        expect(parsed.all? { |row| row.key?("stamp") }).to be(true)
         expect(parsed.map { |row| row["ctx"] }).to eq([{}, {}])
       end
     end
@@ -116,21 +132,14 @@ module FatTerm
       hist.add("bundle exec rspec", kind: :command, ctx: { pwd: "/alpha" })
       hist.add("rake test", kind: :command, ctx: { pwd: "/gamma" })
 
-      expect(
-        hist.previous_for(:command, current: "", ctx: { pwd: "/alpha" })
-      ).to eq("bundle exec rspec")
-
-      expect(
-        hist.previous_for(:command, current: "", ctx: { pwd: "/alpha" })
-      ).to eq("ls")
-
-      expect(
-        hist.previous_for(:command, current: "", ctx: { pwd: "/alpha" })
-      ).to eq("rake test")
-
-      expect(
-        hist.previous_for(:command, current: "", ctx: { pwd: "/alpha" })
-      ).to eq("git status")
+      expect(hist.previous_for(:command, current: "", ctx: { pwd: "/alpha" }))
+        .to eq("bundle exec rspec")
+      expect(hist.previous_for(:command, current: "", ctx: { pwd: "/alpha" }))
+        .to eq("ls")
+      expect(hist.previous_for(:command, current: "", ctx: { pwd: "/alpha" }))
+        .to eq("rake test")
+      expect(hist.previous_for(:command, current: "", ctx: { pwd: "/alpha" }))
+        .to eq("git status")
     end
 
     it "keeps a separate cursor per ctx" do
@@ -141,6 +150,43 @@ module FatTerm
       expect(hist.previous_for(:command, current: "", ctx: { pwd: "/alpha" })).to eq("bundle exec rspec")
       expect(hist.previous_for(:command, current: "", ctx: { pwd: "/beta" })).to eq("git status")
       expect(hist.previous_for(:command, current: "", ctx: { pwd: "/alpha" })).to eq("ls")
+    end
+
+    it "uses the current buffer as a prefix filter on first previous_for" do
+      hist.add("git status", kind: :command, ctx: { pwd: "/alpha" })
+      hist.add("ls", kind: :command, ctx: { pwd: "/alpha" })
+      hist.add("git commit", kind: :command, ctx: { pwd: "/beta" })
+      hist.add("git log", kind: :command, ctx: { pwd: "/alpha" })
+
+      expect(hist.previous_for(:command, current: "git", ctx: { pwd: "/alpha" }))
+        .to eq("git log")
+      expect(hist.previous_for(:command, current: "ignored", ctx: { pwd: "/alpha" }))
+        .to eq("git status")
+      expect(hist.previous_for(:command, current: "ignored", ctx: { pwd: "/alpha" }))
+        .to eq("git commit")
+    end
+
+    it "returns the current text unchanged when no prefix matches" do
+      hist.add("ls", kind: :command, ctx: { pwd: "/alpha" })
+      hist.add("pwd", kind: :command, ctx: { pwd: "/alpha" })
+
+      expect(hist.previous_for(:command, current: "git", ctx: { pwd: "/alpha" }))
+        .to eq("git")
+    end
+
+    it "keeps prefix filtering active while traversing next_for" do
+      hist.add("git status", kind: :command, ctx: { pwd: "/alpha" })
+      hist.add("ls", kind: :command, ctx: { pwd: "/alpha" })
+      hist.add("git log", kind: :command, ctx: { pwd: "/alpha" })
+
+      expect(hist.previous_for(:command, current: "git", ctx: { pwd: "/alpha" }))
+        .to eq("git log")
+      expect(hist.previous_for(:command, current: "ignored", ctx: { pwd: "/alpha" }))
+        .to eq("git status")
+
+      expect(hist.next_for(:command, ctx: { pwd: "/alpha" })).to eq("git log")
+      expect(hist.next_for(:command, ctx: { pwd: "/alpha" })).to eq("git")
+      expect(hist.next_for(:command, ctx: { pwd: "/alpha" })).to eq("")
     end
   end
 end

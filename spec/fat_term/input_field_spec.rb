@@ -102,7 +102,7 @@ module FatTerm
       h.add("two")
 
       f = InputField.new(prompt: prompt("> "), history: h)
-      f.act_on(:insert, "typing")
+      f.act_on(:insert, "")
 
       f.act_on(:history_prev)
       expect(f.buffer.text).to eq("two")
@@ -114,7 +114,7 @@ module FatTerm
       h.add("two")
 
       f = InputField.new(prompt: prompt("> "), history: h)
-      f.act_on(:insert, "typing")
+      f.act_on(:insert, "")
 
       f.act_on(:history_prev) # -> "two"
       f.act_on(:history_prev) # -> "one"
@@ -123,7 +123,7 @@ module FatTerm
       expect(f.buffer.text).to eq("two")
 
       f.act_on(:history_next) # -> scratch ("typing")
-      expect(f.buffer.text).to eq("typing")
+      expect(f.buffer.text).to eq("")
 
       f.act_on(:history_next) # -> ""
       expect(f.buffer.text).to eq("")
@@ -163,7 +163,7 @@ module FatTerm
         history_kind: :search_string,
       )
 
-      f.act_on(:insert, "typing")
+      f.act_on(:insert, "sear")
 
       f.act_on(:history_prev)
       expect(f.buffer.text).to eq("search2")
@@ -175,7 +175,7 @@ module FatTerm
       expect(f.buffer.text).to eq("search2")
 
       f.act_on(:history_next)
-      expect(f.buffer.text).to eq("typing")
+      expect(f.buffer.text).to eq("sear")
     end
 
     it "history actions are no-ops when no history object is provided" do
@@ -193,7 +193,7 @@ module FatTerm
       h.add("two")
 
       f = InputField.new(prompt: prompt("> "), history: h)
-      f.act_on(:insert, "typing")
+      f.act_on(:insert, "")
 
       # Enter history navigation state
       f.act_on(:history_prev)

@@ -201,6 +201,7 @@ module FatTerm
           prompt: "I-search: ",
           order: :as_given,
           selection: :bottom,
+          initial_query: @field.buffer.text,
         )
         [[:terminal, :push_modal, popup]]
       when :pager_search_forward
