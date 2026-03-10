@@ -82,5 +82,23 @@ module FatTerm
         }.to output(/at line \d+, column \d+/i).to_stderr
       end
     end
+
+    describe "#install_default_sessions!" do
+      it "passes history_ctx to ShellSession" do
+        history_ctx = -> { { pwd: "/tmp/demo" } }
+        terminal = Terminal.new(history_ctx: history_ctx)
+
+        allow(terminal).to receive(:pin)
+        allow(terminal).to receive(:push)
+
+        terminal.send(:install_default_sessions!)
+
+        expect(terminal).to have_received(:push) do |session|
+          expect(session).to be_a(FatTerm::ShellSession)
+          field = session.field
+          expect(field.send(:resolve_history_ctx)).to eq({ pwd: "/tmp/demo" })
+        end
+      end
+    end
   end
 end

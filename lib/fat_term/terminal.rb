@@ -19,9 +19,10 @@ module FatTerm
 
     attr_reader :screen, :renderer, :event_source
 
-    def initialize(prompt: "> ", on_accept: nil, env: nil)
+    def initialize(prompt: "> ", on_accept: nil, history_ctx: nil, env: nil)
       @prompt = Prompt.ensure(prompt)
       @on_accept = on_accept
+      @history_ctx = history_ctx
       @env = env
 
       @running = false
@@ -176,7 +177,7 @@ module FatTerm
 
     def install_default_sessions!
       pin(FatTerm::AlertSession.new)
-      push(FatTerm::ShellSession.new(prompt: @prompt, on_accept: @on_accept))
+      push(FatTerm::ShellSession.new(prompt: @prompt, on_accept: @on_accept, history_ctx: @history_ctx))
     end
 
     def persist_sessions!

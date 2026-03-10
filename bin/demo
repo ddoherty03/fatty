@@ -3,16 +3,31 @@
 
 require_relative "../lib/fat_term"
 require "open3"
+require "shellwords"
 
 prompt = FatTerm::Prompt.new { "#{Dir.pwd}> " }
+history_ctx_proc = -> { { pwd: Dir.pwd } }
+on_accept_proc = ->(line, terminal:, session:) do
+  cmd, *args = Shellwords.split(line)
+
+  case cmd
+  when "cd"
+    dir = args.first || ENV["HOME"]
+    dir = File.expand_path(dir)
+    Dir.chdir(dir)
+  else
+    out, _ = Open3.capture2e(line)
+    session.append_output(out)
+  end
+  [[:send, :alert, :clear, {}]]
+  rescue Errno::ENOENT
+    [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
+  rescue SystemCallError => ex
+    [[:send, :alert, :show, { level: :error, message: ex.message }]]
+end
 
 FatTerm::Terminal.new(
   prompt: prompt,
-  on_accept: ->(line, terminal:, session:) do
-    out, _ = Open3.capture2e(line)
-    session.append_output(out)
-    [[:send, :alert, :clear, {}]]
-  rescue Errno::ENOENT
-    [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
-  end
+  history_ctx: history_ctx_proc,
+  on_accept: on_accept_proc
 ).go

@@ -47,11 +47,11 @@ module FatTerm
       reset_cursor_for(:command)
     end
 
-    def previous_for(*kinds, current:)
-      entries = entries_for(*kinds)
+    def previous_for(*kinds, current:, ctx: nil)
+      entries = entries_for(*kinds, ctx: ctx)
       return current.to_s if entries.empty?
 
-      cursor = cursor_for(*kinds)
+      cursor = cursor_for(*kinds, ctx: ctx)
 
       if cursor[:index].nil?
         cursor[:scratch] = current.to_s
@@ -63,9 +63,9 @@ module FatTerm
       entries[cursor[:index]].text
     end
 
-    def next_for(*kinds)
-      entries = entries_for(*kinds)
-      cursor = cursor_for(*kinds)
+    def next_for(*kinds, ctx: nil)
+      entries = entries_for(*kinds, ctx: ctx)
+      cursor = cursor_for(*kinds, ctx: ctx)
       return "" if entries.empty? || cursor[:index].nil?
 
       if cursor[:index] < entries.length - 1
@@ -73,13 +73,13 @@ module FatTerm
         entries[cursor[:index]].text
       else
         scratch = cursor[:scratch]
-        reset_cursor_for(*kinds)
+        reset_cursor_for(*kinds, ctx: ctx)
         scratch || ""
       end
     end
 
-    def reset_cursor_for(*kinds)
-      cursor = cursor_for(*kinds)
+    def reset_cursor_for(*kinds, ctx: nil)
+      cursor = cursor_for(*kinds, ctx: ctx)
       cursor[:index] = nil
       cursor[:scratch] = nil
     end
@@ -90,14 +90,42 @@ module FatTerm
       kinds.flatten.map(&:to_sym).uniq.sort
     end
 
-    def cursor_for(*kinds)
-      key = normalize_kinds(*kinds)
+    def normalize_ctx(ctx)
+      return {} unless ctx.is_a?(Hash)
+
+      ctx.each_with_object({}) do |(key, value), memo|
+        memo[key.to_s] = value
+      end.sort.to_h
+    end
+
+    def ctx_match?(entry, ctx)
+      wanted = normalize_ctx(ctx)
+      return true if wanted.empty?
+
+      wanted.all? do |key, value|
+        entry.ctx_fetch(key) == value
+      end
+    end
+
+    def cursor_for(*kinds, ctx: nil)
+      key = [normalize_kinds(*kinds), normalize_ctx(ctx)]
       @cursors[key] ||= { index: nil, scratch: nil }
     end
 
-    def entries_for(*kinds)
+    def entries_for(*kinds, ctx: nil)
       wanted = normalize_kinds(*kinds)
-      @entries.select { |entry| wanted.include?(entry.kind) }
+      entries = @entries.select { |entry| wanted.include?(entry.kind) }
+      preferred = []
+      fallback = []
+
+      entries.each do |entry|
+        if ctx_match?(entry, ctx)
+          preferred << entry
+        else
+          fallback << entry
+        end
+      end
+      fallback + preferred
     end
 
     def load

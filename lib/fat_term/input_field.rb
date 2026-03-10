@@ -56,7 +56,9 @@ module FatTerm
     def act_on(action, *args, env: nil, **kwargs)
       return unless action
 
-      history&.reset_cursor_for(resolve_history_kind) unless action.to_s.start_with?("history_")
+      unless action.to_s.start_with?("history_")
+        history&.reset_cursor_for(resolve_history_kind, ctx: resolve_history_ctx)
+      end
 
       env ||= FatTerm::ActionEnvironment.new(
         buffer: buffer,
@@ -117,14 +119,14 @@ module FatTerm
     action :history_prev do
       return unless history
 
-      buffer.replace(history.previous_for(resolve_history_kind, current: buffer.text))
+      buffer.replace(history.previous_for(resolve_history_kind, current: buffer.text, ctx: resolve_history_ctx))
     end
 
     desc "Replace buffer with the next history entry"
     action :history_next do
       return unless history
 
-      buffer.replace(history.next_for(resolve_history_kind))
+      buffer.replace(history.next_for(resolve_history_kind, ctx: resolve_history_ctx))
     end
 
     private
