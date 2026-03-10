@@ -164,7 +164,7 @@ module FatTerm
 
     def handle_action(action, args, terminal:, event:)
       FatTerm.log(
-        "ShellSession.handle_action: action=#{action.inspect} args=#{args.inspect} key=#{event.key.inspect}",
+        "ShellSession.handle_action: action=#{action.inspect} args=#{args.inspect} key=#{event&.key.inspect}",
         tag: :keymap,
       )
       env = action_env(terminal: terminal, event: event)
@@ -194,7 +194,7 @@ module FatTerm
         [[:terminal, :cycle_theme]]
       when :history_search
         # Oldest -> newest, so newest appears at the bottom of the popup.
-        src = @history.entries.select(&:command?).last(500).map(&:text)
+        src = ->(_q = nil) { @history.entries.select(&:command?).last(500).map(&:text) }
         popup = FatTerm::PopUpSession.new(
           source: src,
           title: "History",

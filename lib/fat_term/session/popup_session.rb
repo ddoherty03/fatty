@@ -253,11 +253,17 @@ module FatTerm
     end
 
     def call_source(q)
-      if @source.arity == 0
-        @source.call
-      else
-        @source.call(q)
-      end
+      items =
+        if @source.respond_to?(:call)
+          if @source.arity == 0
+            @source.call
+          else
+            @source.call(q)
+          end
+        else
+          @source
+        end
+      Array(items)
     end
 
     def apply_order!
