@@ -20,14 +20,28 @@ on_accept_proc = ->(line, terminal:, session:) do
     session.append_output(out)
   end
   [[:send, :alert, :clear, {}]]
-  rescue Errno::ENOENT
-    [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
-  rescue SystemCallError => ex
-    [[:send, :alert, :show, { level: :error, message: ex.message }]]
+rescue Errno::ENOENT
+  [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
+rescue SystemCallError => ex
+  [[:send, :alert, :show, { level: :error, message: ex.message }]]
+end
+completion_proc = lambda do |_buffer|
+  %w[
+    cd
+    clear
+    echo
+    exit
+    help
+    history
+    ls
+    pwd
+    theme
+  ]
 end
 
 FatTerm::Terminal.new(
   prompt: prompt,
   history_ctx: history_ctx_proc,
-  on_accept: on_accept_proc
+  on_accept: on_accept_proc,
+  completion_proc: completion_proc,
 ).go

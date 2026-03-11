@@ -6,7 +6,7 @@ module FatTerm
   class ShellSession < OutputSession
     attr_reader :field
 
-    def initialize(prompt: "sh> ", on_accept: nil, history_ctx: nil)
+    def initialize(prompt: "sh> ", on_accept: nil, completion_proc: nil, history_ctx: nil)
       super(
         keymap: Keymaps.emacs,
         views: [
@@ -24,6 +24,7 @@ module FatTerm
       )
 
       @on_accept = on_accept
+      @completion_proc = completion_proc
 
       # Default command runner when no on_accept proc is provided.
       # This is intentionally synchronous and capture-based (no PTY streaming).
@@ -119,6 +120,42 @@ module FatTerm
       dirty
     end
 
+    def completion_candidates
+      return [] unless @completion_proc
+
+      prefix = completion_prefix
+      Array(@completion_proc.call(@field.buffer))
+        .compact
+        .map(&:to_s)
+        .reject(&:empty?)
+        .select { |s| s.start_with?(prefix) }
+        .uniq
+    end
+
+    def completion_prefix
+      buffer = @field.buffer
+      range = buffer.completion_range
+      buffer.text[range.begin...buffer.cursor].to_s
+    end
+
+    def apply_completion(candidate)
+      candidate = candidate.to_s
+      return [] if candidate.empty?
+
+      buffer = @field.buffer
+      range = buffer.completion_range
+      old_text = buffer.text.dup
+      old_end = range.end
+
+      append_space =
+        !candidate.match?(/\s\z/) &&
+        (old_end >= old_text.length || old_text[old_end]&.match?(/\s/))
+
+      inserted = append_space ? "#{candidate} " : candidate
+      buffer.replace_range(range, inserted)
+      []
+    end
+
     private
 
     def update_cmd(name, payload, terminal:)
@@ -135,6 +172,8 @@ module FatTerm
           @theme_popup_restore = nil
           cmds << [:terminal, :set_theme, theme]
           cmds << [:send, :alert, :show, { level: :info, message: "Theme: #{theme}" }]
+        when :completion
+          apply_completion(payload.fetch(:item, "").to_s)
         end
       when :popup_changed
         if payload[:kind]&.to_sym == :theme_chooser
@@ -223,6 +262,26 @@ module FatTerm
           selection: :top,
         )
         [[:terminal, :push_modal, popup]]
+      when :complete
+        candidates = completion_candidates
+        prefix = completion_prefix
+        case candidates.length
+        when 0
+          []
+        when 1
+          apply_completion(candidates.first)
+        else
+          popup = FatTerm::PopUpSession.new(
+            source: candidates,
+            kind: :completion,
+            title: "Completions",
+            prompt: "Complete: ",
+            order: :as_given,
+            selection: :top,
+            initial_query: prefix,
+          )
+          [[:terminal, :push_modal, popup]]
+        end
       when :history_search
         # Oldest -> newest, so newest appears at the bottom of the popup.
         src = ->(_q = nil) { @history.entries.select(&:command?).last(500).map(&:text) }

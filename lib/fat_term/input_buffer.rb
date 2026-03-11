@@ -541,6 +541,39 @@ module FatTerm
       deleted
     end
 
+    # Return a Range that corresponds to the part of the buffer that a
+    # completion should replace.  The whole region if region active
+    def completion_range(from = cursor)
+      if region_active?
+        a, b = region_range.minmax
+        return a...b
+      end
+
+      chars = text.chars
+      return from...from if from < 0 || from > chars.length
+      return from...from if chars.empty?
+
+      on_word =
+        if from == chars.length
+          from.positive? && word_char?(chars[from - 1])
+        else
+          word_char?(chars[from])
+        end
+
+      return from...from unless on_word
+
+      left = from
+      if left == chars.length
+        left -= 1
+      end
+      left -= 1 while left.positive? && word_char?(chars[left - 1])
+
+      right = from
+      right += 1 while right < chars.length && word_char?(chars[right])
+
+      left...right
+    end
+
     private
 
     def with_undo(before: nil)
