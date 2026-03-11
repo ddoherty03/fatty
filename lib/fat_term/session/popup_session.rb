@@ -22,11 +22,13 @@ module FatTerm
       keymap: Keymaps.emacs,
       matcher: nil,
       order: :as_given,
+      kind: nil,
       selection: :preserve,
       initial_query: nil
     )
       super(keymap: keymap)
       @source = source
+      @kind = kind&.to_sym
       @matcher = matcher
       @order = order.to_sym
       @selection = selection.to_sym
@@ -60,7 +62,7 @@ module FatTerm
       refresh_items
       capture_initial_popup_geometry!
       rebuild_windows!(terminal)
-      []
+      notify_owner(:popup_changed)
     end
 
     def update_key(ev, terminal:)
@@ -99,7 +101,7 @@ module FatTerm
       env = action_env(terminal: terminal, event: event)
       case action.to_sym
       when :popup_cancel, :interrupt
-        [[:terminal, :pop_modal]]
+        notify_owner(:popup_cancelled) + [[:terminal, :pop_modal]]
       when :popup_accept
         accept_selection
       when :popup_next
@@ -107,33 +109,33 @@ module FatTerm
           @selected = [@selected + 1, @filtered.length - 1].min
           ensure_scroll_visible
         end
-        []
+        notify_owner(:popup_changed)
       when :popup_prev
         unless @filtered.empty?
           @selected = [@selected - 1, 0].max
           ensure_scroll_visible
         end
-        []
+        notify_owner(:popup_changed)
       when :popup_page_down
         move_selected_by(popup_list_height)
         ensure_scroll_visible
-        []
+        notify_owner(:popup_changed)
       when :popup_page_up
         move_selected_by(-popup_list_height)
         ensure_scroll_visible
-        []
+        notify_owner(:popup_changed)
       when :popup_top
         unless @filtered.empty?
           @selected = 0
           recenter_scroll
         end
-        []
+        notify_owner(:popup_changed)
       when :popup_bottom
         unless @filtered.empty?
           @selected = [@filtered.length - 1, 0].max
           recenter_scroll
         end
-        []
+        notify_owner(:popup_changed)
       when :popup_recenter
         recenter_scroll
         []
@@ -142,7 +144,7 @@ module FatTerm
         @field.act_on(action, *args, env: env)
         refresh_items_if_query_changed
         ensure_scroll_visible
-        []
+        notify_owner(:popup_changed)
       end
     rescue ActionError => e
       FatTerm.log("PopUpSession.handle_action: ActionError #{e.message}", tag: :keymap)
@@ -150,14 +152,18 @@ module FatTerm
     end
 
     def accept_selection
-      item = @filtered[@selected]
+      item = selected_item
       return [] unless item
 
-      payload = { item: item, query: @field.buffer.text.to_s, index: @selected }
+      payload = popup_payload(item)
       [
         [:terminal, :send_modal_owner, [:cmd, :popup_result, payload]],
         [:terminal, :pop_modal]
       ]
+    end
+
+    def selected_item
+      @filtered[@selected]
     end
 
     def refresh_items_if_query_changed
@@ -198,6 +204,21 @@ module FatTerm
     end
 
     private
+
+    def popup_payload(item = selected_item)
+      {
+        kind: @kind,
+        item: item,
+        query: @field.buffer.text.to_s,
+        index: @selected
+      }
+    end
+
+    def notify_owner(name)
+      return [] unless @kind
+
+      [[:terminal, :send_modal_owner, [:cmd, name, popup_payload]]]
+    end
 
     def popup_list_height
       # Visible list lines = window height minus:

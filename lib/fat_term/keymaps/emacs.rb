@@ -91,6 +91,7 @@ module FatTerm
 
       # Themes
       map.bind(context: :terminal, key: :t, meta: true, ctrl: true, action: :cycle_theme)
+      map.bind(context: :terminal, key: :'=', meta: true, action: :choose_theme)
 
       # Final States
       map.bind(key: :c, ctrl: true, action: :interrupt)

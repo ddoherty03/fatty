@@ -86,7 +86,8 @@ module FatTerm
     def push_modal(session, owner:)
       @modal_stack << { session: session, owner: owner }
       register(session)
-      session.init(terminal: self)
+      commands = session.init(terminal: self)
+      apply_commands(commands)
     end
 
     def pop_modal
@@ -272,6 +273,11 @@ module FatTerm
       when :cycle_theme
         new_theme = FatTerm::Colors::ThemeManager.cycle
         renderer.apply_theme!(new_theme)
+        apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{new_theme}"}])
+      when :set_theme
+        theme = rest.fetch(0)
+        FatTerm::Colors::ThemeManager.set(theme)
+        renderer.apply_theme!(theme)
         apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{new_theme}"}])
       else
         raise ArgumentError, "unknown terminal command #{name.inspect} (cmd=#{cmd.inspect})"

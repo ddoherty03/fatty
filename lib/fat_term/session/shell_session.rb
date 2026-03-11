@@ -125,9 +125,27 @@ module FatTerm
       cmds = []
       case name
       when :popup_result
-        item = payload.fetch(:item, "").to_s
-        env = action_env(terminal: terminal, event: nil)
-        @field.act_on(:replace, item, env: env)
+        case payload[:kind]&.to_sym
+        when :history_search
+          item = payload.fetch(:item, "").to_s
+          env = action_env(terminal: terminal, event: nil)
+          @field.act_on(:replace, item, env: env)
+        when :theme_chooser
+          theme = payload.fetch(:item).to_sym
+          @theme_popup_restore = nil
+          cmds << [:terminal, :set_theme, theme]
+          cmds << [:send, :alert, :show, { level: :info, message: "Theme: #{theme}" }]
+        end
+      when :popup_changed
+        if payload[:kind]&.to_sym == :theme_chooser
+          theme = payload.fetch(:item).to_sym
+          cmds << [:terminal, :set_theme, theme]
+        end
+      when :popup_cancelled
+        if payload[:kind]&.to_sym == :theme_chooser && @theme_popup_restore
+          cmds << [:terminal, :set_theme, @theme_popup_restore]
+          @theme_popup_restore = nil
+        end
       when :pager_search_set
         pattern = payload.fetch(:pattern, "").to_s
         regex = !!payload[:regex]
@@ -192,11 +210,25 @@ module FatTerm
         []
       when :cycle_theme
         [[:terminal, :cycle_theme]]
+      when :choose_theme
+        current = FatTerm::Colors::ThemeManager.current
+        names = FatTerm::Colors::ThemeManager.theme_names
+        ordered = [current] + (names - [current])
+        @theme_popup_restore = current
+        popup = FatTerm::PopUpSession.new(
+          source: ordered,
+          kind: :theme_chooser,
+          title: "Themes",
+          prompt: "Theme: ",
+          selection: :top,
+        )
+        [[:terminal, :push_modal, popup]]
       when :history_search
         # Oldest -> newest, so newest appears at the bottom of the popup.
         src = ->(_q = nil) { @history.entries.select(&:command?).last(500).map(&:text) }
         popup = FatTerm::PopUpSession.new(
           source: src,
+          kind: :history_search,
           title: "History",
           prompt: "I-search: ",
           order: :as_given,
