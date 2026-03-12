@@ -150,18 +150,18 @@ module FatTerm
     end
 
     def start_curses!
-      @ctx = FatTerm::Backends::Curses::Context.new
+      @ctx = FatTerm::Curses::Context.new
       @ctx.start
 
       @screen = FatTerm::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols)
       @ctx.apply_layout(@screen)
 
-      @renderer = FatTerm::Backends::Curses::Renderer.new(context: @ctx, screen: @screen)
+      @renderer = FatTerm::Curses::Renderer.new(context: @ctx, screen: @screen)
 
       env = @env || FatTerm::Env.detect
-      key_decoder = FatTerm::Backends::Curses::KeyDecoder.new(env: env)
+      key_decoder = FatTerm::Curses::KeyDecoder.new(env: env)
       @event_source =
-        FatTerm::Backends::Curses::EventSource.new(context: @ctx, key_decoder: key_decoder, poll_ms: 50)
+        FatTerm::Curses::EventSource.new(context: @ctx, key_decoder: key_decoder, poll_ms: 50)
       self
     end
 

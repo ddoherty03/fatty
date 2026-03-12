@@ -1,0 +1,118 @@
+# frozen_string_literal: true
+
+module FatTerm
+  module Curses
+    class EventSource
+      attr_reader :context, :key_decoder
+
+      def initialize(context:, key_decoder:, poll_ms: 200)
+        @context = context
+        @key_decoder = key_decoder
+        @poll_ms = poll_ms.to_i
+        configure_input_polling!
+      end
+
+      def next_event
+        raw = read_raw
+        return unless raw
+
+        if raw.is_a?(FatTerm::MouseEvent)
+          return [:mouse, raw]
+        end
+
+        ev = @key_decoder.decode(raw)
+        return unless ev
+
+        [:key, ev]
+      end
+
+      private
+
+      def window
+        context.input_win
+      end
+
+      def configure_input_polling!
+        win = window
+        return unless win
+
+        # Make getch return nil periodically so Terminal can keep rendering,
+        # which allows output to animate smoothly.
+        win.timeout = @poll_ms if win.respond_to?(:timeout=)
+      end
+
+      def read_raw
+        return unless window
+
+        # The input window can be replaced when the layout changes (resize,
+        # apply_layout, etc.). Ensure polling is always enabled on the
+        # current window so getch doesn't block and Terminal can tick.
+        window.timeout = @poll_ms if window.respond_to?(:timeout=)
+
+        ch = window.getch
+        return if ch == -1
+        return unless ch
+
+        if ch.is_a?(Integer) && defined?(::Curses::KEY_MOUSE) && ch == ::Curses::KEY_MOUSE
+          mouse = ::Curses.getmouse
+          return decode_mouse(mouse)
+        end
+
+        if FatTerm::Config.config.dig(:log, :tags)&.include?(:keycode)
+          FatTerm.debug(:curses_getch,
+                        tag: :keycode,
+                        ch_class: ch.class.name,
+                        ch_inspect: ch.inspect,
+                        ch_int: (ch.is_a?(Integer) ? ch : nil),
+                        ch_chr: (ch.is_a?(Integer) && ch.between?(0, 255) ? ch.chr : nil)
+                       )
+        end
+
+        if ch.is_a?(Integer) && ch == 27
+          nxt = window.getch
+          return if nxt == -1
+
+          if FatTerm::Config.config.dig(:log, :tags)&.include?(:keycode)
+            FatTerm.log(:curses_getch,
+                        tag: :keycode,
+                        ch_class: ch.class.name,
+                        ch_inspect: ch.inspect,
+                        ch_int: (ch.is_a?(Integer) ? ch : nil),
+                        ch_chr: (ch.is_a?(Integer) && ch.between?(0, 255) ? ch.chr : nil)
+                       )
+          end
+          return ch unless nxt
+
+          [ch, nxt]
+        else
+          ch
+        end
+      end
+
+      def decode_mouse(mouse)
+        return unless mouse
+
+        bstate = mouse.bstate
+        gesture = nil
+
+        if defined?(::Curses::BUTTON4_PRESSED) && (bstate & ::Curses::BUTTON4_PRESSED).positive?
+          gesture = :scroll_up
+        elsif defined?(::Curses::BUTTON5_PRESSED) && (bstate & ::Curses::BUTTON5_PRESSED).positive?
+          gesture = :scroll_down
+        end
+
+        return unless gesture
+
+        FatTerm::MouseEvent.new(
+          mouse: gesture,
+          x: mouse.x,
+          y: mouse.y,
+          ctrl: false,
+          meta: false,
+          shift: false,
+          raw: mouse,
+        )
+      end
+    end
+  end
+end

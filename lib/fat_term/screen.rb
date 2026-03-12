@@ -7,8 +7,8 @@ module FatTerm
   # FatTerm draws into (output/input/alert). Screen does not perform any IO
   # and does not depend on curses.
   #
-  # Backends (e.g., Backends::Curses) use Screen to allocate resources
-  # (windows) and to understand where drawing should occur.
+  # Curses uses Screen to allocate resources (windows) and to understand where
+  # drawing should occur.
   class Screen
     Rect = Struct.new(:row, :col, :rows, :cols, keyword_init: true) do
       def bottom = row + rows

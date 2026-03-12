@@ -6,7 +6,7 @@ module FatTerm
   RSpec.describe AlertSession do
     let(:terminal) { instance_double(Terminal) }
     let(:screen)   { instance_double(Screen) }
-    let(:renderer) { instance_double(Backends::Curses::Renderer) }
+    let(:renderer) { instance_double(Curses::Renderer) }
 
     it "has an AlertView and renders via the default Session#view pipeline" do
       s = AlertSession.new
