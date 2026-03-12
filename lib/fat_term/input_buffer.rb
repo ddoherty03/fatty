@@ -574,6 +574,18 @@ module FatTerm
       left...right
     end
 
+    def completion_prefix(from = cursor)
+      r = completion_range(from)
+      if region_active?
+        text[r].to_s
+      elsif r.begin < from
+        text[r.begin...from].to_s
+      else
+        back = word_span_backward(from)
+        back.begin < back.end && back.end == from ? text[back].to_s : ""
+      end
+    end
+
     private
 
     def with_undo(before: nil)

@@ -193,8 +193,8 @@ module FatTerm
       action = entry["action"]
       ctx = entry.key?("context") ? entry["context"] : default_context
 
-      unless key && action
-        warn "fat_term: missing key or action at index #{idx}"
+      unless (key || mouse) && action
+        warn "fat_term: missing key/mouse or action at index #{idx}"
         return
       end
 

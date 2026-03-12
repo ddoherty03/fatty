@@ -133,9 +133,7 @@ module FatTerm
     end
 
     def completion_prefix
-      buffer = @field.buffer
-      range = buffer.completion_range
-      buffer.text[range.begin...buffer.cursor].to_s
+      @field.buffer.completion_prefix
     end
 
     def apply_completion(candidate)
