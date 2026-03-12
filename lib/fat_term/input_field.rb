@@ -45,9 +45,39 @@ module FatTerm
         end
     end
 
+    # :category: Inspect
+
+    def to_s
+      "<InputField:#{object_id}> Prompt => #{prompt} Buffer => #{buffer}"
+    end
+    alias_method :inspect, :to_s
+
+    # category: Queries
+
+    def empty?
+      buffer.text == ""
+    end
+
+    # Visual cursor X position in the window (ASCII for now)
+    def cursor_x
+      prompt_width + buffer.cursor
+    end
+
+    def prompt_text
+      prompt.text
+    end
+
+    def prompt_width
+      prompt_text.length
+    end
+
+    # :category: Setters
+
     def prompt=(prompt)
       @prompt = Prompt.ensure(prompt)
     end
+
+    # :category: Actions
 
     # Centralized action dispatch for this field.
     # - Resets history cursor for non-history actions
@@ -79,27 +109,6 @@ module FatTerm
         raise FatTerm::ActionError, "Unknown action: #{action}"
       end
     end
-
-    # category: Queries
-
-    def empty?
-      buffer.text == ""
-    end
-
-    # Visual cursor X position in the window (ASCII for now)
-    def cursor_x
-      prompt_width + buffer.cursor
-    end
-
-    def prompt_text
-      prompt.text
-    end
-
-    def prompt_width
-      prompt_text.length
-    end
-
-    # category: Actions
 
     desc "Accept the current line, add to history, and clear the buffer"
     action :accept_line do

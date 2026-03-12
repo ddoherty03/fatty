@@ -34,7 +34,7 @@ module FatTerm
   class InputBuffer
     include Actionable
 
-    attr_reader :mark
+    attr_reader :mark, :kill_ring, :undo_stack
     attr_accessor :text, :cursor, :word_re
 
     DEFAULT_WORD_CHARS = "[[:alnum:]_]"
@@ -60,6 +60,28 @@ module FatTerm
       @last_yank_len = 0
       @last_action = nil
     end
+
+    # :category: Inspect
+
+    def to_s
+      text_w_cursor =
+        if mark
+          if mark < cursor
+            "#{text[0..mark - 1]}[#{text[mark..cursor - 1]}]|#{text[cursor..]}"
+          elsif mark > cursor
+            "#{text[0..cursor - 1]}[|#{text[cursor..mark - 1]}]#{text[mark..]}"
+          else
+            # They're equal, ignore mark
+            "#{text[0..cursor - 1]}|#{text[cursor..]}]"
+          end
+        elsif cursor > 0
+          "#{text[0..cursor - 1]}|#{text[cursor..]}"
+        else
+          "|#{text}"
+        end
+      "<InputBuffer:#{object_id}> <#{text_w_cursor}> => Kill[#{kill_ring.size}] => Undo[#{undo_stack.size}]"
+    end
+    alias_method :inspect, :to_s
 
     # :category: Queries
 
@@ -542,7 +564,8 @@ module FatTerm
     end
 
     # Return a Range that corresponds to the part of the buffer that a
-    # completion should replace.  The whole region if region active
+    # completion should replace.  The whole region if region active, the word
+    # cursor is on a if it's on a word, or nothing otherwise.
     def completion_range(from = cursor)
       if region_active?
         a, b = region_range.minmax

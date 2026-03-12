@@ -19,6 +19,11 @@ module FatTerm
       @block.call.to_s
     end
 
+    def to_s
+      "<Prompt:#{object_id}> `#{text}`"
+    end
+    alias_method :inspect, :to_s
+
     def self.ensure(p)
       case p
       when Prompt
