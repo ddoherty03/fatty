@@ -3,25 +3,25 @@
 module FatTerm
   module Curses
     class EventSource
-      MOUSE_BUTTON_MAP = [
-        [::Curses::BUTTON1_PRESSED,        :left_pressed],
-        [::Curses::BUTTON1_RELEASED,       :left_released],
-        [::Curses::BUTTON1_CLICKED,        :left_clicked],
-        [::Curses::BUTTON1_DOUBLE_CLICKED, :left_double_clicked],
-        [::Curses::BUTTON1_TRIPLE_CLICKED, :left_triple_clicked],
+      MOUSE_BUTTON_MAP = {
+        ::Curses::BUTTON1_PRESSED        => :left_pressed,
+        ::Curses::BUTTON1_RELEASED       => :left_released,
+        ::Curses::BUTTON1_CLICKED        => :left_clicked,
+        ::Curses::BUTTON1_DOUBLE_CLICKED => :left_double_clicked,
+        ::Curses::BUTTON1_TRIPLE_CLICKED => :left_triple_clicked,
 
-        [::Curses::BUTTON2_PRESSED,        :middle_pressed],
-        [::Curses::BUTTON2_RELEASED,       :middle_released],
-        [::Curses::BUTTON2_CLICKED,        :middle_clicked],
-        [::Curses::BUTTON2_DOUBLE_CLICKED, :middle_double_clicked],
-        [::Curses::BUTTON2_TRIPLE_CLICKED, :middle_triple_clicked],
+        ::Curses::BUTTON2_PRESSED        => :middle_pressed,
+        ::Curses::BUTTON2_RELEASED       => :middle_released,
+        ::Curses::BUTTON2_CLICKED        => :middle_clicked,
+        ::Curses::BUTTON2_DOUBLE_CLICKED => :middle_double_clicked,
+        ::Curses::BUTTON2_TRIPLE_CLICKED => :middle_triple_clicked,
 
-        [::Curses::BUTTON3_PRESSED,        :right_pressed],
-        [::Curses::BUTTON3_RELEASED,       :right_released],
-        [::Curses::BUTTON3_CLICKED,        :right_clicked],
-        [::Curses::BUTTON3_DOUBLE_CLICKED, :right_double_clicked],
-        [::Curses::BUTTON3_TRIPLE_CLICKED, :right_triple_clicked],
-      ].freeze
+        ::Curses::BUTTON3_PRESSED        => :right_pressed,
+        ::Curses::BUTTON3_RELEASED       => :right_released,
+        ::Curses::BUTTON3_CLICKED        => :right_clicked,
+        ::Curses::BUTTON3_DOUBLE_CLICKED => :right_double_clicked,
+        ::Curses::BUTTON3_TRIPLE_CLICKED => :right_triple_clicked
+      }.freeze
 
       attr_reader :context, :key_decoder
 
@@ -80,13 +80,14 @@ module FatTerm
         end
 
         if FatTerm::Config.config.dig(:log, :tags)&.include?(:keycode)
-          FatTerm.debug(:curses_getch,
-                        tag: :keycode,
-                        ch_class: ch.class.name,
-                        ch_inspect: ch.inspect,
-                        ch_int: (ch.is_a?(Integer) ? ch : nil),
-                        ch_chr: (ch.is_a?(Integer) && ch.between?(0, 255) ? ch.chr : nil)
-                       )
+          FatTerm.debug(
+            :curses_getch,
+            tag: :keycode,
+            ch_class: ch.class.name,
+            ch_inspect: ch.inspect,
+            ch_int: (ch.is_a?(Integer) ? ch : nil),
+            ch_chr: (ch.is_a?(Integer) && ch.between?(0, 255) ? ch.chr : nil),
+          )
         end
 
         if ch.is_a?(Integer) && ch == 27
@@ -94,13 +95,14 @@ module FatTerm
           return if nxt == -1
 
           if FatTerm::Config.config.dig(:log, :tags)&.include?(:keycode)
-            FatTerm.log(:curses_getch,
-                        tag: :keycode,
-                        ch_class: ch.class.name,
-                        ch_inspect: ch.inspect,
-                        ch_int: (ch.is_a?(Integer) ? ch : nil),
-                        ch_chr: (ch.is_a?(Integer) && ch.between?(0, 255) ? ch.chr : nil)
-                       )
+            FatTerm.log(
+              :curses_getch,
+              tag: :keycode,
+              ch_class: ch.class.name,
+              ch_inspect: ch.inspect,
+              ch_int: (ch.is_a?(Integer) ? ch : nil),
+              ch_chr: (ch.is_a?(Integer) && ch.between?(0, 255) ? ch.chr : nil),
+            )
           end
           return ch unless nxt
 
@@ -134,17 +136,14 @@ module FatTerm
       end
 
       def mouse_button_from_bstate(bstate)
-        return :scroll_up if (bstate & ::Curses::BUTTON4_PRESSED).positive?
+        return :scroll_up   if (bstate & ::Curses::BUTTON4_PRESSED).positive?
         return :scroll_down if (bstate & ::Curses::BUTTON5_PRESSED).positive?
 
-        found = nil
-        MOUSE_BUTTON_MAP.each do |mask, name|
-          if (bstate & mask).positive?
-            found = name
-            break
-          end
+        MOUSE_BUTTON_MAP.each do |mask, button|
+          return button if (bstate & mask).positive?
         end
-        found
+
+        nil
       end
     end
   end
