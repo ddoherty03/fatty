@@ -73,6 +73,7 @@ module FatTerm
       map.bind(context: :popup, key: :g, ctrl: true, action: :popup_cancel)
       map.bind(context: :popup, key: :escape, action: :popup_cancel)
       map.bind(context: :popup, key: :enter, action: :popup_accept)
+      map.bind(context: :popup, key: :tab, action: :popup_accept)
       map.bind(context: :popup, key: :return, action: :popup_accept)
       map.bind(context: :popup, key: :up, action: :popup_prev)
       map.bind(context: :popup, key: :down, action: :popup_next)
