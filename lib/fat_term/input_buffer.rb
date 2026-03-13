@@ -643,6 +643,8 @@ module FatTerm
           else
             ""
           end
+        else
+          ""
         end
       end
     end
