@@ -136,21 +136,21 @@ module FatTerm
       @field.buffer.completion_prefix
     end
 
-    def apply_completion(candidate)
+    def apply_completion(candidate, range: nil)
       candidate = candidate.to_s
       return [] if candidate.empty?
 
       buffer = @field.buffer
-      range = buffer.completion_range
+      target = range || buffer.completion_replace_range
       old_text = buffer.text.dup
-      old_end = range.end
+      old_end = target.end
 
       append_space =
         !candidate.match?(/\s\z/) &&
         (old_end >= old_text.length || old_text[old_end]&.match?(/\s/))
 
       inserted = append_space ? "#{candidate} " : candidate
-      buffer.replace_range(range, inserted)
+      buffer.replace_range(target, inserted)
       []
     end
 
@@ -171,7 +171,8 @@ module FatTerm
           cmds << [:terminal, :set_theme, theme]
           cmds << [:send, :alert, :show, { level: :info, message: "Theme: #{theme}" }]
         when :completion
-          apply_completion(payload.fetch(:item, "").to_s)
+          apply_completion(payload.fetch(:item, "").to_s, range: @completion_range)
+          @completion_range = nil
         end
       when :popup_changed
         if payload[:kind]&.to_sym == :theme_chooser
@@ -269,6 +270,7 @@ module FatTerm
         )
         [[:terminal, :push_modal, popup]]
       when :complete
+        @completion_range = @field.buffer.word_at_point_range
         candidates = completion_candidates
         prefix = completion_prefix
         case candidates.length

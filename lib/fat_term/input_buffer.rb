@@ -563,10 +563,10 @@ module FatTerm
       deleted
     end
 
-    # Return a Range that corresponds to the part of the buffer that a
-    # completion should replace.  The whole region if region active, the word
-    # cursor is on a if it's on a word, or nothing otherwise.
-    def completion_range(from = cursor)
+    # Return a Range that corresponds to the whole word that is "around" the
+    # cursor.  The whole region if region active, the word cursor is on a if
+    # it's on a word, or nothing otherwise.
+    def word_at_point_range(from = cursor)
       if region_active?
         a, b = region_range.minmax
         return a...b
@@ -597,15 +597,53 @@ module FatTerm
       left...right
     end
 
-    def completion_prefix(from = cursor)
-      r = completion_range(from)
+    # Return the Range of the buffer that a completion should replace when the
+    # completion is accepted.
+    def completion_replace_range(from = cursor)
       if region_active?
-        text[r].to_s
-      elsif r.begin < from
-        text[r.begin...from].to_s
-      else
+        r = region_range
+        return r if r
+      end
+
+      prefix = completion_prefix(from)
+      chars = text.chars
+      at_word =
+        from < chars.length && word_char?(chars[from])
+
+      if !prefix.empty?
+        if at_word
+          return word_at_point_range(from)
+        end
+
         back = word_span_backward(from)
-        back.begin < back.end && back.end == from ? text[back].to_s : ""
+        return back if back.begin < back.end
+      end
+
+      if at_word
+        fwd = word_span_forward(from)
+        return fwd.end...fwd.end
+      end
+
+      from...from
+    end
+
+    def completion_prefix(from = cursor)
+      if region_active?
+        r = region_range
+        r ? text[r].to_s : ""
+      else
+        chars = text.chars
+        if from.positive? && !chars.empty?
+          if from < chars.length && word_char?(chars[from])
+            r = word_at_point_range(from)
+            r ? text[r.begin...from].to_s : ""
+          elsif word_char?(chars[from - 1])
+            r = word_span_backward(from)
+            r ? text[r].to_s : ""
+          else
+            ""
+          end
+        end
       end
     end
 
