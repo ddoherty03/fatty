@@ -105,10 +105,10 @@ module FatTerm
 
       # Output control
       map.bind(key: :l, ctrl: true, action: :clear_output)
-      map.bind(context: :paging, key: :up, action: :scroll_up)
-      map.bind(context: :paging, key: :down, action: :scroll_down)
-      map.bind(context: :paging, key: :k, action: :scroll_up)
-      map.bind(context: :paging, key: :j, action: :scroll_down)
+      map.bind(context: :paging, key: :up, action: :line_up)
+      map.bind(context: :paging, key: :down, action: :line_down)
+      map.bind(context: :paging, key: :k, action: :line_up)
+      map.bind(context: :paging, key: :j, action: :line_down)
       map.bind(context: :paging, key: :page_up, action: :page_up)
       map.bind(context: :paging, key: :b, action: :page_up)
       map.bind(context: :paging, key: :u, action: :page_up)
@@ -142,8 +142,8 @@ module FatTerm
       # I-search controls (within ISearchSession)
       map.bind(context: :isearch, key: :s, ctrl: true, action: :isearch_next)
       map.bind(context: :isearch, key: :r, ctrl: true, action: :isearch_prev)
-      map.bind(context: :isearch, key: :g, ctrl: true, action: :popup_cancel)  # or :interrupt
-      map.bind(context: :isearch, key: :escape, action: :popup_cancel)          # if your decoder uses :escape
+      map.bind(context: :isearch, key: :g, ctrl: true, action: :popup_cancel)
+      map.bind(context: :isearch, key: :escape, action: :popup_cancel)
 
       # Repeat last search (no minibuffer)
       map.bind(context: :paging, key: :n, action: :pager_search_next)

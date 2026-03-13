@@ -2,6 +2,8 @@
 
 module FatTerm
   class Pager
+    SCROLL_WHEEL_LINES = 3
+
     include FatTerm::Actionable
 
     action_on :pager
@@ -138,8 +140,8 @@ module FatTerm
       @viewport.page_bottom(@output.lines)
     end
 
-    desc "Scroll up"
-    action :scroll_up do |count: 1|
+    desc "One line up"
+    action :line_up do |count: 1|
       @mode = :paging
       @paused = true
       @last_nav_dir = :up
@@ -147,8 +149,26 @@ module FatTerm
       @viewport.clamp!(@output.lines)
     end
 
-    desc "Scroll down"
-    action :scroll_down do |count: 1|
+    desc "One line down"
+    action :line_down do |count: 1|
+      @mode = :paging
+      @paused = true
+      @last_nav_dir = :down
+      count.to_i.times { @viewport.scroll_down(@output.lines) }
+      @viewport.clamp!(@output.lines)
+    end
+
+    desc "Scroll up #{SCROLL_WHEEL_LINES} lines"
+    action :scroll_up do |count: SCROLL_WHEEL_LINES|
+      @mode = :paging
+      @paused = true
+      @last_nav_dir = :up
+      count.to_i.times { @viewport.scroll_up(@output.lines) }
+      @viewport.clamp!(@output.lines)
+    end
+
+    desc "Scroll down #{SCROLL_WHEEL_LINES} lines"
+    action :scroll_down do |count: SCROLL_WHEEL_LINES|
       @mode = :paging
       @paused = true
       @last_nav_dir = :down
@@ -397,11 +417,11 @@ module FatTerm
     # the renderer’s slice planner / highlighting behavior.
     def search_visible_highlights(viewport:)
       re = @search[:re]
-      return nil unless re
+      return unless re
 
       lines = @output.lines
       total = lines.length
-      return nil if total.zero?
+      return if total.zero?
 
       top = viewport.top.to_i
       bottom = viewport.bottom_index(total)
@@ -546,7 +566,7 @@ module FatTerm
       # If the user has navigated since the last match (e.g. G/g/PageUp),
       # repeat search should start from the current viewport edge, not from
       # the prior match location.
-      viewport_unchanged = (last && @search[:last_view_top] == @viewport.top)
+      viewport_unchanged = last && @search[:last_view_top] == @viewport.top
 
       if last && viewport_unchanged
         if direction == :forward
