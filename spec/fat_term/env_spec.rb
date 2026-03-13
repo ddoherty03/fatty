@@ -204,8 +204,8 @@ module FatTerm
 
       it "returns key_min/key_max when Curses is defined" do
         stub_const("Curses", Module.new)
-        Curses.const_set(:KEY_MIN, 1)
-        Curses.const_set(:KEY_MAX, 999)
+        ::Curses.const_set(:KEY_MIN, 1)
+        ::Curses.const_set(:KEY_MAX, 999)
 
         expect(Env.curses_info).to eq({ key_min: 1, key_max: 999 })
       end

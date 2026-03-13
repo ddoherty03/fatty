@@ -88,11 +88,11 @@ module FatTerm
     # -----------------------
 
     def curses_info
-      return {} unless defined?(Curses)
+      return {} unless defined?(::Curses)
 
       {
-        key_min: Curses::KEY_MIN,
-        key_max: Curses::KEY_MAX,
+        key_min: ::Curses::KEY_MIN,
+        key_max: ::Curses::KEY_MAX,
       }
     rescue StandardError
       {}
