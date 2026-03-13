@@ -55,6 +55,10 @@ module FatTerm
     def hash
       [self.class, key, ctrl, meta, shift].hash
     end
+
+    def inspect
+      "#<#{self.class} key=#{key.inspect} ctrl=#{ctrl} meta=#{meta} shift=#{shift}>"
+    end
   end
 
   class MouseGesture
@@ -101,7 +105,7 @@ module FatTerm
   # Terminal) and :paging (for controlling the display of output that is
   # longer than the Viewport).  The default keybinding context is :input.
   class KeyMap
-    attr_reader :bindings, :mouse_bindings
+    attr_reader :bindings
 
     DEFAULT_CONTEXT = :input
 
@@ -130,7 +134,6 @@ module FatTerm
 
     def initialize
       @bindings = Hash.new { |h, ctx| h[ctx] = {} }
-      @mouse_bindings = Hash.new { |h, ctx| h[ctx] = {} }
     end
 
     # Bind a KeyEvent to an action in the given context.
@@ -158,7 +161,8 @@ module FatTerm
     end
 
     def bind_mouse(context: :input, button:, ctrl: false, meta: false, shift: false, action: nil)
-      arg_str = "context: #{context}, button: #{button}, ctrl: #{ctrl}, meta: #{meta}, shift: #{shift}, action: #{action}"
+      arg_str =
+        "context: #{context}, button: #{button}, ctrl: #{ctrl}, meta: #{meta}, shift: #{shift}, action: #{action}"
       FatTerm.log("KeyMap#bind_mouse(#{arg_str})", tag: :keybinding)
 
       raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
@@ -175,7 +179,7 @@ module FatTerm
         meta: truthy?(meta),
         shift: truthy?(shift),
       )
-      @mouse_bindings[context][gest] = action
+      @bindings[context][gest] = action
       self
     end
 
@@ -183,35 +187,18 @@ module FatTerm
       return unless event
 
       ctxs = normalize_contexts(contexts)
+      gest = gesture_from_event(event)
+      arg_str = "event: #{event}, gesture: #{gest}, contexts: #{contexts}"
+      FatTerm.log("KeyMap#resolve(#{arg_str})", tag: :keybinding)
+
       result = nil
+      ctxs.each do |ctx|
+        map = @bindings.fetch(ctx, nil)
+        next unless map
 
-      case event
-      when FatTerm::MouseEvent
-        gest = MouseGesture.from_event(event)
-        arg_str = "event: #{event}, gesture: #{gest}, contexts: #{contexts}"
-        FatTerm.log("KeyMap#resolve(#{arg_str})", tag: :keybinding)
-
-        ctxs.each do |ctx|
-          map = @mouse_bindings.fetch(ctx, nil)
-          next unless map
-
-          result = map[gest]
-          break if result
-        end
-      else
-        gest = KeyGesture.from_event(event)
-        arg_str = "event: #{event}, gesture: #{gest}, contexts: #{contexts}"
-        FatTerm.log("KeyMap#resolve(#{arg_str})", tag: :keybinding)
-
-        ctxs.each do |ctx|
-          map = @bindings.fetch(ctx, nil)
-          next unless map
-
-          result = map[gest]
-          break if result
-        end
+        result = map[gest]
+        break if result
       end
-
       FatTerm.log("KeyMap.resolve: -> #{result.inspect}", tag: :keybinding)
       result
     end
@@ -278,6 +265,15 @@ module FatTerm
 
     private
 
+    def gesture_from_event(event)
+      case event
+      when FatTerm::MouseEvent
+        MouseGesture.from_event(event)
+      else
+        KeyGesture.from_event(event)
+      end
+    end
+
     # Make a binding from an entry Hash that has keys for context, key (the
     # unmodified key name), the modifiers, 'ctrl', 'meta', and 'shift'.  The
     # valid keynames, apart from all the printable characters on the keyboard,
@@ -302,7 +298,7 @@ module FatTerm
         end
 
       unless (key || button) && action
-        warn "fat_term: missing key/mouse or action at index #{idx}"
+        warn "fat_term: missing key/button or action at index #{idx}"
         return
       end
 
