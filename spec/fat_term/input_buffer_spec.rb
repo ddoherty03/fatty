@@ -9,6 +9,32 @@ module FatTerm
       expect(b.empty?).to be(true)
     end
 
+    it "represents itself with #to_s method no mark" do
+      b = InputBuffer.new
+      b.insert("abcd efgh ijkl mnop qrst uv wxyz")
+      b.move_word_left
+      expect(b.to_s).to match(/\|wxyz/)
+      expect(b.inspect).to match(/\|wxyz/)
+      b.bol
+      expect(b.to_s).to match(/\|abcd /)
+      expect(b.inspect).to match(/\|abcd /)
+      b.eol
+      expect(b.to_s).to match(/wxyz\|/)
+      expect(b.inspect).to match(/wxyz\|/)
+    end
+
+    it "represents itself with #to_s method with mark" do
+      b = InputBuffer.new
+      b.insert("abcd efgh ijkl mnop qrst uv wxyz")
+      b.bol
+      b.move_word_right
+      b.set_mark
+      b.move_word_right
+      b.move_word_right
+      expect(b.to_s).to match(/abcd\[ efgh ijkl\]\|/)
+      expect(b.inspect).to match(/abcd\[ efgh ijkl\]\|/)
+    end
+
     it "inserts at cursor and advances cursor" do
       b = InputBuffer.new
       b.insert("a")
@@ -280,9 +306,12 @@ module FatTerm
 
     it "handles multibyte characters (codepoint-based cursor and deletion)" do
       b = InputBuffer.new
-      b.insert("λ")     # Greek lambda (multibyte)
-      b.insert("é")     # precomposed e-acute
-      b.insert("中")    # CJK (typically width 2)
+      # Greek lambda (multibyte)
+      b.insert("λ")
+      # precomposed e-acute
+      b.insert("é")
+      # CJK (typically width 2)
+      b.insert("中")
 
       expect(b.text).to eq("λé中")
       expect(b.cursor).to eq(3)
@@ -291,7 +320,8 @@ module FatTerm
       expect(b.cursor).to eq(2)
 
       b.delete_char_backward
-      expect(b.text).to eq("λ中")  # removed 'é'
+      # removed 'é'
+      expect(b.text).to eq("λ中")
       expect(b.cursor).to eq(1)
 
       expect(b.display_width).to be >= 3

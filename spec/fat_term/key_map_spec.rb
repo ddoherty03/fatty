@@ -154,9 +154,7 @@ module FatTerm
           ]
         allow(FatTerm::Config).to receive(:keybindings)
                                     .and_return(cfg)
-
         km.load_config
-
         expect(km.resolve(ev(:enter), contexts: [:input])).to eq(:submit)
         expect(km.resolve(ev(:enter), contexts: [:paging])).to eq(:page_down)
         expect(km.resolve(ev(:enter, meta: true), contexts: [:paging])).to be_nil
@@ -180,15 +178,15 @@ module FatTerm
 
       it "binds entries from config (including context/modifiers)" do
         km = KeyMap.new
-        allow(FatTerm::Config).to receive(:keybindings)
-                                    .and_return(
-                                      [
-                                        { "key" => "a", "ctrl" => true, "action" => "bol" },
-                                        { "key" => "space", "context" => "paging", "action" => "page_down" },
-                                        { "key" => "G", "context" => "paging", "shift" => true, "action" => "page_bottom" },
-                                      ],
-                                    )
-
+        allow(FatTerm::Config)
+          .to receive(:keybindings)
+                .and_return(
+                  [
+                    { "key" => "a", "ctrl" => true, "action" => "bol" },
+                    { "key" => "space", "context" => "paging", "action" => "page_down" },
+                    { "key" => "G", "context" => "paging", "shift" => true, "action" => "page_bottom" },
+                  ],
+                )
         km.load_config
 
         expect(km.resolve(ev(:a, ctrl: true), contexts: :input)).to eq(:bol)
@@ -199,9 +197,9 @@ module FatTerm
       it "skips invalid (non-hash) entries with a warning" do
         km = KeyMap.new
         allow(FatTerm::Config).to receive(:keybindings).and_return([123, "nope"])
-        expect(km).to receive(:warn).at_least(:once)
-
+        allow(km).to receive(:warn)
         km.load_config
+        expect(km).to have_received(:warn).at_least(:once)
       end
 
       it "skips entries missing key or action with a warning" do
@@ -214,18 +212,18 @@ module FatTerm
                                         { "key" => "b", "action" => nil }, # missing/invalid action
                                       ],
                                     )
-
-        expect(km).to receive(:warn).at_least(:once)
+        allow(km).to receive(:warn)
         km.load_config
+        expect(km).to have_received(:warn).at_least(:once)
       end
 
       it "warns and continues on Psych::SyntaxError" do
         km = KeyMap.new
         allow(FatTerm::Config).to receive(:keybindings)
                                     .and_raise(Psych::SyntaxError.new("", 0, 0, 0, "", ""))
-
-        expect(km).to receive(:warn).at_least(:once).with(/syntax error/i)
+        allow(km).to receive(:warn)
         expect { km.load_config }.not_to raise_error
+        expect(km).to have_received(:warn).with(/syntax error/i)
       end
 
       it "defaults missing context to :input" do
