@@ -287,6 +287,7 @@ module FatTerm
             order: :as_given,
             selection: :top,
             initial_query: prefix,
+            matcher: ->(item, q) { item.to_s.start_with?(q.to_s) },
           )
           [[:terminal, :push_modal, popup]]
         end
