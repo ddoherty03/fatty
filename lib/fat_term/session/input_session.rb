@@ -26,10 +26,16 @@ module FatTerm
 
     # Bound keys land here because Session#update resolves via keymap first.
     def handle_action(action, args, terminal:, event:)
+      which =
+        if event&.respond_to?(:key)
+          event.key.inspect
+        elsif event&.respond_to?(:mouse)
+          event.mouse.inspect
+        else
+          nil
+        end
       FatTerm.log(
-        "InputSession.handle_action: action=#{action.inspect} args=#{args.inspect} " \
-          "key=#{event.key.inspect} ctrl=#{event.ctrl?} meta=#{event.meta?}",
-        tag: :keymap,
+        "InputSession.handle_action: #{which}", tag: :keymap,
       )
       env = action_env(terminal: terminal, event: event)
       case action.to_sym

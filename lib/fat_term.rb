@@ -29,6 +29,7 @@ module FatTerm
   require_relative "fat_term/pager"
   require_relative "fat_term/alert"
   require_relative "fat_term/key_event"
+  require_relative "fat_term/mouse_event"
   require_relative "fat_term/key_map"
   require_relative "fat_term/ansi"
   require_relative "fat_term/colors"

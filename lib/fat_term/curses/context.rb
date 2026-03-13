@@ -36,6 +36,8 @@ module FatTerm
         return self if @started
 
         ::Curses.init_screen
+        MouseConstants.ensure!
+
         ::Curses.raw
         ::Curses.noecho
         ::Curses.curs_set(1)

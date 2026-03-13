@@ -3,6 +3,26 @@
 module FatTerm
   module Curses
     class EventSource
+      MOUSE_BUTTON_MAP = [
+        [::Curses::BUTTON1_PRESSED,        :left_pressed],
+        [::Curses::BUTTON1_RELEASED,       :left_released],
+        [::Curses::BUTTON1_CLICKED,        :left_clicked],
+        [::Curses::BUTTON1_DOUBLE_CLICKED, :left_double_clicked],
+        [::Curses::BUTTON1_TRIPLE_CLICKED, :left_triple_clicked],
+
+        [::Curses::BUTTON2_PRESSED,        :middle_pressed],
+        [::Curses::BUTTON2_RELEASED,       :middle_released],
+        [::Curses::BUTTON2_CLICKED,        :middle_clicked],
+        [::Curses::BUTTON2_DOUBLE_CLICKED, :middle_double_clicked],
+        [::Curses::BUTTON2_TRIPLE_CLICKED, :middle_triple_clicked],
+
+        [::Curses::BUTTON3_PRESSED,        :right_pressed],
+        [::Curses::BUTTON3_RELEASED,       :right_released],
+        [::Curses::BUTTON3_CLICKED,        :right_clicked],
+        [::Curses::BUTTON3_DOUBLE_CLICKED, :right_double_clicked],
+        [::Curses::BUTTON3_TRIPLE_CLICKED, :right_triple_clicked],
+      ].freeze
+
       attr_reader :context, :key_decoder
 
       def initialize(context:, key_decoder:, poll_ms: 200)
@@ -17,7 +37,7 @@ module FatTerm
         return unless raw
 
         if raw.is_a?(FatTerm::MouseEvent)
-          return [:mouse, raw]
+          return [:key, raw]
         end
 
         ev = @key_decoder.decode(raw)
@@ -53,8 +73,9 @@ module FatTerm
         return if ch == -1
         return unless ch
 
-        if ch.is_a?(Integer) && defined?(::Curses::KEY_MOUSE) && ch == ::Curses::KEY_MOUSE
+        if ch.is_a?(Integer) && ch == ::Curses::KEY_MOUSE
           mouse = ::Curses.getmouse
+          FatTerm.log("EventSource#read_raw: bstate=#{mouse&.bstate}", tag: :mouse)
           return decode_mouse(mouse)
         end
 
@@ -90,28 +111,40 @@ module FatTerm
       end
 
       def decode_mouse(mouse)
-        return unless mouse
+        return unless mouse&.respond_to?(:bstate)
 
         bstate = mouse.bstate
-        gesture = nil
 
-        if defined?(::Curses::BUTTON4_PRESSED) && (bstate & ::Curses::BUTTON4_PRESSED).positive?
-          gesture = :scroll_up
-        elsif defined?(::Curses::BUTTON5_PRESSED) && (bstate & ::Curses::BUTTON5_PRESSED).positive?
-          gesture = :scroll_down
-        end
+        ctrl  = (bstate & ::Curses::BUTTON_CTRL).positive?
+        meta  = (bstate & ::Curses::BUTTON_ALT).positive?
+        shift = (bstate & ::Curses::BUTTON_SHIFT).positive?
 
-        return unless gesture
+        button = mouse_button_from_bstate(bstate)
+        return unless button
 
         FatTerm::MouseEvent.new(
-          mouse: gesture,
+          button: button,
           x: mouse.x,
           y: mouse.y,
-          ctrl: false,
-          meta: false,
-          shift: false,
+          ctrl: ctrl,
+          meta: meta,
+          shift: shift,
           raw: mouse,
         )
+      end
+
+      def mouse_button_from_bstate(bstate)
+        return :scroll_up if (bstate & ::Curses::BUTTON4_PRESSED).positive?
+        return :scroll_down if (bstate & ::Curses::BUTTON5_PRESSED).positive?
+
+        found = nil
+        MOUSE_BUTTON_MAP.each do |mask, name|
+          if (bstate & mask).positive?
+            found = name
+            break
+          end
+        end
+        found
       end
     end
   end

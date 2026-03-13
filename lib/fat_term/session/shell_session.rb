@@ -218,8 +218,16 @@ module FatTerm
     end
 
     def handle_action(action, args, terminal:, event:)
+      which =
+        if event&.respond_to?(:key)
+          event.key.inspect
+        elsif event&.respond_to?(:mouse)
+          event.mouse.inspect
+        else
+          nil
+        end
       FatTerm.log(
-        "ShellSession.handle_action: action=#{action.inspect} args=#{args.inspect} key=#{event&.key.inspect}",
+        "ShellSession.handle_action: #{which}",
         tag: :keymap,
       )
       env = action_env(terminal: terminal, event: event)

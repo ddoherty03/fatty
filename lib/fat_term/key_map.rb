@@ -8,7 +8,17 @@ module FatTerm
   # normalizes the use of uppercase letters, like 'G' to convert them to a
   # canonical :g with shift: true.  That way the user can bind either to mean
   # the same thing.
-  KeyGesture = Struct.new(:key, :ctrl, :meta, :shift, keyword_init: true) do
+  # KeyGesture = Struct.new(:key, :ctrl, :meta, :shift, keyword_init: true) do
+  class KeyGesture
+    attr_reader :key, :ctrl, :meta, :shift
+
+    def initialize(key:, ctrl:, meta:, shift:)
+      @key = key
+      @ctrl = ctrl
+      @meta = meta
+      @shift = shift
+    end
+
     def self.from_event(ev)
       k = ev&.key
       ctrl = !!ev&.ctrl
@@ -32,6 +42,56 @@ module FatTerm
 
       new(key: k, ctrl: ctrl, meta: meta, shift: shift)
     end
+
+    def ==(other)
+      other.is_a?(self.class) &&
+        key == other.key &&
+        ctrl == other.ctrl &&
+        meta == other.meta &&
+        shift == other.shift
+    end
+    alias_method :eql?, :==
+
+    def hash
+      [self.class, key, ctrl, meta, shift].hash
+    end
+  end
+
+  class MouseGesture
+    attr_reader :button, :ctrl, :meta, :shift
+
+    def initialize(button:, ctrl:, meta:, shift:)
+      @button = button
+      @ctrl = ctrl
+      @meta = meta
+      @shift = shift
+    end
+
+    def self.from_event(event)
+      new(
+        button: event.button,
+        ctrl: !!event.ctrl,
+        meta: !!event.meta,
+        shift: !!event.shift,
+      )
+    end
+
+    def ==(other)
+      other.is_a?(self.class) &&
+        button == other.button &&
+        ctrl == other.ctrl &&
+        meta == other.meta &&
+        shift == other.shift
+    end
+    alias_method :eql?, :==
+
+    def hash
+      [self.class, button, ctrl, meta, shift].hash
+    end
+
+    def inspect
+      "#<#{self.class} button=#{button.inspect} ctrl=#{ctrl} meta=#{meta} shift=#{shift}>"
+    end
   end
 
   # The KeyMap class maintains the mapping between KeyEvent's and action names
@@ -41,7 +101,7 @@ module FatTerm
   # Terminal) and :paging (for controlling the display of output that is
   # longer than the Viewport).  The default keybinding context is :input.
   class KeyMap
-    attr_reader :bindings
+    attr_reader :bindings, :mouse_bindings
 
     DEFAULT_CONTEXT = :input
 
@@ -70,6 +130,7 @@ module FatTerm
 
     def initialize
       @bindings = Hash.new { |h, ctx| h[ctx] = {} }
+      @mouse_bindings = Hash.new { |h, ctx| h[ctx] = {} }
     end
 
     # Bind a KeyEvent to an action in the given context.
@@ -93,25 +154,64 @@ module FatTerm
       )
       gest = KeyGesture.from_event(evt)
       @bindings[context][gest] = action
+      self
     end
 
-    # Return the action associated with the given KeyEvent in the given contexts.
+    def bind_mouse(context: :input, button:, ctrl: false, meta: false, shift: false, action: nil)
+      arg_str = "context: #{context}, button: #{button}, ctrl: #{ctrl}, meta: #{meta}, shift: #{shift}, action: #{action}"
+      FatTerm.log("KeyMap#bind_mouse(#{arg_str})", tag: :keybinding)
+
+      raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
+      raise ArgumentError, "button must be a Symbol" unless button.is_a?(Symbol)
+      unless action.is_a?(Symbol) || (action.is_a?(Array) && action.first.is_a?(Symbol))
+        raise ArgumentError, "action must be a Symbol or [Symbol, *args]"
+      end
+
+      self.class.register_context(context)
+
+      gest = MouseGesture.new(
+        button: button,
+        ctrl: truthy?(ctrl),
+        meta: truthy?(meta),
+        shift: truthy?(shift),
+      )
+      @mouse_bindings[context][gest] = action
+      self
+    end
+
     def resolve(event, contexts: [])
       return unless event
 
-      gest = KeyGesture.from_event(event)
-      arg_str = "event: #{event}, gesture: #{gest}, contexts: #{contexts}"
-      FatTerm.log("KeyMap#resolve(#{arg_str})", tag: :keybinding)
-
       ctxs = normalize_contexts(contexts)
       result = nil
-      ctxs.each do |ctx|
-        map = @bindings.fetch(ctx, nil)
-        next unless map
 
-        result = map[gest]
-        break if result
+      case event
+      when FatTerm::MouseEvent
+        gest = MouseGesture.from_event(event)
+        arg_str = "event: #{event}, gesture: #{gest}, contexts: #{contexts}"
+        FatTerm.log("KeyMap#resolve(#{arg_str})", tag: :keybinding)
+
+        ctxs.each do |ctx|
+          map = @mouse_bindings.fetch(ctx, nil)
+          next unless map
+
+          result = map[gest]
+          break if result
+        end
+      else
+        gest = KeyGesture.from_event(event)
+        arg_str = "event: #{event}, gesture: #{gest}, contexts: #{contexts}"
+        FatTerm.log("KeyMap#resolve(#{arg_str})", tag: :keybinding)
+
+        ctxs.each do |ctx|
+          map = @bindings.fetch(ctx, nil)
+          next unless map
+
+          result = map[gest]
+          break if result
+        end
       end
+
       FatTerm.log("KeyMap.resolve: -> #{result.inspect}", tag: :keybinding)
       result
     end
@@ -189,23 +289,42 @@ module FatTerm
         return
       end
 
-      key = entry["key"]
-      action = entry["action"]
-      ctx = entry.key?("context") ? entry["context"] : default_context
+      key = entry["key"] || entry[:key]
+      button = entry["button"] || entry[:button]
+      action = entry["action"] || entry[:action]
+      ctx =
+        if entry.key?("context")
+          entry["context"]
+        elsif entry.key?(:context)
+          entry[:context]
+        else
+          default_context
+        end
 
-      unless (key || mouse) && action
+      unless (key || button) && action
         warn "fat_term: missing key/mouse or action at index #{idx}"
         return
       end
 
-      bind(
-        context: ctx.to_sym,
-        key:    key.to_sym,
-        ctrl:   entry["ctrl"]  || false,
-        meta:   entry["meta"]  || false,
-        shift:  entry["shift"] || false,
-        action: action.to_sym,
-      )
+      if button
+        bind_mouse(
+          context: ctx.to_sym,
+          button: button.to_sym,
+          ctrl:  entry["ctrl"]  || entry[:ctrl]  || false,
+          meta:  entry["meta"]  || entry[:meta]  || false,
+          shift: entry["shift"] || entry[:shift] || false,
+          action: action.to_sym,
+        )
+      else
+        bind(
+          context: ctx.to_sym,
+          key:    key.to_sym,
+          ctrl:   entry["ctrl"]  || entry[:ctrl]  || false,
+          meta:   entry["meta"]  || entry[:meta]  || false,
+          shift:  entry["shift"] || entry[:shift] || false,
+          action: action.to_sym,
+        )
+      end
       self
     end
 

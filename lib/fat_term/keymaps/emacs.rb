@@ -154,6 +154,11 @@ module FatTerm
       map.bind(context: :search, key: :r, ctrl: true, action: :search_step_backward)
       map.bind(context: :search, key: :r, meta: true, action: :search_toggle_regex)
 
+      # Mouse scrolling in paging
+      map.bind_mouse(context: :paging, button: :scroll_up, action: :scroll_up)
+      map.bind_mouse(context: :paging, button: :scroll_down, action: :scroll_down)
+
+      # Load the user's keybindings
       map.load_config
     end
   end
