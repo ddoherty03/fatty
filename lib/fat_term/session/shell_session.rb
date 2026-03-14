@@ -35,8 +35,8 @@ module FatTerm
           session.append_output("[exit #{status.exitstatus}]\n", follow: true)
         end
         [[:send, :alert, :clear, {}]]
-      rescue Errno::ENOENT
-        [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
+        rescue Errno::ENOENT
+          [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
       end
     end
 
@@ -136,6 +136,40 @@ module FatTerm
       @field.buffer.completion_prefix
     end
 
+    def completion_prefix_range
+      buffer = @field.buffer
+      prefix = completion_prefix
+      finish = buffer.cursor
+      start = finish - prefix.length
+      start...finish
+    end
+
+    def longest_common_prefix(strings)
+      result = ""
+      if strings.any?
+        result = strings.first.to_s.dup
+        strings.drop(1).each do |s|
+          other = s.to_s
+          i = 0
+          max = [result.length, other.length].min
+          i += 1 while i < max && result[i] == other[i]
+          result = result[0...i]
+          break if result.empty?
+        end
+      end
+      result
+    end
+
+    def apply_completion_prefix(prefix)
+      text = prefix.to_s
+      commands = []
+      unless text.empty?
+        buffer = @field.buffer
+        buffer.replace_range(completion_prefix_range, text)
+      end
+      commands
+    end
+
     def apply_completion(candidate, range: nil)
       candidate = candidate.to_s
       return [] if candidate.empty?
@@ -144,11 +178,9 @@ module FatTerm
       target = range || buffer.completion_replace_range
       old_text = buffer.text.dup
       old_end = target.end
-
       append_space =
         !candidate.match?(/\s\z/) &&
         (old_end >= old_text.length || old_text[old_end]&.match?(/\s/))
-
       inserted = append_space ? "#{candidate} " : candidate
       buffer.replace_range(target, inserted)
       []
@@ -224,8 +256,6 @@ module FatTerm
           event.key.inspect
         elsif event&.respond_to?(:mouse)
           event.mouse.inspect
-        else
-          nil
         end
       FatTerm.log(
         "ShellSession.handle_action: #{which}",
@@ -270,26 +300,32 @@ module FatTerm
         )
         [[:terminal, :push_modal, popup]]
       when :complete
-        @completion_range = @field.buffer.word_at_point_range
         candidates = completion_candidates
         prefix = completion_prefix
-        case candidates.length
-        when 0
-          []
-        when 1
-          apply_completion(candidates.first)
+        commands = []
+
+        if candidates.empty?
+          commands
+        elsif candidates.length == 1
+          commands + apply_completion(candidates.first)
         else
-          popup = FatTerm::PopUpSession.new(
-            source: candidates,
-            kind: :completion,
-            title: "Completions",
-            prompt: "Complete: ",
-            order: :as_given,
-            selection: :top,
-            initial_query: prefix,
-            matcher: ->(item, q) { item.to_s.start_with?(q.to_s) },
-          )
-          [[:terminal, :push_modal, popup]]
+          common = longest_common_prefix(candidates)
+          if common.length > prefix.length
+            commands.concat(apply_completion_prefix(common))
+          else
+            @completion_range = @field.buffer.completion_replace_range
+            popup = FatTerm::PopUpSession.new(
+              source: candidates,
+              kind: :completion,
+              title: "Completions",
+              prompt: "Complete: ",
+              order: :as_given,
+              selection: :top,
+              initial_query: prefix,
+              matcher: ->(item, q) { item.to_s.start_with?(q.to_s) },
+            )
+            commands << [:terminal, :push_modal, popup]
+          end
         end
       when :history_search
         # Oldest -> newest, so newest appears at the bottom of the popup.
@@ -310,22 +346,22 @@ module FatTerm
       when :pager_search_backward
         regex = consume_search_regex_flag
         [[
-          :terminal,
-          :push_modal,
-          FatTerm::SearchSession.new(direction: :backward, regex: regex, history: @history)
-        ]]
+           :terminal,
+           :push_modal,
+           FatTerm::SearchSession.new(direction: :backward, regex: regex, history: @history)
+         ]]
       when :pager_isearch_forward
         [[
-          :terminal,
-          :push_modal,
-          FatTerm::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)
-        ]]
+           :terminal,
+           :push_modal,
+           FatTerm::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)
+         ]]
       when :pager_isearch_backward
         [[
-          :terminal,
-          :push_modal,
-          FatTerm::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)
-        ]]
+           :terminal,
+           :push_modal,
+           FatTerm::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)
+         ]]
       when :pager_search_next
         result = pager.search_repeat_next!
         handle_search_result(result)
