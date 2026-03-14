@@ -3,7 +3,7 @@
 module FatTerm
   module Curses
     class EventSource
-      MOUSE_BUTTON_MAP = {
+      MOUSE_BSTATE_BUTTON_MAP = {
         ::Curses::BUTTON1_PRESSED        => :left_pressed,
         ::Curses::BUTTON1_RELEASED       => :left_released,
         ::Curses::BUTTON1_CLICKED        => :left_clicked,
@@ -157,7 +157,7 @@ module FatTerm
         return :scroll_up   if (bstate & ::Curses::BUTTON4_PRESSED).positive?
         return :scroll_down if (bstate & ::Curses::BUTTON5_PRESSED).positive?
 
-        MOUSE_BUTTON_MAP.each do |mask, button|
+        MOUSE_BSTATE_BUTTON_MAP.each do |mask, button|
           return button if (bstate & mask).positive?
         end
 
