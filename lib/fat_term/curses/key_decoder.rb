@@ -73,8 +73,6 @@ module FatTerm
       end
 
       # Decode a raw input returned as a single character rather than an Array.
-      # The single character might be the ASCII ESCAPE (27), in which case, we
-      # have a meta sequence that needs handling.
       def decode_single(ch)
         FatTerm.log("#{self.class}#decode_single(ch: #{ch})", tag: :keycode)
         if ch.is_a?(Integer) && @map.key?(ch)

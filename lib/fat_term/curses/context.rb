@@ -21,21 +21,20 @@ module FatTerm
     # Context exists so that all curses state is centralized and never leaks
     # into Sessions, Views, or Terminal.
     class Context
-      attr_reader :output_win, :alert_win
+      DEFAULT_ESC_DELAY = 25
+
+      attr_reader :input_win, :output_win, :alert_win
       attr_reader :rows, :cols
 
       def initialize
         @started = false
       end
 
-      def input_win
-        @input_win
-      end
-
       def start
         return self if @started
 
         ::Curses.init_screen
+        configure_escape_delay!
         MouseConstants.ensure!
 
         ::Curses.raw
@@ -47,6 +46,22 @@ module FatTerm
 
         @started = true
         self
+      end
+
+      def configure_escape_delay!
+        delay =
+          if ENV["ESCDELAY"]
+            ENV["ESCDELAY"].to_i
+          else
+            FatTerm::Config.config.dig(:esc_delay)&.to_i
+          end
+        delay = DEFAULT_ESC_DELAY if delay.nil? || delay <= 0
+        if ::Curses.respond_to?(:set_escdelay)
+          ::Curses.set_escdelay(delay)
+        else
+          ENV["ESCDELAY"] = delay.to_s
+        end
+        FatTerm.info("ESC delay set to #{delay} ms", tag: :input)
       end
 
       def setup_colors

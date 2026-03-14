@@ -13,6 +13,13 @@ input_buffer:
   # Default if omitted: "[[:alnum:]_]"
   word_chars: "[[:alnum:]_]"
 
+# This controls how long (in milliseconds) curses waits after receiving ESC
+# for a second key to interpret it as a meta-key sequence.  ncurses defaults
+# to 1000, i.e., a full second, which can make response to a bare ESC key feel
+# really laggy.  You can set it to something more reasonable here or by
+# setting the environment variable ESCDELAY in you shell setup.
+esc_delay: 25
+
 # file: sets the location of the log file, by default at
 # $XDG_STATE_HOME/fat_term/fat_term.log
 #

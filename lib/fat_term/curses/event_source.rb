@@ -23,6 +23,8 @@ module FatTerm
         ::Curses::BUTTON3_TRIPLE_CLICKED => :right_triple_clicked
       }.freeze
 
+      ESCAPE_LOOKAHEAD_MS = 0
+
       attr_reader :context, :key_decoder
 
       def initialize(context:, key_decoder:, poll_ms: 200)
@@ -90,9 +92,11 @@ module FatTerm
           )
         end
 
+        # The single character might be the ASCII ESCAPE (27), in which case, we
+        # have a meta sequence that needs handling.
         if ch.is_a?(Integer) && ch == 27
-          nxt = window.getch
-          return if nxt == -1
+          nxt = with_window_timeout(ESCAPE_LOOKAHEAD_MS) { window.getch }
+          return ch if nxt == -1 || !nxt
 
           if FatTerm::Config.config.dig(:log, :tags)&.include?(:keycode)
             FatTerm.log(
@@ -104,12 +108,26 @@ module FatTerm
               ch_chr: (ch.is_a?(Integer) && ch.between?(0, 255) ? ch.chr : nil),
             )
           end
-          return ch unless nxt
-
           [ch, nxt]
         else
           ch
         end
+      end
+
+      def with_window_timeout(ms)
+        result = nil
+        win = window
+        if win&.respond_to?(:timeout=)
+          begin
+            win.timeout = ms
+            result = yield
+          ensure
+            win.timeout = @poll_ms
+          end
+        else
+          result = yield
+        end
+        result
       end
 
       def decode_mouse(mouse)
