@@ -267,7 +267,7 @@ module FatTerm
         push(session)
       when :pop
         pop
-      when  :push_modal
+      when :push_modal
         session = rest.fetch(0)
         push_modal(session, owner: focused_session)
       when :pop_modal
@@ -285,7 +285,7 @@ module FatTerm
         theme = rest.fetch(0)
         FatTerm::Colors::ThemeManager.set(theme)
         renderer.apply_theme!(theme)
-        apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{new_theme}"}])
+        apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{theme}"}])
       else
         raise ArgumentError, "unknown terminal command #{name.inspect} (cmd=#{cmd.inspect})"
       end
@@ -315,6 +315,8 @@ module FatTerm
     # --- Rendering ---------------------------------------------------------
 
     def render_frame
+      renderer.begin_frame
+
       # Render pinned sessions first, then stack sessions.
       # Within each session, its views handle their own z-order.
       sessions = @pinned + @stack
@@ -324,6 +326,8 @@ module FatTerm
       if (top = @modal_stack.last)
         top[:session].view(screen: screen, renderer: renderer, terminal: self)
       end
+
+      renderer.finish_frame
     end
   end
 end

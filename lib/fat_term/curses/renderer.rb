@@ -52,6 +52,26 @@ module FatTerm
       def initialize(context:, screen:)
         @context = context
         @screen = screen
+        reset_frame_cache
+      end
+
+      def screen=(screen)
+        @screen = screen
+        reset_frame_cache
+      end
+
+      def begin_frame
+        @frame_touched = false
+        nil
+      end
+
+      def finish_frame
+        if @frame_touched
+          if ::Curses.respond_to?(:doupdate)
+            ::Curses.doupdate
+          end
+        end
+        nil
       end
 
       def render(output:, input_field:, alert:, viewport:)
@@ -64,7 +84,8 @@ module FatTerm
       def restore_cursor(field)
         win = context.input_win
         win.setpos(0, field.cursor_x)
-        win.refresh
+        stage_window(win)
+        nil
       end
 
       # Restore cursor into the output window at a specific *output-win* row.
@@ -77,17 +98,34 @@ module FatTerm
         x = x.clamp(0, [cols - 1, 0].max)
 
         win.setpos(row, x)
-        win.refresh
+        stage_window(win)
+        nil
       end
 
       def render_output(output, viewport:, highlights: nil)
+        lines = viewport.slice(output.lines)
+        state = [
+          viewport.top,
+          viewport.height,
+          lines.map(&:dup),
+          normalized_highlights(highlights),
+        ]
+
+        if state != @last_output_state
+          @last_output_state = state
+          draw_output(output, viewport: viewport, highlights: highlights)
+        end
+        nil
+      end
+
+      def draw_output(output, viewport:, highlights: nil)
         win = context.output_win
         base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
         hi_attr = pair_attr(:search_highlight, fallback: ::Curses::A_REVERSE)
         hi2_attr = pair_attr(:search_highlight_secondary, fallback: hi_attr)
         win.attrset(base_attr)
         win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
-        win.clear
+        win.erase
 
         lines = viewport.slice(output.lines)
         lines.each_with_index do |line, y|
@@ -112,14 +150,29 @@ module FatTerm
           render_slices(win, slices)
           win.clrtoeol
         end
-        win.refresh
+        stage_window(win)
+        nil
       end
 
       def render_input_field(field)
+        region =
+          if field.buffer.respond_to?(:region_range)
+            field.buffer.region_range
+          end
+        state = [
+          field.prompt_text.to_s,
+          field.buffer.text.to_s,
+          field.cursor_x,
+          region ? [region.begin, region.end] : nil,
+        ]
+        return if state == @last_input_state
+
+        @last_input_state = state
+
         win = context.input_win
         base_attr = pair_attr(:input, fallback: ::Curses::A_NORMAL)
         win.attrset(base_attr)
-        win.clear
+        win.erase
 
         win.setpos(0, 0)
         win.clrtoeol
@@ -127,11 +180,6 @@ module FatTerm
 
         buf = field.buffer
         text = buf.text.to_s
-
-        region =
-          if buf.respond_to?(:region_range)
-            buf.region_range
-          end
 
         if region && region.begin < region.end
           # Render the buffer in three parts, before region, region, and
@@ -157,7 +205,8 @@ module FatTerm
         end
 
         win.setpos(0, field.cursor_x)
-        win.refresh
+        stage_window(win)
+        nil
       end
 
       # Render an InputField-like status line inside the output window.
@@ -166,6 +215,10 @@ module FatTerm
       # the cursor; ShellSession decides whether to show a cursor in paging
       # vs input mode.
       def render_pager_field(field, row:, role: :status_info)
+        state = [field.prompt_text.to_s, field.buffer.text.to_s, row, role]
+        return if state == @last_pager_field_state
+
+        @last_pager_field_state = state
         win = context.output_win
         cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
 
@@ -181,11 +234,17 @@ module FatTerm
         text = (prompt + buf_text).tr("\r\n", "")
 
         win.addstr(text.ljust(cols)[0, cols])
-        win.refresh
+        stage_window(win)
+        nil
       end
+
       def render_alert(alert)
+        state = alert_state(alert)
+        return if state == @last_alert_state
+
+        @last_alert_state = state
         win = context.alert_win
-        win.clear
+        win.erase
         win.setpos(0, 0)
         win.clrtoeol
 
@@ -203,7 +262,8 @@ module FatTerm
             win.addstr(text.ljust(@screen.cols))
           end
         end
-        win.refresh
+        stage_window(win)
+        nil
       end
 
       def pair_attr(role, fallback:)
@@ -213,10 +273,15 @@ module FatTerm
       end
 
       def render_popup(session:)
+        state = popup_state(session)
+        return if state == @last_popup_state
+
+        @last_popup_state = state
+
         win = session.win
         width = win.maxx
         height = win.maxy
-        win.clear
+        win.erase
 
         frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
         win.attron(frame_attr) do
@@ -285,15 +350,72 @@ module FatTerm
         cursor_in_inner = session.field.cursor_x.clamp(0, list_w - 1)
         win.setpos(1 + (inner_h - 1), 1 + cursor_in_inner)
 
-        inner.refresh
-        win.refresh
+        stage_window(inner)
+        stage_window(win)
+        nil
       end
 
       def apply_theme!(theme)
         context.apply_theme!(theme)
+        reset_frame_cache
       end
 
       private
+
+      def stage_window(win)
+        if win.respond_to?(:noutrefresh)
+          win.noutrefresh
+          @frame_touched = true
+        else
+          win.refresh
+        end
+        nil
+      end
+
+      def reset_frame_cache
+        @last_output_state = nil
+        @last_input_state = nil
+        @last_alert_state = nil
+        @last_pager_field_state = nil
+        @last_popup_state = nil
+        @frame_touched = false
+        nil
+      end
+
+      def normalized_highlights(highlights)
+        return if highlights.nil?
+
+        highlights.each_with_object({}) do |(line_no, ranges), out|
+          out[line_no] =
+            Array(ranges).map do |r|
+            if r.is_a?(Hash)
+              [r[:from].to_i, r[:to].to_i, (r[:role] || :primary).to_sym]
+            else
+              [r[0].to_i, r[1].to_i, (r[2] || :primary).to_sym]
+            end
+          end
+        end
+      end
+
+      def alert_state(alert)
+        if alert
+          [alert.level, format_alert(alert), alert_attr(alert)]
+        else
+          [:empty, @screen.cols]
+        end
+      end
+
+      def popup_state(session)
+        [
+          session.filtered.object_id,
+          session.filtered.length,
+          session.filtered.first&.to_s,
+          session.filtered.last&.to_s,
+          session.selected,
+          session.field.buffer.text.to_s,
+          session.field.cursor_x
+        ]
+      end
 
       def highlight_ranges_for_line(highlights, abs_line)
         return [] unless highlights
