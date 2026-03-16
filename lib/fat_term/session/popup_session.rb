@@ -65,12 +65,6 @@ module FatTerm
       notify_owner(:popup_changed)
     end
 
-    def update_key(ev, terminal:)
-      return handle_resize(terminal) if ev.key == :resize
-
-      []
-    end
-
     def rebuild_windows!(terminal)
       @win&.close rescue nil
       cols = ::Curses.cols
@@ -204,6 +198,12 @@ module FatTerm
     end
 
     private
+
+    def update_key(ev, terminal:)
+      return handle_resize(terminal) if ev.key == :resize
+
+      []
+    end
 
     def popup_payload(item = selected_item)
       {
