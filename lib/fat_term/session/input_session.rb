@@ -19,8 +19,20 @@ module FatTerm
       end
     end
 
+    private
+
     # Unbound keys land here.
     def update_key(ev, terminal:)
+      []
+    end
+
+    def update_cmd(name, payload, terminal:)
+      case name
+      when :paste
+        text = payload.fetch(:text, "").to_s
+        env = action_env(terminal: terminal, event: nil)
+        @field.act_on(:paste, text, env: env)
+      end
       []
     end
 
@@ -56,8 +68,6 @@ module FatTerm
       FatTerm.log("InputSession.handle_action: ActionError #{e.message}", tag: :keymap)
       []
     end
-
-    private
 
     def action_env(terminal:, event:)
       ActionEnvironment.new(

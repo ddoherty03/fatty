@@ -88,14 +88,6 @@ module FatTerm
       []
     end
 
-    def update_key(_ev, terminal:)
-      []
-    end
-
-    def update_cmd(_name, _payload, terminal:)
-      []
-    end
-
     desc "Accumulate a count with a decimal digit"
     action :count_digit, on: :session do |n|
       counter.push_digit(n)
@@ -119,6 +111,16 @@ module FatTerm
       views.sort_by(&:z).each do |v|
         v.render(screen:, renderer:, terminal:, session: self)
       end
+    end
+
+    private
+
+    def update_key(_ev, terminal:)
+      []
+    end
+
+    def update_cmd(_name, _payload, terminal:)
+      []
     end
   end
 end

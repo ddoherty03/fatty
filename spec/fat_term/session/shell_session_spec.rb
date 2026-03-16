@@ -37,6 +37,20 @@ RSpec.describe FatTerm::ShellSession do
     end
   end
 
+  describe "#update_cmd" do
+    it "handles :paste by inserting normalized text into the field" do
+      session = FatTerm::ShellSession.new
+
+      commands = session.update(
+        [:cmd, :paste, { text: "hello\nworld\n" }],
+        terminal: instance_double(FatTerm::Terminal),
+      )
+
+      expect(commands).to eq([])
+      expect(session.field.buffer.text).to eq("hello world ")
+    end
+  end
+
   describe "completion" do
     it "seeds completion popup from the prefix before point, not text after point" do
       completion_proc = lambda do |_buffer|

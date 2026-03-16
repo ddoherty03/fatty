@@ -20,6 +20,8 @@ module FatTerm
       :alert
     end
 
+    private
+
     def update_cmd(name, payload, terminal:)
       payload ||= {}
       case name
@@ -30,8 +32,6 @@ module FatTerm
       end
       []
     end
-
-    private
 
     def show_from_payload(payload)
       return if payload.nil?

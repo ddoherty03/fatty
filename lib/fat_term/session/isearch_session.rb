@@ -29,6 +29,16 @@ module FatTerm
       [:isearch, :input, :terminal]
     end
 
+    def view(screen:, renderer:, terminal:)
+      row = screen.output_rect.rows - 1
+
+      ::Curses.curs_set(1)
+      renderer.render_pager_field(@field, row: row, role: :search)
+      renderer.restore_output_cursor(@field, row: row)
+    end
+
+    private
+
     def update_cmd(name, payload, terminal:)
       cmds = []
       case name
@@ -68,16 +78,6 @@ module FatTerm
     rescue FatTerm::ActionError
       []
     end
-
-    def view(screen:, renderer:, terminal:)
-      row = screen.output_rect.rows - 1
-
-      ::Curses.curs_set(1)
-      renderer.render_pager_field(@field, row: row, role: :search)
-      renderer.restore_output_cursor(@field, row: row)
-    end
-
-    private
 
     def isearch_prompt
       base = @failed ? "Failing I-search: " : "I-search: "
