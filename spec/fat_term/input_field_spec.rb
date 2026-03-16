@@ -207,6 +207,22 @@ module FatTerm
       expect(f.buffer.text).to eq("")
     end
 
+    it "paste normalizes newlines to spaces before inserting" do
+      f = InputField.new(prompt: prompt("> "))
+
+      f.act_on(:paste, "hello\nworld\n")
+
+      expect(f.buffer.text).to eq("hello world ")
+    end
+
+    it "paste normalizes CRLF to spaces before inserting" do
+      f = InputField.new(prompt: prompt("> "))
+
+      f.act_on(:paste, "hello\r\nworld")
+
+      expect(f.buffer.text).to eq("hello world")
+    end
+
     it "raises ArgumentError for unknown actions" do
       f = InputField.new(prompt: prompt("> "))
       expect { f.act_on(:no_such_action) }.to raise_error(ActionError)

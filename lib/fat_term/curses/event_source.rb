@@ -25,6 +25,9 @@ module FatTerm
 
       ESCAPE_LOOKAHEAD_MS = 0
 
+      BRACKETED_PASTE_START = "[200~"
+      BRACKETED_PASTE_END   = "\e[201~"
+
       attr_reader :context, :key_decoder
 
       def initialize(context:, key_decoder:, poll_ms: 200)
@@ -40,6 +43,10 @@ module FatTerm
 
         if raw.is_a?(FatTerm::MouseEvent)
           return [:key, raw]
+        end
+
+        if raw.is_a?(Array) && raw.first == :paste
+          return [:cmd, :paste, { text: raw.last }]
         end
 
         ev = @key_decoder.decode(raw)
@@ -66,9 +73,6 @@ module FatTerm
       def read_raw
         return unless window
 
-        # The input window can be replaced when the layout changes (resize,
-        # apply_layout, etc.). Ensure polling is always enabled on the
-        # current window so getch doesn't block and Terminal can tick.
         window.timeout = @poll_ms if window.respond_to?(:timeout=)
 
         ch = window.getch
@@ -92,23 +96,23 @@ module FatTerm
           )
         end
 
-        # The single character might be the ASCII ESCAPE (27), in which case, we
-        # have a meta sequence that needs handling.
         if ch.is_a?(Integer) && ch == 27
           nxt = with_window_timeout(ESCAPE_LOOKAHEAD_MS) { window.getch }
-          return ch if nxt == -1 || !nxt
 
-          if FatTerm::Config.config.dig(:log, :tags)&.include?(:keycode)
-            FatTerm.log(
-              :curses_getch,
-              tag: :keycode,
-              ch_class: ch.class.name,
-              ch_inspect: ch.inspect,
-              ch_int: (ch.is_a?(Integer) ? ch : nil),
-              ch_chr: (ch.is_a?(Integer) && ch.between?(0, 255) ? ch.chr : nil),
-            )
+          if nxt == -1 || !nxt
+            ch
+          elsif nxt == "[".ord || nxt == "["
+            suffix = read_escape_suffix
+            seq = "[" + suffix
+
+            if seq == BRACKETED_PASTE_START
+              [:paste, read_bracketed_paste]
+            else
+              [ch, nxt]
+            end
+          else
+            [ch, nxt]
           end
-          [ch, nxt]
         else
           ch
         end
@@ -162,6 +166,64 @@ module FatTerm
         end
 
         nil
+      end
+
+      def read_escape_suffix
+        suffix = +""
+        done = false
+
+        until done
+          ch = with_window_timeout(0) { window.getch }
+
+          if ch == -1 || !ch
+            done = true
+          else
+            suffix << raw_char_to_s(ch)
+            done = true if suffix.end_with?("~")
+          end
+        end
+
+        suffix
+      end
+
+      def read_bracketed_paste
+        text = +""
+        done = false
+        limit = 1_000_000
+        hit_limit = false
+
+        until done
+          ch = window.getch
+
+          if ch == -1 || !ch
+            done = true
+          else
+            text << raw_char_to_s(ch)
+            if text.end_with?(BRACKETED_PASTE_END)
+              text = text.delete_suffix(BRACKETED_PASTE_END)
+              done = true
+            end
+          end
+
+          if text.length >= limit
+            hit_limit = true
+            done = true
+          end
+        end
+
+        FatTerm.log("read_bracketed_paste: hit limit #{limit}", tag: :keycode) if hit_limit
+        text
+      end
+
+      def raw_char_to_s(ch)
+        case ch
+        when String
+          ch
+        when Integer
+          ch.between?(0, 255) ? ch.chr : ""
+        else
+          ""
+        end
       end
     end
   end

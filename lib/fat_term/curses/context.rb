@@ -42,6 +42,7 @@ module FatTerm
         ::Curses.curs_set(1)
         ::Curses.stdscr.keypad(true)
         ::Curses.mousemask(::Curses::ALL_MOUSE_EVENTS)
+        enable_bracketed_paste!
         setup_colors
 
         @started = true
@@ -113,6 +114,7 @@ module FatTerm
 
       def close
         close_windows
+        disable_bracketed_paste! if @started
         ::Curses.close_screen if @started
         @started = false
       end
@@ -212,6 +214,18 @@ module FatTerm
       def reset_ansi_pairs!
         @ansi_pairs = {}
         @ansi_next_pair_id = 1
+      end
+
+      def enable_bracketed_paste!
+        $stdout.write("\e[?2004h")
+        $stdout.flush
+        nil
+      end
+
+      def disable_bracketed_paste!
+        $stdout.write("\e[?2004l")
+        $stdout.flush
+        nil
       end
     end
   end

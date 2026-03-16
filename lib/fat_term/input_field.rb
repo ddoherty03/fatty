@@ -138,6 +138,14 @@ module FatTerm
       buffer.replace(history.next_for(resolve_history_kind, ctx: resolve_history_ctx))
     end
 
+    desc "Paste text into the field, normalizing to one line"
+    action :paste do |str|
+      s = str.to_s
+      s = s.gsub(/\r\n?/, "\n")
+      s = s.gsub("\n", " ")
+      buffer.insert(s)
+    end
+
     private
 
     def resolve_history_kind

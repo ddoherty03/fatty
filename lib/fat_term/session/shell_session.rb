@@ -246,6 +246,10 @@ module FatTerm
         result = pager.isearch_commit!(pattern: pattern, direction: direction)
         cmds.concat(handle_search_result(result))
         cmds << [:send, :isearch, :isearch_set_failed, { failed: false }]
+      when :paste
+        text = payload.fetch(:text, "").to_s
+        env = action_env(terminal: terminal, event: nil)
+        @field.act_on(:paste, text, env: env)
       end
       cmds
     end
