@@ -70,8 +70,7 @@ module FatTerm
       FatTerm.log("ShellSession.update_key (unbound): #{key_str}", tag: :session)
       case ev.key
       when :resize
-        handle_resize(terminal)
-        []
+        [[:terminal, :handle_resize]]
       when :enter, :return
         # safety: if somehow not bound, still accept
         accept_line(terminal)
@@ -334,6 +333,7 @@ module FatTerm
       when :history_search
         # Oldest -> newest, so newest appears at the bottom of the popup.
         src = ->(_q = nil) { @history.entries.select(&:command?).last(500).map(&:text) }
+        FatTerm.log("history_search: building popup", tag: :popup)
         popup = FatTerm::PopUpSession.new(
           source: src,
           kind: :history_search,
@@ -432,15 +432,6 @@ module FatTerm
       out
     rescue Errno::ENOENT
       "Command not found: #{line}\n"
-    end
-
-    def handle_resize(terminal)
-      rows = ::Curses.lines
-      cols = ::Curses.cols
-      terminal.screen.resize(rows: rows, cols: cols)
-      terminal.renderer.context.apply_layout(terminal.screen)
-      terminal.renderer.screen = terminal.screen
-      resize_output!(terminal: terminal)
     end
 
     def consume_search_regex_flag

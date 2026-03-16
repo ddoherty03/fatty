@@ -83,6 +83,40 @@ module FatTerm
       end
     end
 
+    describe "handling of modals" do
+      it "returns the owner of the top modal without popping or closing the modal session" do
+        terminal = FatTerm::Terminal.new
+        owner = instance_double(FatTerm::ShellSession)
+        popup = instance_double(FatTerm::PopUpSession, init: [], close: nil)
+
+        terminal.push_modal(popup, owner: owner)
+
+        expect(terminal.send(:modal_owner)).to eq(owner)
+        expect(popup).not_to have_received(:close)
+        expect(terminal.instance_variable_get(:@modal_stack).length).to eq(1)
+      end
+
+      it "keeps the modal on the stack when init sends a message to the modal owner" do
+        terminal = FatTerm::Terminal.new
+        owner = instance_double(FatTerm::ShellSession)
+        popup = instance_double(FatTerm::PopUpSession, close: nil)
+
+        allow(popup).to receive(:init) do |terminal:|
+          [
+            [:terminal, :send_modal_owner, [:cmd, :popup_changed, { kind: :history_search }]]
+          ]
+        end
+
+        allow(owner).to receive(:update).and_return([])
+
+        terminal.push_modal(popup, owner: owner)
+
+        expect(terminal.instance_variable_get(:@modal_stack).length).to eq(1)
+        expect(terminal.send(:active_session)).to eq(popup)
+        expect(popup).not_to have_received(:close)
+      end
+    end
+
     describe "#install_default_sessions!" do
       it "passes history_ctx to ShellSession" do
         history_ctx = -> { { pwd: "/tmp/demo" } }

@@ -22,6 +22,10 @@ module FatTerm
       @counter = Counter.new
     end
 
+    def inspect
+      "#{self.class.name}:#{object_id}"
+    end
+
     def add_view(view)
       @views << view
       view
@@ -57,8 +61,6 @@ module FatTerm
           FatTerm.log("#{self.class}.update: unknown message[0]=#{message[0].inspect}", tag: :session)
           []
         end
-
-      FatTerm.log("#{self.class}.update: commands=#{commands.inspect}", tag: :session)
       commands
     end
 
@@ -111,6 +113,14 @@ module FatTerm
       views.sort_by(&:z).each do |v|
         v.render(screen:, renderer:, terminal:, session: self)
       end
+    end
+
+    def close
+      nil
+    end
+
+    def handle_resize(terminal:)
+      []
     end
 
     private

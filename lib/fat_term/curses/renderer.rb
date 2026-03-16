@@ -33,7 +33,6 @@ module FatTerm
     # (e.g., ANSI, headless, test), but Views and Sessions remain unchanged.
     class Renderer
       attr_reader :context
-      attr_accessor :screen
 
       DETAIL_ORDER = %i[terminal key ctrl meta shift].freeze
 
@@ -279,6 +278,8 @@ module FatTerm
         @last_popup_state = state
 
         win = session.win
+        return unless win
+
         width = win.maxx
         height = win.maxy
         win.erase
@@ -358,6 +359,11 @@ module FatTerm
       def apply_theme!(theme)
         context.apply_theme!(theme)
         reset_frame_cache
+      end
+
+      def invalidate!
+        reset_frame_cache
+        self
       end
 
       private

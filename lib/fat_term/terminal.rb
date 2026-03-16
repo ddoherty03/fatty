@@ -61,6 +61,7 @@ module FatTerm
 
     def active_session
       top = @modal_stack.last
+      FatTerm.log("active_session: modal_size=#{@modal_stack.length} top=#{top && top[:session].class}", tag: :modal)
       return top[:session] if top
 
       focused_session
@@ -86,15 +87,24 @@ module FatTerm
 
     def push_modal(session, owner:)
       @modal_stack << { session: session, owner: owner }
+      FatTerm.log("push_modal: size=#{@modal_stack.length} session=#{session.class} object_id=#{session.object_id}", tag: :modal)
       register(session)
+      @renderer.invalidate! if defined?(@renderer) && @renderer
       commands = session.init(terminal: self)
       apply_commands(commands)
     end
 
     def pop_modal
-      @modal_stack.pop
+      top = @modal_stack.pop
+      FatTerm.log("pop_modal: size=#{@modal_stack.length} popped=#{top && top[:session].class}", tag: :modal)
+      session = top && top[:session]
+
+      session.close if session && session.respond_to?(:close)
+      @renderer.invalidate! if @renderer
+      nil
     end
 
+    # Return the owner of the top modal session without modifying the stack.
     def modal_owner
       top = @modal_stack.last
       top && top[:owner]
@@ -188,6 +198,30 @@ module FatTerm
           )
     end
 
+    def resize_message?(message)
+      kind, event = message
+      kind == :key && event.respond_to?(:key) && event.key == :resize
+    end
+
+    def handle_resize
+      rows = ::Curses.lines
+      cols = ::Curses.cols
+      screen.resize(rows: rows, cols: cols)
+      renderer.context.apply_layout(screen)
+      renderer.screen = screen
+      renderer.invalidate!
+
+      if (out = find_session(:shell) || find_session(:output))
+        out.resize_output!(self) if out.respond_to?(:resize_output!)
+      end
+
+      if (top = @modal_stack.last)
+        session = top[:session]
+        cmds = session.handle_resize(terminal: self)
+        apply_commands(cmds)
+      end
+    end
+
     def persist_sessions!
       sessions = []
       sessions << @focused_session if @focused_session
@@ -209,6 +243,12 @@ module FatTerm
     def dispatch_message(message)
       s = active_session
       return [] unless s
+
+      if resize_message?(message)
+        handle_resize
+        render_frame
+        return []
+      end
 
       # Clear transient alerts on the next user keypress.
       if key_event_message?(message) && find_session(:alert)
@@ -269,9 +309,13 @@ module FatTerm
         pop
       when :push_modal
         session = rest.fetch(0)
+        FatTerm.log("apply_command push_modal: before size=#{@modal_stack.length}", tag: :modal)
         push_modal(session, owner: focused_session)
+        FatTerm.log("apply_command push_modal: after size=#{@modal_stack.length}", tag: :modal)
       when :pop_modal
+        FatTerm.log("apply_command pop_modal: before size=#{@modal_stack.length}", tag: :modal)
         pop_modal
+        FatTerm.log("apply_command pop_modal: after size=#{@modal_stack.length}", tag: :modal)
       when :send_modal_owner
         msg = rest.fetch(0)
         owner = modal_owner
@@ -286,12 +330,14 @@ module FatTerm
         FatTerm::Colors::ThemeManager.set(theme)
         renderer.apply_theme!(theme)
         apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{theme}"}])
+      when :handle_resize
+        handle_resize
       else
         raise ArgumentError, "unknown terminal command #{name.inspect} (cmd=#{cmd.inspect})"
       end
     end
 
-    # Forwar a command meant to be applied by a
+    # Forward a command meant to be applied by a
     # [:send, recipient, message_name, payload_hash]
     def apply_send_command(cmd)
       _, recipient, message_name, payload = cmd

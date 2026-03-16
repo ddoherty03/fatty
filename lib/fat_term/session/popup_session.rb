@@ -4,7 +4,7 @@ module FatTerm
   class PopUpSession < Session
     attr_reader :win, :field, :filtered, :selected, :title
 
-    POPUP_MAX_WIDTH      = 80
+    POPUP_MAX_WIDTH      = 120
     POPUP_DEFAULT_HEIGHT = 12
     POPUP_MIN_LIST_H     = 3
     POPUP_MAX_LIST_H     = 20
@@ -45,12 +45,6 @@ module FatTerm
       @selected = 0
 
       @last_query = nil
-
-      # Frozen popup geometry (computed once on init, based on initial
-      # candidate count).
-      @popup_width = nil
-      @popup_height = nil
-      @popup_list_h = nil
       @scroll_start = 0
     end
 
@@ -60,13 +54,17 @@ module FatTerm
 
     def init(terminal:)
       refresh_items
-      capture_initial_popup_geometry!
       rebuild_windows!(terminal)
       notify_owner(:popup_changed)
     end
 
     def rebuild_windows!(terminal)
-      @win&.close rescue nil
+      if @win
+        @win.erase
+        @win.noutrefresh if @win.respond_to?(:noutrefresh)
+        @win.close
+      end
+
       cols = ::Curses.cols
       rows = ::Curses.lines
       width, height = popup_geometry(cols: cols, rows: rows)
@@ -76,17 +74,13 @@ module FatTerm
     end
 
     def popup_geometry(cols:, rows:)
-      width = @popup_width || POPUP_MAX_WIDTH
-      height = @popup_height || POPUP_DEFAULT_HEIGHT
+      max_w = [cols - (POPUP_MARGIN * 2), 10].max
+      max_h = [rows - (POPUP_MARGIN * 2), 5].max
 
-      max_w = cols - (POPUP_MARGIN * 2)
-      max_h = rows - (POPUP_MARGIN * 2)
+      list_h = @filtered.length.clamp(POPUP_MIN_LIST_H, POPUP_MAX_LIST_H)
 
-      width = max_w if width > max_w
-      height = max_h if height > max_h
-
-      width = 10 if width < 10
-      height = 5 if height < 5
+      height = (list_h + 3).clamp(5, max_h)
+      width = [max_w, POPUP_MAX_WIDTH].min
 
       [width, height]
     end
@@ -152,7 +146,7 @@ module FatTerm
       payload = popup_payload(item)
       [
         [:terminal, :send_modal_owner, [:cmd, :popup_result, payload]],
-        [:terminal, :pop_modal]
+        [:terminal, :pop_modal],
       ]
     end
 
@@ -184,6 +178,9 @@ module FatTerm
     end
 
     def view(screen:, renderer:, terminal:)
+      FatTerm.log("popup view object_id=#{object_id} win_nil=#{@win.nil?}", tag: :modal)
+      return unless @win
+
       renderer.render_popup(session: self)
     end
 
@@ -197,13 +194,24 @@ module FatTerm
       @scroll_start
     end
 
-    private
-
-    def update_key(ev, terminal:)
-      return handle_resize(terminal) if ev.key == :resize
-
-      []
+    def close
+      FatTerm.log("popup close object_id=#{object_id}", tag: :modal)
+      if @win
+        @win.erase
+        @win.noutrefresh if @win.respond_to?(:noutrefresh)
+        @win.close
+        @win = nil
+      end
+      nil
     end
+
+    def handle_resize(terminal:)
+      rebuild_windows!(terminal)
+      ensure_scroll_visible
+      notify_owner(:popup_changed)
+    end
+
+    private
 
     def popup_payload(item = selected_item)
       {
@@ -350,11 +358,6 @@ module FatTerm
       @popup_list_h = list_h
       @popup_height = @popup_list_h + 3
       @popup_width = POPUP_MAX_WIDTH
-    end
-
-    def handle_resize(terminal)
-      rebuild_windows!(terminal)
-      []
     end
 
     def action_env(terminal:, event:)
