@@ -15,8 +15,8 @@ module FatTerm
       THEMES = {
         wordperfect: {
           output: { fg: "white", bg: "navy" },
-          input: { fg: "white", bg: "default" },
-          input_suggestion: { fg: "lightgray", bg: "default" },
+          input: { fg: "white", bg: "navy" },
+          input_suggestion: { fg: "lightgray", bg: "navy" },
           cursor: { fg: "black", bg: "yellow" },
 
           region: { fg: "navy", bg: "yellow" },

@@ -36,7 +36,7 @@ module FatTerm
         owner: owner,
         on: on.to_sym,
         doc: doc,
-        method: method_name.to_sym
+        method: method_name.to_sym,
       }
     end
 

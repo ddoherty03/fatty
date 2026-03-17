@@ -175,7 +175,8 @@ module FatTerm
         win.erase
 
         win.setpos(0, 0)
-        win.clrtoeol
+        win.addstr(" " * win.maxx)
+        win.setpos(0, 0)
         win.addstr(field.prompt_text)
 
         buf = field.buffer
@@ -206,7 +207,7 @@ module FatTerm
 
         suffix = field.autosuggestion_suffix.to_s
         unless suffix.empty?
-          suggestion_attr = pair_attr(:input_suggestion, fallback: ::Curses::A_DIM)
+          suggestion_attr = pair_attr(:input_suggestion, fallback: 0) | ::Curses::A_DIM
           win.attron(suggestion_attr) { win.addstr(suffix) }
         end
 
