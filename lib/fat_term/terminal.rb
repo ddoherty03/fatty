@@ -61,7 +61,6 @@ module FatTerm
 
     def active_session
       top = @modal_stack.last
-      FatTerm.log("active_session: modal_size=#{@modal_stack.length} top=#{top && top[:session].class}", tag: :modal)
       return top[:session] if top
 
       focused_session
@@ -132,14 +131,14 @@ module FatTerm
           tick_dirty = !!s.tick(terminal: self)
           dirty ||= tick_dirty
         rescue StandardError => e
-          FatTerm.log("Terminal.tick: #{e.class}: #{e.message}", tag: :error)
+          FatTerm.error("Terminal.tick: #{e.class}: #{e.message}", tag: :error)
           dirty = true
         end
         render_frame if dirty
       end
     rescue => e
-      FatTerm.log("Terminal.run: fatal error #{e.class}: #{e.message}", tag: :error)
-      FatTerm.log(e.backtrace.join("\n"), tag: :error) if e.backtrace
+      FatTerm.error("Terminal.run: fatal error #{e.class}: #{e.message}", tag: :error)
+      FatTerm.error(e.backtrace.join("\n"), tag: :error) if e.backtrace
       raise
     ensure
       persist_sessions!
