@@ -188,5 +188,30 @@ module FatTerm
       expect(hist.next_for(:command, ctx: { pwd: "/alpha" })).to eq("git")
       expect(hist.next_for(:command, ctx: { pwd: "/alpha" })).to eq("")
     end
+
+    it "computes an autosuggestion from the most recent history prefix match" do
+      h = History.new(path: hist_path)
+      h.add("git status")
+      h.add("git stash")
+
+      f = InputField.new(prompt: "> ", history: h)
+      f.act_on(:insert, "git st")
+
+      expect(f.autosuggestion).to eq("git stash")
+      expect(f.autosuggestion_visible?).to be(true)
+      expect(f.autosuggestion_suffix).to eq("ash")
+    end
+
+    it "accept_autosuggestion! replaces the buffer with the suggestion" do
+      h = History.new(path: hist_path)
+      h.add("git status")
+
+      f = InputField.new(prompt: "> ", history: h)
+      f.act_on(:insert, "git st")
+      f.accept_autosuggestion!
+
+      expect(f.buffer.text).to eq("git status")
+      expect(f.autosuggestion_visible?).to be(false)
+    end
   end
 end

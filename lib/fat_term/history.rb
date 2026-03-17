@@ -90,6 +90,30 @@ module FatTerm
       cursor[:prefix] = nil
     end
 
+    def suggest_for(*kinds, prefix:, ctx: nil)
+      text = prefix.to_s
+      return if text.empty?
+
+      entries_for(*kinds, ctx: ctx, prefix: text).last&.text
+    end
+
+    def suggest_for(*kinds, prefix:, ctx: nil)
+      text = prefix.to_s
+      return if text.empty?
+
+      local =
+        if !ctx.nil?
+          entries_for(*kinds, ctx: ctx, prefix: text)
+        else
+          []
+        end
+
+      return local.last.text unless local.empty?
+
+      global = entries_for(*kinds, prefix: text)
+      global.last.text unless global.empty?
+    end
+
     private
 
     def normalize_kinds(*kinds)
