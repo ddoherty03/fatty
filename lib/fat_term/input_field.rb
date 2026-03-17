@@ -52,7 +52,7 @@ module FatTerm
     end
     alias_method :inspect, :to_s
 
-    # category: Queries
+    # :category: Queries
 
     def empty?
       buffer.text == ""
@@ -77,37 +77,38 @@ module FatTerm
       @prompt = Prompt.ensure(prompt)
     end
 
-    # :category: Actions
+    # :category: Autosuggestion
 
-    # Centralized action dispatch for this field.
-    # - Resets history cursor for non-history actions
-    # - Executes the registered action via FatTerm::Actions
-    #
-    def act_on(action, *args, env: nil, **kwargs)
-      return unless action
+    def autosuggestion
+      return if history.nil?
 
-      unless action.to_s.start_with?("history_")
-        history&.reset_cursor_for(resolve_history_kind, ctx: resolve_history_ctx)
-      end
-
-      env ||= FatTerm::ActionEnvironment.new(
-        buffer: buffer,
-        field: self,
+      history.suggest_for(
+        resolve_history_kind,
+        prefix: buffer.text,
+        ctx: resolve_history_ctx,
       )
-      FatTerm.log(
-        "InputField.act_on: action=#{action} args=#{args.inspect}",
-        tag: :count,
-      )
-      FatTerm.log("InputField.act_on: args_with_count=#{kwargs}", tag: :count)
-      if FatTerm::Actions.registered?(action)
-        FatTerm::Actions.call(action, env, *args, **kwargs)
-      elsif buffer.respond_to?(action)
-        buffer.public_send(action, *args, **kwargs)
-      elsif respond_to?(action)
-        public_send(action, *args, **kwargs)
-      else
-        raise FatTerm::ActionError, "Unknown action: #{action}"
-      end
+    end
+
+    def autosuggestion_visible?
+      suggestion = autosuggestion.to_s
+      text = buffer.text.to_s
+      return false if suggestion.empty?
+      return false unless suggestion.start_with?(text)
+
+      suggestion != text
+    end
+
+    def autosuggestion_suffix
+      return "" unless autosuggestion_visible?
+
+      autosuggestion.to_s.delete_prefix(buffer.text.to_s)
+    end
+
+    def accept_autosuggestion!
+      return unless autosuggestion_visible?
+
+      sync_virtual_suffix!
+      buffer.accept_virtual_suffix!
     end
 
     desc "Accept the current line, add to history, and clear the buffer"
@@ -146,7 +147,45 @@ module FatTerm
       buffer.insert(s)
     end
 
+    def act_on(action, *args, env: nil, **kwargs)
+      return unless action
+
+      reset_history_cursor_for(action)
+
+      if FatTerm::Actions.registered?(action)
+        if env
+          FatTerm::Actions.call(action, env, *args, **kwargs)
+        else
+          defn = FatTerm::Actions.lookup(action)
+          target =
+            case defn[:on]
+            when :field then self
+            when :buffer then buffer
+            else
+              raise FatTerm::ActionError, "Cannot dispatch #{action} without env for target #{defn[:on].inspect}"
+            end
+          target.public_send(defn[:method], *args, **kwargs)
+        end
+      elsif buffer.respond_to?(action)
+        buffer.public_send(action, *args, **kwargs)
+      elsif respond_to?(action)
+        public_send(action, *args, **kwargs)
+      else
+        raise FatTerm::ActionError, "Unknown action: #{action}"
+      end
+    end
+
+    def sync_virtual_suffix!
+      buffer.virtual_suffix = autosuggestion_suffix
+    end
+
     private
+
+    def reset_history_cursor_for(action)
+      return if action.to_s.start_with?("history_")
+
+      history&.reset_cursor_for(resolve_history_kind, ctx: resolve_history_ctx)
+    end
 
     def resolve_history_kind
       value = @history_kind

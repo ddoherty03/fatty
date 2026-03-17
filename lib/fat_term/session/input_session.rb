@@ -31,7 +31,7 @@ module FatTerm
       when :paste
         text = payload.fetch(:text, "").to_s
         env = action_env(terminal: terminal, event: nil)
-        @field.act_on(:paste, text, env: env)
+        field.act_on(:paste, text, env: env)
       end
       []
     end
@@ -61,7 +61,9 @@ module FatTerm
       when :cycle_theme
         [[:terminal, :cycle_theme]]
       else
-        @field.act_on(action, *args, env: env)
+        with_virtual_suffix_sync do
+          FatTerm::Actions.call(action, env, *args)
+        end
         []
       end
     rescue ActionError => e
@@ -76,6 +78,15 @@ module FatTerm
         event: event,
         field: @field,
       )
+    end
+
+    private
+
+    def with_virtual_suffix_sync
+      @field.sync_virtual_suffix!
+      result = yield
+      @field.sync_virtual_suffix!
+      result
     end
   end
 end

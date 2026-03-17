@@ -195,7 +195,9 @@ module FatTerm
         when :history_search
           item = payload.fetch(:item, "").to_s
           env = action_env(terminal: terminal, event: nil)
-          @field.act_on(:replace, item, env: env)
+          with_virtual_suffix_sync do
+            FatTerm::Actions.call(:replace, env, item)
+          end
         when :theme_chooser
           theme = payload.fetch(:item).to_sym
           @theme_popup_restore = nil
@@ -248,7 +250,7 @@ module FatTerm
       when :paste
         text = payload.fetch(:text, "").to_s
         env = action_env(terminal: terminal, event: nil)
-        @field.act_on(:paste, text, env: env)
+        field.act_on(:paste, text, env: env)
       end
       cmds
     end
@@ -303,31 +305,38 @@ module FatTerm
         )
         [[:terminal, :push_modal, popup]]
       when :complete
-        candidates = completion_candidates
-        prefix = completion_prefix
-        commands = []
-
-        if candidates.empty?
-          commands
-        elsif candidates.length == 1
-          commands + apply_completion(candidates.first)
-        else
-          common = longest_common_prefix(candidates)
-          if common.length > prefix.length
-            commands.concat(apply_completion_prefix(common))
+        with_virtual_suffix_sync do
+          if @field.autosuggestion_visible?
+            @field.accept_autosuggestion!
+            []
           else
-            @completion_range = @field.buffer.completion_replace_range
-            popup = FatTerm::PopUpSession.new(
-              source: candidates,
-              kind: :completion,
-              title: "Completions",
-              prompt: "Complete: ",
-              order: :as_given,
-              selection: :top,
-              initial_query: prefix,
-              matcher: ->(item, q) { item.to_s.start_with?(q.to_s) },
-            )
-            commands << [:terminal, :push_modal, popup]
+            candidates = completion_candidates
+            prefix = completion_prefix
+            commands = []
+
+            if candidates.empty?
+              commands
+            elsif candidates.length == 1
+              commands + apply_completion(candidates.first)
+            else
+              common = longest_common_prefix(candidates)
+              if common.length > prefix.length
+                commands.concat(apply_completion_prefix(common))
+              else
+                @completion_range = @field.buffer.completion_replace_range
+                popup = FatTerm::PopUpSession.new(
+                  source: candidates,
+                  kind: :completion,
+                  title: "Completions",
+                  prompt: "Complete: ",
+                  order: :as_given,
+                  selection: :top,
+                  initial_query: prefix,
+                  matcher: ->(item, q) { item.to_s.start_with?(q.to_s) },
+                )
+                commands << [:terminal, :push_modal, popup]
+              end
+            end
           end
         end
       when :history_search
@@ -376,7 +385,9 @@ module FatTerm
         begin
           # Centralized dispatch: actions declare their target (:buffer/:field/:pager)
           # and FatTerm::Actions routes through ActionEnvironment.
-          FatTerm::Actions.call(action, env, *args)
+          with_virtual_suffix_sync do
+            FatTerm::Actions.call(action, env, *args)
+          end
         rescue FatTerm::ActionError => e
           return [alert_cmd(:error, e.message, ev: ev)]
         end
@@ -456,6 +467,13 @@ module FatTerm
       else
         []
       end
+    end
+
+    def with_virtual_suffix_sync
+      @field.sync_virtual_suffix!
+      result = yield
+      @field.sync_virtual_suffix!
+      result
     end
 
     def alert_cmd(level, message, ev: nil)

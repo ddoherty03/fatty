@@ -52,6 +52,34 @@ RSpec.describe FatTerm::ShellSession do
   end
 
   describe "completion" do
+    it "accepts the visible autosuggestion before running completion" do
+      Dir.mktmpdir do |dir|
+        history_path = File.join(dir, "history.jsonl")
+        history = FatTerm::History.new(path: history_path)
+        history.add("git status")
+
+        allow(FatTerm::History).to receive(:new).and_return(history)
+
+        completion_proc = lambda do |_buffer|
+          %w[git grep]
+        end
+
+        session = FatTerm::ShellSession.new(completion_proc: completion_proc)
+        session.field.buffer.replace("git st")
+
+        commands = session.send(
+          :handle_action,
+          :complete,
+          [],
+          terminal: instance_double(FatTerm::Terminal),
+          event: nil,
+        )
+
+        expect(commands).to eq([])
+        expect(session.field.buffer.text).to eq("git status")
+      end
+    end
+
     it "seeds completion popup from the prefix before point, not text after point" do
       completion_proc = lambda do |_buffer|
         %w[cd clear echo exit help history ls pwd theme]

@@ -35,12 +35,13 @@ module FatTerm
     include Actionable
 
     attr_reader :mark, :kill_ring, :undo_stack
-    attr_accessor :text, :cursor, :word_re
+    attr_accessor :text, :cursor, :word_re, :virtual_suffix
 
     DEFAULT_WORD_CHARS = "[[:alnum:]_]"
 
     def initialize(word_chars: DEFAULT_WORD_CHARS, word_re: nil, undo_limit: 1_000, kill_ring_max: 60)
       @text = +""
+      @virtual_suffix = +""
       @cursor = 0
       @mark = nil
       @word_re =
@@ -79,9 +80,23 @@ module FatTerm
         else
           "|#{text}"
         end
-      "<InputBuffer:#{object_id}> <#{text_w_cursor}> => Kill[#{kill_ring.size}] => Undo[#{undo_stack.size}]"
+      v_text =
+        if virtual_suffix.empty?
+          ''
+        else
+          "(#{virtual_suffix})"
+        end
+      "<InputBuffer:#{object_id}> <#{text_w_cursor}>#{v_text} => Kill[#{kill_ring.size}] => Undo[#{undo_stack.size}]"
     end
     alias_method :inspect, :to_s
+
+    def virtual_text
+      @text + @virtual_suffix.to_s
+    end
+
+    def virtual_length
+      virtual_text.length
+    end
 
     # :category: Queries
 
@@ -169,38 +184,15 @@ module FatTerm
     desc "Move cursor to the end of the line"
     action :eol do
       break_undo_chain!
-      @cursor = text.length
+      @cursor = virtual_length
+      promote_to_cursor!
     end
-
-    def move_word_right_once
-      break_undo_chain!
-      chars = text.chars
-      i = @cursor
-      # skip non-word
-      i += 1 while i < chars.length && !word_char?(chars[i])
-      # skip word
-      i += 1 while i < chars.length && word_char?(chars[i])
-      @cursor = i
-    end
-    private :move_word_right_once
 
     desc "Move cursor count words to the right"
     action :move_word_right do |count: 1|
       break_undo_chain!
       repeat(count) { move_word_right_once }
     end
-
-    def move_word_left_once
-      break_undo_chain!
-      chars = text.chars
-      i = @cursor
-      # skip non-word chars to the left
-      i -= 1 while i > 0 && !word_char?(chars[i - 1])
-      # skip word chars to the left
-      i -= 1 while i > 0 && word_char?(chars[i - 1])
-      @cursor = i
-    end
-    private :move_word_left_once
 
     desc "Move cursor count words to the left"
     action :move_word_left do |count: 1|
@@ -219,7 +211,8 @@ module FatTerm
     action :move_right do |count: 1|
       break_undo_chain!
       n = normalize_count(count)
-      @cursor = [@cursor + n, text.length].min
+      @cursor = [@cursor + n, virtual_length].min
+      promote_to_cursor!
     end
 
     # :category: Actions: Region
@@ -363,6 +356,7 @@ module FatTerm
 
           span = word_span_forward(finish)
           break if span.begin == span.end
+
           finish = span.end
         end
 
@@ -649,7 +643,38 @@ module FatTerm
       end
     end
 
+    def accept_virtual_suffix!
+      return if @virtual_suffix.to_s.empty?
+
+      @text = virtual_text
+      @cursor = @text.length
+      @virtual_suffix = +""
+    end
+
     private
+
+    def move_word_right_once
+      break_undo_chain!
+      chars = virtual_text.chars
+      i = @cursor
+      # skip non-word
+      i += 1 while i < chars.length && !word_char?(chars[i])
+      # skip word
+      i += 1 while i < chars.length && word_char?(chars[i])
+      @cursor = i
+      promote_to_cursor!
+    end
+
+    def move_word_left_once
+      break_undo_chain!
+      chars = text.chars
+      i = @cursor
+      # skip non-word chars to the left
+      i -= 1 while i > 0 && !word_char?(chars[i - 1])
+      # skip word chars to the left
+      i -= 1 while i > 0 && word_char?(chars[i - 1])
+      @cursor = i
+    end
 
     def with_undo(before: nil)
       break_undo_chain!
@@ -664,6 +689,18 @@ module FatTerm
       end
 
       clamp_mark!
+    end
+
+    def promote_to_cursor!
+      real_len = @text.length
+      return if @cursor <= real_len
+
+      full = virtual_text
+      promoted = full[0, @cursor] || ""
+      remaining = full[@cursor..] || ""
+
+      @text = promoted
+      @virtual_suffix = remaining
     end
 
     # This consolidates a number of actions of the same kind into a single
