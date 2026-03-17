@@ -16,6 +16,7 @@ module FatTerm
         wordperfect: {
           output: { fg: "white", bg: "navy" },
           input: { fg: "white", bg: "default" },
+          input_suggestion: { fg: "lightgray", bg: "default" },
           cursor: { fg: "black", bg: "yellow" },
 
           region: { fg: "navy", bg: "yellow" },
@@ -39,6 +40,7 @@ module FatTerm
         nordic: {
           output: { fg: "#d8dee9", bg: "#2e3440" },
           input:  { fg: "#eceff4", bg: "#3b4252" },
+          input_suggestion: { fg: "#81a1c1", bg: "#3b4252" },
           cursor: { fg: "#2e3440", bg: "#88c0d0" },
 
           region: { fg: "#2e3440", bg: "#88c0d0" },
@@ -62,6 +64,7 @@ module FatTerm
         solarized_dark: {
           output: { fg: "#839496", bg: "#002b36" },
           input:  { fg: "#93a1a1", bg: "#073642" },
+          input_suggestion: { fg: "#657b83", bg: "#073642" },
           cursor: { fg: "#002b36", bg: "#b58900" },
 
           region: { fg: "#002b36", bg: "#b58900" },
@@ -85,6 +88,7 @@ module FatTerm
         mono: {
           output: { fg: "default", bg: "default" },
           input: { fg: "default", bg: "default" },
+          input_suggestion: { fg: "default", bg: "default" },
           cursor: { fg: "default", bg: "default" },
 
           region: { fg: "default", bg: "default" },

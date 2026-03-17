@@ -161,6 +161,7 @@ module FatTerm
         state = [
           field.prompt_text.to_s,
           field.buffer.text.to_s,
+          field.autosuggestion_suffix.to_s,
           field.cursor_x,
           region ? [region.begin, region.end] : nil,
         ]
@@ -201,6 +202,12 @@ module FatTerm
           win.addstr(after)
         else
           win.addstr(text)
+        end
+
+        suffix = field.autosuggestion_suffix.to_s
+        unless suffix.empty?
+          suggestion_attr = pair_attr(:input_suggestion, fallback: ::Curses::A_DIM)
+          win.attron(suggestion_attr) { win.addstr(suffix) }
         end
 
         win.setpos(0, field.cursor_x)

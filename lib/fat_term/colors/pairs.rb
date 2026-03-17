@@ -8,14 +8,15 @@ module FatTerm
     #
     # Pair 0 is reserved in ncurses; start at 1.
     module Pairs
-      OUTPUT          = 1
-      INPUT           = 2
-      CURSOR          = 3
-      REGION          = 4
+      OUTPUT           = 1
+      INPUT            = 2
+      INPUT_SUGGESTION = 8
+      CURSOR           = 3
+      REGION           = 4
 
-      STATUS_INFO     = 5
-      STATUS_WARN     = 6
-      STATUS_ERROR    = 7
+      STATUS_INFO      = 5
+      STATUS_WARN      = 6
+      STATUS_ERROR     = 7
 
       SEARCH = 10
       SEARCH_HIGHLIGHT = 11
@@ -31,6 +32,7 @@ module FatTerm
       ROLE_TO_PAIR = {
         output: OUTPUT,
         input: INPUT,
+        input_suggestion: INPUT_SUGGESTION,
         cursor: CURSOR,
         region: REGION,
 
