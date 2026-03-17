@@ -141,12 +141,15 @@ module FatTerm
 
     def accept_selection
       item = selected_item
-      return [] unless item
+      query = @field.buffer.text.to_s
 
+      return [] if item.nil? && query.empty?
+
+      item = query if item.nil?
       payload = popup_payload(item)
       [
         [:terminal, :send_modal_owner, [:cmd, :popup_result, payload]],
-        [:terminal, :pop_modal],
+        [:terminal, :pop_modal]
       ]
     end
 
