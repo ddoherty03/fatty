@@ -154,17 +154,12 @@ module FatTerm
       end
 
       def render_input_field(field)
+        buf = field.buffer
         region =
-          if field.buffer.respond_to?(:region_range)
-            field.buffer.region_range
+          if buf.respond_to?(:region_range)
+            buf.region_range
           end
-        state = [
-          field.prompt_text.to_s,
-          field.buffer.text.to_s,
-          field.autosuggestion_suffix.to_s,
-          field.cursor_x,
-          region ? [region.begin, region.end] : nil,
-        ]
+        state = field.snapshot_input_state
         return if state == @last_input_state
 
         @last_input_state = state
@@ -179,7 +174,6 @@ module FatTerm
         win.setpos(0, 0)
         win.addstr(field.prompt_text)
 
-        buf = field.buffer
         text = buf.text.to_s
 
         if region && region.begin < region.end
@@ -205,7 +199,7 @@ module FatTerm
           win.addstr(text)
         end
 
-        suffix = field.autosuggestion_suffix.to_s
+        suffix = buf.virtual_suffix.to_s
         unless suffix.empty?
           suggestion_attr = pair_attr(:input_suggestion, fallback: 0) | ::Curses::A_DIM
           win.attron(suggestion_attr) { win.addstr(suffix) }

@@ -26,6 +26,7 @@ module FatTerm
     def initialize(
       prompt:,
       buffer: nil,
+      completion_proc: nil,
       history: nil,
       history_kind: :command,
       history_ctx: nil
@@ -34,6 +35,7 @@ module FatTerm
       @history = history
       @history_kind = history_kind
       @history_ctx = history_ctx
+      @completion_proc = completion_proc
 
       @buffer =
         if buffer
@@ -71,6 +73,16 @@ module FatTerm
       prompt_text.length
     end
 
+    def snapshot_input_state
+      [
+        prompt_text.to_s.dup.freeze,
+        buffer.text.to_s.dup.freeze,
+        buffer.virtual_suffix.to_s.dup.freeze,
+        cursor_x,
+        (r = buffer.region_range) ? [r.begin, r.end] : nil,
+      ]
+    end
+
     # :category: Setters
 
     def prompt=(prompt)
@@ -80,6 +92,32 @@ module FatTerm
     # :category: Autosuggestion
 
     def autosuggestion
+      return if buffer.text.empty?
+
+      completion_autosuggestion || history_autosuggestion
+    end
+
+    def completion_autosuggestion
+      return unless @completion_proc
+
+      prefix = buffer.text.to_s
+      return if prefix.empty?
+
+      candidates =
+        Array(@completion_proc.call(buffer))
+          .compact
+          .map(&:to_s)
+          .reject(&:empty?)
+          .select { |s| s.start_with?(prefix) }
+          .reject { |s| s == prefix }
+          .uniq
+
+      return if candidates.empty?
+
+      candidates.min_by { |s| [s.length, s] }
+    end
+
+    def history_autosuggestion
       return if history.nil?
 
       history.suggest_for(

@@ -19,6 +19,7 @@ module FatTerm
       @field = FatTerm::InputField.new(
         prompt: prompt,
         history: @history,
+        completion_proc: completion_proc,
         history_kind: :command,
         history_ctx: history_ctx,
       )

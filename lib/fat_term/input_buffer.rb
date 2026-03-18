@@ -227,6 +227,7 @@ module FatTerm
     action :clear_mark do
       break_undo_chain!
       @mark = nil
+      @virtual_suffix = +''
     end
 
     # :category: Actions: Change Buffer
@@ -238,6 +239,7 @@ module FatTerm
       with_undo do
         @mark = nil
         @last_action = nil
+        @virtual_suffix = +''
         text.clear
         @cursor = 0
       end
@@ -278,6 +280,7 @@ module FatTerm
       with_undo do
         @last_action = nil
         @text = str.dup
+        @virtual_suffix = +''
         @cursor = @text.length
       end
     end
@@ -314,7 +317,6 @@ module FatTerm
       end
     end
 
-    desc "Delete the given Range and return the deleted string"
     desc "Delete to the end of the buffer and return deleted string"
     action :kill_to_eol do
       return "" if eol?
@@ -696,6 +698,7 @@ module FatTerm
       return if @cursor <= real_len
 
       full = virtual_text
+      @cursor = full.length if @cursor > full.length
       promoted = full[0, @cursor] || ""
       remaining = full[@cursor..] || ""
 
