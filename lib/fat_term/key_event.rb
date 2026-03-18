@@ -28,8 +28,6 @@ module FatTerm
     def initialize(key:, text: nil, raw: nil, ctrl: false, meta: false, shift: false)
       # If the decoder gives us a control character as an integer (1..26),
       # canonicalize it to ctrl+letter so keymaps and display behave nicely.
-      arg_str = "key: `#{key}`, text: `#{text}`, raw: `#{raw}`, ctrl: `#{ctrl}`, meta: `#{meta}`, shift: `#{shift}`"
-      FatTerm.log("#{self.class}#new(#{arg_str})", tag: :keyevent)
       if key.is_a?(Integer)
         if CTRL_CODE_TO_LETTER.key?(key)
           key = CTRL_CODE_TO_LETTER[key]
@@ -46,20 +44,19 @@ module FatTerm
       @shift = shift
       # invariant: chorded keys do not self-insert
       @text = ctrl || meta ? nil : text
-      arg_str = "#{self.class}->key: `#{@key}`, text: `#{@text}`, raw: `#{@raw}`," \
-        "ctrl: #{@ctrl}, meta: #{@meta}, shift: #{@shift})"
-      FatTerm.log(arg_str, tag: :keyevent)
+    end
+
+    def self.key_to_str(key: "<?>", ctrl: false, meta: false, shift: false)
+      mods = []
+      mods << "C" if ctrl
+      mods << "M" if meta
+      mods << "S" if shift
+      key_str = key.to_s
+      mods.empty? ? key_str : "#{mods.join('-')}-#{key_str}"
     end
 
     def to_s
-      mods = []
-      mods << "C" if ctrl?
-      mods << "M" if meta?
-      mods << "S" if shift?
-
-      key_str = key ? key.to_s : "<?>"
-
-      mods.empty? ? key_str : "#{mods.join('-')}-#{key_str}"
+      self.class.key_to_str(key:, ctrl:, meta:, shift:)
     end
 
     def ==(other)

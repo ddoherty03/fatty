@@ -17,6 +17,10 @@ module FatTerm
       @replace_next = false
     end
 
+    def to_s
+      "Counter: #{@digits}; #{@replace_next}"
+    end
+
     def active?
       !@digits.empty?
     end

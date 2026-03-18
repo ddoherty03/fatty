@@ -138,8 +138,8 @@ module FatTerm
 
     # Bind a KeyEvent to an action in the given context.
     def bind(context: :input, key:, ctrl: false, meta: false, shift: false, action: nil)
-      arg_str = "context: #{context}, key: #{key}, ctrl: #{ctrl}, meta: #{meta}, shift: #{shift}, action: #{action}"
-      FatTerm.log("KeyMap#bind(#{arg_str})", tag: :keybinding)
+      bind_str = "#{KeyEvent.key_to_str(key:, ctrl:, meta:, shift:)} -> #{action} in context: #{context}"
+      FatTerm.debug("KeyMap#bind: (#{bind_str})", tag: :keybinding)
 
       raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
       raise ArgumentError, "key must be a Symbol" unless key.is_a?(Symbol)
@@ -161,9 +161,8 @@ module FatTerm
     end
 
     def bind_mouse(context: :input, button:, ctrl: false, meta: false, shift: false, action: nil)
-      arg_str =
-        "context: #{context}, button: #{button}, ctrl: #{ctrl}, meta: #{meta}, shift: #{shift}, action: #{action}"
-      FatTerm.log("KeyMap#bind_mouse(#{arg_str})", tag: :keybinding)
+      bind_str = "#{KeyEvent.key_to_str(key: button, ctrl:, meta:, shift:)} -> #{action} in context: #{context}"
+      FatTerm.debug("KeyMap#bind_mouse(#{bind_str})", tag: :keybinding)
 
       raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
       raise ArgumentError, "button must be a Symbol" unless button.is_a?(Symbol)
@@ -188,8 +187,6 @@ module FatTerm
 
       ctxs = normalize_contexts(contexts)
       gest = gesture_from_event(event)
-      arg_str = "event: #{event}, gesture: #{gest}, contexts: #{contexts}"
-      FatTerm.log("KeyMap#resolve(#{arg_str})", tag: :keybinding)
 
       result = nil
       ctxs.each do |ctx|
@@ -199,7 +196,8 @@ module FatTerm
         result = map[gest]
         break if result
       end
-      FatTerm.log("KeyMap.resolve: -> #{result.inspect}", tag: :keybinding)
+      map_str = "#{event} -> #{result.inspect} in contexts: #{contexts} "
+      FatTerm.debug("KeyMap#resolve: #{map_str}", tag: :keybinding)
       result
     end
 
