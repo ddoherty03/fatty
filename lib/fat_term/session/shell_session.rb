@@ -121,6 +121,9 @@ module FatTerm
     end
 
     def completion_candidates
+      path_candidates = @field.path_completion_candidates
+      return path_candidates if path_candidates.any?
+
       return [] unless @completion_proc
 
       prefix = completion_prefix
@@ -307,37 +310,29 @@ module FatTerm
         [[:terminal, :push_modal, popup]]
       when :complete
         with_virtual_suffix_sync do
-          if @field.autosuggestion_visible?
-            @field.accept_autosuggestion!
+          @field.cycle_completion!
+          []
+        end
+      when :completion_popup
+        with_virtual_suffix_sync do
+          candidates = @field.popup_completion_candidates
+          if candidates.empty?
             []
+          elsif candidates.length == 1
+            apply_completion(candidates.first, range: @field.popup_completion_range)
           else
-            candidates = completion_candidates
-            prefix = completion_prefix
-            commands = []
-
-            if candidates.empty?
-              commands
-            elsif candidates.length == 1
-              commands + apply_completion(candidates.first)
-            else
-              common = longest_common_prefix(candidates)
-              if common.length > prefix.length
-                commands.concat(apply_completion_prefix(common))
-              else
-                @completion_range = @field.buffer.completion_replace_range
-                popup = FatTerm::PopUpSession.new(
-                  source: candidates,
-                  kind: :completion,
-                  title: "Completions",
-                  prompt: "Complete: ",
-                  order: :as_given,
-                  selection: :top,
-                  initial_query: prefix,
-                  matcher: ->(item, q) { item.to_s.start_with?(q.to_s) },
-                )
-                commands << [:terminal, :push_modal, popup]
-              end
-            end
+            @completion_range = @field.popup_completion_range
+            popup = FatTerm::PopUpSession.new(
+              source: candidates,
+              kind: :completion,
+              title: "Completions",
+              prompt: "Complete: ",
+              order: :as_given,
+              selection: :top,
+              initial_query: @field.popup_completion_query.to_s,
+              matcher: ->(item, q) { item.to_s.start_with?(q.to_s) },
+            )
+            [[:terminal, :push_modal, popup]]
           end
         end
       when :history_search
@@ -387,6 +382,7 @@ module FatTerm
           # Centralized dispatch: actions declare their target (:buffer/:field/:pager)
           # and FatTerm::Actions routes through ActionEnvironment.
           with_virtual_suffix_sync do
+            @field.reset_completion_cycle!
             FatTerm::Actions.call(action, env, *args)
           end
         rescue FatTerm::ActionError => e

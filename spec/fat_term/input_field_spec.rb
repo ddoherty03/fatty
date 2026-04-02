@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "tmpdir"
+require "fileutils"
 
 module FatTerm
   RSpec.describe InputField do
@@ -226,6 +227,198 @@ module FatTerm
     it "raises ArgumentError for unknown actions" do
       f = InputField.new(prompt: prompt("> "))
       expect { f.act_on(:no_such_action) }.to raise_error(ActionError)
+    end
+
+    describe "completion cycling" do
+      around do |example|
+        Dir.mktmpdir("fat_term_paths") do |dir|
+          @tmpdir = dir
+          example.run
+        end
+      end
+
+      def build_field(text, completion_proc: nil, history: nil)
+        buffer = FatTerm::InputBuffer.new
+        buffer.replace(text)
+        FatTerm::InputField.new(
+          prompt: "> ",
+          buffer: buffer,
+          completion_proc: completion_proc,
+          history: history,
+          history_kind: :command,
+          history_ctx: {},
+        )
+      end
+
+      it "cycles completion suggestions without changing real buffer text" do
+        field = build_field(
+          "cat ~/Downloads/",
+          completion_proc: ->(_buffer) { [] },
+        )
+
+        allow(field).to receive(:path_completion_candidates).and_return(
+          [
+            "~/Downloads/00_WireInfo.pdf",
+            "~/Downloads/01_Notes.txt",
+          ],
+        )
+
+        expect(field.buffer.text).to eq("cat ~/Downloads/")
+        expect(field.autosuggestion).to eq("cat ~/Downloads/00_WireInfo.pdf")
+
+        field.cycle_completion!
+
+        expect(field.buffer.text).to eq("cat ~/Downloads/")
+        expect(field.autosuggestion).to eq("cat ~/Downloads/01_Notes.txt")
+        expect(field.autosuggestion_suffix).to eq("01_Notes.txt")
+      end
+
+      it "wraps around when cycling past the end of the suggestion list" do
+        field = build_field(
+          "cat ~/Downloads/",
+          completion_proc: ->(_buffer) { [] },
+        )
+
+        allow(field).to receive(:path_completion_candidates).and_return(
+          [
+            "~/Downloads/00_WireInfo.pdf",
+            "~/Downloads/01_Notes.txt",
+          ],
+        )
+
+        expect(field.autosuggestion).to eq("cat ~/Downloads/00_WireInfo.pdf")
+
+        field.cycle_completion!
+        expect(field.autosuggestion).to eq("cat ~/Downloads/01_Notes.txt")
+
+        field.cycle_completion!
+        expect(field.autosuggestion).to eq("cat ~/Downloads/00_WireInfo.pdf")
+      end
+
+      it "resets the completion cycle when reset_completion_cycle! is called" do
+        field = build_field(
+          "cat ~/Downloads/",
+          completion_proc: ->(_buffer) { [] },
+        )
+
+        allow(field).to receive(:path_completion_candidates).and_return(
+          [
+            "~/Downloads/00_WireInfo.pdf",
+            "~/Downloads/01_Notes.txt",
+          ],
+        )
+
+        field.cycle_completion!
+        expect(field.autosuggestion).to eq("cat ~/Downloads/01_Notes.txt")
+
+        field.reset_completion_cycle!
+        expect(field.autosuggestion).to eq("cat ~/Downloads/00_WireInfo.pdf")
+      end
+
+      it "prefers completion suggestions over history while cycling is inactive" do
+        history = FatTerm::History.new
+        history.add("cat ~/Downloads/zz_old.txt", kind: :command, ctx: {})
+
+        field = build_field(
+          "cat ~/Downloads/",
+          completion_proc: ->(_buffer) { [] },
+          history: history,
+        )
+
+        allow(field).to receive(:path_completion_candidates).and_return(
+          [
+            "~/Downloads/00_WireInfo.pdf",
+            "~/Downloads/01_Notes.txt",
+          ],
+        )
+
+        expect(field.autosuggestion).to eq("cat ~/Downloads/00_WireInfo.pdf")
+      end
+
+      it "syncs virtual suffix to the currently cycled suggestion" do
+        field = build_field(
+          "cat ~/Downloads/",
+          completion_proc: ->(_buffer) { [] },
+        )
+
+        allow(field).to receive(:path_completion_candidates).and_return(
+          [
+            "~/Downloads/00_WireInfo.pdf",
+            "~/Downloads/01_Notes.txt",
+          ],
+        )
+
+        field.cycle_completion!
+        field.sync_virtual_suffix!
+
+        expect(field.buffer.text).to eq("cat ~/Downloads/")
+        expect(field.buffer.virtual_suffix).to eq("01_Notes.txt")
+      end
+
+      it "returns nil autosuggestion when there are no completion or history suggestions" do
+        field = build_field(
+          "cat ~/Downloads/",
+          completion_proc: ->(_buffer) { [] },
+        )
+
+        allow(field).to receive(:path_completion_candidates).and_return([])
+
+        expect(field.autosuggestion).to be_nil
+        expect(field.autosuggestion_visible?).to be_falsey
+        expect(field.autosuggestion_suffix).to eq("")
+      end
+
+      it "detects a ~/ path prefix before point" do
+        field = build_field("cat ~/Down")
+        allow(Dir).to receive(:home).and_return(@tmpdir)
+
+        expect(field.path_completion_prefix).to eq("~/Down")
+      end
+
+      it "prefers path autosuggestion over history autosuggestion" do
+        FileUtils.mkdir_p(File.join(@tmpdir, "Downloads"))
+        File.write(File.join(@tmpdir, "Downloads", "report.pdf"), "x")
+
+        history = FatTerm::History.new
+        history.add("cat ~/Downloads/zzz", kind: :command, ctx: {})
+
+        buffer = FatTerm::InputBuffer.new
+        buffer.replace("cat ~/Downloads/")
+
+        field = FatTerm::InputField.new(
+          prompt: "> ",
+          buffer: buffer,
+          history: history,
+          history_kind: :command,
+          history_ctx: {},
+        )
+
+        allow(Dir).to receive(:home).and_return(@tmpdir)
+
+        expect(field.autosuggestion).to eq("cat ~/Downloads/report.pdf")
+      end
+
+      it "escapes spaces in path completion candidates" do
+        FileUtils.mkdir_p(File.join(@tmpdir, "My Dir"))
+        File.write(File.join(@tmpdir, "My Dir", "file name.txt"), "x")
+
+        allow(Dir).to receive(:home).and_return(@tmpdir)
+
+        field = build_field("cat ~/My\\ Dir/")
+
+        candidates = field.path_completion_candidates
+
+        expect(candidates).to include("~/My\\ Dir/file\\ name.txt")
+      end
+
+      it "does not treat unescaped spaces as part of a path token" do
+        FileUtils.mkdir_p(File.join(@tmpdir, "My Dir"))
+        allow(Dir).to receive(:home).and_return(@tmpdir)
+
+        field = build_field("cat ~/My Dir/")
+
+        expect(field.path_completion_candidates).to eq([])
+      end
     end
   end
 end

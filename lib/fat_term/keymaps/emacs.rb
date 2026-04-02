@@ -67,6 +67,7 @@ module FatTerm
 
       # Completion on input
       map.bind(context: :input, key: :tab, action: :complete)
+      map.bind(context: :input, key: :tab, meta: true, action: :completion_popup)
 
       # Popup
       map.bind(context: :popup, key: :c, ctrl: true, action: :popup_cancel)
