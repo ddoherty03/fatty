@@ -177,11 +177,11 @@ module FatTerm
           <<~YAML,
             - key: left
               meta: true
-              action: backward_word
+              action: move_word_left
 
             - key: right
               meta: false
-              action: forward_word
+              action: move_word_right
           YAML
         )
 
@@ -189,10 +189,10 @@ module FatTerm
         expect(bindings).to be_a(Array)
         expect(bindings.first[:key]).to eq("left")
         expect(bindings.first[:meta]).to be true
-        expect(bindings.first[:action]).to eq("backward_word")
+        expect(bindings.first[:action]).to eq("move_word_left")
         expect(bindings[1][:key]).to eq("right")
         expect(bindings[1][:meta]).to be false
-        expect(bindings[1][:action]).to eq("forward_word")
+        expect(bindings[1][:action]).to eq("move_word_right")
       end
 
       it "returns empty Hash when keybindings.yml is missing" do
