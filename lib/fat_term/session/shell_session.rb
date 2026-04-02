@@ -67,8 +67,8 @@ module FatTerm
     end
 
     def update_key(ev, terminal:)
-      key_str = "key=#{ev.key.inspect} ctrl=#{ev.ctrl?} meta=#{ev.meta?} raw=#{ev.raw.inspect}"
-      FatTerm.log("ShellSession.update_key (unbound): #{key_str}", tag: :session)
+      key_str = "key=#{ev} raw=#{ev.raw}"
+      FatTerm.debug("ShellSession.update_key: #{key_str}", tag: :session)
       case ev.key
       when :resize
         [[:terminal, :handle_resize]]
