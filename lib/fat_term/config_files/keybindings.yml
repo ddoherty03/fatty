@@ -9,11 +9,11 @@
 
 - key: left
   meta: true
-  action: backward_word
+  action: move_word_left
 
 - key: right
   meta: true
-  action: forward_word
+  action: move_word_right
 
 - key: space
   context: paging
