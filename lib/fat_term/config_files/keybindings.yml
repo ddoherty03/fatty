@@ -1,7 +1,7 @@
 # This file is for user-defined keybindings.  Each binding can look like this:
 #
 # - key: <KEYNAME>
-#   context: input/paging (input)
+#   context: input/paging/popup (input)
 #   ctrl: true/false (false)
 #   meta: true/false (false)
 #   shift: true/false (false)
@@ -23,6 +23,27 @@
   context: paging
   action: page_up
 
-- mouse: scroll_up
-  context: paging
-  action: page_up
+# Or, for mouse events:
+# - button: <BUTTONNAME>
+#   context: input/paging/popup (input)
+#   ctrl: true/false (false)
+#   meta: true/false (false)
+#   shift: true/false (false)
+#   action: <FatTerm action> (noop)
+
+# Where <BUTTONNAME> is one of:
+# left_pressed,
+# left_released,
+# left_clicked,
+# left_double_clicked,
+# left_triple_clicked,
+# middle_pressed,
+# middle_released,
+# middle_clicked,
+# middle_double_clicked,
+# middle_triple_clicked,
+# right_pressed,
+# right_released,
+# right_clicked,
+# right_double_clicked,
+# right_triple_clicked
