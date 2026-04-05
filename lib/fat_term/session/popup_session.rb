@@ -93,16 +93,12 @@ module FatTerm
       when :popup_accept
         accept_selection
       when :popup_next
-        unless @filtered.empty?
-          @selected = [@selected + 1, @filtered.length - 1].min
-          ensure_scroll_visible
-        end
+        move_selected_by(1)
+        ensure_scroll_visible
         notify_owner(:popup_changed)
       when :popup_prev
-        unless @filtered.empty?
-          @selected = [@selected - 1, 0].max
-          ensure_scroll_visible
-        end
+        move_selected_by(-1)
+        ensure_scroll_visible
         notify_owner(:popup_changed)
       when :popup_page_down
         move_selected_by(popup_list_height)
@@ -137,6 +133,15 @@ module FatTerm
     rescue ActionError => e
       FatTerm.log("PopUpSession.handle_action: ActionError #{e.message}", tag: :keymap)
       []
+    end
+
+    def move_selected_by(delta)
+      return if @filtered.empty?
+
+      msg = "PopUpSession.move_selected_by before: selected=#{@selected.inspect} delta=#{delta} len=#{@filtered.length}"
+      FatTerm.log(msg)
+      @selected = ((@selected || 0) + delta) % @filtered.length
+      FatTerm.log("PopUpSession.move_selected_by after: selected=#{@selected.inspect}")
     end
 
     def accept_selection
@@ -246,12 +251,6 @@ module FatTerm
       list_h = h - 3
       list_h = 1 if list_h < 1
       list_h
-    end
-
-    def move_selected_by(delta)
-      return if @filtered.empty?
-
-      @selected = (@selected + delta).clamp(0, @filtered.length - 1)
     end
 
     def ensure_scroll_visible
