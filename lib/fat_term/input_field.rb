@@ -435,8 +435,11 @@ module FatTerm
     end
 
     def popup_completion_candidates
-      path = path_completion_candidates
-      return path if path.any?
+      path_prefix = popup_path_completion_prefix
+      if path_prefix
+        path = rendered_path_candidates(path_prefix)
+        return path if path.any?
+      end
 
       return [] unless @completion_proc
 
@@ -445,6 +448,25 @@ module FatTerm
         .map(&:to_s)
         .reject(&:empty?)
         .uniq
+    end
+
+    def popup_path_completion_prefix
+      prefix = path_completion_prefix
+      return if prefix.nil? || prefix.empty?
+
+      raw_prefix = unescape_path(prefix)
+      expanded = expand_path_prefix(raw_prefix)
+      return prefix unless File.directory?(expanded)
+
+      if raw_prefix.end_with?("/")
+        prefix
+      else
+        escape_path("#{raw_prefix}/")
+      end
+    end
+
+    def popup_completion_query
+      popup_path_completion_prefix || path_completion_prefix || buffer.completion_prefix
     end
 
     def popup_completion_range
