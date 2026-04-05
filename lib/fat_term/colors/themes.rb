@@ -17,7 +17,7 @@ module FatTerm
           output: { fg: "white", bg: "navy" },
           input: { fg: "white", bg: "navy" },
           input_suggestion: { fg: "lightgray", bg: "navy" },
-          cursor: { fg: "black", bg: "yellow" },
+          cursor: { fg: "white", bg: "red" },
 
           region: { fg: "navy", bg: "yellow" },
 
@@ -25,10 +25,10 @@ module FatTerm
           status_warn: { fg: "black", bg: "magenta" },
           status_error: { fg: "white", bg: "red" },
 
-          pager_status: {fg: "black", bg: "lightgreen"},
+          pager_status: { fg: "black", bg: "lightgreen" },
 
-          search_highlight: { fg: "black", bg: "yellow" },
-          search_highlight_secondary: { fg: "black", bg: "lightgray" },
+          search_highlight: { fg: "black", bg: "red" },
+          search_highlight_secondary: { fg: "grey", bg: "pink" },
           search: { fg: "black", bg: "cyan" },
 
           popup: { fg: "white", bg: "navy" },
