@@ -52,32 +52,23 @@ RSpec.describe FatTerm::ShellSession do
   end
 
   describe "completion" do
-    it "accepts the visible autosuggestion before running completion" do
-      Dir.mktmpdir do |dir|
-        history_path = File.join(dir, "history.jsonl")
-        history = FatTerm::History.new(path: history_path)
-        history.add("git status")
+    it "cycles the visible autosuggestion without changing real buffer text" do
+      session = FatTerm::ShellSession.new
+      session.field.buffer.replace("git st")
 
-        allow(FatTerm::History).to receive(:new).and_return(history)
+      allow(session.field).to receive(:completion_suggestions).and_return(
+                                ["git status", "git stash"]
+                              )
 
-        completion_proc = lambda do |_buffer|
-          %w[git grep]
-        end
+      terminal = instance_double(FatTerm::Terminal)
+      env = session.action_env(terminal: terminal, event: nil)
 
-        session = FatTerm::ShellSession.new(completion_proc: completion_proc)
-        session.field.buffer.replace("git st")
+      commands = session.send(:apply_action, :complete, [], nil, terminal: terminal, env: env)
 
-        commands = session.send(
-          :handle_action,
-          :complete,
-          [],
-          terminal: instance_double(FatTerm::Terminal),
-          event: nil,
-        )
-
-        expect(commands).to eq([])
-        expect(session.field.buffer.text).to eq("git status")
-      end
+      expect(commands).to eq([])
+      expect(session.field.buffer.text).to eq("git st")
+      expect(session.field.autosuggestion).to eq("git stash")
+      expect(session.field.buffer.virtual_suffix).to eq("ash")
     end
 
     it "seeds completion popup from the prefix before point, not text after point" do
@@ -93,7 +84,7 @@ RSpec.describe FatTerm::ShellSession do
 
       commands = session.send(
         :handle_action,
-        :complete,
+        :completion_popup,
         [],
         terminal: instance_double(FatTerm::Terminal),
         event: nil,
@@ -121,7 +112,7 @@ RSpec.describe FatTerm::ShellSession do
 
       commands = session.send(
         :handle_action,
-        :complete,
+        :completion_popup,
         [],
         terminal: instance_double(FatTerm::Terminal),
         event: nil,

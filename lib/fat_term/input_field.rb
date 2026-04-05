@@ -430,7 +430,13 @@ module FatTerm
       path = path_completion_candidates
       return path if path.any?
 
-      completion_candidates
+      return [] unless @completion_proc
+
+      Array(@completion_proc.call(buffer))
+        .compact
+        .map(&:to_s)
+        .reject(&:empty?)
+        .uniq
     end
 
     def popup_completion_range
