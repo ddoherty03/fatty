@@ -336,15 +336,23 @@ module FatTerm
       dir_part = "." if dir_part.nil? || dir_part.empty?
       return [] unless Dir.exist?(dir_part)
 
+      # Sort normal directories, normal files, hidden directories, then hidden
+      # files, but not if the prefix starts with '.' or '#', then treat hidden
+      # files normally.
       entries =
         Dir.children(dir_part)
           .select { |name| name.start_with?(base_part) }
           .sort_by do |name|
-            [
-              (base_part.match?(/\A[.\#]/) ? 0 : (name.match?(/\A[.\#]/) ? 1 : 0)),
-              name
-            ]
-          end
+            full = File.join(dir_part, name)
+            hide_penalty =
+              if base_part.match?(/\A[.#]/)
+                0
+              else
+                name.match?(/\A[.#]/) ? 1 : 0
+              end
+            file_penalty = File.directory?(full) ? 0 : 1
+            [hide_penalty, file_penalty, name]
+        end
 
       return [] if entries.empty?
 
