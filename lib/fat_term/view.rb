@@ -14,8 +14,8 @@ module FatTerm
     # Subclasses implement #draw.
     def render(screen:, renderer:, terminal:, session:)
       if @log
-        FatTerm.log(
-          "View.render",
+        FatTerm.debug(
+          "View#render",
           tag: :render,
           view: id,
           z: z,

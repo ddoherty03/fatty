@@ -39,7 +39,7 @@ module FatTerm
 
     # Handle a message and return commands.
     def update(message, terminal:)
-      FatTerm.log("#{self.class}#update(message -> #{message})", tag: :session)
+      FatTerm.debug("#{self.class}#update(message -> #{message})", tag: :session)
 
       commands =
         case message[0]
@@ -47,7 +47,7 @@ module FatTerm
           ev = message[1]
           action, args = resolve_action(ev)
 
-          FatTerm.log("#{self.class}.update: key ev=#{ev.inspect} action=#{action.inspect} args=#{args.inspect}", tag: :session)
+          FatTerm.debug("#{self.class}#update: key ev=#{ev.inspect} action=#{action.inspect} args=#{args.inspect}", tag: :session)
 
           if action
             handle_action(action, args, terminal: terminal, event: ev)
@@ -55,10 +55,10 @@ module FatTerm
             update_key(ev, terminal: terminal)
           end
         when :cmd
-          FatTerm.log("#{self.class}.update: cmd message=#{message.inspect}", tag: :session)
+          FatTerm.debug("#{self.class}#update: cmd message=#{message.inspect}", tag: :session)
           update_cmd(message[1], message[2], terminal: terminal)
         else
-          FatTerm.log("#{self.class}.update: unknown message[0]=#{message[0].inspect}", tag: :session)
+          FatTerm.warn("#{self.class}#update: unknown message[0]=#{message[0].inspect}", tag: :session)
           []
         end
       commands

@@ -131,17 +131,17 @@ module FatTerm
         notify_owner(:popup_changed)
       end
     rescue ActionError => e
-      FatTerm.log("PopUpSession.handle_action: ActionError #{e.message}", tag: :keymap)
+      FatTerm.error("PopUpSession#handle_action: ActionError #{e.message}", tag: :session)
       []
     end
 
     def move_selected_by(delta)
       return if @filtered.empty?
 
-      msg = "PopUpSession.move_selected_by before: selected=#{@selected.inspect} delta=#{delta} len=#{@filtered.length}"
-      FatTerm.log(msg)
+      msg = "PopUpSession#move_selected_by before: selected=#{@selected.inspect} delta=#{delta} len=#{@filtered.length}"
+      FatTerm.debug(msg)
       @selected = ((@selected || 0) + delta) % @filtered.length
-      FatTerm.log("PopUpSession.move_selected_by after: selected=#{@selected.inspect}")
+      FatTerm.debug("PopUpSession#move_selected_by after: selected=#{@selected.inspect}")
     end
 
     def accept_selection
@@ -186,7 +186,7 @@ module FatTerm
     end
 
     def view(screen:, renderer:, terminal:)
-      FatTerm.log("popup view object_id=#{object_id} win_nil=#{@win.nil?}", tag: :modal)
+      FatTerm.debug("PopupSession#view: object_id=#{object_id} win_nil=#{@win.nil?}", tag: :session)
       return unless @win
 
       renderer.render_popup(session: self)
@@ -203,7 +203,7 @@ module FatTerm
     end
 
     def close
-      FatTerm.log("popup close object_id=#{object_id}", tag: :modal)
+      FatTerm.debug("PopupSession#close: object_id=#{object_id}", tag: :session)
       if @win
         @win.erase
         @win.noutrefresh if @win.respond_to?(:noutrefresh)

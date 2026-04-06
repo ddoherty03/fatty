@@ -102,10 +102,10 @@ module FatTerm
     def persist!(terminal:)
       return unless @history.respond_to?(:save!)
 
-      FatTerm.log("ShellSession.persist!: saving history", tag: :session)
+      FatTerm.debug("ShellSession#persist!: saving history", tag: :history)
       @history.save!
     rescue => e
-      FatTerm.log("ShellSession.persist!: failed to save history: #{e.class}: #{e.message}", tag: :error)
+      FatTerm.error("ShellSession#persist!: failed to save history: #{e.class}: #{e.message}", tag: :history)
     end
 
     # Called by Terminal#go on every loop iteration.
@@ -266,10 +266,7 @@ module FatTerm
         elsif event&.respond_to?(:mouse)
           event.mouse.inspect
         end
-      FatTerm.log(
-        "ShellSession.handle_action: #{which}",
-        tag: :keymap,
-      )
+      FatTerm.debug("ShellSession#handle_action: #{which}", tag: :keymap)
       env = action_env(terminal: terminal, event: event)
       apply_action(action, args, event, terminal: terminal, env: env)
     end
@@ -338,7 +335,7 @@ module FatTerm
       when :history_search
         # Oldest -> newest, so newest appears at the bottom of the popup.
         src = ->(_q = nil) { @history.entries.select(&:command?).last(500).map(&:text) }
-        FatTerm.log("history_search: building popup", tag: :popup)
+        FatTerm.debug("ShellSession#apply_action: history_search: building popup", tag: :session)
         popup = FatTerm::PopUpSession.new(
           source: src,
           kind: :history_search,

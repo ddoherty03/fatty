@@ -12,7 +12,7 @@ module FatTerm
       @ctrl = ctrl
       @meta = meta
       @shift = shift
-      FatTerm.log("#{self.class}#new(#{self})", tag: :event)
+      FatTerm.debug("#{self.class}#new(#{self})", tag: :event)
     end
 
     def to_s

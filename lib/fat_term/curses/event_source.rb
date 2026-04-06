@@ -81,7 +81,7 @@ module FatTerm
 
         if ch.is_a?(Integer) && ch == ::Curses::KEY_MOUSE
           mouse = ::Curses.getmouse
-          FatTerm.log("EventSource#read_raw: bstate=#{mouse&.bstate}", tag: :mouse)
+          FatTerm.debug("EventSource#read_raw: bstate=#{mouse&.bstate}", tag: :mouse)
           return decode_mouse(mouse)
         end
 
@@ -211,7 +211,7 @@ module FatTerm
           end
         end
 
-        FatTerm.log("read_bracketed_paste: hit limit #{limit}", tag: :keycode) if hit_limit
+        FatTerm.debug("EventSource#read_bracketed_paste: hit limit #{limit}", tag: :keycode) if hit_limit
         text
       end
 

@@ -37,7 +37,7 @@ module FatTerm
     # --- Session management ------------------------------------------------
 
     def push(session)
-      FatTerm.log("Terminal.push(#{session})", tag: :session)
+      FatTerm.debug("Terminal#push(#{session})", tag: :session)
       @stack << session
       register(session)
       commands = session.init(terminal: self)
@@ -46,12 +46,12 @@ module FatTerm
     end
 
     def pop
-      FatTerm.log("Terminal.pop -> #{@stack.last}", tag: :session)
+      FatTerm.debug("Terminal#pop -> #{@stack.last}", tag: :session)
       @stack.pop
     end
 
     def pin(session)
-      FatTerm.log("Terminal.pin(#{session})", tag: :session)
+      FatTerm.debug("Terminal#pin(#{session})", tag: :session)
       @pinned << session
       register(session)
       commands = session.init(terminal: self)
@@ -86,7 +86,8 @@ module FatTerm
 
     def push_modal(session, owner:)
       @modal_stack << { session: session, owner: owner }
-      FatTerm.log("push_modal: size=#{@modal_stack.length} session=#{session.class} object_id=#{session.object_id}", tag: :modal)
+      msg = "Terminal#push_modal: size=#{@modal_stack.length} session=#{session.class} object_id=#{session.object_id}"
+      FatTerm.debug(msg, tag: :session)
       register(session)
       @renderer.invalidate! if defined?(@renderer) && @renderer
       commands = session.init(terminal: self)
@@ -95,10 +96,11 @@ module FatTerm
 
     def pop_modal
       top = @modal_stack.pop
-      FatTerm.log("pop_modal: size=#{@modal_stack.length} popped=#{top && top[:session].class}", tag: :modal)
+      msg = "Terminal#pop_modal: size=#{@modal_stack.length} popped=#{top && top[:session].class}"
+      FatTerm.debug(msg, tag: :session)
       session = top && top[:session]
 
-      session.close if session && session.respond_to?(:close)
+      session.close if session&.respond_to?(:close)
       @renderer.invalidate! if @renderer
       nil
     end
@@ -165,7 +167,13 @@ module FatTerm
       FatTerm::Logger.configure
       Thread.report_on_exception = true
     rescue FatConfig::ParseError => ex
-      FatTerm.error("Terminal#preflight!: configuration error: #{ex.class}: #{ex.message}", tag: :config)
+      msg = "Terminal#preflight!: configuration error: #{ex.class}: #{ex.message}"
+      warn msg
+      begin
+        FatTerm.error("Terminal#preflight!: #{msg}", tag: :config)
+      rescue StandardError
+        nil
+      end
       exit(1)
     end
 
@@ -265,9 +273,9 @@ module FatTerm
         apply_command([:send, :alert, :clear, {}])
       end
 
-      FatTerm.log("Terminal.dispatch_message: #{message.inspect}", tag: :dispatch)
+      FatTerm.debug("Terminal#dispatch_message: #{message.inspect}", tag: :session)
       commands = s.update(message, terminal: self)
-      FatTerm.log("Terminal.dispatch_message: session=#{s.class} -> cmds=#{commands.inspect}", tag: :dispatch)
+      FatTerm.debug("Terminal#dispatch_message: session=#{s.class} -> cmds=#{commands.inspect}", tag: :session)
 
       apply_commands(commands)
     end
@@ -287,7 +295,7 @@ module FatTerm
     # it's meant to be forwarded to a Session (first element :send).  This
     # method routes the command to its proper destination.
     def apply_command(cmd)
-      FatTerm.log("Terminal.apply_command(#{cmd})", tag: :command)
+      FatTerm.debug("Terminal#apply_command(#{cmd})", tag: :session)
       return if cmd.nil?
 
       unless cmd.is_a?(Array) && cmd.first.is_a?(Symbol)
@@ -319,13 +327,13 @@ module FatTerm
         pop
       when :push_modal
         session = rest.fetch(0)
-        FatTerm.log("apply_command push_modal: before size=#{@modal_stack.length}", tag: :modal)
+        FatTerm.debug("Terminal#apply_terminal_command(:push_modal) before size=#{@modal_stack.length}", tag: :session)
         push_modal(session, owner: focused_session)
-        FatTerm.log("apply_command push_modal: after size=#{@modal_stack.length}", tag: :modal)
+        FatTerm.debug("Terminal#apply_terminal_command(:push_modal) after size=#{@modal_stack.length}", tag: :session)
       when :pop_modal
-        FatTerm.log("apply_command pop_modal: before size=#{@modal_stack.length}", tag: :modal)
+        FatTerm.debug("Terminal#apply_terminal_command(:pop_modal) before size=#{@modal_stack.length}", tag: :session)
         pop_modal
-        FatTerm.log("apply_command pop_modal: after size=#{@modal_stack.length}", tag: :modal)
+        FatTerm.debug("Terminal#apply_terminal_command(:pop_modal) aftersize=#{@modal_stack.length}", tag: :session)
       when :send_modal_owner
         msg = rest.fetch(0)
         owner = modal_owner

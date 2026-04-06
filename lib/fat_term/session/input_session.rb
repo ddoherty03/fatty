@@ -46,9 +46,7 @@ module FatTerm
         else
           nil
         end
-      FatTerm.log(
-        "InputSession.handle_action: #{which}", tag: :keymap,
-      )
+      FatTerm.debug("InputSession#handle_action: #{which}", tag: :session)
       env = action_env(terminal: terminal, event: event)
       case action.to_sym
       when :accept_line
@@ -67,7 +65,7 @@ module FatTerm
         []
       end
     rescue ActionError => e
-      FatTerm.log("InputSession.handle_action: ActionError #{e.message}", tag: :keymap)
+      FatTerm.error("InputSession#handle_action: ActionError #{e.message}", tag: :session)
       []
     end
 
