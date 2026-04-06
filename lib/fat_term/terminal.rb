@@ -154,7 +154,7 @@ module FatTerm
       FatTerm::Logger.configure
       Thread.report_on_exception = true
     rescue FatConfig::ParseError => ex
-      warn "fat_term: configuration error: #{ex.message}"
+      FatTerm.error("Terminal#preflight!: configuration error: #{ex.class}: #{ex.message}", tag: :config)
       exit(1)
     end
 

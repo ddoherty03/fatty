@@ -203,7 +203,7 @@ module FatTerm
         f.fsync
       end
     rescue => e
-      warn "fat_term: failed to write history: #{e.message}"
+      FatTerm.error("History#append_to_file failed for #{@path}: #{e.class}: #{e.message}", tag: :history)
     end
 
     def truncate!

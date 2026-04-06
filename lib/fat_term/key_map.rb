@@ -241,7 +241,7 @@ module FatTerm
       end
       self
     rescue Psych::SyntaxError => e
-      warn "fat_term: syntax error in keybindings: #{e.message}"
+      FatTerm.error("KeyMap#load_config syntax error in keybindings: #{e.message}", tag: :keybinding)
       self
     end
 
@@ -279,7 +279,7 @@ module FatTerm
     # curses_coder file.
     def bind_entry(entry, idx, default_context: DEFAULT_CONTEXT)
       unless entry.is_a?(Hash)
-        warn "fat_term: invalid keybinding at index #{idx} (not a map)"
+        FatTerm.error("KeyMap#bind_entry invalid keybinding at index #{idx} (not a map)", tag: :keybinding)
         return
       end
 
@@ -296,7 +296,10 @@ module FatTerm
         end
 
       unless (key || button) && action
-        warn "fat_term: missing key/button or action at index #{idx}"
+        FatTerm.error(
+          "KeyMap#bind_entry missing key/button or action for context `#{ctx}` at index #{idx}",
+          tag: :keybinding,
+        )
         return
       end
 
