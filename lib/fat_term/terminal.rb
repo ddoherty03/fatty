@@ -128,21 +128,32 @@ module FatTerm
         end
         s = active_session
         begin
-          tick_dirty = !!s.tick(terminal: self)
+          tick_dirty = !!s&.tick(terminal: self)
           dirty ||= tick_dirty
         rescue StandardError => e
-          FatTerm.error("Terminal.tick: #{e.class}: #{e.message}", tag: :error)
+          FatTerm.error("Terminal#go tick failed: #{e.class}: #{e.message}", tag: :terminal)
           dirty = true
         end
         render_frame if dirty
       end
     rescue => e
-      FatTerm.error("Terminal.run: fatal error #{e.class}: #{e.message}", tag: :error)
-      FatTerm.error(e.backtrace.join("\n"), tag: :error) if e.backtrace
+      FatTerm.error("Terminal#go fatal error: #{e.class}: #{e.message}", tag: :terminal)
+      FatTerm.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
       raise
     ensure
-      persist_sessions!
-      stop_curses!
+      begin
+        stop_curses!
+      rescue => e
+        FatTerm.error("Terminal#go stop_curses! failed: #{e.class}: #{e.message}", tag: :terminal)
+        FatTerm.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
+      end
+
+      begin
+        persist_sessions!
+      rescue => e
+        FatTerm.error("Terminal#go persist_sessions! failed: #{e.class}: #{e.message}", tag: :terminal)
+        FatTerm.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
+      end
     end
 
     private
