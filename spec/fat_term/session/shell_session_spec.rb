@@ -2,6 +2,7 @@
 
 require "tmpdir"
 require "ostruct"
+require "fileutils"
 require "spec_helper"
 
 RSpec.describe FatTerm::ShellSession do
@@ -33,6 +34,39 @@ RSpec.describe FatTerm::ShellSession do
         popup = commands.first[2]
         expect(popup).to be_a(FatTerm::PopUpSession)
         expect(popup.send(:call_source, nil)).to eq(%w[ls pwd])
+      end
+    end
+
+    it "opens a popup instead of applying a single directory completion for a path without a trailing slash" do
+      Dir.mktmpdir("fat_term_popup") do |dir|
+        FileUtils.mkdir_p(File.join(dir, "src"))
+        File.write(File.join(dir, "src", "alpha.rb"), "x")
+        File.write(File.join(dir, "src", "beta.rb"), "x")
+        allow(Dir).to receive(:home).and_return(dir)
+
+        session = FatTerm::ShellSession.new
+        buffer = session.field.buffer
+        buffer.replace("ls -l ~/src")
+
+        commands = session.send(
+          :handle_action,
+          :completion_popup,
+          [],
+          terminal: instance_double(FatTerm::Terminal),
+          event: nil,
+        )
+
+        expect(buffer.text).to eq("ls -l ~/src")
+        expect(commands.length).to eq(1)
+        expect(commands.first[0]).to eq(:terminal)
+        expect(commands.first[1]).to eq(:push_modal)
+
+        popup = commands.first[2]
+        expect(popup).to be_a(FatTerm::PopUpSession)
+        expect(popup.instance_variable_get(:@kind)).to eq(:completion)
+        expect(popup.instance_variable_get(:@field).buffer.text).to eq("~/src")
+
+        expect(Array(popup.instance_variable_get(:@source))).to include("~/src/alpha.rb", "~/src/beta.rb")
       end
     end
   end

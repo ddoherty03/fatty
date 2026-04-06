@@ -250,6 +250,19 @@ module FatTerm
         )
       end
 
+      it "uses a directory-without-slash token to produce popup path candidates" do
+        FileUtils.mkdir_p(File.join(@tmpdir, "src"))
+        File.write(File.join(@tmpdir, "src", "alpha.rb"), "x")
+        File.write(File.join(@tmpdir, "src", "beta.rb"), "x")
+
+        allow(Dir).to receive(:home).and_return(@tmpdir)
+
+        field = build_field("ls -l ~/src")
+
+        expect(field.popup_completion_query).to eq("~/src")
+        expect(field.popup_completion_candidates).to include("~/src/alpha.rb", "~/src/beta.rb")
+      end
+
       it "cycles completion suggestions without changing real buffer text" do
         field = build_field(
           "cat ~/Downloads/",
