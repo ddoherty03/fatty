@@ -2,15 +2,16 @@
 
 module FatTerm
   RSpec.describe InputBuffer do
+    let(:b) { InputBuffer.new }
+    let(:bw) { InputBuffer.new(word_chars: "[[:alnum:]_-]") }
+
     it "starts empty with cursor at 0" do
-      b = InputBuffer.new
       expect(b.text).to eq("")
       expect(b.cursor).to eq(0)
       expect(b.empty?).to be(true)
     end
 
     it "represents itself with #to_s method no mark" do
-      b = InputBuffer.new
       b.insert("abcd efgh ijkl mnop qrst uv wxyz")
       b.move_word_left
       expect(b.to_s).to match(/\|wxyz/)
@@ -24,7 +25,6 @@ module FatTerm
     end
 
     it "represents itself with #to_s method with mark" do
-      b = InputBuffer.new
       b.insert("abcd efgh ijkl mnop qrst uv wxyz")
       b.bol
       b.move_word_right
@@ -36,7 +36,6 @@ module FatTerm
     end
 
     it "inserts at cursor and advances cursor" do
-      b = InputBuffer.new
       b.insert("a")
       b.insert("b")
       expect(b.text).to eq("ab")
@@ -44,7 +43,6 @@ module FatTerm
     end
 
     it "inserts in the middle (cursor-aware)" do
-      b = InputBuffer.new
       b.insert("a")
       b.insert("c")
       b.move_left
@@ -54,7 +52,6 @@ module FatTerm
     end
 
     it "move_left and move_right clamp to bounds" do
-      b = InputBuffer.new
       b.insert("ab")
       10.times { b.move_left }
       expect(b.cursor).to eq(0)
@@ -63,7 +60,6 @@ module FatTerm
     end
 
     it "delete_backward deletes char left of cursor" do
-      b = InputBuffer.new
       b.insert("abc")
       b.delete_char_backward
       expect(b.text).to eq("ab")
@@ -71,7 +67,6 @@ module FatTerm
     end
 
     it "delete_backward at beginning is a no-op" do
-      b = InputBuffer.new
       b.insert("a")
       b.move_left
       expect { b.delete_char_backward }.not_to raise_error
@@ -80,7 +75,6 @@ module FatTerm
     end
 
     it "delete_forward deletes char at cursor" do
-      b = InputBuffer.new
       b.insert("abc")
       b.move_left # cursor at 2
       b.move_left # cursor at 1
@@ -90,7 +84,6 @@ module FatTerm
     end
 
     it "delete_forward at end is a no-op" do
-      b = InputBuffer.new
       b.insert("a")
       expect { b.delete_char_forward }.not_to raise_error
       expect(b.text).to eq("a")
@@ -98,7 +91,6 @@ module FatTerm
     end
 
     it "bol/eol move to beginning/end" do
-      b = InputBuffer.new
       b.insert("abc")
       b.bol
       expect(b.cursor).to eq(0)
@@ -107,7 +99,6 @@ module FatTerm
     end
 
     it "#replace replaces text and moves cursor to end" do
-      b = InputBuffer.new
       b.insert("abc")
       b.replace("Easy as xyz")
       expect(b.text).to eq("Easy as xyz")
@@ -115,7 +106,6 @@ module FatTerm
     end
 
     it "clear empties text and resets cursor" do
-      b = InputBuffer.new
       b.insert("abc")
       b.clear
       expect(b.text).to eq("")
@@ -123,30 +113,26 @@ module FatTerm
     end
 
     it "display_width returns the unicode display width" do
-      b = InputBuffer.new
       b.insert("a")
       expect(b.display_width).to be >= 1
     end
 
     it "moves by words using configurable word_chars" do
-      b = InputBuffer.new(word_chars: "[[:alnum:]_-]")
-      b.replace("foo-bar baz")
-      b.bol
-      b.move_word_right
-      expect(b.cursor).to eq("foo-bar".length) # 7
-      b.move_word_right
-      expect(b.cursor).to eq("foo-bar baz".length)
+      bw.replace("foo-bar baz")
+      bw.bol
+      bw.move_word_right
+      expect(bw.cursor).to eq("foo-bar".length) # 7
+      bw.move_word_right
+      expect(bw.cursor).to eq("foo-bar baz".length)
     end
 
     it "reports length" do
-      b = InputBuffer.new
       expect(b.length).to eq(0)
       b.insert("abc")
       expect(b.length).to eq(3)
     end
 
     it "bol?/eol? reflect cursor position" do
-      b = InputBuffer.new
       expect(b.bol?).to be(true)
       expect(b.eol?).to be(true)
 
@@ -164,7 +150,6 @@ module FatTerm
     end
 
     it "text_before_cursor / text_after_cursor split at cursor" do
-      b = InputBuffer.new
       b.replace("abc")
       b.bol
       expect(b.text_before_cursor).to eq("")
@@ -180,14 +165,12 @@ module FatTerm
     end
 
     it "set is an alias for replace" do
-      b = InputBuffer.new
       b.set("xyz")
       expect(b.text).to eq("xyz")
       expect(b.cursor).to eq(3)
     end
 
     it "kill_to_eol deletes from cursor to end and returns deleted text" do
-      b = InputBuffer.new
       b.replace("abc def")
       b.bol
       4.times { b.move_right } # cursor after "abc "
@@ -201,7 +184,6 @@ module FatTerm
     end
 
     it "kill_to_bol deletes from beginning to cursor and returns deleted text" do
-      b = InputBuffer.new
       b.replace("abc def")
       b.bol
       4.times { b.move_right } # cursor after "abc "
@@ -216,35 +198,31 @@ module FatTerm
     end
 
     it "move_word_left mirrors move_word_right using word_chars" do
-      b = InputBuffer.new(word_chars: "[[:alnum:]_-]")
-      b.replace("foo-bar baz")
-      b.eol
-      b.move_word_left
-      expect(b.cursor).to eq("foo-bar ".length) # 8, cursor before 'b' in baz
-      b.move_word_left
-      expect(b.cursor).to eq(0)
+      bw.replace("foo-bar baz")
+      bw.eol
+      bw.move_word_left
+      expect(bw.cursor).to eq("foo-bar ".length) # 8, cursor before 'b' in baz
+      bw.move_word_left
+      expect(bw.cursor).to eq(0)
     end
 
     it "kill_word_forward deletes to end of next word and returns deleted text" do
-      b = InputBuffer.new(word_chars: "[[:alnum:]_-]")
-      b.replace("foo-bar baz")
-      b.bol
-      expect(b.kill_word_forward).to eq("foo-bar")
-      expect(b.text).to eq(" baz")
-      expect(b.cursor).to eq(0)
+      bw.replace("foo-bar baz")
+      bw.bol
+      expect(bw.kill_word_forward).to eq("foo-bar")
+      expect(bw.text).to eq(" baz")
+      expect(bw.cursor).to eq(0)
     end
 
     it "kill_word_backward deletes to beginning of previous word and returns deleted text" do
-      b = InputBuffer.new(word_chars: "[[:alnum:]_-]")
-      b.replace("foo-bar baz")
-      b.eol
-      expect(b.kill_word_backward).to eq("baz")
-      expect(b.text).to eq("foo-bar ")
-      expect(b.cursor).to eq("foo-bar ".length)
+      bw.replace("foo-bar baz")
+      bw.eol
+      expect(bw.kill_word_backward).to eq("baz")
+      expect(bw.text).to eq("foo-bar ")
+      expect(bw.cursor).to eq("foo-bar ".length)
     end
 
     it "never lets cursor go out of bounds" do
-      b = InputBuffer.new
       b.replace("a")
       b.bol
       10.times { b.move_left }
@@ -255,57 +233,54 @@ module FatTerm
     end
 
     it "supports supplying a custom word_re directly" do
-      b = InputBuffer.new(word_re: /[[:alpha:]]/)
-      b.replace("aaBB cc")
-      b.bol
+      buf = InputBuffer.new(word_re: /[[:alpha:]]/)
+      buf.replace("aaBB cc")
+      buf.bol
 
-      b.move_word_right
-      expect(b.cursor).to eq(4) # aaBB
+      buf.move_word_right
+      expect(buf.cursor).to eq(4) # aaBB
 
-      b.move_word_right
-      expect(b.cursor).to eq(7) # cc
+      buf.move_word_right
+      expect(buf.cursor).to eq(7) # cc
     end
 
     it "handles word_re that matches nothing" do
-      b = InputBuffer.new(word_re: /$a/) # never matches
-      b.replace("abc def")
-      b.bol
-      b.move_word_right
-      expect(b.cursor).to eq("abc def".length) # skips all as non-word
+      buf = InputBuffer.new(word_re: /$a/) # never matches
+      buf.replace("abc def")
+      buf.bol
+      buf.move_word_right
+      expect(buf.cursor).to eq("abc def".length) # skips all as non-word
     end
 
     it "move_word_right can be repeated and clamps at end of text" do
-      b = InputBuffer.new(word_chars: "[[:alnum:]_-]")
-      b.replace("foo--bar   baz")
-      b.bol
+      bw.replace("foo--bar   baz")
+      bw.bol
 
-      b.move_word_right
-      expect(b.cursor).to eq("foo--bar".length) # 8
+      bw.move_word_right
+      expect(bw.cursor).to eq("foo--bar".length) # 8
 
-      b.move_word_right
-      expect(b.cursor).to eq("foo--bar   baz".length) # 14
+      bw.move_word_right
+      expect(bw.cursor).to eq("foo--bar   baz".length) # 14
 
-      10.times { b.move_word_right }
-      expect(b.cursor).to eq("foo--bar   baz".length) # stays clamped
+      10.times { bw.move_word_right }
+      expect(bw.cursor).to eq("foo--bar   baz".length) # stays clamped
     end
 
     it "move_word_left can be repeated and clamps at beginning of text" do
-      b = InputBuffer.new(word_chars: "[[:alnum:]_-]")
-      b.replace("foo--bar   baz")
-      b.eol
+      bw.replace("foo--bar   baz")
+      bw.eol
 
-      b.move_word_left
-      expect(b.cursor).to eq("foo--bar   ".length) # 11 (start of 'baz')
+      bw.move_word_left
+      expect(bw.cursor).to eq("foo--bar   ".length) # 11 (start of 'baz')
 
-      b.move_word_left
-      expect(b.cursor).to eq(0) # start of 'foo--bar'
+      bw.move_word_left
+      expect(bw.cursor).to eq(0) # start of 'foo--bar'
 
-      10.times { b.move_word_left }
-      expect(b.cursor).to eq(0) # stays clamped
+      10.times { bw.move_word_left }
+      expect(bw.cursor).to eq(0) # stays clamped
     end
 
     it "handles multibyte characters (codepoint-based cursor and deletion)" do
-      b = InputBuffer.new
       # Greek lambda (multibyte)
       b.insert("λ")
       # precomposed e-acute
@@ -328,7 +303,6 @@ module FatTerm
     end
 
     it "treats combining sequences as multiple codepoints (not grapheme-aware yet)" do
-      b = InputBuffer.new
       s = "e\u0301" # e + combining acute accent
       b.insert(s)
 
@@ -341,7 +315,6 @@ module FatTerm
     end
 
     it "undo/redo restores text and cursor for insert" do
-      b = InputBuffer.new
       b.insert("ab")
       expect(b.text).to eq("ab")
       expect(b.cursor).to eq(2)
@@ -356,7 +329,6 @@ module FatTerm
     end
 
     it "redo stack is cleared by a new edit after undo" do
-      b = InputBuffer.new
       b.insert("ab")
       b.undo
       expect(b.can_redo?).to be(true)
@@ -366,7 +338,6 @@ module FatTerm
     end
 
     it "cursor motion does not create undo points" do
-      b = InputBuffer.new
       b.insert("ab")
       b.move_left
       b.move_left
@@ -379,15 +350,13 @@ module FatTerm
     end
 
     it "move_word_right repeats and clamps" do
-      b = InputBuffer.new(word_chars: "[[:alnum:]_-]")
-      b.replace("foo--bar   baz")
-      b.bol
-      b.move_word_right(count: 2)
-      expect(b.cursor).to eq("foo--bar   baz".length)
+      bw.replace("foo--bar   baz")
+      bw.bol
+      bw.move_word_right(count: 2)
+      expect(bw.cursor).to eq("foo--bar   baz".length)
     end
 
     it "delete_char_forward supports count and is one undo step" do
-      b = InputBuffer.new
       b.replace("abcdef")
       b.bol
       b.delete_char_forward(count: 3)
@@ -397,16 +366,14 @@ module FatTerm
     end
 
     it "kill_word_forward supports count and returns concatenated deleted text" do
-      b = InputBuffer.new(word_chars: "[[:alnum:]_-]")
-      b.replace("foo--bar baz")
-      b.bol
-      deleted = b.kill_word_forward(count: 2)
+      bw.replace("foo--bar baz")
+      bw.bol
+      deleted = bw.kill_word_forward(count: 2)
       expect(deleted).to eq("foo--bar baz")
-      expect(b.text).to eq("")
+      expect(bw.text).to eq("")
     end
 
     it "replace_span replaces a slice and sets cursor" do
-      b = InputBuffer.new
       b.replace("hello world")
       b.replace_span(6, 5, "dan")
       expect(b.text).to eq("hello dan")
@@ -414,14 +381,12 @@ module FatTerm
     end
 
     it "replace_range accepts a range" do
-      b = InputBuffer.new
       b.replace("abcDEFghi")
       b.replace_range(3...6, "xxx")
       expect(b.text).to eq("abcxxxghi")
     end
 
     it "delete_range deletes range and returns deleted text" do
-      b = InputBuffer.new
       b.replace("abcdef")
       b.delete_range(2...5)
       expect(b.text).to eq("abf")
@@ -429,7 +394,6 @@ module FatTerm
     end
 
     it "delete_range on empty range returns '' and does not create an undo step" do
-      b = InputBuffer.new
       b.replace("abc")
       # undo stack size doesn't change after deleting empty range
       sz_b4_del = b.undo_size
@@ -439,7 +403,6 @@ module FatTerm
     end
 
     it "handles inclusive and exclusive ranges correctly" do
-      b = InputBuffer.new
       b.replace("abcdef")
 
       # exclusive range: delete cde
@@ -460,7 +423,6 @@ module FatTerm
 
     describe "kill ring and yanking" do
       it "supports mark + region_range" do
-        b = InputBuffer.new
         b.replace("abcdef")
         b.bol
         b.set_mark
@@ -471,7 +433,6 @@ module FatTerm
       end
 
       it "kill_region deletes region, clears mark, and yanks it back" do
-        b = InputBuffer.new
         b.replace("abcdef")
         b.bol
         b.set_mark
@@ -488,7 +449,6 @@ module FatTerm
       end
 
       it "copy_region does not delete but is yankable" do
-        b = InputBuffer.new
         b.replace("abcdef")
         b.bol
         b.set_mark
@@ -502,7 +462,6 @@ module FatTerm
       end
 
       it "replace_region replaces active region and clears mark" do
-        b = InputBuffer.new
         b.replace("abcdef")
         b.bol
         b.set_mark
@@ -520,7 +479,6 @@ module FatTerm
       end
 
       it "yank_pop cycles the kill ring by replacing the last yanked text" do
-        b = InputBuffer.new
         b.replace("hello ")
         b.eol
 
@@ -534,6 +492,100 @@ module FatTerm
 
         expect(b.yank_pop).to eq("X")
         expect(b.text).to eq("hello X")
+      end
+    end
+
+    describe "#transpose_chars" do
+      it "swaps the character before point with the character at point" do
+        b.replace("abcd")
+        b.cursor = 2
+
+        b.transpose_chars
+
+        expect(b.text).to eq("acbd")
+        expect(b.cursor).to eq(3)
+      end
+
+      it "swaps the last two characters when point is at end of line" do
+        b.replace("abcd")
+        b.cursor = 4
+
+        b.transpose_chars
+
+        expect(b.text).to eq("abdc")
+        expect(b.cursor).to eq(4)
+      end
+
+      it "does nothing at beginning of line" do
+        b.replace("abcd")
+        b.cursor = 0
+
+        b.transpose_chars
+
+        expect(b.text).to eq("abcd")
+        expect(b.cursor).to eq(0)
+      end
+
+      it "does not operate on virtual suffix text" do
+        b.text = +"ab"
+        b.cursor = 2
+        b.virtual_suffix = +"cd"
+
+        b.transpose_chars
+
+        expect(b.text).to eq("ba")
+        expect(b.virtual_suffix).to eq("cd")
+        expect(b.cursor).to eq(2)
+      end
+    end
+
+    describe "#transpose_words" do
+      it "swaps the previous and next words when point is between them" do
+        b.replace("alpha beta")
+        b.cursor = 5
+
+        b.transpose_words
+
+        expect(b.text).to eq("beta alpha")
+        expect(b.cursor).to eq("beta alpha".length)
+      end
+
+      it "swaps the word at point with the following word" do
+        b.replace("alpha beta gamma")
+        b.cursor = 7
+
+        b.transpose_words
+
+        expect(b.text).to eq("alpha gamma beta")
+        expect(b.cursor).to eq("alpha gamma beta".length)
+      end
+
+      it "swaps the previous word with the word at point when there is no following word" do
+        b.replace("alpha beta")
+        b.cursor = 8
+
+        b.transpose_words
+
+        expect(b.text).to eq("beta alpha")
+        expect(b.cursor).to eq("beta alpha".length)
+      end
+
+      it "preserves intervening punctuation and spacing" do
+        b.replace("alpha,   beta")
+        b.cursor = 6
+
+        b.transpose_words
+
+        expect(b.text).to eq("beta,   alpha")
+      end
+
+      it "uses the configured word definition" do
+        bw.replace("foo-bar baz")
+        bw.cursor = "foo-bar".length
+
+        bw.transpose_words
+
+        expect(bw.text).to eq("baz foo-bar")
       end
     end
   end

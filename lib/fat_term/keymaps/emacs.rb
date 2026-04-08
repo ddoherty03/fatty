@@ -17,6 +17,9 @@ module FatTerm
       map.bind(key: :right, ctrl: true, action: :move_word_right)
       map.bind(key: :left, ctrl: true, action: :move_word_left)
 
+      map.bind(key: :t, ctrl: true,  context: :input, action: :transpose_chars)
+      map.bind(key: :t, meta: true,  context: :input, action: :transpose_words)
+
       map.bind(key: :a, ctrl: true, action: :bol)
       map.bind(key: :e, ctrl: true, action: :eol)
       map.bind(key: :home, action: :bol)

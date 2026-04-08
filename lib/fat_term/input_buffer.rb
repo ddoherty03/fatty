@@ -395,6 +395,33 @@ module FatTerm
       deleted
     end
 
+    desc "Transpose the two characters around point."
+    action :transpose_chars do |count: 1|
+      n = normalize_count(count)
+      return if text.length < 2
+
+      with_undo do
+        @last_action = nil
+        repeat(n) do
+          transpose_chars_once
+        end
+      end
+    end
+
+    desc "Transpose the word at point with the adjacent word."
+    action :transpose_words do |count: 1|
+      n = normalize_count(count)
+      return if text.empty?
+
+      with_undo do
+        @last_action = nil
+        repeat(n) do
+          changed = transpose_words_once
+          break unless changed
+        end
+      end
+    end
+
     desc "Kill the active region and return deleted text; pushes to kill ring."
     action :kill_region do
       r = region_range
@@ -676,6 +703,87 @@ module FatTerm
       # skip word chars to the left
       i -= 1 while i > 0 && word_char?(chars[i - 1])
       @cursor = i
+    end
+
+    def transpose_chars_once
+      i =
+        if @cursor == text.length
+          @cursor - 2
+        else
+          @cursor - 1
+        end
+
+      return if i < 0
+      return if i + 1 >= text.length
+
+      a = text[i]
+      b = text[i + 1]
+      text[i] = b
+      text[i + 1] = a
+
+      @cursor = [i + 2, text.length].min
+    end
+
+    def transpose_words_once
+      left, right = transpose_word_ranges
+      return false unless left && right
+      return false if left.begin == left.end || right.begin == right.end
+      return false unless left.end <= right.begin
+
+      left_text  = text[left]
+      middle     = text[left.end...right.begin].to_s
+      right_text = text[right]
+
+      replace_span(left.begin, right.end - left.begin, right_text + middle + left_text)
+      @cursor = left.begin + right_text.length + middle.length + left_text.length
+      true
+    end
+
+    def transpose_word_ranges
+      here = word_at_point_range(@cursor)
+
+      if here.begin < here.end
+        left = previous_word_range(here.begin)
+        right = next_word_range(here.end)
+
+        if right.begin < right.end
+          [here, right]
+        elsif left.begin < left.end
+          [left, here]
+        else
+          [nil, nil]
+        end
+      else
+        left = previous_word_range(@cursor)
+        right = next_word_range(@cursor)
+
+        if left.begin < left.end && right.begin < right.end
+          [left, right]
+        else
+          [nil, nil]
+        end
+      end
+    end
+
+    def previous_word_range(from)
+      span = word_span_backward(from)
+      if span.begin < span.end
+        word_at_point_range(span.begin)
+      else
+        from...from
+      end
+    end
+
+    def next_word_range(from)
+      chars = text.chars
+      i = from
+      i += 1 while i < chars.length && !word_char?(chars[i])
+
+      if i < chars.length && word_char?(chars[i])
+        word_at_point_range(i)
+      else
+        from...from
+      end
     end
 
     def with_undo(before: nil)
