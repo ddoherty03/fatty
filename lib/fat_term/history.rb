@@ -8,8 +8,16 @@ module FatTerm
     attr_reader :entries
 
     def initialize(path: nil, max: nil)
-      @path = path || Config.config.dig(:history, :file) || DEFAULT_HISTORY_FILE
-      @path = File.expand_path(@path)
+      @path =
+        case path
+        when :default
+          Config.config.dig(:history, :file) || DEFAULT_HISTORY_FILE
+        when nil, false
+          nil
+        else
+          path
+        end
+      @path = File.expand_path(@path) if @path
       @max = max&.to_i || Config.config.dig(:history, :max)&.to_i || DEFAULT_HISTORY_MAX
       @entries = []
       @cursors = {}
