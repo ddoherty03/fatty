@@ -139,7 +139,7 @@ module FatTerm
     # Bind a KeyEvent to an action in the given context.
     def bind(context: :input, key:, ctrl: false, meta: false, shift: false, action: nil)
       bind_str = "#{KeyEvent.key_to_str(key:, ctrl:, meta:, shift:)} -> #{action} in context: #{context}"
-      FatTerm.debug("KeyMap#bind: (#{bind_str})", tag: :keybinding)
+      FatTerm.info("KeyMap#bind: (#{bind_str})", tag: :keybinding)
 
       raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
       raise ArgumentError, "key must be a Symbol" unless key.is_a?(Symbol)
@@ -162,7 +162,7 @@ module FatTerm
 
     def bind_mouse(context: :input, button:, ctrl: false, meta: false, shift: false, action: nil)
       bind_str = "#{KeyEvent.key_to_str(key: button, ctrl:, meta:, shift:)} -> #{action} in context: #{context}"
-      FatTerm.debug("KeyMap#bind_mouse(#{bind_str})", tag: :keybinding)
+      FatTerm.info("KeyMap#bind_mouse(#{bind_str})", tag: :keybinding)
 
       raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
       raise ArgumentError, "button must be a Symbol" unless button.is_a?(Symbol)
