@@ -194,15 +194,15 @@ module FatTerm
         expect(km.resolve(ev(:G, shift: true), contexts: :paging)).to eq(:page_bottom)
       end
 
-      it "skips invalid (non-hash) entries with a warning" do
+      it "skips invalid (non-hash) entries with logging" do
         km = KeyMap.new
         allow(FatTerm::Config).to receive(:keybindings).and_return([123, "nope"])
-        allow(km).to receive(:warn)
+        allow(FatTerm).to receive(:error)
         km.load_config
-        expect(km).to have_received(:warn).at_least(:once)
+        expect(FatTerm).to have_received(:error).at_least(:once)
       end
 
-      it "skips entries missing key or action with a warning" do
+      it "skips entries missing key or action with logging" do
         km = KeyMap.new
         allow(FatTerm::Config).to receive(:keybindings)
                                     .and_return(
@@ -212,18 +212,18 @@ module FatTerm
                                         { "key" => "b", "action" => nil }, # missing/invalid action
                                       ],
                                     )
-        allow(km).to receive(:warn)
+        allow(FatTerm).to receive(:error)
         km.load_config
-        expect(km).to have_received(:warn).at_least(:once)
+        expect(FatTerm).to have_received(:error).at_least(:once)
       end
 
-      it "warns and continues on Psych::SyntaxError" do
+      it "logs and continues on Psych::SyntaxError" do
         km = KeyMap.new
         allow(FatTerm::Config).to receive(:keybindings)
                                     .and_raise(Psych::SyntaxError.new("", 0, 0, 0, "", ""))
-        allow(km).to receive(:warn)
+        allow(FatTerm).to receive(:error)
         expect { km.load_config }.not_to raise_error
-        expect(km).to have_received(:warn).with(/syntax error/i)
+        expect(FatTerm).to have_received(:error).with(a_string_matching(/syntax error/i), tag: :keybinding)
       end
 
       it "defaults missing context to :input" do
