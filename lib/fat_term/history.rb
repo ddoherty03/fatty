@@ -17,6 +17,39 @@ module FatTerm
       load if @path
     end
 
+    ###################################################################################
+    # Accessing History items from a consuming application
+    ###################################################################################
+
+    include Enumerable
+
+    def each(&block)
+      return enum_for(:each) unless block
+
+      @entries.each(&block)
+    end
+
+    def for(kind: nil, ctx: nil)
+      return enum_for(:for, kind: kind, ctx: ctx) unless block_given?
+
+      each do |entry|
+        next if kind && entry.kind != kind.to_sym
+        next if ctx && !ctx_match?(entry, ctx)
+
+        yield entry
+      end
+    end
+
+    def recent(kind: nil, ctx: nil, limit: nil)
+      rows = self.for(kind: kind, ctx: ctx).to_a
+      rows = rows.last(limit) if limit
+      rows.reverse
+    end
+
+    ###################################################################################
+    # Manipulating History
+    ###################################################################################
+
     def add(text, kind: :command, ctx: nil, stamp: nil)
       text = text.to_s
       return if text.strip.empty?
@@ -94,24 +127,11 @@ module FatTerm
       text = prefix.to_s
       return if text.empty?
 
-      entries_for(*kinds, ctx: ctx, prefix: text).last&.text
-    end
-
-    def suggest_for(*kinds, prefix:, ctx: nil)
-      text = prefix.to_s
-      return if text.empty?
-
-      local =
-        if !ctx.nil?
-          entries_for(*kinds, ctx: ctx, prefix: text)
-        else
-          []
-        end
-
+      local = ctx ? entries_for(*kinds, ctx: ctx, prefix: text) : []
       return local.last.text unless local.empty?
 
       global = entries_for(*kinds, prefix: text)
-      global.last.text unless global.empty?
+      global.last&.text
     end
 
     private
@@ -151,19 +171,12 @@ module FatTerm
 
     def entries_for(*kinds, ctx: nil, prefix: nil)
       wanted = normalize_kinds(*kinds)
-      entries = @entries.select do |entry|
+
+      matches = select do |entry|
         wanted.include?(entry.kind) && prefix_match?(entry, prefix)
       end
-      preferred = []
-      fallback = []
 
-      entries.each do |entry|
-        if ctx_match?(entry, ctx)
-          preferred << entry
-        else
-          fallback << entry
-        end
-      end
+      fallback, preferred = matches.partition { |entry| !ctx_match?(entry, ctx) }
       fallback + preferred
     end
 
