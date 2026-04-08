@@ -166,6 +166,12 @@ module FatTerm
       FatTerm::Config.keybindings
       FatTerm::Logger.configure
       Thread.report_on_exception = true
+      if Logger.logger
+        Logger.info("Read config from #{Config.user_config_path}")
+        Logger.info("Read keydefs from #{Config.user_keydefs_path}")
+        Logger.info("Read keybindings from #{Config.user_keybindings_path}")
+        Logger.info("Logger configured to log to #{Logger.path}")
+      end
     rescue FatConfig::ParseError => ex
       msg = "Terminal#preflight!: configuration error: #{ex.class}: #{ex.message}"
       warn msg

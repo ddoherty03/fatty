@@ -8,7 +8,7 @@ require "fileutils"
 module FatTerm
   module Logger
     class << self
-      attr_accessor :logger
+      attr_accessor :logger, :path
     end
 
     def self.configure
@@ -32,6 +32,7 @@ module FatTerm
       io = File.open(path, "a")
       io.sync = true
       self.logger = ::Logger.new(io)
+      self.path = path
       logger.level = severity(cfg.dig(:log, :level))
       logger.formatter =
         if cfg.dig(:log, :format).nil?
