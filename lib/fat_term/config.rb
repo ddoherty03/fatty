@@ -3,11 +3,12 @@
 module FatTerm
   module Config
     class << self
-      attr_reader :progname
+      attr_reader :progname, :config
       attr_accessor :reader
       attr_accessor :dir
     end
     @progname = 'fat_term'
+    @config = {}
     @reader = nil
     @dir = nil
 
@@ -16,7 +17,7 @@ module FatTerm
     # including the location of the log file.
     def self.config
       @reader ||= FatConfig::Reader.new(progname, user_dir: dir)
-      reader.read('config')
+      @config = reader.read('config')
     end
 
     def self.progname=(name)
