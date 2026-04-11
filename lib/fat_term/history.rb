@@ -22,7 +22,12 @@ module FatTerm
       @entries = []
       @cursors = {}
 
-      load if @path
+      if @path
+        FatTerm.info("History loaded from #{@path}")
+        load
+      else
+        FatTerm.info("In-memory History only: no path")
+      end
     end
 
     ###################################################################################

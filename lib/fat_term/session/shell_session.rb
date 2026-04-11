@@ -15,7 +15,7 @@ module FatTerm
           FatTerm::CursorView.new(z: 100),
         ]
       )
-      @history = FatTerm::History.new # you said History now uses config defaults
+      @history = FatTerm::History.new(path: :default)
       @field = FatTerm::InputField.new(
         prompt: prompt,
         history: @history,
