@@ -1,18 +1,26 @@
-* Add snippet suggestion for unrecognized and unbound keys
-* Add cut and paste
-* DONE Add history
-CLOSED: [2026-01-27 Tue 05:44]
-* Add completion
-* DONE Add undo
-CLOSED: [2026-01-27 Tue 05:44]
-* Add modes for vi-like keybindings
+* TODO Add snippet suggestion for unrecognized and unbound keys
+* TODO Add modes for vi-like keybindings
 - will require changing keybindongs.yml format to include a mode qualifier
 - for advanced two-step actions, e.g. dw, will require an action-pending
   capability
-* Scrollback Navigation (PgUp/PgDn)
+* TODO Background Jobs (&)
+* TODO Add attributes (like bold to themes)
+So, in themes, this would be possible:
+#+begin_src ruby
+  status_info: { fg: "white", bg: "navy", attrs: [:bold] }
+#+end_src
 
-* Add Output Search
+* TODO SIGINT forwarding to child process
+* DONE Add cut and paste
+CLOSED: [2026-04-13 Mon 07:48]
+* DONE Add history
+CLOSED: [2026-01-27 Tue 05:44]
+* DONE Add completion
+CLOSED: [2026-04-13 Mon 07:48]
+* DONE Add undo
+CLOSED: [2026-01-27 Tue 05:44]
+* DONE Scrollback Navigation (PgUp/PgDn)
+CLOSED: [2026-04-13 Mon 07:48]
 
-* Background Jobs (&)
-
-* SIGINT forwarding to child process
+* DONE Add Output Search
+CLOSED: [2026-04-13 Mon 07:48]
