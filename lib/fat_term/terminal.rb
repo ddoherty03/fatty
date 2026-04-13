@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative './terminal/progress_handle'
+require_relative './terminal/popup_owner'
+
 module FatTerm
   class Terminal
     # Commands are plain Ruby arrays for now.
@@ -17,7 +20,7 @@ module FatTerm
     #
     # You can add more later; Terminal only needs a small dispatcher.
 
-    attr_reader :screen, :renderer, :event_source
+    attr_reader :screen, :renderer, :event_source, :status_text, :status_role
 
     def initialize(prompt: "> ", on_accept: nil, completion_proc: nil, history_ctx: nil, env: nil)
       @prompt = Prompt.ensure(prompt)
@@ -32,6 +35,41 @@ module FatTerm
       @sessions = []
       @sessions_by_id = {}
       @modal_stack = []
+      @status_text = nil
+      @status_role = :status_info
+      @status_transient = false
+    end
+
+    # --- Status line management ------------------------------------------------
+
+    def set_status(text, role: :status_info, transient: false)
+      was_visible = status_visible?
+
+      str = text.to_s
+      if str.empty?
+        @status_text = nil
+        @status_role = :status_info
+        @status_transient = false
+      else
+        @status_text = str
+        @status_role = role
+        @status_transient = transient
+      end
+
+      now_visible = status_visible?
+      refresh_layout! if was_visible != now_visible
+    end
+
+    def clear_status
+      was_visible = status_visible?
+      @status_text = nil
+      @status_role = :status_info
+      @status_transient = false
+      refresh_layout! if was_visible
+    end
+
+    def transient_status?
+      !!@status_transient
     end
 
     # --- Session management ------------------------------------------------
@@ -158,6 +196,99 @@ module FatTerm
       end
     end
 
+    # The consumer can call #choose to cause an interactive popup session to
+    # present the user with a series of choices to select from.
+    def choose(prompt:, choices:, initial_choice_idx: 0, quit_value: nil)
+      items = normalize_choices(choices)
+      raise ArgumentError, "choices must not be empty" if items.empty?
+
+      labels = items.map(&:first)
+      result = nil
+
+      popup = FatTerm::PopUpSession.new(
+        source: labels,
+        kind: :terminal_choose,
+        title: "Choose",
+        prompt: "> ",
+        selection: :top,
+      )
+
+      popup.instance_variable_set(:@selected, initial_choice_idx.to_i.clamp(0, labels.length - 1))
+
+      set_status(prompt, role: :status_info)
+      acc_proc = ->(payload) do
+        item = payload[:item]
+        idx = labels.index(item)
+        result = idx ? items[idx][1] : quit_value
+      end
+      cancel_proc = -> { result = quit_value }
+      owner = PopupOwner.new(on_result: acc_proc, on_cancel: cancel_proc)
+      begin
+        push_modal(popup, owner: owner)
+        # refresh_layout!
+        render_frame
+        while result.nil? && @running
+          dirty = false
+          msg = event_source.next_event
+          if msg
+            dispatch_message(msg)
+            dirty = true
+          end
+
+          s = active_session
+          begin
+            tick_dirty = !!s&.tick(terminal: self)
+            dirty ||= tick_dirty
+          rescue StandardError => e
+            FatTerm.error("Terminal#choose tick failed: #{e.class}: #{e.message}", tag: :terminal)
+            dirty = true
+          end
+
+          render_frame if dirty
+        end
+      ensure
+        clear_status
+        # refresh_layout!
+        render_frame
+      end
+
+      result
+    end
+
+    # A simple Yes/No chooser.
+    def confirm(prompt, default: true)
+      idx = default ? 0 : 1
+      choose(
+        prompt: prompt,
+        choices: [["Yes", true], ["No", false]],
+        initial_choice_idx: idx,
+        quit_value: false,
+      )
+    end
+
+    def progress(label:, total: nil, style: :percent, role: :status_info, trail_max: nil)
+      ProgressHandle.new(
+        terminal: self,
+        label: label,
+        total: total,
+        style: style,
+        role: role,
+        trail_max: trail_max,
+      )
+    end
+
+    def render_now
+      render_frame
+    end
+
+    def status_visible?
+      @status_text && !@status_text.empty?
+    end
+
+    def status_rows
+      status_visible? ? 1 : 0
+    end
+
     private
 
     def preflight!
@@ -188,7 +319,7 @@ module FatTerm
       @ctx = FatTerm::Curses::Context.new
       @ctx.start
 
-      @screen = FatTerm::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols)
+      @screen = FatTerm::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols, status_rows: status_rows)
       @ctx.apply_layout(@screen)
 
       @renderer = FatTerm::Curses::Renderer.new(context: @ctx, screen: @screen)
@@ -223,6 +354,17 @@ module FatTerm
           )
     end
 
+    def refresh_layout!
+      screen.resize(
+        rows: @ctx.rows,
+        cols: @ctx.cols,
+        status_rows: status_rows,
+      )
+      @ctx.apply_layout(screen)
+      renderer.screen = screen
+      renderer.invalidate!
+    end
+
     def resize_message?(message)
       kind, event = message
       kind == :key && event.respond_to?(:key) && event.key == :resize
@@ -231,7 +373,7 @@ module FatTerm
     def handle_resize
       rows = ::Curses.lines
       cols = ::Curses.cols
-      screen.resize(rows: rows, cols: cols)
+      screen.resize(rows: rows, cols: cols, status_rows: status_rows)
       renderer.context.apply_layout(screen)
       renderer.screen = screen
       renderer.invalidate!
@@ -278,6 +420,11 @@ module FatTerm
       # Clear transient alerts on the next user keypress.
       if key_event_message?(message) && find_session(:alert)
         apply_command([:send, :alert, :clear, {}])
+      end
+
+      # Clear transient status line on the next user keypress.
+      if key_event_message?(message) && transient_status?
+        clear_status
       end
 
       FatTerm.debug("Terminal#dispatch_message: #{message.inspect}", tag: :session)
@@ -383,17 +530,34 @@ module FatTerm
       apply_commands(commands)
     end
 
+    # --- Choose helpers ---------------------------------------------------------
+
+    def normalize_choices(choices)
+      Array(choices).map do |choice|
+        if choice.is_a?(Array) && choice.length == 2
+          [choice[0].to_s, choice[1]]
+        else
+          [choice.to_s, choice]
+        end
+      end
+    end
+
     # --- Rendering ---------------------------------------------------------
 
     def render_frame
       renderer.begin_frame
 
-      # Render pinned sessions first, then stack sessions.
-      # Within each session, its views handle their own z-order.
       sessions = @pinned + @stack
       sessions.each do |s|
         s.view(screen: screen, renderer: renderer, terminal: self)
       end
+
+      FatTerm::StatusView.new.render(
+        screen: screen,
+        renderer: renderer,
+        terminal: self,
+      )
+
       if (top = @modal_stack.last)
         top[:session].view(screen: screen, renderer: renderer, terminal: self)
       end

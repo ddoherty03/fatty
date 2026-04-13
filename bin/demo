@@ -7,7 +7,8 @@ require "shellwords"
 
 prompt = FatTerm::Prompt.new { "#{Dir.pwd}> " }
 history_ctx_proc = -> { { pwd: Dir.pwd } }
-on_accept_proc = ->(line, terminal:, session:) do
+
+on_accept_proc = lambda do |line, terminal:, session:|
   cmd, *args = Shellwords.split(line)
 
   case cmd
@@ -15,6 +16,85 @@ on_accept_proc = ->(line, terminal:, session:) do
     dir = args.first || ENV["HOME"]
     dir = File.expand_path(dir)
     Dir.chdir(dir)
+  when "choose"
+    choices =
+      if args.empty?
+        ["Choice A", "Choice B", "Choice C"]
+      else
+        args
+      end
+
+    choice = terminal.choose(
+      prompt: "Select one",
+      choices: choices,
+      initial_choice_idx: 0,
+      quit_value: nil,
+    )
+
+    if choice.nil?
+      session.append_output("choose: cancelled\n")
+    else
+      session.append_output("choose: selected #{choice.inspect}\n")
+    end
+  when "choosevals"
+    pairs =
+      if args.empty?
+        [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", :done]]
+      else
+        args.each_with_index.map { |arg, idx| ["#{arg} => #{idx}", idx] }
+      end
+
+    choice = terminal.choose(
+      prompt: "Select one",
+      choices: pairs,
+      initial_choice_idx: 1,
+      quit_value: nil,
+    )
+
+    if choice.nil?
+      session.append_output("choosevals: cancelled\n")
+    else
+      session.append_output("choosevals: selected #{choice.inspect}\n")
+    end
+  when "progress"
+    styles = %w[count percent simple_percent trail]
+    style_name = args.first
+    style =
+      if style_name && styles.include?(style_name)
+        args.shift.to_sym
+      else
+        :trail
+      end
+
+    total =
+      begin
+        Integer(args.first || 40)
+      rescue StandardError
+        40
+      end
+    total = 1 if total < 1
+
+    prog = terminal.progress(
+      label: "Demo progress",
+      total: total,
+      style: style,
+    )
+
+    total.times do |i|
+      indicator =
+        case i % 4
+        when 0 then "+"
+        when 1 then "-"
+        when 2 then "^"
+        else "."
+        end
+
+      prog.update(current: i + 1, indicator: indicator, render: true)
+      sleep 0.02
+    end
+
+    prog.finish("Demo progress complete.", render: true)
+    session.append_output("progress: style=#{style} completed #{total} steps\n")
   else
     out, _ = Open3.capture2e(line)
     session.append_output(out)

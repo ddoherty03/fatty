@@ -23,7 +23,7 @@ module FatTerm
     class Context
       DEFAULT_ESC_DELAY = 25
 
-      attr_reader :input_win, :output_win, :alert_win
+      attr_reader :input_win, :output_win, :status_win, :alert_win
       attr_reader :rows, :cols
 
       def initialize
@@ -97,10 +97,12 @@ module FatTerm
         close_windows
 
         out = screen.output_rect
+        sts = screen.status_rect
         inp = screen.input_rect
         alr = screen.alert_rect
 
         @output_win = ::Curses::Window.new(out.rows, out.cols, out.row, out.col)
+        @status_win = ::Curses::Window.new(sts.rows, sts.cols, sts.row, sts.col)
         @input_win  = ::Curses::Window.new(inp.rows, inp.cols, inp.row, inp.col)
         @alert_win  = ::Curses::Window.new(alr.rows, alr.cols, alr.row, alr.col)
 
@@ -169,10 +171,12 @@ module FatTerm
         @output_win&.close
         @input_win&.close
         @alert_win&.close
+        @status_win&.close
 
         @output_win = nil
         @input_win  = nil
         @alert_win  = nil
+        @status_win  = nil
       end
 
       # Generate a map from [fg, bg] pairs to Cuses pair ids.
