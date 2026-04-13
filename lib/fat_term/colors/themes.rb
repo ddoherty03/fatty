@@ -21,7 +21,7 @@ module FatTerm
 
           region: { fg: "navy", bg: "yellow" },
 
-          status_info: { fg: "black", bg: "lightgray" },
+          status_info: { fg: "white", bg: "navy" },
           status_warn: { fg: "black", bg: "magenta" },
           status_error: { fg: "white", bg: "red" },
 
@@ -39,13 +39,13 @@ module FatTerm
 
         nordic: {
           output: { fg: "#d8dee9", bg: "#2e3440" },
-          input:  { fg: "#eceff4", bg: "#3b4252" },
+          input: { fg: "#eceff4", bg: "#3b4252" },
           input_suggestion: { fg: "#81a1c1", bg: "#3b4252" },
           cursor: { fg: "#2e3440", bg: "#88c0d0" },
 
           region: { fg: "#2e3440", bg: "#88c0d0" },
 
-          status_info:  { fg: "#2e3440", bg: "#88c0d0" },
+          status_info: { fg: "#d8dee9", bg: "#2e3440" },
           status_warn:  { fg: "#2e3440", bg: "#ebcb8b" },
           status_error: { fg: "#eceff4", bg: "#bf616a" },
 
@@ -69,7 +69,7 @@ module FatTerm
 
           region: { fg: "#002b36", bg: "#b58900" },
 
-          status_info:  { fg: "#002b36", bg: "#268bd2" },
+          status_info: { fg: "#839496", bg: "#002b36" },
           status_warn:  { fg: "#002b36", bg: "#cb4b16" },
           status_error: { fg: "#fdf6e3", bg: "#dc322f" },
 
@@ -86,27 +86,27 @@ module FatTerm
         },
 
         mono: {
-          output: { fg: "default", bg: "default" },
-          input: { fg: "default", bg: "default" },
-          input_suggestion: { fg: "default", bg: "default" },
-          cursor: { fg: "default", bg: "default" },
+          output: { fg: "black", bg: "white" },
+          input: { fg: "white", bg: "black" },
+          input_suggestion: { fg: "gray", bg: "white" },
+          cursor: { fg: "black", bg: "white" },
 
-          region: { fg: "default", bg: "default" },
+          region: { fg: "black", bg: "white" },
 
           search_highlight: { fg: "black", bg: "yellow" },
           search_highlight_secondary: { fg: "black", bg: "lightgray" },
           search: { fg: "black", bg: "cyan" },
 
-          pager_status: {fg: "black", bg: "lightgreen"},
+          pager_status: {fg: "black", bg: "white"},
 
-          status_info: { fg: "default", bg: "default" },
+          status_info: { fg: "black", bg: "white" },
           status_warn: { fg: "default", bg: "default" },
           status_error: { fg: "default", bg: "default" },
 
-          popup: { fg: "default", bg: "default" },
-          popup_selection: { fg: "default", bg: "default" },
-          popup_input: { fg: "default", bg: "default" },
-          popup_frame: { fg: "default", bg: "default" },
+          popup: { fg: "black", bg: "white" },
+          popup_selection: { fg: "white", bg: "black" },
+          popup_input: { fg: "white", bg: "black" },
+          popup_frame: { fg: "black", bg: "white" },
         },
       }.freeze
 
