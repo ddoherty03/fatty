@@ -57,7 +57,7 @@ on_accept_proc = lambda do |line, terminal:, session:|
       session.append_output("choosevals: selected #{choice.inspect}\n")
     end
   when "progress"
-    styles = %w[count percent simple_percent trail]
+    styles = %w[count percent simple_percent trail bar unicode_bar braille_bar spinner]
     style_name = args.first
     style =
       if style_name && styles.include?(style_name)
@@ -90,7 +90,7 @@ on_accept_proc = lambda do |line, terminal:, session:|
         end
 
       prog.update(current: i + 1, indicator: indicator, render: true)
-      sleep 0.02
+      sleep 0.1
     end
 
     prog.finish("Demo progress complete.", render: true)
