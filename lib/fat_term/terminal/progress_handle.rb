@@ -13,9 +13,6 @@ module FatTerm
 
       BRAILLE_STEPS = ["⠀", "⣀", "⣄", "⣆", "⣇", "⣧", "⣷", "⣿"].freeze
 
-      SPINNER_FRAMES = %w[| / - \\].freeze
-      UNICODE_SPINNER_FRAMES = BRAILLE_STEPS
-
       attr_reader :terminal, :label, :total, :style, :role
 
       def initialize(terminal:, label:, total: nil, style: :percent, role: :status_info, trail_max: nil, bar_width: 40)
@@ -36,8 +33,11 @@ module FatTerm
         @current = current.to_i
         @total = total&.to_i
         @label = label.to_s
-        append_indicator(indicator)
-        advance_spinner if style == :spinner
+        if style == :spinner
+          advance_spinner
+        else
+          append_indicator(indicator)
+        end
         refresh
         terminal.render_now if render
         self
@@ -233,7 +233,6 @@ module FatTerm
 
         raw = progress_ratio * width
         full = raw.floor
-        remainder = raw - full
 
         # Show a transition block whenever the bar is in progress but not complete,
         # provided there is space for it.
@@ -298,7 +297,7 @@ module FatTerm
       end
 
       def spinner_frames
-        UNICODE_SPINNER_FRAMES
+        BRAILLE_STEPS[1..]
       end
     end
   end
