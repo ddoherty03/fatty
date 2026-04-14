@@ -232,10 +232,12 @@ module FatTerm
 
     # Make the bindings from the user's config file, usually at
     # ~/.config/fat_term/keybindings.yml
-    def load_config
+    def load_user_config
+      FatTerm.info("Read keybindings from #{Config.user_keybindings_path}", tag: :keybinding)
       data = FatTerm::Config.keybindings
       return self unless data.is_a?(Array)
 
+      FatTerm.info("User keybindings", config: data, tag: :keybinding)
       data.each_with_index do |entry, idx|
         bind_entry(entry, idx)
       end

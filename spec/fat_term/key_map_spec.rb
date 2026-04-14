@@ -143,7 +143,7 @@ module FatTerm
       end
     end
 
-    describe "#load_config" do
+    describe "#load_user_config" do
       it "loads bindings from Config.keybindings" do
         km = KeyMap.new
         cfg =
@@ -154,7 +154,7 @@ module FatTerm
           ]
         allow(FatTerm::Config).to receive(:keybindings)
                                     .and_return(cfg)
-        km.load_config
+        km.load_user_config
         expect(km.resolve(ev(:enter), contexts: [:input])).to eq(:submit)
         expect(km.resolve(ev(:enter), contexts: [:paging])).to eq(:page_down)
         expect(km.resolve(ev(:enter, meta: true), contexts: [:paging])).to be_nil
@@ -165,7 +165,7 @@ module FatTerm
         km = KeyMap.new
         allow(FatTerm::Config).to receive(:keybindings).and_return(nil)
 
-        expect { km.load_config }.not_to raise_error
+        expect { km.load_user_config }.not_to raise_error
         expect(km.resolve(ev(:a, ctrl: true))).to be_nil
       end
 
@@ -173,7 +173,7 @@ module FatTerm
         km = KeyMap.new
         allow(FatTerm::Config).to receive(:keybindings).and_return({})
 
-        expect { km.load_config }.not_to raise_error
+        expect { km.load_user_config }.not_to raise_error
       end
 
       it "binds entries from config (including context/modifiers)" do
@@ -187,7 +187,7 @@ module FatTerm
                     { "key" => "G", "context" => "paging", "shift" => true, "action" => "page_bottom" },
                   ],
                 )
-        km.load_config
+        km.load_user_config
 
         expect(km.resolve(ev(:a, ctrl: true), contexts: :input)).to eq(:bol)
         expect(km.resolve(ev(:space), contexts: :paging)).to eq(:page_down)
@@ -198,7 +198,7 @@ module FatTerm
         km = KeyMap.new
         allow(FatTerm::Config).to receive(:keybindings).and_return([123, "nope"])
         allow(FatTerm).to receive(:error)
-        km.load_config
+        km.load_user_config
         expect(FatTerm).to have_received(:error).at_least(:once)
       end
 
@@ -213,7 +213,7 @@ module FatTerm
                                       ],
                                     )
         allow(FatTerm).to receive(:error)
-        km.load_config
+        km.load_user_config
         expect(FatTerm).to have_received(:error).at_least(:once)
       end
 
@@ -222,7 +222,7 @@ module FatTerm
         allow(FatTerm::Config).to receive(:keybindings)
                                     .and_raise(Psych::SyntaxError.new("", 0, 0, 0, "", ""))
         allow(FatTerm).to receive(:error)
-        expect { km.load_config }.not_to raise_error
+        expect { km.load_user_config }.not_to raise_error
         expect(FatTerm).to have_received(:error).with(a_string_matching(/syntax error/i), tag: :keybinding)
       end
 
@@ -231,7 +231,7 @@ module FatTerm
         allow(FatTerm::Config).to receive(:keybindings)
                                     .and_return([{ "key" => "a", "ctrl" => true, "action" => "bol" }])
 
-        km.load_config
+        km.load_user_config
 
         expect(km.resolve(ev(:a, ctrl: true), contexts: :input)).to eq(:bol)
         expect(km.resolve(ev(:a, ctrl: true), contexts: :paging)).to be_nil
