@@ -3,7 +3,7 @@
 module FatTerm
   module Config
     class << self
-      attr_reader :progname, :config
+      attr_reader :progname
       attr_accessor :reader
       attr_accessor :dir
     end
