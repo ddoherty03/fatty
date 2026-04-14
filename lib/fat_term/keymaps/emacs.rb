@@ -162,7 +162,7 @@ module FatTerm
       map.bind_mouse(context: :paging, button: :scroll_down, action: :scroll_down)
 
       # Load the user's keybindings
-      map.load_config
+      map.load_user_config
     end
   end
 end
