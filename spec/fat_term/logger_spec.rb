@@ -6,6 +6,7 @@ require "json"
 module FatTerm
   RSpec.describe Logger do
     let(:progname) { 'fat_term_spec' }
+
     around do |ex|
       # Preserve global logger + env, since FatTerm::Logger is module-global.
       old_logger = Logger.logger
@@ -157,17 +158,29 @@ module FatTerm
       end
 
       it "writes plain text lines to the log file" do
-        allow(FatTerm::Config).to receive(:config).and_return({ log: { level: 'debug', format: 'text', tags: [:all] } })
+        path = File.join("/tmp", "text_#{$$}.log")
+        allow(FatTerm::Config).to receive(:progname).and_return("fat_term_spec")
+        allow(FatTerm::Config).to receive(:config).and_return({
+                                                                log: {
+                                                                  file: path,
+                                                                  level: :debug,
+                                                                  format: :text,
+                                                                  tags: [:all],
+                                                                },
+                                                              })
 
         Logger.configure
-        path = File.join(ENV.fetch("XDG_STATE_HOME"), progname, "#{progname}.log")
+        Logger.log("evt", level: :info, tag: :render, foo: 1, bar: [2, 4, 6])
 
-        Logger.log(:evt, level: :info, tag: :render, foo: 1)
-
-        lines = read_lines(path)
-        expect(lines).not_to be_empty
-        expect(lines.last).to match(/INFO.*fat_term_spec/)
-        expect(lines.last).to include('{"event":"evt","tag":"render","foo":1') # payload is still JSON stringified
+        lines = File.readlines(path)
+        expect(lines.first).to match(/INFO.*fat_term_spec/)
+        expect(lines.first).to include("[render]")
+        expect(lines.first).to include("evt")
+        expect(lines.last).to include("foo:")
+        expect(lines.last).to include("1")
+        expect(lines.last).to include("bar:")
+        expect(lines.last).to include("2")
+        expect(lines.last).to include("6")
       end
     end
 

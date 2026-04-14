@@ -143,7 +143,7 @@ module FatTerm
       # different terminal programs process keys.
       def load_user_config
         config = FatTerm::Config.keydefs
-        FatTerm.info("#{self.class}#load_user_config(keydefs config: #{config})", tag: :keycode)
+        FatTerm.info("KeyDecode#load_user_config", config: config, tag: :keycode)
         return unless config
 
         terminal = @env[:terminal]

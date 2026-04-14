@@ -5,6 +5,9 @@ require "json"
 require "time"
 require "fileutils"
 
+require_relative "log_formats/json"
+require_relative "log_formats/text"
+
 module FatTerm
   module Logger
     class << self
@@ -60,7 +63,6 @@ module FatTerm
     #     - render:: viewports, layout sizes, redraw triggers
     #     - perf:: timings, frame time, slow paths
     #     - all:: All of the above
-    #
     def self.log(event = nil, level: :debug, tag: nil, **data)
       return unless logger
 
@@ -71,16 +73,17 @@ module FatTerm
         return unless tags.include?(tag.to_sym)
       end
 
-      payload = { event: event&.to_s, tag: tag&.to_s }.merge(data)
+      payload = { event: event, tag: tag }
+      payload.merge!(data.reject { |k,_| k == :event || k == :tag })
 
-      logger.add(severity(level)) { payload.to_json }
+      logger.add(severity(level), payload)
     rescue StandardError => ex
-      # Last-ditch: never let logging take down the app.
       begin
-        logger&.add(::Logger::FATAL) do
-          { event: "logger_error", err: ex.class.name, msg: ex.message, bt: ex.backtrace&.take(10) }.to_json
-        end
-      rescue StandardError => ex
+        logger&.add(
+          ::Logger::FATAL,
+          { event: "logger_error", err: ex.class.name, msg: ex.message, bt: ex.backtrace&.take(10) }
+        )
+      rescue StandardError
         # swallow
       end
     end
@@ -105,38 +108,6 @@ module FatTerm
         ::Logger::FATAL
       else
         ::Logger::DEBUG
-      end
-    end
-
-    class JsonFormatter < ::Logger::Formatter
-      def call(level, time, progname, msg)
-        rec = {
-          t: time.utc.iso8601(6),
-          sev: level,
-          prog: progname
-        }
-
-        # If msg is JSON already (our FatTerm.log uses to_json), parse and merge.
-        # Otherwise store as "msg".
-        begin
-          parsed = JSON.parse(msg.to_s)
-          if parsed.is_a?(Hash)
-            rec.merge!(parsed)
-          else
-            rec[:msg] = parsed
-          end
-        rescue JSON::ParserError
-          rec[:msg] = msg.to_s
-        end
-
-        rec.to_json << "\n"
-      end
-    end
-
-    class TextFormatter < ::Logger::Formatter
-      def call(level, time, progname, msg)
-        ts = time.utc.iso8601(6)
-        "#{ts} #{level} #{progname} #{msg}\n"
       end
     end
   end

@@ -209,10 +209,10 @@ module FatTerm
         if binding.is_a?(Array)
           action = binding[0]
           args = binding[1..] || []
-          FatTerm.debug("KeyMap.resolve_action: action: #{action.inspect}, args: #{args.inspect}", tag: :keymap)
+          FatTerm.debug("KeyMap.resolve_action: action: #{action.inspect}, args: #{args.inspect}", tag: :keybinding)
           [action, args]
         else
-          FatTerm.debug("KeyMap.resolve_action: action: #{binding.inspect}, args: []", tag: :keymap)
+          FatTerm.debug("KeyMap.resolve_action: action: #{binding.inspect}, args: []", tag: :keybinding)
           [binding, []]
         end
       elsif event&.printable? && (contexts.include?(:input) || contexts.include?(:pager_input))
