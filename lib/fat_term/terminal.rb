@@ -293,17 +293,15 @@ module FatTerm
 
     def preflight!
       FatTerm::Config.config
+      FatTerm::Logger.configure
+      if FatTerm::Logger.logger
+        FatTerm.info("Logger configured to log to #{Logger.path}")
+        FatTerm.info("Read config from #{Config.user_config_path}", tag: :config)
+        FatTerm.info("Config", config: Config.config, tag: :config)
+      end
       FatTerm::Config.keydefs
       FatTerm::Config.keybindings
-      FatTerm::Logger.configure
       Thread.report_on_exception = true
-      if Logger.logger
-        FatTerm.info("Read config from #{Config.user_config_path}")
-        FatTerm.debug("Config: #{pp Config.config}")
-        FatTerm.info("Read keydefs from #{Config.user_keydefs_path}")
-        FatTerm.info("Read keybindings from #{Config.user_keybindings_path}")
-        FatTerm.info("Logger configured to log to #{Logger.path}")
-      end
     rescue FatConfig::ParseError => ex
       msg = "Terminal#preflight!: configuration error: #{ex.class}: #{ex.message}"
       warn msg
