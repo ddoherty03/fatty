@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative './terminal/progress_handle'
+require_relative './terminal/progress'
 require_relative './terminal/popup_owner'
 
 module FatTerm
@@ -267,7 +267,7 @@ module FatTerm
     end
 
     def progress(label:, total: nil, style: :percent, role: :status_info, trail_max: nil)
-      ProgressHandle.new(
+      Progress.new(
         terminal: self,
         label: label,
         total: total,

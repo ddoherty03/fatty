@@ -2,7 +2,7 @@
 
 module FatTerm
   class Terminal
-    class ProgressHandle
+    class Progress
       PARTIAL_BLOCKS = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉"].freeze
       FULL_BLOCK = "█"
       EMPTY_BAR = ".".freeze
