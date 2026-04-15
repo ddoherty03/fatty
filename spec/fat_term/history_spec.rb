@@ -223,6 +223,21 @@ module FatTerm
       end
     end
 
+    describe "#entries_for" do
+      it "returns fallback entries before preferred entries, preserving chronological order within each bucket" do
+        h = FatTerm::History.new
+
+        h.add("g1", kind: :command, ctx: { pwd: "/tmp/other" })
+        h.add("l1", kind: :command, ctx: { pwd: "/tmp/demo" })
+        h.add("g2", kind: :command, ctx: { pwd: "/tmp/other" })
+        h.add("l2", kind: :command, ctx: { pwd: "/tmp/demo" })
+
+        texts = h.send(:entries_for, :command, ctx: { pwd: "/tmp/demo" }).map(&:text)
+
+        expect(texts).to eq(%w[g1 g2 l1 l2])
+      end
+    end
+
     describe "#suggest_for" do
       let(:history) { FatTerm::History.new(path: nil) }
 
@@ -239,6 +254,28 @@ module FatTerm
 
         expect(history.suggest_for(:command, prefix: "sta", ctx: { pwd: "/here" }))
           .to eq("status old")
+      end
+    end
+
+    describe "#next_for and #previous_for" do
+      it "does not walk past the end of the filtered history list" do
+        h = FatTerm::History.new
+
+        h.add("global one", kind: :command, ctx: { pwd: "/tmp/other" })
+        h.add("local one", kind: :command, ctx: { pwd: "/tmp/demo" })
+
+        expect(h.previous_for(:command, current: '', ctx: { pwd: "/tmp/demo" })).to eq("local one")
+        expect(h.next_for(:command, ctx: { pwd: "/tmp/demo" })).to eq("")
+      end
+
+      it "returns scratch when navigating down past the newest matching entry" do
+        h = FatTerm::History.new
+
+        h.add("one", kind: :command, ctx: { pwd: "/tmp/demo" })
+        h.add("two", kind: :command, ctx: { pwd: "/tmp/demo" })
+
+        expect(h.previous_for(:command, current: '', ctx: { pwd: "/tmp/demo" })).to eq("two")
+        expect(h.next_for(:command, ctx: { pwd: "/tmp/demo" })).to eq("")
       end
     end
 

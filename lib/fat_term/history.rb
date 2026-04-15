@@ -68,16 +68,17 @@ module FatTerm
       return if text.strip.empty?
 
       kind = kind.to_sym
+      ctx = normalize_ctx(ctx)
       entry = Entry.new(text: text, kind: kind, ctx: ctx, stamp: stamp)
       last = @entries.last
       if last && last.text == text && last.kind == kind
-        reset_cursor_for(kind)
+        reset_cursor_for(kind, ctx: ctx)
         return text
       end
       @entries << entry
       truncate!
       append_to_file(entry)
-      reset_cursor_for(kind)
+      reset_cursor_for(kind, ctx: ctx)
       text
     end
 
@@ -94,6 +95,7 @@ module FatTerm
     end
 
     def previous_for(*kinds, current:, ctx: nil)
+      ctx = normalize_ctx(ctx)
       cursor = cursor_for(*kinds, ctx: ctx)
       prefix = cursor[:prefix]
 
@@ -103,26 +105,27 @@ module FatTerm
         prefix = cursor[:prefix]
       end
 
-      entries = entries_for(*kinds, ctx: ctx, prefix: prefix)
-      return current.to_s if entries.empty?
+      the_entries = entries_for(*kinds, ctx: ctx, prefix: prefix)
+      return current.to_s if the_entries.empty?
 
       if cursor[:index].nil?
-        cursor[:index] = entries.length - 1
-        return entries[cursor[:index]].text
+        cursor[:index] = the_entries.length - 1
+        return the_entries[cursor[:index]].text
       end
 
       cursor[:index] -= 1 if cursor[:index].positive?
-      entries[cursor[:index]].text
+      the_entries[cursor[:index]].text
     end
 
     def next_for(*kinds, ctx: nil)
+      ctx = normalize_ctx(ctx)
       cursor = cursor_for(*kinds, ctx: ctx)
-      entries = entries_for(*kinds, ctx: ctx, prefix: cursor[:prefix])
-      return "" if entries.empty? || cursor[:index].nil?
+      the_entries = entries_for(*kinds, ctx: ctx, prefix: cursor[:prefix])
+      return "" if the_entries.empty? || cursor[:index].nil?
 
-      if cursor[:index] < entries.length - 1
+      if cursor[:index] < the_entries.length - 1
         cursor[:index] += 1
-        entries[cursor[:index]].text
+        the_entries[cursor[:index]].text
       else
         scratch = cursor[:scratch]
         reset_cursor_for(*kinds, ctx: ctx)
@@ -131,15 +134,18 @@ module FatTerm
     end
 
     def reset_cursor_for(*kinds, ctx: nil)
+      ctx = normalize_ctx(ctx)
       cursor = cursor_for(*kinds, ctx: ctx)
       cursor[:index] = nil
       cursor[:prefix] = nil
+      cursor[:scratch] = nil
     end
 
     def suggest_for(*kinds, prefix:, ctx: nil)
       text = prefix.to_s
       return if text.empty?
 
+      ctx = normalize_ctx(ctx)
       local = ctx ? entries_for(*kinds, ctx: ctx, prefix: text) : []
       return local.last.text unless local.empty?
 
@@ -171,6 +177,7 @@ module FatTerm
     end
 
     def cursor_for(*kinds, ctx: nil)
+      ctx = normalize_ctx(ctx)
       key = [normalize_kinds(*kinds), normalize_ctx(ctx)]
       @cursors[key] ||= { index: nil, scratch: nil, prefix: nil }
     end
@@ -183,13 +190,17 @@ module FatTerm
     end
 
     def entries_for(*kinds, ctx: nil, prefix: nil)
+      ctx = normalize_ctx(ctx)
       wanted = normalize_kinds(*kinds)
 
       matches = select do |entry|
         wanted.include?(entry.kind) && prefix_match?(entry, prefix)
       end
 
+      # fallback, preferred = matches.partition { |entry| !ctx_match?(entry, ctx) }
+      # fallback + preferred
       fallback, preferred = matches.partition { |entry| !ctx_match?(entry, ctx) }
+      # binding.break
       fallback + preferred
     end
 
