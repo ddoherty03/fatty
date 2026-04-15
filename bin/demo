@@ -68,11 +68,17 @@ on_accept_proc = lambda do |line, terminal:, session:|
 
     total =
       begin
-        Integer(args.first || 40)
+        args.first ? Integer(args.first) : nil
       rescue StandardError
-        40
+        nil
       end
-    total = 1 if total < 1
+
+    if style != :spinner
+      total ||= 40
+      total = 1 if total < 1
+    elsif total && total < 1
+      total = 1
+    end
 
     prog = terminal.progress(
       label: "Demo progress",
@@ -80,21 +86,31 @@ on_accept_proc = lambda do |line, terminal:, session:|
       style: style,
     )
 
-    total.times do |i|
-      indicator =
-        case i % 4
-        when 0 then "+"
-        when 1 then "-"
-        when 2 then "^"
-        else "."
-        end
+    if style == :spinner && total.nil?
+      40.times do
+        prog.update(render: true)
+        sleep 0.1
+      end
 
-      prog.update(current: i + 1, indicator: indicator, render: true)
-      sleep 0.1
+      prog.finish("Demo progress complete.", render: true)
+      session.append_output("progress: style=#{style} completed indeterminate demo\n")
+    else
+      total.times do |i|
+        indicator =
+          case i % 4
+          when 0 then "+"
+          when 1 then "-"
+          when 2 then "^"
+          else "."
+          end
+
+        prog.update(current: i + 1, indicator: indicator, render: true)
+        sleep 0.1
+      end
+
+      prog.finish("Demo progress complete.", render: true)
+      session.append_output("progress: style=#{style} completed #{total} steps\n")
     end
-
-    prog.finish("Demo progress complete.", render: true)
-    session.append_output("progress: style=#{style} completed #{total} steps\n")
   else
     out, _ = Open3.capture2e(line)
     session.append_output(out)

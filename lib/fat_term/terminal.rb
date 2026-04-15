@@ -266,6 +266,8 @@ module FatTerm
       )
     end
 
+    # Create a transient status-line progress indicator.
+    # For style :spinner, total may be omitted for indeterminate progress.
     def progress(label:, total: nil, style: :percent, role: :status_info, trail_max: nil)
       Progress.new(
         terminal: self,

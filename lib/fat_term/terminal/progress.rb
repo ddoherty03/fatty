@@ -26,18 +26,23 @@ module FatTerm
         @current = 0
         @bar_width = bar_width.to_i
         @spinner_index = 0
+
+        validate_total_requirement!
+
         refresh
       end
 
-      def update(current:, total: @total, label: @label, indicator: nil, render: false)
-        @current = current.to_i
+      def update(current: nil, total: @total, label: @label, indicator: nil, render: false)
+        @current = current.to_i unless current.nil?
         @total = total&.to_i
         @label = label.to_s
+
         if style == :spinner
           advance_spinner
         else
           append_indicator(indicator)
         end
+
         refresh
         terminal.render_now if render
         self
@@ -179,9 +184,9 @@ module FatTerm
         frame = spinner_frames[@spinner_index % spinner_frames.length]
         base =
           if total && total > 0
-            "#{label} #{frame} #{percent}% [#{current}/#{total}]"
+            "#{label} #{frame} #{percent}%"
           else
-            "#{label} #{frame} [#{current}]"
+            "#{label} #{frame}"
           end
 
         suffix_text(base, suffix)
@@ -290,6 +295,13 @@ module FatTerm
         ratio = 0.0 if ratio < 0.0
         ratio = 1.0 if ratio > 1.0
         ratio
+      end
+
+      def validate_total_requirement!
+        return if style == :spinner
+        return if total && total > 0
+
+        raise ArgumentError, "progress style #{style.inspect} requires total:"
       end
 
       def advance_spinner
