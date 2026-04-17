@@ -216,18 +216,22 @@ module FatTerm
       popup.instance_variable_set(:@selected, initial_choice_idx.to_i.clamp(0, labels.length - 1))
 
       set_status(prompt, role: :status_info)
+
+      done = false
+      result = nil
       acc_proc = ->(payload) do
         item = payload[:item]
         idx = labels.index(item)
         result = idx ? items[idx][1] : quit_value
+        done = true
       end
-      cancel_proc = -> { result = quit_value }
+      cancel_proc = -> { result = quit_value; done = true }
       owner = PopupOwner.new(on_result: acc_proc, on_cancel: cancel_proc)
       begin
         push_modal(popup, owner: owner)
         # refresh_layout!
         render_frame
-        while result.nil? && @running
+        while !done && @running
           dirty = false
           msg = event_source.next_event
           if msg

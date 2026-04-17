@@ -101,11 +101,9 @@ module FatTerm
         owner = instance_double(FatTerm::ShellSession)
         popup = instance_double(FatTerm::PopUpSession, close: nil)
 
-        allow(popup).to receive(:init) do |terminal:|
-          [
-            [:terminal, :send_modal_owner, [:cmd, :popup_changed, { kind: :history_search }]]
-          ]
-        end
+        allow(popup).to receive(:init).and_return([
+          [:terminal, :send_modal_owner, [:cmd, :popup_changed, { kind: :history_search }]]
+        ])
 
         allow(owner).to receive(:update).and_return([])
 
@@ -132,6 +130,123 @@ module FatTerm
           field = session.field
           expect(field.send(:resolve_history_ctx)).to eq({ pwd: "/tmp/demo" })
         end
+      end
+    end
+
+    describe "#choose method" do
+      it "returns the selected plain choice" do
+        terminal = FatTerm::Terminal.allocate
+
+        allow(terminal).to receive(:set_status)
+        allow(terminal).to receive(:clear_status)
+        allow(terminal).to receive(:render_frame)
+        allow(terminal).to receive_messages(
+          event_source: instance_double(EventSource, next_event: nil),
+          active_session: nil,
+        )
+        allow(terminal).to receive(:dispatch_message)
+        terminal.instance_variable_set(:@running, true)
+
+        allow(terminal).to receive(:push_modal) do |_popup, owner:|
+          owner.update([:terminal, :popup_result, { item: "Assets" }], terminal: terminal)
+        end
+
+        result = terminal.choose(
+          prompt: "Select account",
+          choices: ["Assets", "Liabilities", "Equity"],
+        )
+
+        expect(result).to eq("Assets")
+      end
+
+      it "returns the mapped value for label value choices" do
+        terminal = FatTerm::Terminal.allocate
+
+        allow(terminal).to receive(:set_status)
+        allow(terminal).to receive(:clear_status)
+        allow(terminal).to receive(:render_frame)
+        allow(terminal).to receive_messages(
+          event_source: instance_double(EventSource, next_event: nil),
+          active_session: nil,
+        )
+        allow(terminal).to receive(:dispatch_message)
+        terminal.instance_variable_set(:@running, true)
+
+        allow(terminal).to receive(:push_modal) do |_popup, owner:|
+          owner.update([:terminal, :popup_result, { item: "Liabilities" }], terminal: terminal)
+        end
+
+        result = terminal.choose(
+          prompt: "Select account",
+          choices: [
+            ["Assets", :assets],
+            ["Liabilities", :liabilities],
+          ],
+        )
+
+        expect(result).to eq(:liabilities)
+      end
+
+      it "returns the quit value when the chooser is cancelled" do
+        terminal = FatTerm::Terminal.allocate
+
+        allow(terminal).to receive(:set_status)
+        allow(terminal).to receive(:clear_status)
+        allow(terminal).to receive(:render_frame)
+        allow(terminal).to receive_messages(
+          event_source: instance_double(EventSource, next_event: nil),
+          active_session: nil,
+        )
+        allow(terminal).to receive(:dispatch_message)
+        terminal.instance_variable_set(:@running, true)
+
+        allow(terminal).to receive(:push_modal) do |_popup, owner:|
+          owner.update([:terminal, :popup_cancelled, nil], terminal: terminal)
+        end
+
+        result = terminal.choose(
+          prompt: "Select",
+          choices: ["A", "B"],
+          quit_value: :cancelled,
+        )
+
+        expect(result).to eq(:cancelled)
+      end
+
+      it "returns nil value when the chooser is cancelled with default value" do
+        terminal = FatTerm::Terminal.allocate
+
+        allow(terminal).to receive(:set_status)
+        allow(terminal).to receive(:clear_status)
+        allow(terminal).to receive(:render_frame)
+        allow(terminal).to receive_messages(
+          event_source: instance_double(EventSource, next_event: nil),
+          active_session: nil,
+        )
+        allow(terminal).to receive(:dispatch_message)
+        terminal.instance_variable_set(:@running, true)
+
+        allow(terminal).to receive(:push_modal) do |_popup, owner:|
+          owner.update([:terminal, :popup_cancelled, nil], terminal: terminal)
+        end
+
+        expect(terminal.choose(prompt: "Select", choices: ["A", "B"])).to be_nil
+      end
+    end
+
+    describe "#confirm method" do
+      it "returns true when choose returns true" do
+        terminal = FatTerm::Terminal.allocate
+        allow(terminal).to receive(:choose).and_return(true)
+
+        expect(terminal.confirm("Delete?")).to be(true)
+      end
+
+      it "returns false when choose returns false" do
+        terminal = FatTerm::Terminal.allocate
+        allow(terminal).to receive(:choose).and_return(false)
+
+        expect(terminal.confirm("Delete?")).to be(false)
       end
     end
   end
