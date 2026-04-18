@@ -1,3 +1,17 @@
+* TODO Additional UI components
+- [ ] prompt :: ask the user for an arbitrary string
+- [ ] choose_many :: present a list of choices that a user can pick many items
+  from
+- [ ] menu :: user picks an action by name attached to a proc
+- [ ] notice, warn, error :: put messages in the status line
+- [ ] run :: run a proc, optionally in the background with feedback on the
+  status line
+  #+begin_src ruby
+    terminal.run(prompt: "Importing", background: false) do |prog|
+      ...
+    end
+  #+end_src
+
 * TODO Add snippet suggestion for unrecognized and unbound keys
 * TODO Add modes for vi-like keybindings
 - will require changing keybindongs.yml format to include a mode qualifier
