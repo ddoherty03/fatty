@@ -5,6 +5,7 @@ require 'fat_config'
 require "json"
 require "time"
 require "fileutils"
+require "rainbow"
 
 require 'debug'
 

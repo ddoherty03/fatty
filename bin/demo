@@ -56,6 +56,22 @@ on_accept_proc = lambda do |line, terminal:, session:|
     else
       session.append_output("choosevals: selected #{choice.inspect}\n")
     end
+  when "info"
+    message = args.empty? ? "Information message" : args.join(" ")
+    terminal.info(message)
+    session.append_output("info: #{message}\n")
+  when "good"
+    message = args.empty? ? "Success message" : args.join(" ")
+    terminal.good(message)
+    session.append_output("good: #{message}\n")
+  when "warn"
+    message = args.empty? ? "Dange Will Robinson!" : args.join(" ")
+    terminal.warn(message)
+    session.append_output("warn: #{message}\n")
+  when "oops"
+    message = args.empty? ? "Something went wrong" : args.join(" ")
+    terminal.oops(message)
+    session.append_output("oops: #{message}\n")
   when "progress"
     styles = %w[count percent simple_percent trail bar unicode_bar braille_bar spinner]
     style_name = args.first

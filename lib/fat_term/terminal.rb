@@ -72,6 +72,31 @@ module FatTerm
       !!@status_transient
     end
 
+    # Display a message to the user in the status line, colored according to
+    # the Config for "info".
+    def info(text)
+      set_status(text.to_s, role: :status_info, transient: true)
+    end
+
+    # Display a message to the user in the status line, colored according to
+    # the Config for "good," i.e., success.
+    def good(text)
+      set_status(text.to_s, role: :status_good, transient: true)
+    end
+
+    # Display a message to the user in the status line, colored according to
+    # the Config for "warning," i.e., short of an error but not complete
+    # success either.
+    def warn(text)
+      set_status(text.to_s, role: :status_warn, transient: true)
+    end
+
+    # Display a message to the user in the status line, colored according to
+    # the Config for "oops," i.e., a soft failure.
+    def oops(text)
+      set_status(text.to_s, role: :status_error, transient: true)
+    end
+
     # --- Session management ------------------------------------------------
 
     def push(session)
@@ -566,7 +591,23 @@ module FatTerm
         top[:session].view(screen: screen, renderer: renderer, terminal: self)
       end
 
+      restore_active_cursor
       renderer.finish_frame
+    end
+
+    def restore_active_cursor
+      session = active_session
+      return unless session
+
+      if session.respond_to?(:pager_active?) && session.pager_active?
+        ::Curses.curs_set(0)
+        return
+      end
+
+      return unless session.respond_to?(:field) && session.field
+
+      ::Curses.curs_set(1)
+      renderer.restore_cursor(session.field)
     end
   end
 end

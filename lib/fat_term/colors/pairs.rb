@@ -17,6 +17,7 @@ module FatTerm
       STATUS_INFO      = 5
       STATUS_WARN      = 6
       STATUS_ERROR     = 7
+      STATUS_GOOD      = 8
 
       SEARCH = 10
       SEARCH_HIGHLIGHT = 11
@@ -36,6 +37,7 @@ module FatTerm
         cursor: CURSOR,
         region: REGION,
 
+        status_good: STATUS_GOOD,
         status_info: STATUS_INFO,
         status_warn: STATUS_WARN,
         status_error: STATUS_ERROR,

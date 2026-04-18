@@ -15,6 +15,7 @@ PATH
     fat_term (0.2.0)
       curses (~> 1.4)
       fat_config (>= 0.8.0)
+      rainbow
       unicode-display_width (~> 2.5)
       yaml
 
