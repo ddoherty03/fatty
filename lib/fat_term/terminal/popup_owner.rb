@@ -14,9 +14,9 @@ module FatTerm
         _cmd, name, payload = msg
 
         case name
-        when :popup_result
+        when :popup_result, :prompt_result
           on_result&.call(payload)
-        when :popup_cancelled
+        when :popup_cancelled, :prompt_cancelled
           on_cancel&.call
         end
         []

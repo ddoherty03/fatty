@@ -10,11 +10,8 @@ RSpec.describe FatTerm::ShellSession do
     it "builds a history popup with a callable source for :history_search" do
       Dir.mktmpdir do |dir|
         history_path = File.join(dir, "history.jsonl")
-        history = FatTerm::History.new(path: history_path)
-
-        allow(FatTerm::History).to receive(:new).and_return(history)
-
-        session = FatTerm::ShellSession.new
+        session = FatTerm::ShellSession.new(history_path: history_path)
+        history = session.history
 
         history.add("ls", kind: :command)
         history.add("needle", kind: :search_string)

@@ -4,9 +4,9 @@ require "open3"
 
 module FatTerm
   class ShellSession < OutputSession
-    attr_reader :field
+    attr_reader :field, :history
 
-    def initialize(prompt: "sh> ", on_accept: nil, completion_proc: nil, history_ctx: nil)
+    def initialize(prompt: "sh> ", on_accept: nil, completion_proc: nil, history_ctx: nil, history_path: :default)
       super(
         keymap: Keymaps.emacs,
         views: [
@@ -15,7 +15,7 @@ module FatTerm
           FatTerm::CursorView.new(z: 100),
         ]
       )
-      @history = FatTerm::History.new(path: :default)
+      @history = FatTerm::History.for_path(history_path)
       @field = FatTerm::InputField.new(
         prompt: prompt,
         history: @history,

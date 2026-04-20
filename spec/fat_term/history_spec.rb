@@ -11,6 +11,14 @@ module FatTerm
       end
     end
 
+    describe "class methods" do
+      before { FatTerm::History.reset_instances! }
+
+      it "returns the same default history object" do
+        expect(FatTerm::History.default).to equal(FatTerm::History.default)
+      end
+    end
+
     describe "main methods" do
       let(:hist_path) { "/tmp/spec_history" }
       let(:hist) { History.new(path: hist_path, max: 5) }

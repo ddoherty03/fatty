@@ -30,6 +30,26 @@ module FatTerm
       end
     end
 
+    # A global default History object available to all sessions.  Sets a class
+    # instance variable.
+    def self.default
+      for_path(:default)
+    end
+
+    def self.for_path(path = :default)
+      @instances ||= {}
+      @instances[path] ||= new(path: path)
+    end
+
+    def self.reset_instances!
+      @instances = {}
+    end
+
+    def self.default
+      @default ||= new(path: :default)
+    end
+
+
     ###################################################################################
     # Accessing History items from a consuming application
     ###################################################################################

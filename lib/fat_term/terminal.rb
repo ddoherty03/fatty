@@ -231,39 +231,43 @@ module FatTerm
 
     # The consumer can call #choose to cause an interactive popup session to
     # present the user with a series of choices to select from.
-    def choose(prompt:, choices:, initial_choice_idx: 0, quit_value: nil)
+    def choose(prompt, choices:, initial_choice_idx: 0, quit_value: nil)
       items = normalize_choices(choices)
       raise ArgumentError, "choices must not be empty" if items.empty?
 
       labels = items.map(&:first)
-      result = nil
-
       popup = FatTerm::PopUpSession.new(
         source: labels,
         kind: :terminal_choose,
         title: "Choose",
+        message: prompt,
         prompt: "> ",
         selection: :top,
       )
 
       popup.instance_variable_set(:@selected, initial_choice_idx.to_i.clamp(0, labels.length - 1))
 
-      set_status(prompt, role: :status_info)
-
       done = false
       result = nil
+
       acc_proc = ->(payload) do
         item = payload[:item]
         idx = labels.index(item)
         result = idx ? items[idx][1] : quit_value
         done = true
       end
-      cancel_proc = -> { result = quit_value; done = true }
+
+      cancel_proc = -> do
+        result = quit_value
+        done = true
+      end
+
       owner = PopupOwner.new(on_result: acc_proc, on_cancel: cancel_proc)
+
       begin
         push_modal(popup, owner: owner)
-        # refresh_layout!
         render_frame
+
         while !done && @running
           dirty = false
           msg = event_source.next_event
@@ -284,8 +288,6 @@ module FatTerm
           render_frame if dirty
         end
       ensure
-        clear_status
-        # refresh_layout!
         render_frame
       end
 
@@ -666,7 +668,57 @@ module FatTerm
       renderer.finish_frame
     end
 
+    # def restore_active_cursor
+    #   session = active_session
+    #   return unless session
+
+    #   if session.respond_to?(:pager_active?) && session.pager_active?
+    #     ::Curses.curs_set(0)
+    #     return
+    #   end
+
+    #   return unless session.respond_to?(:field) && session.field
+
+    #   ::Curses.curs_set(1)
+    #   renderer.restore_cursor(session.field)
+    # end
+
     def restore_active_cursor
+      if @modal_stack && !@modal_stack.empty?
+        session = @modal_stack.last[:session]
+
+        if session.respond_to?(:pager_active?) && session.pager_active?
+          ::Curses.curs_set(0)
+          return
+        end
+
+        if session.respond_to?(:win) && session.win &&
+           session.respond_to?(:field) && session.field
+          ::Curses.curs_set(1)
+
+          cursor_x = session.field.cursor_x
+          cursor_x = 0 if cursor_x.nil?
+
+          if session.is_a?(FatTerm::PopUpSession)
+            input_row = session.win.maxy - 2
+            cursor_x = cursor_x.clamp(0, session.win.maxx - 3)
+            session.win.setpos(input_row, 1 + cursor_x)
+          elsif session.is_a?(FatTerm::PromptSession)
+            message_rows = (session.message && !session.message.empty?) ? 1 : 0
+            input_row = 1 + message_rows
+            cursor_x = cursor_x.clamp(0, session.win.maxx - 3)
+            session.win.setpos(input_row, 1 + cursor_x)
+          else
+            ::Curses.curs_set(0)
+          end
+
+          return
+        end
+
+        ::Curses.curs_set(0)
+        return
+      end
+
       session = active_session
       return unless session
 
