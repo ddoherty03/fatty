@@ -141,7 +141,7 @@ module FatTerm
         allow(terminal).to receive(:clear_status)
         allow(terminal).to receive(:render_frame)
         allow(terminal).to receive_messages(
-          event_source: instance_double(EventSource, next_event: nil),
+          event_source: instance_double("EventSource", next_event: nil),
           active_session: nil,
         )
         allow(terminal).to receive(:dispatch_message)
@@ -152,7 +152,7 @@ module FatTerm
         end
 
         result = terminal.choose(
-          prompt: "Select account",
+          "Select account",
           choices: ["Assets", "Liabilities", "Equity"],
         )
 
@@ -166,7 +166,7 @@ module FatTerm
         allow(terminal).to receive(:clear_status)
         allow(terminal).to receive(:render_frame)
         allow(terminal).to receive_messages(
-          event_source: instance_double(EventSource, next_event: nil),
+          event_source: instance_double("EventSource", next_event: nil),
           active_session: nil,
         )
         allow(terminal).to receive(:dispatch_message)
@@ -177,7 +177,7 @@ module FatTerm
         end
 
         result = terminal.choose(
-          prompt: "Select account",
+          "Select account",
           choices: [
             ["Assets", :assets],
             ["Liabilities", :liabilities],
@@ -194,7 +194,7 @@ module FatTerm
         allow(terminal).to receive(:clear_status)
         allow(terminal).to receive(:render_frame)
         allow(terminal).to receive_messages(
-          event_source: instance_double(EventSource, next_event: nil),
+          event_source: instance_double("EventSource", next_event: nil),
           active_session: nil,
         )
         allow(terminal).to receive(:dispatch_message)
@@ -205,7 +205,7 @@ module FatTerm
         end
 
         result = terminal.choose(
-          prompt: "Select",
+          "Select",
           choices: ["A", "B"],
           quit_value: :cancelled,
         )
@@ -220,7 +220,7 @@ module FatTerm
         allow(terminal).to receive(:clear_status)
         allow(terminal).to receive(:render_frame)
         allow(terminal).to receive_messages(
-          event_source: instance_double(EventSource, next_event: nil),
+          event_source: instance_double("EventSource", next_event: nil),
           active_session: nil,
         )
         allow(terminal).to receive(:dispatch_message)
@@ -230,7 +230,7 @@ module FatTerm
           owner.update([:terminal, :popup_cancelled, nil], terminal: terminal)
         end
 
-        expect(terminal.choose(prompt: "Select", choices: ["A", "B"])).to be_nil
+        expect(terminal.choose("Select", choices: ["A", "B"])).to be_nil
       end
     end
 
@@ -247,6 +247,44 @@ module FatTerm
         allow(terminal).to receive(:choose).and_return(false)
 
         expect(terminal.confirm("Delete?")).to be(false)
+      end
+    end
+
+    describe "#prompt method" do
+      it "returns entered text" do
+        terminal = FatTerm::Terminal.allocate
+
+        allow(terminal).to receive(:render_frame)
+        allow(terminal).to receive(:event_source).and_return(instance_double("EventSource", next_event: nil))
+        allow(terminal).to receive(:active_session).and_return(nil)
+        allow(terminal).to receive(:dispatch_message)
+        terminal.instance_variable_set(:@running, true)
+
+        allow(terminal).to receive(:push_modal) do |_popup, owner:|
+          owner.update([:cmd, :prompt_result, { text: "Checking" }], terminal: terminal)
+        end
+
+        result = terminal.prompt("Rename account:", initial: "Savings")
+
+        expect(result).to eq("Checking")
+      end
+
+      it "returns quit_value on cancel" do
+        terminal = FatTerm::Terminal.allocate
+
+        allow(terminal).to receive(:render_frame)
+        allow(terminal).to receive(:event_source).and_return(instance_double("EventSource", next_event: nil))
+        allow(terminal).to receive(:active_session).and_return(nil)
+        allow(terminal).to receive(:dispatch_message)
+        terminal.instance_variable_set(:@running, true)
+
+        allow(terminal).to receive(:push_modal) do |_popup, owner:|
+          owner.update([:cmd, :prompt_cancelled, {}], terminal: terminal)
+        end
+
+        result = terminal.prompt("Rename account:", quit_value: :cancelled)
+
+        expect(result).to eq(:cancelled)
       end
     end
   end
