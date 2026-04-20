@@ -668,21 +668,6 @@ module FatTerm
       renderer.finish_frame
     end
 
-    # def restore_active_cursor
-    #   session = active_session
-    #   return unless session
-
-    #   if session.respond_to?(:pager_active?) && session.pager_active?
-    #     ::Curses.curs_set(0)
-    #     return
-    #   end
-
-    #   return unless session.respond_to?(:field) && session.field
-
-    #   ::Curses.curs_set(1)
-    #   renderer.restore_cursor(session.field)
-    # end
-
     def restore_active_cursor
       if @modal_stack && !@modal_stack.empty?
         session = @modal_stack.last[:session]
