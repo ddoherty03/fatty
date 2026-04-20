@@ -2,7 +2,7 @@
 
 module FatTerm
   class PopUpSession < Session
-    attr_reader :win, :field, :filtered, :selected, :title
+    attr_reader :win, :field, :filtered, :selected, :title, :message
 
     POPUP_MAX_WIDTH      = 120
     POPUP_DEFAULT_HEIGHT = 12
@@ -18,6 +18,7 @@ module FatTerm
     def initialize(
       source:,
       title: nil,
+      message: nil,
       prompt: "> ",
       keymap: Keymaps.emacs,
       matcher: nil,
@@ -33,7 +34,8 @@ module FatTerm
       @order = order.to_sym
       @selection = selection.to_sym
 
-      @title = title
+      @title = title&.to_s
+      @message = message&.to_s
       @prompt = Prompt.ensure(prompt)
 
       @field = InputField.new(prompt: @prompt)
@@ -77,9 +79,11 @@ module FatTerm
       max_w = [cols - (POPUP_MARGIN * 2), 10].max
       max_h = [rows - (POPUP_MARGIN * 2), 5].max
 
-      list_h = @filtered.length.clamp(POPUP_MIN_LIST_H, POPUP_MAX_LIST_H)
+      desired_list_h = @filtered.length.clamp(POPUP_MIN_LIST_H, POPUP_MAX_LIST_H)
 
-      height = (list_h + 3).clamp(5, max_h)
+      extra_rows = 3
+      extra_rows += 1 if @message && !@message.empty?
+      height = (desired_list_h + popup_extra_rows).clamp(5, max_h)
       width = [max_w, POPUP_MAX_WIDTH].min
 
       [width, height]
@@ -230,6 +234,16 @@ module FatTerm
       }
     end
 
+    def popup_has_message?
+      @message && !@message.empty?
+    end
+
+    def popup_extra_rows
+      rows = 3
+      rows += 1 if popup_has_message?
+      rows
+    end
+
     def notify_owner(name)
       return [] unless @kind
 
@@ -240,15 +254,17 @@ module FatTerm
       # Visible list lines = window height minus:
       # - 2 border rows
       # - 1 input row
+      # - 1 message row when present
       #
-      # If window isn't built yet, fall back to the historical default (12 high).
-      if @win
-        h = @win.maxy
-      else
-        h = 12
-      end
+      # If window isn't built yet, fall back to the historical default.
+      h =
+        if @win
+          @win.maxy
+        else
+          POPUP_DEFAULT_HEIGHT
+        end
 
-      list_h = h - 3
+      list_h = h - popup_extra_rows
       list_h = 1 if list_h < 1
       list_h
     end
@@ -347,19 +363,6 @@ module FatTerm
 
       hay = item.to_s.downcase
       terms.all? { |t| hay.include?(t.downcase) }
-    end
-
-    def capture_initial_popup_geometry!
-      return if @popup_height && @popup_width
-
-      count = @filtered.length
-      list_h = count
-      list_h = POPUP_MIN_LIST_H if list_h < POPUP_MIN_LIST_H
-      list_h = POPUP_MAX_LIST_H if list_h > POPUP_MAX_LIST_H
-
-      @popup_list_h = list_h
-      @popup_height = @popup_list_h + 3
-      @popup_width = POPUP_MAX_WIDTH
     end
 
     def action_env(terminal:, event:)
