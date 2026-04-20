@@ -187,44 +187,21 @@ module FatTerm
 
         win = context.input_win
         base_attr = pair_attr(:input, fallback: ::Curses::A_NORMAL)
+        region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
+        suggestion_attr = pair_attr(:input_suggestion, fallback: 0) | ::Curses::A_DIM
+
         win.attrset(base_attr)
         win.erase
 
-        win.setpos(0, 0)
-        win.addstr(" " * win.maxx)
-        win.setpos(0, 0)
-        win.addstr(field.prompt_text)
-
-        text = buf.text.to_s
-
-        if region && region.begin < region.end
-          # Render the buffer in three parts, before region, region, and
-          # after region.
-          max = text.length
-          s = region.begin.clamp(0, max)
-          e = region.end.clamp(0, max)
-
-          before = text[0...s].to_s
-          mid    = text[s...e].to_s
-          after  = text[e..].to_s
-
-          win.addstr(before)
-          region_attr =
-            pair_attr(
-              :region,
-              fallback: ::Curses::A_REVERSE,
-            )
-          win.attron(region_attr) { win.addstr(mid) }
-          win.addstr(after)
-        else
-          win.addstr(text)
-        end
-
-        suffix = buf.virtual_suffix.to_s
-        unless suffix.empty?
-          suggestion_attr = pair_attr(:input_suggestion, fallback: 0) | ::Curses::A_DIM
-          win.attron(suggestion_attr) { win.addstr(suffix) }
-        end
+        render_field_into(
+          win: win,
+          field: field,
+          row: 0,
+          width: win.maxx,
+          base_attr: base_attr,
+          region_attr: region_attr,
+          suggestion_attr: suggestion_attr,
+        )
 
         win.setpos(0, field.cursor_x)
         stage_window(win)
@@ -323,13 +300,25 @@ module FatTerm
           win.addstr(" #{session.title} ")
         end
 
-        # list area: inner_h-1 lines (last inner line is input)
-        list_h = inner_h - 1
-        list_w = inner_w
-
         results_attr  = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
         input_attr    = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
         selected_attr = pair_attr(:popup_selection, fallback: ::Curses::A_REVERSE)
+
+        message_h = 0
+        if session.message && !session.message.empty?
+          inner.attron(results_attr) do
+            inner.setpos(0, 0)
+            line = session.message.to_s[0, inner_w]
+            inner.addstr(line.ljust(inner_w))
+          end
+          message_h = 1
+        end
+
+        input_row = inner_h - 1
+        list_row = message_h
+        list_h = input_row - list_row
+        list_h = 1 if list_h < 1
+        list_w = inner_w
 
         items = session.filtered
         sel   = session.selected
@@ -342,9 +331,9 @@ module FatTerm
             row_attr = is_sel ? selected_attr : results_attr
             inner.attrset(row_attr)
 
-            inner.setpos(i, 0)
+            inner.setpos(list_row + i, 0)
             inner.addstr(" " * list_w)
-            inner.setpos(i, 0)
+            inner.setpos(list_row + i, 0)
 
             next if idx >= items.length
 
@@ -357,25 +346,126 @@ module FatTerm
           end
         end
 
-        inner.attron(input_attr) do
-          # input line at bottom (inside inner)
-          inner.setpos(inner_h - 1, 0)
-          inner.addstr(" " * list_w)
-          inner.setpos(inner_h - 1, 0)
+        region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
+        suggestion_attr = pair_attr(:input_suggestion, fallback: 0) | ::Curses::A_DIM
+        render_field_into(
+          win: inner,
+          field: session.field,
+          row: input_row,
+          width: list_w,
+          base_attr: input_attr,
+          region_attr: region_attr,
+          suggestion_attr: suggestion_attr,
+        )
 
-          prompt = session.field.prompt_text.to_s
-          text   = session.field.buffer.text.to_s
-
-          line = (prompt + text)[0, list_w]
-          inner.addstr(line.ljust(list_w))
-        end
-
-        # cursor: move in outer window coords
         cursor_in_inner = session.field.cursor_x.clamp(0, list_w - 1)
-        win.setpos(1 + (inner_h - 1), 1 + cursor_in_inner)
+        win.setpos(1 + input_row, 1 + cursor_in_inner)
 
         stage_window(inner)
         stage_window(win)
+        nil
+      end
+
+      def render_prompt_popup(session:)
+        win = session.win
+        return unless win
+
+        width = win.maxx
+        height = win.maxy
+        win.erase
+
+        frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
+        win.attron(frame_attr) do
+          draw_popup_frame(win, width: width, height: height)
+        end
+
+        inner_h = height - 2
+        inner_w = width - 2
+        inner = win.derwin(inner_h, inner_w, 1, 1)
+        inner.erase
+
+        if session.title
+          win.setpos(0, 2)
+          win.addstr(" #{session.title} ")
+        end
+
+        text_attr  = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
+        input_attr = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
+
+        row = 0
+
+        if session.message && !session.message.empty?
+          inner.attron(text_attr) do
+            inner.setpos(row, 0)
+            line = session.message.to_s[0, inner_w]
+            inner.addstr(line.ljust(inner_w))
+          end
+          row += 1
+        end
+
+        region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
+        suggestion_attr = pair_attr(:input_suggestion, fallback: 0) | ::Curses::A_DIM
+        render_field_into(
+          win: inner,
+          field: session.field,
+          row: row,
+          width: inner_w,
+          base_attr: input_attr,
+          region_attr: region_attr,
+          suggestion_attr: suggestion_attr,
+        )
+
+        cursor_in_inner = session.field.cursor_x.clamp(0, inner_w - 1)
+        win.setpos(1 + row, 1 + cursor_in_inner)
+
+        stage_window(inner)
+        stage_window(win)
+        nil
+      end
+
+      def render_field_into(win:, field:, row:, width:, base_attr:, region_attr:, suggestion_attr:)
+        buf = field.buffer
+        region =
+          if buf.respond_to?(:region_range)
+            buf.region_range
+          end
+
+        win.attrset(base_attr)
+        win.setpos(row, 0)
+        win.addstr(" " * width)
+        win.setpos(row, 0)
+        win.addstr(field.prompt_text.to_s)
+
+        text = buf.text.to_s
+
+        if region && region.begin < region.end
+          max = text.length
+          s = region.begin.clamp(0, max)
+          e = region.end.clamp(0, max)
+
+          before = text[0...s].to_s
+          mid    = text[s...e].to_s
+          after  = text[e..].to_s
+
+          win.attrset(base_attr)
+          win.addstr(before)
+
+          win.attrset(region_attr)
+          win.addstr(mid)
+
+          win.attrset(base_attr)
+          win.addstr(after)
+        else
+          win.attrset(base_attr)
+          win.addstr(text)
+        end
+
+        suffix = buf.virtual_suffix.to_s
+        unless suffix.empty?
+          win.attrset(base_attr)
+          win.attron(suggestion_attr) { win.addstr(suffix) }
+        end
+
         nil
       end
 
