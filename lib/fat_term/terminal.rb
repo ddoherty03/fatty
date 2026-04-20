@@ -75,12 +75,16 @@ module FatTerm
     # Display a message to the user in the status line, colored according to
     # the Config for "info".
     def info(text)
+      return $stderr.puts(text) unless @ctx
+
       set_status(text.to_s, role: :status_info, transient: true)
     end
 
     # Display a message to the user in the status line, colored according to
     # the Config for "good," i.e., success.
     def good(text)
+      return $stderr.puts(text) unless @ctx
+
       set_status(text.to_s, role: :status_good, transient: true)
     end
 
@@ -88,12 +92,16 @@ module FatTerm
     # the Config for "warning," i.e., short of an error but not complete
     # success either.
     def warn(text)
+      return $stderr.puts(text) unless @ctx
+
       set_status(text.to_s, role: :status_warn, transient: true)
     end
 
     # Display a message to the user in the status line, colored according to
     # the Config for "oops," i.e., a soft failure.
     def oops(text)
+      return $stderr.puts(text) unless @ctx
+
       set_status(text.to_s, role: :status_error, transient: true)
     end
 
@@ -288,11 +296,70 @@ module FatTerm
     def confirm(prompt, default: true)
       idx = default ? 0 : 1
       choose(
-        prompt: prompt,
+        prompt,
         choices: [["Yes", true], ["No", false]],
         initial_choice_idx: idx,
         quit_value: false,
       )
+    end
+
+    # Create a popup to ask the user to enter an arbitrary string.  These
+    # prompts will keep their own history based on the history_key, or if not
+    # history_key is given, the prompt text.
+    def prompt(prompt, initial: "", quit_value: nil, history_key: nil)
+      history_ctx = { prompt: (history_key || prompt).to_s }
+
+      popup = FatTerm::PromptSession.new(
+        title: "Prompt",
+        message: prompt,
+        prompt: "> ",
+        initial: initial,
+        kind: :terminal_prompt,
+        history_ctx: history_ctx,
+      )
+      done = false
+      result = nil
+
+      acc_proc = ->(payload) do
+        result = payload[:text]
+        done = true
+      end
+
+      cancel_proc = -> do
+        result = quit_value
+        done = true
+      end
+
+      owner = PopupOwner.new(on_result: acc_proc, on_cancel: cancel_proc)
+
+      begin
+        push_modal(popup, owner: owner)
+        render_frame
+
+        while !done && @running
+          dirty = false
+          msg = event_source.next_event
+          if msg
+            dispatch_message(msg)
+            dirty = true
+          end
+
+          s = active_session
+          begin
+            tick_dirty = !!s&.tick(terminal: self)
+            dirty ||= tick_dirty
+          rescue StandardError => e
+            FatTerm.error("Terminal#prompt tick failed: #{e.class}: #{e.message}", tag: :terminal)
+            dirty = true
+          end
+
+          render_frame if dirty
+        end
+      ensure
+        render_frame
+      end
+
+      result
     end
 
     # Create a transient status-line progress indicator.
@@ -557,6 +624,10 @@ module FatTerm
 
       commands = session.update(message, terminal: self)
       apply_commands(commands)
+    end
+
+    def prompt_history
+      @prompt_history ||= FatTerm::History.new(path: :default)
     end
 
     # --- Choose helpers ---------------------------------------------------------
