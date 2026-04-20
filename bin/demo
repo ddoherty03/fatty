@@ -25,7 +25,7 @@ on_accept_proc = lambda do |line, terminal:, session:|
       end
 
     choice = terminal.choose(
-      prompt: "Select one",
+      "Select one",
       choices: choices,
       initial_choice_idx: 0,
       quit_value: nil,
@@ -45,7 +45,7 @@ on_accept_proc = lambda do |line, terminal:, session:|
       end
 
     choice = terminal.choose(
-      prompt: "Select one",
+      "Select one",
       choices: pairs,
       initial_choice_idx: 1,
       quit_value: nil,
@@ -72,6 +72,10 @@ on_accept_proc = lambda do |line, terminal:, session:|
     message = args.empty? ? "Something went wrong" : args.join(" ")
     terminal.oops(message)
     session.append_output("oops: #{message}\n")
+  when "prompt"
+    question = args.empty? ? "Enter value:" : args.join(" ")
+    value = terminal.prompt(question, initial: "demo")
+    session.append_output("prompt: #{value.inspect}\n")
   when "progress"
     styles = %w[count percent simple_percent trail bar unicode_bar braille_bar spinner]
     style_name = args.first
