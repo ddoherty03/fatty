@@ -191,6 +191,16 @@ module FatTerm
 
         expect(entry.stamp).to be_between(before, after)
       end
+
+      it "normalizes symbol keys in ctx to strings" do
+        entry = FatTerm::History::Entry.from_h(
+          "text" => "echo hello",
+          "kind" => "command",
+          "ctx" => { pwd: "/tmp/demo" },
+        )
+
+        expect(entry.ctx).to eq({ "pwd" => "/tmp/demo" })
+      end
     end
   end
 end

@@ -433,5 +433,39 @@ module FatTerm
         expect(field.path_completion_candidates).to eq([])
       end
     end
+
+    describe "#autosuggestion" do
+      it "returns the completion suggestion when completion returns a suggestion" do
+        history = FatTerm::History.new
+        history.add("four score and seven years ago", kind: :command)
+
+        field = FatTerm::InputField.new(
+          prompt: "> ",
+          history: history,
+          history_kind: :command,
+          completion_proc: ->(_text, **_) { ["fold"] },
+        )
+
+        field.buffer.replace("fo")
+
+        expect(field.autosuggestion).to eq("fold")
+      end
+
+      it "returns the history suggestion when completion has no suggestion" do
+        history = FatTerm::History.new
+        history.add("four score and seven years ago", kind: :command)
+
+        field = FatTerm::InputField.new(
+          prompt: "> ",
+          history: history,
+          history_kind: :command,
+          completion_proc: ->(_text, **_) { [] },
+        )
+
+        field.buffer.replace("fou")
+
+        expect(field.autosuggestion).to eq("four score and seven years ago")
+      end
+    end
   end
 end

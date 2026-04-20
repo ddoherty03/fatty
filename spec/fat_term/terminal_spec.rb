@@ -286,6 +286,48 @@ module FatTerm
 
         expect(result).to eq(:cancelled)
       end
+
+      it "uses prompt text as the default history context" do
+        terminal = FatTerm::Terminal.allocate
+        popup = nil
+
+        allow(terminal).to receive(:render_frame)
+        allow(terminal).to receive(:event_source).and_return(instance_double("EventSource", next_event: nil))
+        allow(terminal).to receive(:active_session).and_return(nil)
+        allow(terminal).to receive(:dispatch_message)
+        terminal.instance_variable_set(:@running, true)
+
+        allow(terminal).to receive(:push_modal) do |session, owner:|
+          popup = session
+          owner.update([:cmd, :prompt_cancelled, {}], terminal: terminal)
+        end
+
+        terminal.prompt("Rename account:", initial: "Checking")
+
+        expect(popup).to be_a(FatTerm::PromptSession)
+        expect(popup.field.send(:resolve_history_ctx)).to eq({ prompt: "Rename account:" })
+      end
+
+      it "uses history_key instead of prompt text when provided" do
+        terminal = FatTerm::Terminal.allocate
+        popup = nil
+
+        allow(terminal).to receive(:render_frame)
+        allow(terminal).to receive(:event_source).and_return(instance_double("EventSource", next_event: nil))
+        allow(terminal).to receive(:active_session).and_return(nil)
+        allow(terminal).to receive(:dispatch_message)
+        terminal.instance_variable_set(:@running, true)
+
+        allow(terminal).to receive(:push_modal) do |session, owner:|
+          popup = session
+          owner.update([:cmd, :prompt_cancelled, {}], terminal: terminal)
+        end
+
+        terminal.prompt("Rename account:", initial: "Checking", history_key: :account_name)
+
+        expect(popup).to be_a(FatTerm::PromptSession)
+        expect(popup.field.send(:resolve_history_ctx)).to eq({ prompt: "account_name" })
+      end
     end
   end
 end
