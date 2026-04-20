@@ -60,6 +60,7 @@ module FatTerm
         ]
       when :accept_line
         text = @field.buffer.text.to_s
+        @field.accept_line
         [
           [:terminal, :send_modal_owner, [:cmd, :prompt_result, { kind: @kind, text: text }]],
           [:terminal, :pop_modal]
