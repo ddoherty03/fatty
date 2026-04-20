@@ -167,12 +167,23 @@ module FatTerm
       text = prefix.to_s
       return if text.empty?
 
-      ctx = normalize_ctx(ctx)
-      local = ctx ? entries_for(*kinds, ctx: ctx, prefix: text) : []
-      return local.last.text unless local.empty?
+      wanted_ctx = normalize_ctx(ctx)
+
+      unless wanted_ctx.empty?
+        local = entries_for(*kinds, ctx: wanted_ctx, prefix: text)
+        return local.last.text unless local.empty?
+      end
 
       global = entries_for(*kinds, prefix: text)
       global.last&.text
+    end
+
+    def self.normalize_ctx(ctx)
+      return {} unless ctx.is_a?(Hash)
+
+      ctx.each_with_object({}) do |(key, value), memo|
+        memo[key.to_s] = value
+      end.sort.to_h
     end
 
     private
@@ -182,11 +193,7 @@ module FatTerm
     end
 
     def normalize_ctx(ctx)
-      return {} unless ctx.is_a?(Hash)
-
-      ctx.each_with_object({}) do |(key, value), memo|
-        memo[key.to_s] = value
-      end.sort.to_h
+      self.class.normalize_ctx(ctx)
     end
 
     def ctx_match?(entry, ctx)
@@ -219,10 +226,7 @@ module FatTerm
         wanted.include?(entry.kind) && prefix_match?(entry, prefix)
       end
 
-      # fallback, preferred = matches.partition { |entry| !ctx_match?(entry, ctx) }
-      # fallback + preferred
       fallback, preferred = matches.partition { |entry| !ctx_match?(entry, ctx) }
-      # binding.break
       fallback + preferred
     end
 
