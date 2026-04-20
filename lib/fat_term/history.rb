@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "history/entry"
+
 module FatTerm
   class History
     DEFAULT_HISTORY_FILE = File.expand_path("~/.fat_term_history")

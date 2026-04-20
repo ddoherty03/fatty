@@ -151,6 +151,16 @@ module FatTerm
         expect(entry.stamp.iso8601).to eq(stamp.iso8601)
       end
 
+      it "loads history kinds as symbols" do
+        entry = FatTerm::History::Entry.from_h(
+          "text" => "echo four score",
+          "kind" => "command",
+          "ctx" => { "pwd" => "/tmp" },
+        )
+
+        expect(entry.kind).to eq(:command)
+      end
+
       it "builds an entry from a symbol-keyed hash" do
         entry = History::Entry.from_h(
           text: "foo",

@@ -38,8 +38,8 @@ module FatTerm
 
         new(
           text:  hash.fetch("text", ""),
-          kind:  hash.fetch("kind", "command"),
-          ctx:   hash["ctx"],
+          kind:  hash.fetch("kind", "command").to_sym,
+          ctx:   History.normalize_ctx(hash["ctx"]),
           stamp: parse_stamp(hash["stamp"]),
         )
       end
