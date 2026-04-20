@@ -361,6 +361,14 @@ module FatTerm
           expect(rows.map(&:text)).to eq(%w[bar])
         end
       end
+
+      describe ".default" do
+        it "returns the same object as for_path(:default)" do
+          FatTerm::History.reset_instances! if FatTerm::History.respond_to?(:reset_instances!)
+
+          expect(FatTerm::History.default).to equal(FatTerm::History.for_path(:default))
+        end
+      end
     end
   end
 end

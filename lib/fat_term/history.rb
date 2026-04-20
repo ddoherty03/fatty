@@ -48,9 +48,8 @@ module FatTerm
     end
 
     def self.default
-      @default ||= new(path: :default)
+      for_path(:default)
     end
-
 
     ###################################################################################
     # Accessing History items from a consuming application
