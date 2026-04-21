@@ -2,13 +2,13 @@
 
 module FatTerm
   class PopUpSession < ModalSession
-    attr_reader :win, :field, :filtered, :selected, :title, :message
+    attr_reader :field, :filtered, :selected, :title, :message
 
-    POPUP_MAX_WIDTH      = 120
-    POPUP_DEFAULT_HEIGHT = 12
-    POPUP_MIN_LIST_H     = 3
-    POPUP_MAX_LIST_H     = 20
-    POPUP_MARGIN         = 2
+    MAX_WIDTH      = 120
+    DEFAULT_HEIGHT = 12
+    MIN_LIST_H     = 3
+    MAX_LIST_H     = 20
+    MARGIN         = 2
 
     # API:
     # - source: Proc that returns the candidate list. May accept (query) or be arity 0.
@@ -60,18 +60,20 @@ module FatTerm
       notify_owner(:popup_changed)
     end
 
+    # Return the outer width and height of the window for this modal,
+    # including any padding and borders.
     def geometry(cols:, rows:)
-      max_w = max_width(cols: cols, margin: POPUP_MARGIN, min_width: 10)
-      max_h = max_height(rows: rows, margin: POPUP_MARGIN, min_height: 5)
+      max_w = max_width(cols: cols, margin: MARGIN, min_width: 10)
+      max_h = max_height(rows: rows, margin: MARGIN, min_height: 5)
 
-      desired_list_h = @filtered.length.clamp(POPUP_MIN_LIST_H, POPUP_MAX_LIST_H)
+      desired_list_h = @filtered.length.clamp(MIN_LIST_H, MAX_LIST_H)
       height = clamp_height(
         desired_list_h + popup_extra_rows,
         max_height: max_h,
         min_height: 5,
       )
       width = clamp_width(
-        POPUP_MAX_WIDTH,
+        MAX_WIDTH,
         max_width: max_w,
       )
       [width, height]
@@ -230,9 +232,9 @@ module FatTerm
       # If window isn't built yet, fall back to the historical default.
       h =
         begin
-          @win ? @win.maxy : POPUP_DEFAULT_HEIGHT
+          @win ? @win.maxy : DEFAULT_HEIGHT
         rescue RuntimeError
-          POPUP_DEFAULT_HEIGHT
+          DEFAULT_HEIGHT
         end
 
       list_h = h - popup_extra_rows

@@ -2,7 +2,7 @@
 
 module FatTerm
   class PromptSession < ModalSession
-    attr_reader :win, :field, :title, :message, :history
+    attr_reader :field, :title, :message, :history
 
     PROMPT_POPUP_MAX_WIDTH = 120
     PROMPT_POPUP_MIN_WIDTH = 20
@@ -82,30 +82,8 @@ module FatTerm
       []
     end
 
-    def geometry(cols:, rows:)
-      max_w = [cols - (PROMPT_POPUP_MARGIN * 2), PROMPT_POPUP_MIN_WIDTH].max
-      max_h = [rows - (PROMPT_POPUP_MARGIN * 2), 5].max
-
-      preferred_w = (cols * 2 / 3).floor
-      preferred_w = 50 if preferred_w < 50
-
-      message_width = @message.to_s.length
-      prompt_width = @field.prompt_text.to_s.length + @field.buffer.text.to_s.length
-      content_width = [message_width, prompt_width].max + 4
-
-      width = [preferred_w, content_width].max
-      width = [width, max_w].min
-      width = [width, PROMPT_POPUP_MAX_WIDTH].min
-
-      extra_rows = 2
-      extra_rows += 1 if @message && !@message.empty?
-      extra_rows += 1
-
-      height = [extra_rows, max_h].min
-
-      [width, height]
-    end
-
+    # Return the outer width and height of the window for this modal,
+    # including any padding and borders.
     def geometry(cols:, rows:)
       max_w = max_width(
         cols: cols,
@@ -128,11 +106,10 @@ module FatTerm
 
       extra_rows = 2
       extra_rows += 1 if @message && !@message.empty?
-      extra_rows += 1
       height = clamp_height(
         extra_rows,
         max_height: max_h,
-        min_height: 1,
+        min_height: 4,
       )
 
       [width, height]
