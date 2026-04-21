@@ -132,5 +132,34 @@ module FatTerm
     def update_cmd(_name, _payload, terminal:)
       []
     end
+
+    def safely_close_window(win)
+      return nil unless win
+
+      begin
+        win.erase
+      rescue RuntimeError => e
+        raise unless closed_window_error?(e)
+      end
+
+      begin
+        win.noutrefresh if win.respond_to?(:noutrefresh)
+      rescue RuntimeError => e
+        raise unless closed_window_error?(e)
+      end
+
+      begin
+        win.close
+      rescue RuntimeError => e
+        raise unless closed_window_error?(e)
+      end
+
+      nil
+    end
+
+    def closed_window_error?(error)
+      message = error.message
+      message.include?("closed window") || message.include?("already closed window")
+    end
   end
 end

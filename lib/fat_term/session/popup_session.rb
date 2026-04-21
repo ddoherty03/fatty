@@ -63,7 +63,6 @@ module FatTerm
     def rebuild_windows!(terminal)
       old_win = @win
       @win = nil
-
       safely_close_window(old_win)
 
       cols = ::Curses.cols
@@ -207,12 +206,9 @@ module FatTerm
 
     def close
       FatTerm.debug("PopupSession#close: object_id=#{object_id}", tag: :session)
-      if @win
-        @win.erase
-        @win.noutrefresh if @win.respond_to?(:noutrefresh)
-        @win.close
-        @win = nil
-      end
+      old_win = @win
+      @win = nil
+      safely_close_window(old_win)
       nil
     end
 
@@ -373,30 +369,6 @@ module FatTerm
         field: @field,
         buffer: @field.buffer,
       )
-    end
-
-    def safely_close_window(win)
-      return unless win
-
-      begin
-        win.erase
-      rescue RuntimeError
-        nil
-      end
-
-      begin
-        win.noutrefresh if win.respond_to?(:noutrefresh)
-      rescue RuntimeError
-        nil
-      end
-
-      begin
-        win.close
-      rescue RuntimeError
-        nil
-      end
-
-      nil
     end
   end
 end
