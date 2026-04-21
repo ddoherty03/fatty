@@ -482,7 +482,7 @@ module FatTerm
 
       if (top = @modal_stack.last)
         session = top[:session]
-        cmds = session.handle_resize(terminal: self)
+        cmds = session.handle_resize
         apply_commands(cmds)
       end
     end

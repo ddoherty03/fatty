@@ -13,12 +13,12 @@ module FatTerm
       nil
     end
 
-    def handle_resize(terminal:)
-      rebuild_windows!(terminal)
+    def handle_resize
+      rebuild_windows!
       []
     end
 
-    def rebuild_windows!(terminal)
+    def rebuild_windows!
       old_win = win
       self.win = nil
       safely_close_window(old_win)
@@ -32,6 +32,8 @@ module FatTerm
       nil
     end
 
+    # Return the outer width and height of the window for this modal,
+    # including any padding and borders.
     def geometry(cols:, rows:)
       raise NotImplementedError, "#{self.class} must implement #geometry"
     end

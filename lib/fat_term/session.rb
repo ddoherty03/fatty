@@ -119,7 +119,7 @@ module FatTerm
       nil
     end
 
-    def handle_resize(terminal:)
+    def handle_resize
       []
     end
 
