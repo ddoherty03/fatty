@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module FatTerm
-  class PopUpSession < Session
+  class PopUpSession < ModalSession
     attr_reader :win, :field, :filtered, :selected, :title, :message
 
     POPUP_MAX_WIDTH      = 120
@@ -60,30 +60,20 @@ module FatTerm
       notify_owner(:popup_changed)
     end
 
-    def rebuild_windows!(terminal)
-      old_win = @win
-      @win = nil
-      safely_close_window(old_win)
-
-      cols = ::Curses.cols
-      rows = ::Curses.lines
-      width, height = popup_geometry(cols: cols, rows: rows)
-      x = (cols - width) / 2
-      y = (rows - height) / 2
-      @win = ::Curses::Window.new(height, width, y, x)
-    end
-
-    def popup_geometry(cols:, rows:)
-      max_w = [cols - (POPUP_MARGIN * 2), 10].max
-      max_h = [rows - (POPUP_MARGIN * 2), 5].max
+    def geometry(cols:, rows:)
+      max_w = max_width(cols: cols, margin: POPUP_MARGIN, min_width: 10)
+      max_h = max_height(rows: rows, margin: POPUP_MARGIN, min_height: 5)
 
       desired_list_h = @filtered.length.clamp(POPUP_MIN_LIST_H, POPUP_MAX_LIST_H)
-
-      extra_rows = 3
-      extra_rows += 1 if @message && !@message.empty?
-      height = (desired_list_h + popup_extra_rows).clamp(5, max_h)
-      width = [max_w, POPUP_MAX_WIDTH].min
-
+      height = clamp_height(
+        desired_list_h + popup_extra_rows,
+        max_height: max_h,
+        min_height: 5,
+      )
+      width = clamp_width(
+        POPUP_MAX_WIDTH,
+        max_width: max_w,
+      )
       [width, height]
     end
 
@@ -202,20 +192,6 @@ module FatTerm
       @scroll_start = 0 if @scroll_start < 0
       @scroll_start = max_start if @scroll_start > max_start
       @scroll_start
-    end
-
-    def close
-      FatTerm.debug("PopupSession#close: object_id=#{object_id}", tag: :session)
-      old_win = @win
-      @win = nil
-      safely_close_window(old_win)
-      nil
-    end
-
-    def handle_resize(terminal:)
-      rebuild_windows!(terminal)
-      ensure_scroll_visible
-      notify_owner(:popup_changed)
     end
 
     private

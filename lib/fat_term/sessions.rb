@@ -1,6 +1,7 @@
 require_relative "session"
 
 require_relative "session/alert_session"
+require_relative "session/modal_session"
 require_relative "session/popup_session"
 require_relative "session/search_session"
 require_relative "session/isearch_session"

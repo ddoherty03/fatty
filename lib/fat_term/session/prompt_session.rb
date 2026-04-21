@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module FatTerm
-  class PromptSession < Session
+  class PromptSession < ModalSession
     attr_reader :win, :field, :title, :message, :history
 
     PROMPT_POPUP_MAX_WIDTH = 120
@@ -44,11 +44,6 @@ module FatTerm
       renderer.render_prompt_popup(session: self)
     end
 
-    def handle_resize(terminal:)
-      rebuild_windows!(terminal)
-      []
-    end
-
     def handle_action(action, args, terminal:, event:)
       env = action_env(terminal: terminal, event: event)
 
@@ -87,15 +82,7 @@ module FatTerm
       []
     end
 
-    def close
-      FatTerm.debug("PromptSession#close: object_id=#{object_id}", tag: :session)
-      old_win = @win
-      @win = nil
-      safely_close_window(old_win)
-      nil
-    end
-
-    def popup_geometry(cols:, rows:)
+    def geometry(cols:, rows:)
       max_w = [cols - (PROMPT_POPUP_MARGIN * 2), PROMPT_POPUP_MIN_WIDTH].max
       max_h = [rows - (PROMPT_POPUP_MARGIN * 2), 5].max
 
@@ -119,6 +106,38 @@ module FatTerm
       [width, height]
     end
 
+    def geometry(cols:, rows:)
+      max_w = max_width(
+        cols: cols,
+        margin: PROMPT_POPUP_MARGIN,
+        min_width: PROMPT_POPUP_MIN_WIDTH,
+      )
+      max_h = max_height(rows: rows, margin: PROMPT_POPUP_MARGIN, min_height: 5)
+
+      preferred_w = [(cols * 2 / 3).floor, 50].max
+
+      message_width = @message.to_s.length
+      prompt_width = @field.prompt_text.to_s.length + @field.buffer.text.to_s.length
+      content_width = [message_width, prompt_width].max + 4
+
+      width = clamp_width(
+        [preferred_w, content_width].max,
+        max_width: max_w,
+        hard_max: PROMPT_POPUP_MAX_WIDTH,
+      )
+
+      extra_rows = 2
+      extra_rows += 1 if @message && !@message.empty?
+      extra_rows += 1
+      height = clamp_height(
+        extra_rows,
+        max_height: max_h,
+        min_height: 1,
+      )
+
+      [width, height]
+    end
+
     def with_virtual_suffix_sync
       @field.sync_virtual_suffix!
       result = yield
@@ -127,19 +146,6 @@ module FatTerm
     end
 
     private
-
-    def rebuild_windows!(terminal)
-      old_win = @win
-      @win = nil
-      safely_close_window(old_win)
-
-      cols = ::Curses.cols
-      rows = ::Curses.lines
-      width, height = popup_geometry(cols: cols, rows: rows)
-      x = (cols - width) / 2
-      y = (rows - height) / 2
-      @win = ::Curses::Window.new(height, width, y, x)
-    end
 
     def prompt_payload
       {
