@@ -677,22 +677,49 @@ module FatTerm
           return
         end
 
-        if session.respond_to?(:win) && session.win &&
-           session.respond_to?(:field) && session.field
+        if session.respond_to?(:win) && session.respond_to?(:field) && session.field
+          win = session.win
+          unless win
+            ::Curses.curs_set(0)
+            return
+          end
+
+          begin
+            maxy = win.maxy
+            maxx = win.maxx
+          rescue RuntimeError
+            ::Curses.curs_set(0)
+            return
+          end
+
+          # If the popup is too small to place a cursor safely, just hide it.
+          if maxy < 3 || maxx < 3
+            ::Curses.curs_set(0)
+            return
+          end
+
           ::Curses.curs_set(1)
 
           cursor_x = session.field.cursor_x
           cursor_x = 0 if cursor_x.nil?
 
           if session.is_a?(FatTerm::PopUpSession)
-            input_row = session.win.maxy - 2
-            cursor_x = cursor_x.clamp(0, session.win.maxx - 3)
-            session.win.setpos(input_row, 1 + cursor_x)
+            input_row = maxy - 2
+            cursor_x = cursor_x.clamp(0, [maxx - 3, 0].max)
+            begin
+              win.setpos(input_row, 1 + cursor_x)
+            rescue RuntimeError
+              ::Curses.curs_set(0)
+            end
           elsif session.is_a?(FatTerm::PromptSession)
             message_rows = (session.message && !session.message.empty?) ? 1 : 0
             input_row = 1 + message_rows
-            cursor_x = cursor_x.clamp(0, session.win.maxx - 3)
-            session.win.setpos(input_row, 1 + cursor_x)
+            cursor_x = cursor_x.clamp(0, [maxx - 3, 0].max)
+            begin
+              win.setpos(input_row, 1 + cursor_x)
+            rescue RuntimeError
+              ::Curses.curs_set(0)
+            end
           else
             ::Curses.curs_set(0)
           end

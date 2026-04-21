@@ -59,8 +59,7 @@ module FatTerm
           [:terminal, :pop_modal]
         ]
       when :accept_line
-        text = @field.buffer.text.to_s
-        @field.accept_line
+        text = @field.accept_line.to_s
         [
           [:terminal, :send_modal_owner, [:cmd, :prompt_result, { kind: @kind, text: text }]],
           [:terminal, :pop_modal]
@@ -85,12 +84,29 @@ module FatTerm
     end
 
     def close
-      if @win
-        @win.erase
-        @win.noutrefresh if @win.respond_to?(:noutrefresh)
-        @win.close
-        @win = nil
+      old_win = @win
+      @win = nil
+
+      if old_win
+        begin
+          old_win.erase
+        rescue RuntimeError => e
+          raise unless e.message.include?("closed window") || e.message.include?("already closed window")
+        end
+
+        begin
+          old_win.noutrefresh if old_win.respond_to?(:noutrefresh)
+        rescue RuntimeError => e
+          raise unless e.message.include?("closed window") || e.message.include?("already closed window")
+        end
+
+        begin
+          old_win.close
+        rescue RuntimeError => e
+          raise unless e.message.include?("closed window") || e.message.include?("already closed window")
+        end
       end
+
       nil
     end
 
@@ -121,10 +137,27 @@ module FatTerm
     private
 
     def rebuild_windows!(terminal)
-      if @win
-        @win.erase
-        @win.noutrefresh if @win.respond_to?(:noutrefresh)
-        @win.close
+      old_win = @win
+      @win = nil
+
+      if old_win
+        begin
+          old_win.erase
+        rescue RuntimeError => e
+          raise unless e.message.include?("closed window") || e.message.include?("already closed window")
+        end
+
+        begin
+          old_win.noutrefresh if old_win.respond_to?(:noutrefresh)
+        rescue RuntimeError => e
+          raise unless e.message.include?("closed window") || e.message.include?("already closed window")
+        end
+
+        begin
+          old_win.close
+        rescue RuntimeError => e
+          raise unless e.message.include?("closed window") || e.message.include?("already closed window")
+        end
       end
 
       cols = ::Curses.cols
@@ -133,6 +166,28 @@ module FatTerm
       x = (cols - width) / 2
       y = (rows - height) / 2
       @win = ::Curses::Window.new(height, width, y, x)
+    end
+
+    def safely_dispose_window(win)
+      begin
+        win.erase
+      rescue RuntimeError => e
+        raise unless e.message.include?("closed window") || e.message.include?("already closed window")
+      end
+
+      begin
+        win.noutrefresh
+      rescue RuntimeError => e
+        raise unless e.message.include?("closed window") || e.message.include?("already closed window")
+      end
+
+      begin
+        win.close
+      rescue RuntimeError => e
+        raise unless e.message.include?("closed window") || e.message.include?("already closed window")
+      end
+
+      nil
     end
 
     def prompt_payload

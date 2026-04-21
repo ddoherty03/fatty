@@ -154,7 +154,8 @@ module FatTerm
       end
 
       def render_status(text, role: :status_info)
-        state = [text.to_s, role]
+        msg = text.to_s.tr("\r\n", " ")
+        state = [msg, role]
         return if state == @last_status_state
 
         @last_status_state = state
@@ -163,13 +164,12 @@ module FatTerm
         cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
         attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
 
-        win.erase
-        win.setpos(0, 0)
-        win.attrset(attr)
         win.bkgdset(attr) if win.respond_to?(:bkgdset)
-
-        msg = text.to_s.tr("\r\n", " ")
+        win.erase
+        win.attrset(attr)
+        win.setpos(0, 0)
         win.addstr(msg.ljust(cols)[0, cols])
+
         stage_window(win)
         nil
       end
@@ -190,20 +190,24 @@ module FatTerm
         region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
         suggestion_attr = pair_attr(:input_suggestion, fallback: 0) | ::Curses::A_DIM
 
-        win.attrset(base_attr)
+        win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
         win.erase
+        win.attrset(base_attr)
+
+        width = win.respond_to?(:maxx) ? win.maxx : @screen.cols
 
         render_field_into(
           win: win,
           field: field,
           row: 0,
-          width: win.maxx,
+          width: width,
           base_attr: base_attr,
           region_attr: region_attr,
           suggestion_attr: suggestion_attr,
         )
 
-        win.setpos(0, field.cursor_x)
+        cursor_x = field.cursor_x.to_i.clamp(0, [width - 1, 0].max)
+        win.setpos(0, cursor_x)
         stage_window(win)
         nil
       end
@@ -243,24 +247,29 @@ module FatTerm
 
         @last_alert_state = state
         win = context.alert_win
-        win.erase
-        win.setpos(0, 0)
-        win.clrtoeol
+        cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
 
-        if alert.nil?
-          # Always draw a bar so the "panel" is visible even when empty.
-          if ::Curses.has_colors?
-            win.attron(pair_attr(:status_info, fallback: ::Curses::A_REVERSE)) { win.addstr(" ".ljust(@screen.cols)) }
+        attr =
+          if alert.nil?
+            pair_attr(:status_info, fallback: ::Curses::A_REVERSE)
           else
-            win.attron(::Curses::A_REVERSE) { win.addstr(" ".ljust(@screen.cols)) }
+            alert_attr(alert)
           end
-        else
-          attr = alert_attr(alert)
-          win.attron(attr) do
-            text = format_alert(alert)
-            win.addstr(text.ljust(@screen.cols))
+
+        win.bkgdset(attr) if win.respond_to?(:bkgdset)
+        win.erase
+        win.attrset(attr)
+        win.setpos(0, 0)
+
+        text =
+          if alert.nil?
+            ""
+          else
+            format_alert(alert)
           end
-        end
+
+        win.addstr(text.ljust(cols)[0, cols])
+
         stage_window(win)
         nil
       end
@@ -280,8 +289,12 @@ module FatTerm
         win = session.win
         return unless win
 
-        width = win.maxx
-        height = win.maxy
+        begin
+          width = win.maxx
+          height = win.maxy
+        rescue RuntimeError
+          return
+        end
         win.erase
 
         frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
@@ -370,56 +383,64 @@ module FatTerm
         win = session.win
         return unless win
 
-        width = win.maxx
-        height = win.maxy
-        win.erase
+        begin
+          width = win.maxx
+          height = win.maxy
+          win.erase
 
-        frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
-        win.attron(frame_attr) do
+          frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
+          win.attron(frame_attr) do
           draw_popup_frame(win, width: width, height: height)
         end
 
-        inner_h = height - 2
-        inner_w = width - 2
-        inner = win.derwin(inner_h, inner_w, 1, 1)
-        inner.erase
+          inner_h = height - 2
+          inner_w = width - 2
+          return nil if inner_h <= 0 || inner_w <= 0
 
-        if session.title
-          win.setpos(0, 2)
-          win.addstr(" #{session.title} ")
-        end
+          inner = win.derwin(inner_h, inner_w, 1, 1)
+          inner.erase
 
-        text_attr  = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
-        input_attr = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
-
-        row = 0
-
-        if session.message && !session.message.empty?
-          inner.attron(text_attr) do
-            inner.setpos(row, 0)
-            line = session.message.to_s[0, inner_w]
-            inner.addstr(line.ljust(inner_w))
+          if session.title
+            win.setpos(0, 2)
+            win.addstr(" #{session.title} ")
           end
-          row += 1
+
+          text_attr  = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
+          input_attr = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
+
+          row = 0
+
+          if session.message && !session.message.empty?
+            inner.attron(text_attr) do
+              inner.setpos(row, 0)
+              line = session.message.to_s[0, inner_w]
+              inner.addstr(line.ljust(inner_w))
+            end
+            row += 1
+          end
+
+          region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
+          suggestion_attr = pair_attr(:input_suggestion, fallback: 0) | ::Curses::A_DIM
+          render_field_into(
+            win: inner,
+            field: session.field,
+            row: row,
+            width: inner_w,
+            base_attr: input_attr,
+            region_attr: region_attr,
+            suggestion_attr: suggestion_attr,
+          )
+
+          cursor_in_inner = session.field.cursor_x.clamp(0, [inner_w - 1, 0].max)
+          win.setpos(1 + row, 1 + cursor_in_inner)
+
+          stage_window(inner)
+          stage_window(win)
+        rescue RuntimeError => e
+          raise unless e.message.include?("closed window") || e.message.include?("already closed window")
+          nil
         end
 
-        region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
-        suggestion_attr = pair_attr(:input_suggestion, fallback: 0) | ::Curses::A_DIM
-        render_field_into(
-          win: inner,
-          field: session.field,
-          row: row,
-          width: inner_w,
-          base_attr: input_attr,
-          region_attr: region_attr,
-          suggestion_attr: suggestion_attr,
-        )
-
-        cursor_in_inner = session.field.cursor_x.clamp(0, inner_w - 1)
-        win.setpos(1 + row, 1 + cursor_in_inner)
-
-        stage_window(inner)
-        stage_window(win)
         nil
       end
 
