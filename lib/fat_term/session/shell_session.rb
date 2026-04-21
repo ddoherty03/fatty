@@ -67,6 +67,8 @@ module FatTerm
     end
 
     def update_key(ev, terminal:)
+      return [] unless ev.is_a?(FatTerm::KeyEvent)
+
       key_str = "key=#{ev} raw=#{ev.raw}"
       FatTerm.debug("ShellSession.update_key: #{key_str}", tag: :session)
       case ev.key
