@@ -56,7 +56,7 @@ module FatTerm
 
     def init(terminal:)
       refresh_items
-      rebuild_windows!(terminal)
+      rebuild_windows!
       notify_owner(:popup_changed)
     end
 
