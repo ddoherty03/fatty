@@ -416,8 +416,7 @@ module FatTerm
     # Ranges are in *visible text* coordinates (ANSI already stripped), matching
     # the renderer’s slice planner / highlighting behavior.
     def search_visible_highlights(viewport:)
-      re = @search[:re]
-      return unless re
+      return unless @search[:re]
 
       lines = @output.lines
       total = lines.length
@@ -427,29 +426,119 @@ module FatTerm
       bottom = viewport.bottom_index(total)
       current = @search[:last]
       out = {}
-      (top..bottom).each do |i|
-        text = visible_text(lines[i])
-        next if text.nil? || text.empty?
 
-        ranges = []
-        text.to_enum(:scan, re).each do
-          m = Regexp.last_match
-          ranges << [m.begin(0), m.end(0), :secondary]
-        end
-        next if ranges.empty?
+      if @search[:regex]
+        (top..bottom).each do |i|
+          text = visible_text(lines[i])
+          next if text.nil? || text.empty?
 
-        # Promote the current match to :primary, removing the duplicate secondary
-        # range if present.
-        if current && current[:line].to_i == i
-          cf = current[:from].to_i
-          ct = current[:to].to_i
-          ranges.reject! { |a, b, _role| a == cf && b == ct }
-          ranges << [cf, ct, :primary]
+          ranges = []
+          text.to_enum(:scan, @search[:re]).each do
+            m = Regexp.last_match
+            ranges << [m.begin(0), m.end(0), :secondary]
+          end
+          next if ranges.empty?
+
+          if current && current[:line].to_i == i
+            cf = current[:from].to_i
+            ct = current[:to].to_i
+            ranges.reject! { |a, b, _role| a == cf && b == ct }
+            ranges << [cf, ct, :primary]
+          end
+
+          ranges.sort_by!(&:first)
+          out[i] = merge_highlight_ranges(ranges)
         end
-        ranges.sort_by!(&:first)
-        out[i] = ranges
+      else
+        term_res = FatTerm::Search.compile_term_regexps(@search[:pattern])
+
+        (top..bottom).each do |i|
+          text = visible_text(lines[i])
+          next if text.nil? || text.empty?
+
+          ranges = []
+
+          term_res.each do |term_re|
+            text.to_enum(:scan, term_re).each do
+              m = Regexp.last_match
+              ranges << [m.begin(0), m.end(0), :secondary]
+            end
+          end
+
+          next if ranges.empty?
+
+          if current && current[:line].to_i == i
+            cf = current[:from].to_i
+            ct = current[:to].to_i
+            ranges.reject! { |a, b, _role| a == cf && b == ct }
+            ranges << [cf, ct, :primary]
+          end
+
+          ranges.sort_by!(&:first)
+          out[i] = merge_highlight_ranges(ranges)
+        end
       end
       out.empty? ? nil : out
+    end
+
+    def merge_highlight_ranges(ranges)
+      return [] if ranges.empty?
+
+      merged = [ranges.first.dup]
+
+      ranges.drop(1).each do |from, to, role|
+        prev = merged[-1]
+        prev_from, prev_to, prev_role = prev
+
+        if from <= prev_to
+          prev[1] = [prev_to, to].max
+          prev[2] = :primary if prev_role == :primary || role == :primary
+        else
+          merged << [from, to, role]
+        end
+      end
+
+      merged
+    end
+
+    def plain_search?
+      @search[:re] && !@search[:regex]
+    end
+
+    def term_regexps
+      FatTerm::Search.compile_term_regexps(@search[:pattern])
+    end
+
+    def first_term_match(text, from:)
+      best = nil
+
+      term_regexps.each do |term_re|
+        m = term_re.match(text, from)
+        next unless m
+
+        if best.nil? || m.begin(0) < best.begin(0)
+          best = m
+        end
+      end
+
+      best
+    end
+
+    def last_term_match_before(text, limit:)
+      best = nil
+
+      term_regexps.each do |term_re|
+        text.to_enum(:scan, term_re).each do
+          m = Regexp.last_match
+          break if m.end(0) > limit
+
+          if best.nil? || m.begin(0) >= best.begin(0)
+            best = m
+          end
+        end
+      end
+
+      best
     end
 
     def search_label
@@ -547,18 +636,7 @@ module FatTerm
     end
 
     def compile_search_regexp(pattern, regex:)
-      if regex
-        Regexp.new(pattern)
-      else
-        # Case insensitive unless there are uppercase letters in pattern.
-        flags =
-          if pattern.match?(/[[:upper]]/)
-            0
-          else
-            Regexp::IGNORECASE
-          end
-        Regexp.new(Regexp.escape(pattern), flags)
-      end
+      FatTerm::Search.compile_regexp(pattern, regex: regex)
     end
 
     def search_start_position(direction:, total:, initial:)
@@ -628,8 +706,16 @@ module FatTerm
       while i < lines.length
         text = visible_text(lines[i])
         from = (i == start_line ? start_col : 0)
-        m = re.match(text, from)
-        return { line: i, from: m.begin(0), to: m.end(0) } if m
+
+        if plain_search?
+          if re.match(text)
+            m = first_term_match(text, from: from)
+            return { line: i, from: m.begin(0), to: m.end(0) } if m
+          end
+        else
+          m = re.match(text, from)
+          return { line: i, from: m.begin(0), to: m.end(0) } if m
+        end
 
         i += 1
       end
@@ -640,17 +726,24 @@ module FatTerm
       i = start_line.clamp(0, lines.length - 1)
       while i >= 0
         text = visible_text(lines[i])
-        # For now, we search the whole line and select the last match.
-        # If we're repeating within the same line, restrict to before start_col.
         limit = (i == start_line ? start_col : nil)
-        last = nil
-        text.to_enum(:scan, re).each do
-          m = Regexp.last_match
-          break if limit && m.end(0) > limit
 
-          last = m
+        if plain_search?
+          if re.match(text)
+            lim = limit || (text.length + 1)
+            m = last_term_match_before(text, limit: lim)
+            return { line: i, from: m.begin(0), to: m.end(0) } if m
+          end
+        else
+          last = nil
+          text.to_enum(:scan, re).each do
+            m = Regexp.last_match
+            break if limit && m.end(0) > limit
+
+            last = m
+          end
+          return { line: i, from: last.begin(0), to: last.end(0) } if last
         end
-        return { line: i, from: last.begin(0), to: last.end(0) } if last
 
         i -= 1
       end
