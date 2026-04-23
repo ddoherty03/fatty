@@ -295,6 +295,7 @@ module FatTerm
         rescue RuntimeError
           return
         end
+
         win.erase
 
         frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
@@ -304,59 +305,76 @@ module FatTerm
 
         inner_h = height - 2
         inner_w = width - 2
+        return if inner_h <= 0 || inner_w <= 0
+
         inner = win.derwin(inner_h, inner_w, 1, 1)
         inner.erase
 
-        # title (still on the frame)
         if session.title
           win.setpos(0, 2)
           win.addstr(" #{session.title} ")
         end
 
-        results_attr  = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
-        input_attr    = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
+        results_attr = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
+        input_attr = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
         selected_attr = pair_attr(:popup_selection, fallback: ::Curses::A_REVERSE)
-
-        message_h = 0
-        if session.message && !session.message.empty?
-          inner.attron(results_attr) do
-            inner.setpos(0, 0)
-            line = session.message.to_s[0, inner_w]
-            inner.addstr(line.ljust(inner_w))
+        counts_attr =
+          begin
+            pair_attr(:popup_counts, fallback: results_attr)
+          rescue KeyError
+            results_attr
           end
-          message_h = 1
+
+        row = 0
+        if session.message && !session.message.empty?
+          inner.attrset(results_attr)
+          inner.setpos(row, 0)
+          line = session.message.to_s[0, inner_w]
+          inner.addstr(line.ljust(inner_w))
+          row += 1
         end
 
         input_row = inner_h - 1
-        list_row = message_h
-        list_h = input_row - list_row
+        counts_row = inner_h - 2
+        list_row = row
+        list_h = counts_row - list_row
         list_h = 1 if list_h < 1
         list_w = inner_w
 
         items = session.filtered
-        sel   = session.selected
+        sel = session.selected
         start = session.scroll_start(list_h: list_h)
 
-        inner.attron(results_attr) do
-          (0...list_h).each do |i|
-            idx = start + i
-            is_sel = (idx == sel)
-            row_attr = is_sel ? selected_attr : results_attr
-            inner.attrset(row_attr)
+        (0...list_h).each do |i|
+          idx = start + i
+          is_sel = (idx == sel)
+          row_attr = is_sel ? selected_attr : results_attr
 
-            inner.setpos(list_row + i, 0)
-            inner.addstr(" " * list_w)
-            inner.setpos(list_row + i, 0)
+          inner.attrset(row_attr)
+          inner.setpos(list_row + i, 0)
+          inner.addstr(" " * list_w)
+          inner.setpos(list_row + i, 0)
 
-            next if idx >= items.length
+          next if idx >= items.length
 
-            gutter = idx == sel ? POPUP_SELECTED_GUTTER : POPUP_UNSELECTED_GUTTER
-            s = items[idx].to_s
-            s = s[0, list_w - gutter.length]
-            row = gutter + s
+          gutter = idx == sel ? POPUP_SELECTED_GUTTER : POPUP_UNSELECTED_GUTTER
+          s = items[idx].to_s
+          s = s[0, [list_w - gutter.length, 0].max]
+          line = (gutter + s)[0, list_w]
+          inner.addstr(line.ljust(list_w))
+        end
 
-            inner.addstr(row.ljust(list_w))
-          end
+        counts = session.counts
+        counts_text =
+          "#{counts[:total]} total · " \
+          "#{counts[:selected]} selected · " \
+          "#{counts[:matching]} matching · " \
+          "#{counts[:showing]} showing"
+
+        if counts_row >= 0
+          inner.attrset(counts_attr)
+          inner.setpos(counts_row, 0)
+          inner.addstr(counts_text[0, inner_w].to_s.ljust(inner_w))
         end
 
         region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
@@ -371,7 +389,7 @@ module FatTerm
           suggestion_attr: suggestion_attr,
         )
 
-        cursor_in_inner = session.field.cursor_x.clamp(0, list_w - 1)
+        cursor_in_inner = session.field.cursor_x.clamp(0, [list_w - 1, 0].max)
         win.setpos(1 + input_row, 1 + cursor_in_inner)
 
         stage_window(inner)
