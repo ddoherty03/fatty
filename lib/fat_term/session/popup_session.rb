@@ -202,9 +202,13 @@ module FatTerm
 
     def refresh_displayed_items
       if multi_select?
-        selected, _unselected = @items.partition { |item| selected_label?(item_label(item)) }
-        matching_unselected = @filtered.reject { |item| selected_label?(item_label(item)) }
-        @displayed = selected + matching_unselected
+        selected_missing =
+          @items.select do |item|
+          label = item_label(item)
+          selected_label?(label) && !@filtered.include?(item)
+        end
+
+        @displayed = selected_missing + @filtered
       else
         @displayed = @filtered.dup
       end
