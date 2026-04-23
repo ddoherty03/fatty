@@ -70,7 +70,7 @@ module FatTerm
       height = clamp_height(
         desired_list_h + popup_extra_rows,
         max_height: max_h,
-        min_height: 5,
+        min_height: 6,
       )
       width = clamp_width(
         MAX_WIDTH,
@@ -196,6 +196,33 @@ module FatTerm
       @scroll_start
     end
 
+    # Count methods for display to user.
+
+    def total_count
+      @items.length
+    end
+
+    def selected_count
+      selected_item ? 1 : 0
+    end
+
+    def matching_count
+      @filtered.length
+    end
+
+    def showing_count
+      [filtered.length - scroll_start(list_h: popup_list_height), popup_list_height].min
+    end
+
+    def counts
+      {
+        total: total_count,
+        selected: selected_count,
+        matching: matching_count,
+        showing: showing_count
+      }
+    end
+
     private
 
     def popup_payload(item = selected_item)
@@ -212,7 +239,7 @@ module FatTerm
     end
 
     def popup_extra_rows
-      rows = 3
+      rows = 4
       rows += 1 if popup_has_message?
       rows
     end
@@ -296,8 +323,6 @@ module FatTerm
         # no-op
       when :reverse
         @items = @items.reverse
-      else
-        # unknown order; ignore
       end
     end
 
