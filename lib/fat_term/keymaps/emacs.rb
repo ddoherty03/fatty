@@ -92,9 +92,10 @@ module FatTerm
       map.bind(context: :popup, key: :'<', meta: true, action: :popup_top)
       map.bind(context: :popup, key: :'>', meta: true, action: :popup_bottom)
       map.bind(context: :popup, key: :l, ctrl: true, action: :popup_recenter)
-      map.bind(context: :popup, key: :space, action: :popup_toggle_selected)
-      # map.bind(context: :popup, key: :g, action: :popup_top)
-      # map.bind(context: :popup, key: :G, shift: true, action: :popup_bottom)
+
+      # Popups that present multiple items for selection have a special
+      # context that steals the SPACE key for toggling selection
+      map.bind(context: :popup_multi, key: :space, action: :popup_toggle_selected)
 
       # Themes
       map.bind(context: :terminal, key: :t, meta: true, ctrl: true, action: :cycle_theme)

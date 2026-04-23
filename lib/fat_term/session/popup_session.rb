@@ -62,6 +62,12 @@ module FatTerm
       [:popup, :input]
     end
 
+    def keymap_contexts
+      contexts = [:popup, :input]
+      contexts.unshift(:popup_multi) if multi_select?
+      contexts
+    end
+
     def init(terminal:)
       refresh_items
       rebuild_windows!
