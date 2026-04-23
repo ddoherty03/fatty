@@ -92,6 +92,7 @@ module FatTerm
       map.bind(context: :popup, key: :'<', meta: true, action: :popup_top)
       map.bind(context: :popup, key: :'>', meta: true, action: :popup_bottom)
       map.bind(context: :popup, key: :l, ctrl: true, action: :popup_recenter)
+      map.bind(context: :popup, key: :space, action: :popup_toggle_selected)
       # map.bind(context: :popup, key: :g, action: :popup_top)
       # map.bind(context: :popup, key: :G, shift: true, action: :popup_bottom)
 
