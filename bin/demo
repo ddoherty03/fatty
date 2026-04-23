@@ -39,9 +39,12 @@ on_accept_proc = lambda do |line, terminal:, session:|
   when "choosevals"
     pairs =
       if args.empty?
-        [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", :done]]
+        pairs = [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", :done]]
+      elsif args.length.odd?
+        session.append_output("choosevals: needs even number of args\n")
+        next
       else
-        args.each_with_index.map { |arg, idx| ["#{arg} => #{idx}", idx] }
+        pairs = args.each_slice(2).map { |label, value| [label, value] }
       end
 
     choice = terminal.choose(
@@ -79,9 +82,12 @@ on_accept_proc = lambda do |line, terminal:, session:|
   when "choosevals_multi"
     pairs =
       if args.empty?
-        [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", :done]]
+        pairs = [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", :done]]
+      elsif args.length.odd?
+        session.append_output("choosevals_multi: needs even number of args\n")
+        next
       else
-        args.each_with_index.map { |arg, idx| ["#{arg} => #{idx}", idx] }
+        pairs = args.each_slice(2).map { |label, value| [label, value] }
       end
 
     choices = terminal.choose_multi(
