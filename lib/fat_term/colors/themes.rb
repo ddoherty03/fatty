@@ -36,6 +36,7 @@ module FatTerm
           popup_selection: { fg: "navy",   bg: 'yellow' },
           popup_input: { fg: "white",  bg: "dark_blue" },
           popup_frame: { fg: "white",  bg: "navy" },
+          popup_counts: { fg: "navy",  bg: "white" },
         },
 
         nordic: {
@@ -61,6 +62,7 @@ module FatTerm
           popup_selection: { fg: "#2e3440", bg: "#88c0d0" },
           popup_input:     { fg: "#eceff4", bg: "#434c5e" },
           popup_frame:     { fg: "#81a1c1", bg: "#3b4252" },
+          popup_counts: { fg: "#2e3440",  bg: "white" },
         },
 
         solarized_dark: {
@@ -86,6 +88,7 @@ module FatTerm
           popup_selection: { fg: "#002b36", bg: "#b58900" },
           popup_input:     { fg: "#93a1a1", bg: "#002b36" },
           popup_frame:     { fg: "#268bd2", bg: "#073642" },
+          popup_counts: { fg: "#002b36",  bg: "white" },
         },
 
         mono: {
@@ -111,6 +114,7 @@ module FatTerm
           popup_selection: { fg: "white", bg: "black" },
           popup_input: { fg: "white", bg: "black" },
           popup_frame: { fg: "black", bg: "white" },
+          popup_counts: { fg: "white",  bg: "gray" },
         },
       }.freeze
 
