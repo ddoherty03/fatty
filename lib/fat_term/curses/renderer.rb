@@ -184,7 +184,7 @@ module FatTerm
       end
 
       def scroll_output_window_delta!(prev:, curr:)
-        FatTerm.debug("calling scroll_output_window_delta!", tag: scrolling)
+        FatTerm.debug("calling scroll_output_window_delta!", tag: :scrolling)
         win = context.output_win
         delta = curr[:top] - prev[:top]
         base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
