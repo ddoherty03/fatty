@@ -10,24 +10,25 @@ module FatTerm
     module Pairs
       OUTPUT           = 1
       INPUT            = 2
-      INPUT_SUGGESTION = 8
-      CURSOR           = 3
-      REGION           = 4
+      INPUT_SUGGESTION = 3
+      CURSOR           = 4
+      REGION           = 5
 
-      STATUS_INFO      = 5
-      STATUS_WARN      = 6
-      STATUS_ERROR     = 7
-      STATUS_GOOD      = 8
+      STATUS_INFO      = 6
+      STATUS_WARN      = 7
+      STATUS_ERROR     = 8
+      STATUS_GOOD      = 9
 
-      SEARCH = 10
-      SEARCH_HIGHLIGHT = 11
-      SEARCH_HIGHLIGHT_SECONDARY = 12
-      PAGER_STATUS = 15
+      SEARCH = 20
+      SEARCH_HIGHLIGHT = 21
+      SEARCH_HIGHLIGHT_SECONDARY = 22
+      PAGER_STATUS = 23
 
-      POPUP           = 20
-      POPUP_SELECTION = 21
-      POPUP_INPUT     = 22
-      POPUP_FRAME     = 23
+      POPUP           = 30
+      POPUP_SELECTION = 31
+      POPUP_INPUT     = 32
+      POPUP_FRAME     = 33
+      POPUP_COUNTS    = 34
 
       # Role -> pair id mapping for iteration.
       ROLE_TO_PAIR = {
@@ -52,6 +53,7 @@ module FatTerm
         popup_selection: POPUP_SELECTION,
         popup_input: POPUP_INPUT,
         popup_frame: POPUP_FRAME,
+        popup_counts: POPUP_COUNTS,
       }.freeze
     end
   end
