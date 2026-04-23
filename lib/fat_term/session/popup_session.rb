@@ -29,19 +29,20 @@ module FatTerm
           kind: nil,
           selection: :preserve,
           initial_query: nil,
-          selection_mode: :single
+          selection_mode: :single,
+          validate_unique_labels: false
         )
       super(keymap: keymap)
       @source = source
-      @kind = kind&.to_sym
-      @matcher = matcher
-      @order = order.to_sym
-      @selection = selection.to_sym
-      @selection_mode = selection_mode.to_sym
-
       @title = title&.to_s
       @message = message&.to_s
       @prompt = Prompt.ensure(prompt)
+      @matcher = matcher
+      @order = order.to_sym
+      @kind = kind&.to_sym
+      @selection = selection.to_sym
+      @selection_mode = selection_mode.to_sym
+      @validate_unique_labels = !!validate_unique_labels
 
       @field = InputField.new(prompt: @prompt)
       text = initial_query.to_s
@@ -218,7 +219,7 @@ module FatTerm
       q = @field.buffer.text.to_s
       @items = Array(call_source(q))
       apply_order!
-      validate_unique_labels!(@items)
+      validate_unique_labels!(@items) if @validate_unique_labels
 
       matcher = @matcher || method(:default_matcher)
 

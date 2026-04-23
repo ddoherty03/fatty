@@ -243,6 +243,7 @@ module FatTerm
         message: prompt,
         prompt: "> ",
         selection: :top,
+        validate_unique_labels: true,
       )
 
       popup.instance_variable_set(:@selected, initial_choice_idx.to_i.clamp(0, labels.length - 1))
@@ -320,6 +321,7 @@ module FatTerm
         prompt: "> ",
         selection: :top,
         selection_mode: :multiple,
+        validate_unique_labels: true,
       )
 
       done = false
