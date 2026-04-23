@@ -10,6 +10,9 @@ module FatTerm
     MAX_LIST_H     = 20
     MARGIN         = 2
 
+    SELECTED_GUTTER = '[X] '
+    UNSELECTED_GUTTER = '[ ] '
+
     # API:
     # - source: Proc that returns the candidate list. May accept (query) or be arity 0.
     # - matcher: Proc (item, query) -> truthy. Defaults to substring match.
@@ -121,6 +124,14 @@ module FatTerm
       when :popup_recenter
         recenter_scroll
         []
+      when :popup_toggle_selected
+        if multi_select?
+          toggle_selected_current!
+          ensure_scroll_visible
+          notify_owner(:popup_changed)
+        else
+          []
+        end
       else
         # fallthrough: normal input editing actions
         @field.act_on(action, *args, env: env)
@@ -143,21 +154,41 @@ module FatTerm
     end
 
     def accept_selection
-      item = selected_item
-      query = @field.buffer.text.to_s
+      if multi_select?
+        payload = popup_payload(selected_result_hash)
+        [
+          [:terminal, :send_modal_owner, [:cmd, :popup_result, payload]],
+          [:terminal, :pop_modal]
+        ]
+      else
+        item = selected_item
+        query = @field.buffer.text.to_s
 
-      return [] if item.nil? && query.empty?
+        return [] if item.nil? && query.empty?
 
-      item = query if item.nil?
-      payload = popup_payload(item)
-      [
-        [:terminal, :send_modal_owner, [:cmd, :popup_result, payload]],
-        [:terminal, :pop_modal]
-      ]
+        item = query if item.nil?
+        payload = popup_payload(item)
+        [
+          [:terminal, :send_modal_owner, [:cmd, :popup_result, payload]],
+          [:terminal, :pop_modal]
+        ]
+      end
     end
 
     def selected_item
       @displayed[@selected]
+    end
+
+    def selected_item_label?(item)
+      selected_label?(item_label(item))
+    end
+
+    def gutter_for(item:, selected:)
+      if multi_select?
+        selected_item_label?(item) ? SELECTED_GUTTER : UNSELECTED_GUTTER
+      else
+        ' '
+      end
     end
 
     def refresh_items_if_query_changed
@@ -266,6 +297,10 @@ module FatTerm
       }
     end
 
+    def selected_labels
+      @selected_labels.keys
+    end
+
     private
 
     def validate_unique_labels!(items)
@@ -288,6 +323,24 @@ module FatTerm
         query: @field.buffer.text.to_s,
         index: @selected
       }
+    end
+
+    def popup_payload(item = selected_item)
+      if multi_select?
+        {
+          kind: @kind,
+          items: item,
+          query: @field.buffer.text.to_s,
+          index: @selected
+        }
+      else
+        {
+          kind: @kind,
+          item: item,
+          query: @field.buffer.text.to_s,
+          index: @selected
+        }
+      end
     end
 
     def popup_has_message?
@@ -438,6 +491,10 @@ module FatTerm
       item.to_s
     end
 
+    def item_value(item)
+      item
+    end
+
     def selected_label?(label)
       @selected_labels.key?(label)
     end
@@ -446,8 +503,14 @@ module FatTerm
       !selected_item.nil?
     end
 
-    def selected_labels
-      @selected_labels.keys
+    def selected_items_in_source_order
+      @items.select { |item| selected_label?(item_label(item)) }
+    end
+
+    def selected_result_hash
+      selected_items_in_source_order.each_with_object({}) do |item, h|
+        h[item_label(item)] = item_value(item)
+      end
     end
   end
 end

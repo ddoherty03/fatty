@@ -357,10 +357,12 @@ module FatTerm
 
           next if idx >= items.length
 
-          gutter = idx == sel ? POPUP_SELECTED_GUTTER : POPUP_UNSELECTED_GUTTER
-          s = items[idx].to_s
-          s = s[0, [list_w - gutter.length, 0].max]
+          item = items[idx]
+          gutter = session.gutter_for(item: item, selected: is_sel)
+          avail = [list_w - gutter.length, 0].max
+          s = item.to_s[0, avail]
           line = (gutter + s)[0, list_w]
+
           inner.addstr(line.ljust(list_w))
         end
 
@@ -566,13 +568,12 @@ module FatTerm
 
       def popup_state(session)
         [
-          session.filtered.object_id,
-          session.filtered.length,
-          session.filtered.first&.to_s,
-          session.filtered.last&.to_s,
+          session.displayed.map(&:to_s),
           session.selected,
           session.field.buffer.text.to_s,
-          session.field.cursor_x
+          session.field.cursor_x,
+          session.selected_labels.sort,
+          session.counts,
         ]
       end
 
