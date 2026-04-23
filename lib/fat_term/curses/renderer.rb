@@ -341,7 +341,7 @@ module FatTerm
         list_h = 1 if list_h < 1
         list_w = inner_w
 
-        items = session.filtered
+        items = session.displayed
         sel = session.selected
         start = session.scroll_start(list_h: list_h)
 

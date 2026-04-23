@@ -2,7 +2,7 @@
 
 module FatTerm
   class PopUpSession < ModalSession
-    attr_reader :field, :filtered, :selected, :title, :message
+    attr_reader :field, :filtered, :displayed, :selected, :title, :message
 
     MAX_WIDTH      = 120
     DEFAULT_HEIGHT = 12
@@ -16,23 +16,25 @@ module FatTerm
     # - order: :as_given (default) or :reverse (presentation order).
     # - selection: :preserve (default), :top, :bottom (how selection behaves after refresh).
     def initialize(
-      source:,
-      title: nil,
-      message: nil,
-      prompt: "> ",
-      keymap: Keymaps.emacs,
-      matcher: nil,
-      order: :as_given,
-      kind: nil,
-      selection: :preserve,
-      initial_query: nil
-    )
+          source:,
+          title: nil,
+          message: nil,
+          prompt: "> ",
+          keymap: Keymaps.emacs,
+          matcher: nil,
+          order: :as_given,
+          kind: nil,
+          selection: :preserve,
+          initial_query: nil,
+          selection_mode: :single
+        )
       super(keymap: keymap)
       @source = source
       @kind = kind&.to_sym
       @matcher = matcher
       @order = order.to_sym
       @selection = selection.to_sym
+      @selection_mode = selection_mode.to_sym
 
       @title = title&.to_s
       @message = message&.to_s
@@ -44,7 +46,9 @@ module FatTerm
 
       @items = []
       @filtered = []
+      @displayed = []
       @selected = 0
+      @selected_labels = {}
 
       @last_query = nil
       @scroll_start = 0
@@ -130,11 +134,11 @@ module FatTerm
     end
 
     def move_selected_by(delta)
-      return if @filtered.empty?
+      return if @displayed.empty?
 
-      msg = "PopUpSession#move_selected_by before: selected=#{@selected.inspect} delta=#{delta} len=#{@filtered.length}"
+      msg = "PopUpSession#move_selected_by before: selected=#{@selected.inspect} delta=#{delta} len=#{@displayed.length}"
       FatTerm.debug(msg)
-      @selected = ((@selected || 0) + delta) % @filtered.length
+      @selected = ((@selected || 0) + delta) % @displayed.length
       FatTerm.debug("PopUpSession#move_selected_by after: selected=#{@selected.inspect}")
     end
 
@@ -153,7 +157,7 @@ module FatTerm
     end
 
     def selected_item
-      @filtered[@selected]
+      @displayed[@selected]
     end
 
     def refresh_items_if_query_changed
@@ -165,17 +169,32 @@ module FatTerm
       refresh_items
     end
 
+    def refresh_displayed_items
+      if multi_select?
+        selected, _unselected = @items.partition { |item| selected_label?(item_label(item)) }
+        matching_unselected = @filtered.reject { |item| selected_label?(item_label(item)) }
+        @displayed = selected + matching_unselected
+      else
+        @displayed = @filtered.dup
+      end
+    end
+
     def refresh_items
       q = @field.buffer.text.to_s
       @items = Array(call_source(q))
       apply_order!
+      validate_unique_labels!(@items)
+
       matcher = @matcher || method(:default_matcher)
+
       @filtered =
         if q.empty?
           @items
         else
           @items.select { |e| matcher.call(e, q) }
         end
+
+      refresh_displayed_items
       apply_selection_policy!
     end
 
@@ -188,12 +207,32 @@ module FatTerm
 
     # Renderer calls this to determine which slice of items to display.
     def scroll_start(list_h:)
-      max_start = @filtered.length - list_h
+      max_start = @displayed.length - list_h
       max_start = 0 if max_start < 0
 
       @scroll_start = 0 if @scroll_start < 0
       @scroll_start = max_start if @scroll_start > max_start
       @scroll_start
+    end
+
+    def toggle_selected_current!
+      item = selected_item
+      return unless item
+
+      toggle_selected_item!(item)
+    end
+
+    def toggle_selected_item!(item)
+      label = item_label(item)
+
+      if selected_label?(label)
+        @selected_labels.delete(label)
+      else
+        @selected_labels[label] = true
+      end
+
+      refresh_displayed_items
+      item
     end
 
     # Count methods for display to user.
@@ -202,16 +241,20 @@ module FatTerm
       @items.length
     end
 
-    def selected_count
-      selected_item ? 1 : 0
-    end
-
     def matching_count
       @filtered.length
     end
 
+    def selected_count
+      if multi_select?
+        @selected_labels.length
+      else
+        selected_item ? 1 : 0
+      end
+    end
+
     def showing_count
-      [filtered.length - scroll_start(list_h: popup_list_height), popup_list_height].min
+      [@displayed.length - scroll_start(list_h: popup_list_height), popup_list_height].min
     end
 
     def counts
@@ -224,6 +267,19 @@ module FatTerm
     end
 
     private
+
+    def validate_unique_labels!(items)
+      counts = Hash.new(0)
+      items.each do |item|
+        counts[item_label(item)] += 1
+      end
+
+      dupes = counts.select { |_label, count| count > 1 }.keys
+      return if dupes.empty?
+
+      shown = dupes.first(5).join(", ")
+      raise ArgumentError, "duplicate chooser labels: #{shown}"
+    end
 
     def popup_payload(item = selected_item)
       {
@@ -285,7 +341,7 @@ module FatTerm
         @scroll_start = @selected - (list_h - 1) + band
       end
 
-      max_start = @filtered.length - list_h
+      max_start = @displayed.length - list_h
       max_start = 0 if max_start < 0
 
       @scroll_start = 0 if @scroll_start < 0
@@ -296,7 +352,7 @@ module FatTerm
       list_h = popup_list_height
       @scroll_start = @selected - (list_h / 2)
 
-      max_start = @filtered.length - list_h
+      max_start = @displayed.length - list_h
       max_start = 0 if max_start < 0
 
       @scroll_start = 0 if @scroll_start < 0
@@ -327,12 +383,12 @@ module FatTerm
     end
 
     def apply_selection_policy!
-      last_idx = [@filtered.length - 1, 0].max
+      prior = @selected
+      last_idx = [@displayed.length - 1, 0].max
 
-      if @filtered.empty?
+      if @displayed.empty?
         @selected = 0
       else
-        prior = @selected
         @selected =
           case @selection
           when :top
@@ -343,7 +399,7 @@ module FatTerm
             @selected.clamp(0, last_idx)
           end
       end
-      # If the selection policy explicitly moved the cursor, keep it in view.
+
       if @selection == :top || @selection == :bottom
         recenter_scroll
       elsif @selected != prior
@@ -372,6 +428,26 @@ module FatTerm
         field: @field,
         buffer: @field.buffer,
       )
+    end
+
+    def multi_select?
+      @selection_mode == :multiple
+    end
+
+    def item_label(item)
+      item.to_s
+    end
+
+    def selected_label?(label)
+      @selected_labels.key?(label)
+    end
+
+    def selected_item?
+      !selected_item.nil?
+    end
+
+    def selected_labels
+      @selected_labels.keys
     end
   end
 end
