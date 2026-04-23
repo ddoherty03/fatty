@@ -5,6 +5,8 @@ require_relative './terminal/popup_owner'
 
 module FatTerm
   class Terminal
+    SCROLL_RENDER_THROTTLE = 0.016
+
     # Commands are plain Ruby arrays for now.
     #
     # Suggested shapes:
@@ -190,15 +192,21 @@ module FatTerm
       install_default_sessions!
 
       @running = true
+      last_render = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      pending_scroll_render = false
       render_frame
 
       while @running
         dirty = false
+        immediate = false
+
         msg = event_source.next_event
         if msg
           dispatch_message(msg)
           dirty = true
+          immediate = true
         end
+
         s = active_session
         begin
           tick_dirty = !!s&.tick(terminal: self)
@@ -206,8 +214,31 @@ module FatTerm
         rescue StandardError => e
           FatTerm.error("Terminal#go tick failed: #{e.class}: #{e.message}", tag: :terminal)
           dirty = true
+          immediate = true
         end
-        render_frame if dirty
+
+        if dirty
+          now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+          if immediate || !scrolling_output?
+            render_frame
+            last_render = now
+            pending_scroll_render = false
+          elsif now - last_render >= SCROLL_RENDER_THROTTLE
+            render_frame
+            last_render = now
+            pending_scroll_render = false
+          else
+            pending_scroll_render = true
+          end
+        elsif pending_scroll_render
+          now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          if now - last_render >= SCROLL_RENDER_THROTTLE
+            render_frame
+            last_render = now
+            pending_scroll_render = false
+          end
+        end
       end
     rescue => e
       FatTerm.error("Terminal#go fatal error: #{e.class}: #{e.message}", tag: :terminal)
@@ -521,6 +552,16 @@ module FatTerm
              history_ctx: @history_ctx
            )
           )
+    end
+
+    def scrolling_output?
+      session = active_session
+      pager =
+        if session.respond_to?(:pager)
+          session.pager
+        end
+
+      pager && pager.mode == :scrolling
     end
 
     def refresh_layout!
