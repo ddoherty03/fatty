@@ -56,6 +56,45 @@ on_accept_proc = lambda do |line, terminal:, session:|
     else
       session.append_output("choosevals: selected #{choice.inspect}\n")
     end
+  when "choose_multi"
+    choices =
+      if args.empty?
+        ["Choice A", "Choice B", "Choice C"]
+      else
+        args
+      end
+
+    choices = terminal.choose_multi(
+      "Select one or more",
+      choices: choices,
+      quit_value: nil,
+    )
+
+    if choices.nil?
+      session.append_output("choose_multi: cancelled\n")
+    else
+      session.append_output("choose_multi: selected #{choices.inspect}\n")
+    end
+
+  when "choosevals_multi"
+    pairs =
+      if args.empty?
+        [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", :done]]
+      else
+        args.each_with_index.map { |arg, idx| ["#{arg} => #{idx}", idx] }
+      end
+
+    choices = terminal.choose_multi(
+      "Select one or more",
+      choices: pairs,
+      quit_value: nil,
+    )
+
+    if choices.nil?
+      session.append_output("choosevals_multi: cancelled\n")
+    else
+      session.append_output("choosevals_multi: selected #{choices.inspect}\n")
+    end
   when "info"
     message = args.empty? ? "Information message" : args.join(" ")
     terminal.info(message)

@@ -305,6 +305,75 @@ module FatTerm
       )
     end
 
+    # The consumer can call #choose_multi to cause an interactive popup session to
+    # present the user with a series of choices to select from.
+    def choose_multi(prompt, choices:, quit_value: nil)
+      items = normalize_choices(choices)
+      raise ArgumentError, "choices must not be empty" if items.empty?
+
+      labels = items.map(&:first)
+      popup = FatTerm::PopUpSession.new(
+        source: labels,
+        kind: :terminal_choose_multi,
+        title: "Choose Many",
+        message: prompt,
+        prompt: "> ",
+        selection: :top,
+        selection_mode: :multiple,
+      )
+
+      done = false
+      result = nil
+
+      label_to_value = items.to_h
+      acc_proc = ->(payload) do
+        selected = payload[:items] || {}
+
+        result =
+          selected.each_with_object({}) do |(label, _), h|
+          h[label] = label_to_value.fetch(label, quit_value)
+        end
+
+        done = true
+      end
+
+      cancel_proc = -> do
+        result = quit_value
+        done = true
+      end
+
+      owner = PopupOwner.new(on_result: acc_proc, on_cancel: cancel_proc)
+
+      begin
+        push_modal(popup, owner: owner)
+        render_frame
+
+        while !done && @running
+          dirty = false
+          msg = event_source.next_event
+          if msg
+            dispatch_message(msg)
+            dirty = true
+          end
+
+          s = active_session
+          begin
+            tick_dirty = !!s&.tick(terminal: self)
+            dirty ||= tick_dirty
+          rescue StandardError => e
+            FatTerm.error("Terminal#choose_multi tick failed: #{e.class}: #{e.message}", tag: :terminal)
+            dirty = true
+          end
+
+          render_frame if dirty
+        end
+      ensure
+        render_frame
+      end
+
+      result
+    end
+
     # Create a popup to ask the user to enter an arbitrary string.  These
     # prompts will keep their own history based on the history_key, or if not
     # history_key is given, the prompt text.
