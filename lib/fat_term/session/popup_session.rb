@@ -472,15 +472,7 @@ module FatTerm
     end
 
     def default_matcher(item, query)
-      q = query.to_s.strip
-      return true if q.empty?
-
-      # Split query on whitespace
-      terms = q.split(/\s+/).reject(&:empty?)
-      return true if terms.empty?
-
-      hay = item.to_s.downcase
-      terms.all? { |t| hay.include?(t.downcase) }
+      match_all_query_terms?(item, query)
     end
 
     def action_env(terminal:, event:)

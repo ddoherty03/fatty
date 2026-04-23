@@ -18,7 +18,7 @@ RSpec.describe FatTerm::PopUpSession do
     it "wraps backward from the first item to the last" do
       popup = build_popup(%w[alpha beta gamma])
 
-      popup.instance_variable_set(:@filtered, %w[alpha beta gamma])
+      popup.instance_variable_set(:@displayed, %w[alpha beta gamma])
       popup.instance_variable_set(:@selected, 0)
 
       popup.send(:move_selected_by, -1)
@@ -29,7 +29,7 @@ RSpec.describe FatTerm::PopUpSession do
     it "wraps forward from the last item to the first" do
       popup = build_popup(%w[alpha beta gamma])
 
-      popup.instance_variable_set(:@filtered, %w[alpha beta gamma])
+      popup.instance_variable_set(:@displayed, %w[alpha beta gamma])
       popup.instance_variable_set(:@selected, 2)
 
       popup.send(:move_selected_by, 1)

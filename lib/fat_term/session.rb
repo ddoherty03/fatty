@@ -133,8 +133,14 @@ module FatTerm
       []
     end
 
+    private
+
+    def match_all_query_terms?(haystack, query)
+      FatTerm::Search.match_all_terms?(haystack, query)
+    end
+
     def safely_close_window(win)
-      return nil unless win
+      return unless win
 
       begin
         win.erase
