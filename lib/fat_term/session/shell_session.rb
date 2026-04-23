@@ -278,9 +278,17 @@ module FatTerm
       when :accept_line
         accept_line(terminal)
       when :interrupt
-        [[:terminal, :quit]]
+        if pager.mode == :scrolling
+          pager.quit_paging
+          []
+        else
+          [[:terminal, :quit]]
+        end
       when :interrupt_if_empty
-        if @field.empty?
+        if pager.mode == :scrolling
+          pager.quit_paging
+          []
+        elsif @field.empty?
           [[:terminal, :quit]]
         else
           @field.act_on(:delete_char_forward, env: env)

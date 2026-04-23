@@ -224,8 +224,9 @@ module FatTerm
     desc "Exit paging and return control to normal input."
     action :quit_paging do
       @paused = false
-      @mode = :scrolling if @mode == :paging
+      @mode = :paging
       @anchor = nil
+      @autoscroll = false
     end
 
     def at_top?
