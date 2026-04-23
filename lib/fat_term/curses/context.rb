@@ -108,7 +108,7 @@ module FatTerm
 
         # We do our own viewport/paging; allowing curses to scroll introduces
         # “mystery” blank lines if a newline slips into output
-        @output_win.scrollok(false)
+        @output_win.scrollok(true)
         @input_win.keypad(true)
 
         self

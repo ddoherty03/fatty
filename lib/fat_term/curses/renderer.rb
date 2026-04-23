@@ -103,52 +103,127 @@ module FatTerm
 
       def render_output(output, viewport:, highlights: nil)
         lines = viewport.slice(output.lines)
-        state = [
-          viewport.top,
-          viewport.height,
-          lines.map(&:dup),
-          normalized_highlights(highlights),
-        ]
+        normalized = normalized_highlights(highlights)
 
-        if state != @last_output_state
-          @last_output_state = state
-          draw_output(output, viewport: viewport, highlights: highlights)
+        curr = {
+          top: viewport.top,
+          height: viewport.height,
+          lines: lines,
+          highlights: normalized,
+        }
+
+        prev = @last_output_state
+
+        if prev && can_incrementally_scroll_output?(prev, curr)
+          scroll_output_window_delta!(prev: prev, curr: curr)
+        else
+          draw_output_lines(lines, viewport: viewport, highlights: highlights)
         end
+
+        @last_output_state = curr
         nil
       end
 
-      def draw_output(output, viewport:, highlights: nil)
+      def can_incrementally_scroll_output?(prev, curr)
+        delta = curr[:top] - prev[:top]
+
+        curr[:height] == prev[:height] &&
+        curr[:highlights] == prev[:highlights] &&
+        delta != 0 &&
+          delta.abs < curr[:height]
+      end
+
+      def draw_output_lines(lines, viewport:, highlights: nil)
+        FatTerm.debug("calling draw_output_lines")
         win = context.output_win
         base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
-        hi_attr = pair_attr(:search_highlight, fallback: ::Curses::A_REVERSE)
-        hi2_attr = pair_attr(:search_highlight_secondary, fallback: hi_attr)
+
         win.attrset(base_attr)
         win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
         win.erase
 
-        lines = viewport.slice(output.lines)
         lines.each_with_index do |line, y|
           abs_line = viewport.top + y
-          ranges = highlight_ranges_for_line(highlights, abs_line)
-          # Convert [from,to,role] → [from,to,attr]
-          ranges =
-            Array(ranges).map do |from, to, role|
-            attr =
-              case role
-              when :secondary then hi2_attr
-              else hi_attr # :primary (or nil)
-              end
-            [from.to_i, to.to_i, attr]
-          end
-
-          win.setpos(y, 0)
-          win.attrset(base_attr)
-          slices = build_line_slices(line, ranges: ranges) do |style|
-            context.ansi_attr(style, fallback_role: :output)
-          end
-          render_slices(win, slices)
-          win.clrtoeol
+          draw_output_row(
+            win,
+            line: line,
+            y: y,
+            abs_line: abs_line,
+            highlights: highlights,
+          )
         end
+
+        stage_window(win)
+        nil
+      end
+
+      def draw_output_row(win, line:, y:, abs_line:, highlights:)
+        base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
+        hi_attr = pair_attr(:search_highlight, fallback: ::Curses::A_REVERSE)
+        hi2_attr = pair_attr(:search_highlight_secondary, fallback: hi_attr)
+
+        ranges = highlight_ranges_for_line(highlights, abs_line)
+        ranges =
+          Array(ranges).map do |from, to, role|
+          attr =
+            case role
+            when :secondary then hi2_attr
+            else hi_attr
+            end
+          [from.to_i, to.to_i, attr]
+        end
+
+        win.setpos(y, 0)
+        win.attrset(base_attr)
+        slices = build_line_slices(line, ranges: ranges) do |style|
+          context.ansi_attr(style, fallback_role: :output)
+        end
+        render_slices(win, slices)
+        win.clrtoeol
+        nil
+      end
+
+      def scroll_output_window_delta!(prev:, curr:)
+        FatTerm.debug("calling scroll_output_window_delta!", tag: scrolling)
+        win = context.output_win
+        delta = curr[:top] - prev[:top]
+        base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
+
+        win.attrset(base_attr)
+        win.scrl(delta)
+
+        if delta > 0
+          start_y = curr[:height] - delta
+          start_y = 0 if start_y < 0
+
+          (start_y...curr[:height]).each do |y|
+            line = curr[:lines][y]
+            abs_line = curr[:top] + y
+            draw_output_row(
+              win,
+              line: line,
+              y: y,
+              abs_line: abs_line,
+              highlights: curr[:highlights],
+            )
+          end
+        else
+          count = -delta
+          count = curr[:height] if count > curr[:height]
+
+          (0...count).each do |y|
+            line = curr[:lines][y]
+            abs_line = curr[:top] + y
+            draw_output_row(
+              win,
+              line: line,
+              y: y,
+              abs_line: abs_line,
+              highlights: curr[:highlights],
+            )
+          end
+        end
+
         stage_window(win)
         nil
       end
