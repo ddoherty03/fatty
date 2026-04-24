@@ -49,6 +49,11 @@ module FatTerm
       logger
     end
 
+    def self.active_tags
+      tags = FatTerm::Config.config.dig(:log, :tags) || [:all]
+      Array(tags).map(&:to_sym)
+    end
+
     # Convenience: log structured events without repeating formatting.
     #
     #   FatTerm.log(:decode_getch, ch: 27, note: "escape")
@@ -66,9 +71,7 @@ module FatTerm
     def self.log(event = nil, level: :debug, tag: nil, **data)
       return unless logger
 
-      tags = FatTerm::Config.config.dig(:log, :tags) || [:all]
-      tags = Array(tags).map(&:to_sym)
-
+      tags = active_tags
       if tag && !tags.include?(:all)
         return unless tags.include?(tag.to_sym)
       end
