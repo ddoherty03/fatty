@@ -116,7 +116,7 @@ module FatTerm
       dirty = false
       # Animated autoscroll (e.g. after M-s in paging mode).
       if pager.autoscroll?
-        step = [viewport.height / 8, 1].max
+        step = [(viewport.height * 3) / 4, 1].max
         dirty ||= pager.autoscroll_step?(max_lines: step)
       end
       dirty

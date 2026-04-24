@@ -126,10 +126,9 @@ module FatTerm
 
       def can_incrementally_scroll_output?(prev, curr)
         delta = curr[:top] - prev[:top]
-
         curr[:height] == prev[:height] &&
-        curr[:highlights] == prev[:highlights] &&
-        delta != 0 &&
+          curr[:highlights] == prev[:highlights] &&
+          delta != 0 &&
           delta.abs < curr[:height]
       end
 

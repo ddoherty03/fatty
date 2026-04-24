@@ -268,23 +268,23 @@ module FatTerm
     def autoscroll_step?(max_lines: 200)
       lines = @output.lines
       total = lines.length
-      return false if total <= 0
+      moved = false
+      if total > 0
+        if @viewport.at_bottom?(total)
+          @autoscroll = false
+        else
+          remaining = @viewport.max_top(total) - @viewport.top
+          n = [remaining, max_lines].min
+          before = @viewport.top
+          @viewport.scroll_down(lines, n)
+          moved = @viewport.top != before
 
-      # If already at bottom, stop autoscroll.
-      if @viewport.at_bottom?(total)
-        @autoscroll = false
-        return false
+          if @viewport.at_bottom?(total)
+            @autoscroll = false
+          end
+        end
       end
-
-      # Move down, but cap the work per tick so input stays responsive.
-      remaining = @viewport.max_top(total) - @viewport.top
-      n = [remaining, max_lines].min
-      @viewport.scroll_down(lines, n)
-
-      if @viewport.at_bottom?(total)
-        @autoscroll = false
-      end
-      true
+      moved
     end
 
     # --- Search -----------------------------------------------------------

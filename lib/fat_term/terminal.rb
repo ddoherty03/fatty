@@ -5,7 +5,7 @@ require_relative './terminal/popup_owner'
 
 module FatTerm
   class Terminal
-    SCROLL_RENDER_THROTTLE = 0.016
+    SCROLL_RENDER_THROTTLE = 0.05
 
     # Commands are plain Ruby arrays for now.
     #
@@ -196,7 +196,18 @@ module FatTerm
       pending_scroll_render = false
       render_frame
 
+      # For performance logging
+      perf_started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      loop_count = 0
+      event_count = 0
+      tick_dirty_count = 0
+      render_count = 0
+      deferred_count = 0
+      frame_ms = 0.0
+
       while @running
+        loop_count += 1
+
         dirty = false
         immediate = false
 
@@ -210,6 +221,7 @@ module FatTerm
         s = active_session
         begin
           tick_dirty = !!s&.tick(terminal: self)
+          tick_dirty_count += 1 if tick_dirty
           dirty ||= tick_dirty
         rescue StandardError => e
           FatTerm.error("Terminal#go tick failed: #{e.class}: #{e.message}", tag: :terminal)
@@ -224,12 +236,15 @@ module FatTerm
             render_frame
             last_render = now
             pending_scroll_render = false
+            render_count += 1
           elsif now - last_render >= SCROLL_RENDER_THROTTLE
             render_frame
             last_render = now
             pending_scroll_render = false
+            render_count += 1
           else
             pending_scroll_render = true
+            deferred_count += 1
           end
         elsif pending_scroll_render
           now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -237,7 +252,34 @@ module FatTerm
             render_frame
             last_render = now
             pending_scroll_render = false
+            render_count += 1
           end
+        end
+
+        now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        if now - perf_started_at >= 1.0
+          avg_frame_ms =
+            if render_count.zero?
+              0.0
+            else
+              (frame_ms / render_count).round(2)
+            end
+
+          # Performance logging
+          FatTerm.debug(
+            "perf loops=#{loop_count} events=#{event_count} " \
+              "tick_dirty=#{tick_dirty_count} renders=#{render_count} " \
+              "deferred=#{deferred_count} avg_frame_ms=#{avg_frame_ms} " \
+              "scrolling=#{scrolling_output?}",
+            tag: :perf,
+          )
+          perf_started_at = now
+          loop_count = 0
+          event_count = 0
+          tick_dirty_count = 0
+          render_count = 0
+          deferred_count = 0
+          frame_ms = 0.0
         end
       end
     rescue => e
