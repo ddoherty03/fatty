@@ -107,6 +107,7 @@ module FatTerm
       map.bind(key: :enter, action: :accept_line)
       map.bind(key: :return, action: :accept_line)
       map.bind(key: :j, ctrl: true, action: :accept_line)
+      map.bind(key: :j, ctrl: true, meta: true, action: :accept_and_scroll)
 
       # Output control
       map.bind(key: :l, ctrl: true, action: :clear_output)

@@ -277,6 +277,8 @@ module FatTerm
       case action
       when :accept_line
         accept_line(terminal)
+      when :accept_and_scroll
+        accept_line_and_scroll(terminal: terminal, env: env)
       when :interrupt
         if pager.mode == :scrolling
           pager.quit_paging
@@ -438,6 +440,15 @@ module FatTerm
       end
     rescue Errno::ENOENT
       [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
+    end
+
+    def accept_line_and_scroll(terminal:, env:)
+      before = output.lines.length
+      cmds = accept_line(terminal)
+      if output.lines.length > before
+        env.pager.act_on(:paging_to_scrolling, env: env)
+      end
+      cmds
     end
 
     def run_default_command(line)
