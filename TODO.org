@@ -1,7 +1,7 @@
 * TODO Additional UI components
 - [X] prompt :: ask the user for an arbitrary string
 - [X] notice, warn, error :: put messages in the status line
-- [ ] choose_many :: present a list of choices that a user can pick many items
+- [X] choose_many :: present a list of choices that a user can pick many items
   from
 - [ ] menu :: user picks an action by name attached to a proc
 - [ ] run :: run a proc, optionally in the background with feedback on the
