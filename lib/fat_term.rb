@@ -36,6 +36,7 @@ module FatTerm
   require_relative "fat_term/colors"
   require_relative "fat_term/curses"
   require_relative "fat_term/prompt"
+  require_relative "fat_term/menu_env"
   require_relative "fat_term/screen"
   require_relative "fat_term/viewport"
   require_relative "fat_term/views"
