@@ -15,8 +15,8 @@ module FatTerm
 
       allow(renderer).to receive(:render_alert)
 
-      s.update([:cmd, :show, { level: :warning, message: "hi" }], terminal: terminal)
-      s.view(screen: screen, renderer: renderer, terminal: terminal)
+      s.update([:cmd, :show, { level: :warning, message: "hi" }])
+      s.view(screen: screen, renderer: renderer)
 
       expect(renderer).to have_received(:render_alert).with(instance_of(FatTerm::Alert))
       expect(s.current.level).to eq(:warning)
@@ -26,10 +26,10 @@ module FatTerm
     it "does not clear sticky alerts" do
       s = AlertSession.new
 
-      s.update([:cmd, :show, { message: "keep", sticky: true }], terminal: terminal)
+      s.update([:cmd, :show, { message: "keep", sticky: true }])
       expect(s.current).to be_sticky
 
-      s.update([:cmd, :clear, {}], terminal: terminal)
+      s.update([:cmd, :clear, {}])
       expect(s.current).not_to be_nil
       expect(s.current.message).to eq("keep")
     end
@@ -37,11 +37,11 @@ module FatTerm
     it "clears non-sticky alerts" do
       s = AlertSession.new
 
-      s.update([:cmd, :show, { message: "bye" }], terminal: terminal)
+      s.update([:cmd, :show, { message: "bye" }])
       expect(s.current).not_to be_nil
       expect(s.current).not_to be_sticky
 
-      s.update([:cmd, :clear, {}], terminal: terminal)
+      s.update([:cmd, :clear, {}])
       expect(s.current).to be_nil
     end
   end
