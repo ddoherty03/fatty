@@ -5,10 +5,16 @@ require_relative "../lib/fat_term"
 require "open3"
 require "shellwords"
 
+require "rainbow/refinement"
+using Rainbow
+
 prompt = FatTerm::Prompt.new { "#{Dir.pwd}> " }
 history_ctx_proc = -> { { pwd: Dir.pwd } }
 
-on_accept_proc = lambda do |line, terminal:, session:|
+on_accept_proc = lambda do |line, env|
+  session = env.session
+  terminal = env.terminal
+
   cmd, *args = Shellwords.split(line)
 
   case cmd
@@ -168,7 +174,7 @@ on_accept_proc = lambda do |line, terminal:, session:|
       total = 1
     end
 
-    prog = terminal.progress(
+    prog = env.progress(
       label: "Demo progress",
       total: total,
       style: style,
@@ -196,7 +202,7 @@ on_accept_proc = lambda do |line, terminal:, session:|
         sleep 0.1
       end
 
-      prog.finish("Demo progress complete.", render: true)
+      prog.finish("Demo progress complete.".green, render: true)
       session.append_output("progress: style=#{style} completed #{total} steps\n")
     end
   else

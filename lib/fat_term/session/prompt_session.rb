@@ -34,7 +34,8 @@ module FatTerm
     end
 
     def init(terminal:)
-      rebuild_windows!(terminal)
+      super
+      rebuild_windows!
       []
     end
 

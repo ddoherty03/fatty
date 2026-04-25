@@ -14,7 +14,7 @@ module FatTerm
   class Session
     include Actionable
 
-    attr_reader :views, :keymap, :counter
+    attr_reader :terminal, :views, :keymap, :counter
 
     def initialize(keymap: nil, views: [])
       @keymap = keymap
@@ -34,6 +34,7 @@ module FatTerm
     # Called once when the session becomes active (e.g. pushed).
     # Subclasses may override to kick off timers/async work, etc.
     def init(terminal:)
+      @terminal = terminal
       []
     end
 

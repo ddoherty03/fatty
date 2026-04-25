@@ -20,6 +20,7 @@ module FatTerm
   require_relative "fat_term/logger"
   require_relative "fat_term/counter"
   require_relative "fat_term/action_environment"
+  require_relative "fat_term/accept_env"
   require_relative "fat_term/action"
   require_relative "fat_term/actionable"
   require_relative "fat_term/history"

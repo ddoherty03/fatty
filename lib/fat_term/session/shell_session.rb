@@ -26,22 +26,10 @@ module FatTerm
 
       @on_accept = on_accept
       @completion_proc = completion_proc
-
-      # Default command runner when no on_accept proc is provided.
-      # This is intentionally synchronous and capture-based (no PTY streaming).
-      @on_accept ||= lambda do |line, terminal:, session:|
-        out, status = Open3.capture2e(line)
-        session.append_output(out, follow: true)
-        if status && status.exitstatus && status.exitstatus != 0
-          session.append_output("[exit #{status.exitstatus}]\n", follow: true)
-        end
-        [[:send, :alert, :clear, {}]]
-        rescue Errno::ENOENT
-          [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
-      end
     end
 
     def init(terminal:)
+      super
       resize_output!(terminal: terminal)
       []
     end
@@ -76,7 +64,7 @@ module FatTerm
         [[:terminal, :handle_resize]]
       when :enter, :return
         # safety: if somehow not bound, still accept
-        accept_line(terminal)
+        accept_line
       else
         [alert_cmd(:info, "Unbound key: #{ev} (edit config in 'keybindings.yml' to bind)", ev: ev)]
       end
@@ -193,6 +181,20 @@ module FatTerm
 
     private
 
+    def accept_env
+      FatTerm::AcceptEnv.new(session: self)
+    end
+
+    def normalize_accept_result(result)
+      if result.is_a?(Array) && result.first.is_a?(Array) && result.first.first.is_a?(Symbol)
+        result
+      else
+        out = result.to_s
+        append_output(out, follow: true) unless out.empty?
+        [[:send, :alert, :clear, {}]]
+      end
+    end
+
     def update_cmd(name, payload, terminal:)
       cmds = []
       case name
@@ -276,9 +278,9 @@ module FatTerm
     def apply_action(action, args, ev, terminal:, env:)
       case action
       when :accept_line
-        accept_line(terminal)
+        accept_line
       when :accept_and_scroll
-        accept_line_and_scroll(terminal: terminal, env: env)
+        accept_line_and_scroll(env: env)
       when :interrupt
         if pager.mode == :scrolling
           pager.quit_paging
@@ -401,11 +403,12 @@ module FatTerm
       end
     end
 
-    def accept_line(terminal)
+    def accept_line
       line = @field.accept_line.to_s.strip
       return [] if line.empty?
 
       FatTerm.info("ShellSession: accept_line: #{line}")
+
       case line
       when "exit", "quit"
         [[:terminal, :quit]]
@@ -413,38 +416,26 @@ module FatTerm
         reset_output!
         [[:send, :alert, :clear, {}]]
       else
-        # Always start a new command in a clean paging baseline.
         reset_for_command!
         anchor = output.lines.length
         pager.begin_command!(anchor: anchor)
         append_output("$ #{line}\n", follow: true)
-        # @on_accept callback is expected to return commands (or nil)
-        # Array(@on_accept.call(line, terminal: terminal, session: self))
+
         result =
           if @on_accept
-            @on_accept.call(line, terminal: terminal, session: self)
+            @on_accept.call(line, accept_env)
           else
             run_default_command(line)
           end
-        # Normalize result:
-        # - Array-of-commands => return it
-        # - String output     => append + return alert clear
-        # - nil               => just return alert clear
-        if result.is_a?(Array) && result.first.is_a?(Array) && result.first.first.is_a?(Symbol)
-          result
-        else
-          out = result.to_s
-          append_output(out, follow: true) unless out.empty?
-          [[:send, :alert, :clear, {}]]
-        end
+        normalize_accept_result(result)
       end
     rescue Errno::ENOENT
       [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
     end
 
-    def accept_line_and_scroll(terminal:, env:)
+    def accept_line_and_scroll(env:)
       before = output.lines.length
-      cmds = accept_line(terminal)
+      cmds = accept_line
       if output.lines.length > before
         env.pager.act_on(:paging_to_scrolling, env: env)
       end
