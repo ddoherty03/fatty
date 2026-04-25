@@ -1,4 +1,4 @@
-  # frozen_string_literal: true
+# frozen_string_literal: true
 
 module FatTerm
   class Terminal
@@ -10,7 +10,7 @@ module FatTerm
         @on_cancel = on_cancel
       end
 
-      def update(msg, terminal:)
+      def update(msg)
         _cmd, name, payload = msg
 
         case name

@@ -3,7 +3,7 @@
 module FatTerm
   # For holding the environment in which an action is executed
   class ActionEnvironment
-    attr_accessor :session, :terminal, :event, :counter, :buffer, :field, :pager
+    attr_accessor :session, :event, :counter, :buffer, :field, :pager
 
     def initialize(
           session: nil,
@@ -21,6 +21,10 @@ module FatTerm
       @buffer = buffer
       @field = field
       @pager = pager
+    end
+
+    def terminal
+      session&.terminal
     end
 
     def to_s

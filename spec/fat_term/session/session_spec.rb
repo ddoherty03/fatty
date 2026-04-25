@@ -20,21 +20,21 @@ module FatTerm
     describe "#update" do
       it "returns [] by default" do
         s = Session.new
-        commands = s.update(:message, terminal:)
+        commands = s.update(:message)
 
         expect(commands).to eq([])
       end
 
       it "dispatches key messages and returns [] by default" do
         s = Session.new
-        commands = s.update([:key, :doit], terminal:)
+        commands = s.update([:key, :doit])
 
         expect(commands).to eq([])
       end
 
       it "dispatches cmd messages and returns [] by default" do
         s = Session.new
-        commands = s.update([:cmd, :doit], terminal:)
+        commands = s.update([:cmd, :doit])
 
         expect(commands).to eq([])
       end
@@ -52,7 +52,7 @@ module FatTerm
         allow(v2).to receive(:render)
         allow(v3).to receive(:render)
 
-        s.view(screen:, renderer:, terminal:)
+        s.view(screen:, renderer:)
 
         expect(v2).to have_received(:render).ordered
         expect(v3).to have_received(:render).ordered
@@ -72,7 +72,7 @@ module FatTerm
           allow(v2).to receive(:render)
           allow(v3).to receive(:render)
 
-          s.view(screen:, renderer:, terminal:)
+          s.view(screen:, renderer:)
 
           expect(v2).to have_received(:render).ordered
           expect(v3).to have_received(:render).ordered
@@ -82,7 +82,7 @@ module FatTerm
 
       it "does nothing if it has no views" do
         s = Session.new
-        expect { s.view(screen:, renderer:, terminal:) }.not_to raise_error
+        expect { s.view(screen:, renderer:) }.not_to raise_error
       end
     end
   end

@@ -21,7 +21,6 @@ RSpec.describe FatTerm::ShellSession do
           :handle_action,
           :history_search,
           [],
-          terminal: instance_double(FatTerm::Terminal),
           event: nil,
         )
         expect(commands.length).to eq(1)
@@ -49,7 +48,6 @@ RSpec.describe FatTerm::ShellSession do
           :handle_action,
           :completion_popup,
           [],
-          terminal: instance_double(FatTerm::Terminal),
           event: nil,
         )
 
@@ -72,10 +70,7 @@ RSpec.describe FatTerm::ShellSession do
     it "handles :paste by inserting normalized text into the field" do
       session = FatTerm::ShellSession.new
 
-      commands = session.update(
-        [:cmd, :paste, { text: "hello\nworld\n" }],
-        terminal: instance_double(FatTerm::Terminal),
-      )
+      commands = session.update([:cmd, :paste, { text: "hello\nworld\n" }])
 
       expect(commands).to eq([])
       expect(session.field.buffer.text).to eq("hello world ")
@@ -91,10 +86,9 @@ RSpec.describe FatTerm::ShellSession do
                                 ["git status", "git stash"]
                               )
 
-      terminal = instance_double(FatTerm::Terminal)
-      env = session.action_env(terminal: terminal, event: nil)
+      env = session.action_env(event: nil)
 
-      commands = session.send(:apply_action, :complete, [], nil, terminal: terminal, env: env)
+      commands = session.send(:apply_action, :complete, [], nil, env: env)
 
       expect(commands).to eq([])
       expect(session.field.buffer.text).to eq("git st")
@@ -117,7 +111,6 @@ RSpec.describe FatTerm::ShellSession do
         :handle_action,
         :completion_popup,
         [],
-        terminal: instance_double(FatTerm::Terminal),
         event: nil,
       )
 
@@ -145,7 +138,6 @@ RSpec.describe FatTerm::ShellSession do
         :handle_action,
         :completion_popup,
         [],
-        terminal: instance_double(FatTerm::Terminal),
         event: nil,
       )
 

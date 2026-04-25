@@ -29,7 +29,7 @@ module FatTerm
       [:isearch, :input, :terminal]
     end
 
-    def view(screen:, renderer:, terminal:)
+    def view(screen:, renderer:)
       row = screen.output_rect.rows - 1
 
       ::Curses.curs_set(1)
@@ -39,7 +39,7 @@ module FatTerm
 
     private
 
-    def update_cmd(name, payload, terminal:)
+    def update_cmd(name, payload)
       cmds = []
       case name
       when :isearch_set_failed
@@ -49,10 +49,9 @@ module FatTerm
       cmds
     end
 
-    def handle_action(action, args, terminal:, event:)
+    def handle_action(action, args, event:)
       env = ActionEnvironment.new(
         session: self,
-        terminal: terminal,
         counter: counter,
         event: event,
         buffer: @field.buffer,
@@ -121,7 +120,6 @@ module FatTerm
 
       env = ActionEnvironment.new(
         session: self,
-        terminal: nil,
         counter: counter,
         event: nil,
         buffer: @field.buffer,

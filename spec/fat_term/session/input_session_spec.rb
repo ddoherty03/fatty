@@ -15,10 +15,7 @@ module FatTerm
         keymap: KeyMap.new,
       )
 
-      commands = session.update(
-        [:cmd, :paste, { text: "aa\nbb" }],
-        terminal: instance_double(Terminal),
-      )
+      commands = session.update([:cmd, :paste, { text: "aa\nbb" }])
 
       expect(commands).to eq([])
       expect(field.buffer.text).to eq("aa bb")

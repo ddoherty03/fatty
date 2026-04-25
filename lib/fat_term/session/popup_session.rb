@@ -93,8 +93,8 @@ module FatTerm
       [width, height]
     end
 
-    def handle_action(action, args, terminal:, event:)
-      env = action_env(terminal: terminal, event: event)
+    def handle_action(action, args, event:)
+      env = action_env(event: event)
       case action.to_sym
       when :popup_cancel, :interrupt
         notify_owner(:popup_cancelled) + [[:terminal, :pop_modal]]
@@ -240,7 +240,7 @@ module FatTerm
       apply_selection_policy!
     end
 
-    def view(screen:, renderer:, terminal:)
+    def view(screen:, renderer:)
       FatTerm.debug("PopupSession#view: object_id=#{object_id} win_nil=#{@win.nil?}", tag: :session)
       return unless @win
 
@@ -475,10 +475,9 @@ module FatTerm
       match_all_query_terms?(item, query)
     end
 
-    def action_env(terminal:, event:)
+    def action_env(event:)
       ActionEnvironment.new(
         session: self,
-        terminal: terminal,
         counter: counter,
         event: event,
         field: @field,

@@ -220,7 +220,7 @@ module FatTerm
 
         s = active_session
         begin
-          tick_dirty = !!s&.tick(terminal: self)
+          tick_dirty = !!s&.tick
           tick_dirty_count += 1 if tick_dirty
           dirty ||= tick_dirty
         rescue StandardError => e
@@ -337,7 +337,6 @@ module FatTerm
       end
 
       owner = PopupOwner.new(on_result: acc_proc, on_cancel: cancel_proc)
-
       begin
         push_modal(popup, owner: owner)
         render_frame
@@ -352,7 +351,7 @@ module FatTerm
 
           s = active_session
           begin
-            tick_dirty = !!s&.tick(terminal: self)
+            tick_dirty = !!s&.tick
             dirty ||= tick_dirty
           rescue StandardError => e
             FatTerm.error("Terminal#choose tick failed: #{e.class}: #{e.message}", tag: :terminal)
@@ -433,7 +432,7 @@ module FatTerm
 
           s = active_session
           begin
-            tick_dirty = !!s&.tick(terminal: self)
+            tick_dirty = !!s&.tick
             dirty ||= tick_dirty
           rescue StandardError => e
             FatTerm.error("Terminal#choose_multi tick failed: #{e.class}: #{e.message}", tag: :terminal)
@@ -492,7 +491,7 @@ module FatTerm
 
           s = active_session
           begin
-            tick_dirty = !!s&.tick(terminal: self)
+            tick_dirty = !!s&.tick
             dirty ||= tick_dirty
           rescue StandardError => e
             FatTerm.error("Terminal#prompt tick failed: #{e.class}: #{e.message}", tag: :terminal)
@@ -586,7 +585,7 @@ module FatTerm
 
           s = active_session
           begin
-            tick_dirty = !!s&.tick(terminal: self)
+            tick_dirty = !!s&.tick
             dirty ||= tick_dirty
           rescue StandardError => e
             FatTerm.error("Terminal#menu tick failed: #{e.class}: #{e.message}", tag: :terminal)
@@ -747,7 +746,7 @@ module FatTerm
       sessions.uniq.each do |s|
         next unless s.respond_to?(:persist!)
 
-        s.persist!(terminal: self)
+        s.persist!
       end
     end
 
@@ -778,7 +777,7 @@ module FatTerm
       end
 
       FatTerm.debug("Terminal#dispatch_message: #{message.inspect}", tag: :session)
-      commands = s.update(message, terminal: self)
+      commands = s.update(message)
       FatTerm.debug("Terminal#dispatch_message: session=#{s.class} -> cmds=#{commands.inspect}", tag: :session)
 
       apply_commands(commands)
@@ -841,7 +840,8 @@ module FatTerm
       when :send_modal_owner
         msg = rest.fetch(0)
         owner = modal_owner
-        cmds = owner ? owner.update(msg, terminal: self) : []
+        # cmds = owner ? owner.update(msg, terminal: self) : []
+        cmds = owner ? owner.update(msg) : []
         apply_commands(cmds)
       when :cycle_theme
         new_theme = FatTerm::Colors::ThemeManager.cycle
@@ -876,7 +876,7 @@ module FatTerm
       # Sessions can pattern-match it in #update.
       message = [:cmd, message_name, payload]
 
-      commands = session.update(message, terminal: self)
+      commands = session.update(message)
       apply_commands(commands)
     end
 
@@ -903,7 +903,7 @@ module FatTerm
 
       sessions = @pinned + @stack
       sessions.each do |s|
-        s.view(screen: screen, renderer: renderer, terminal: self)
+        s.view(screen: screen, renderer: renderer)
       end
 
       FatTerm::StatusView.new.render(
@@ -913,7 +913,7 @@ module FatTerm
       )
 
       if (top = @modal_stack.last)
-        top[:session].view(screen: screen, renderer: renderer, terminal: self)
+        top[:session].view(screen: screen, renderer: renderer)
       end
 
       restore_active_cursor

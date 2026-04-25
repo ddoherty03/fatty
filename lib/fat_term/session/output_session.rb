@@ -35,7 +35,7 @@ module FatTerm
       @viewport.reset
     end
 
-    def resize_output!(terminal:)
+    def resize_output!
       @viewport.height = terminal.screen.output_rect.rows
       @viewport.clamp!(@output.lines)
     end

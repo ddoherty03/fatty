@@ -22,22 +22,22 @@ module FatTerm
     private
 
     # Unbound keys land here.
-    def update_key(ev, terminal:)
+    def update_key(ev)
       []
     end
 
-    def update_cmd(name, payload, terminal:)
+    def update_cmd(name, payload)
       case name
       when :paste
         text = payload.fetch(:text, "").to_s
-        env = action_env(terminal: terminal, event: nil)
+        env = action_env(event: nil)
         field.act_on(:paste, text, env: env)
       end
       []
     end
 
     # Bound keys land here because Session#update resolves via keymap first.
-    def handle_action(action, args, terminal:, event:)
+    def handle_action(action, args, event:)
       which =
         if event&.respond_to?(:key)
           event.key.inspect
@@ -47,7 +47,7 @@ module FatTerm
           nil
         end
       FatTerm.debug("InputSession#handle_action: #{which}", tag: :session)
-      env = action_env(terminal: terminal, event: event)
+      env = action_env(event: event)
       case action.to_sym
       when :accept_line
         line = @field.accept_line
@@ -69,7 +69,7 @@ module FatTerm
       []
     end
 
-    def action_env(terminal:, event:)
+    def action_env(event:)
       ActionEnvironment.new(
         session: self,
         terminal: terminal,
@@ -77,8 +77,6 @@ module FatTerm
         field: @field,
       )
     end
-
-    private
 
     def with_virtual_suffix_sync
       @field.sync_virtual_suffix!

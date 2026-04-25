@@ -22,7 +22,7 @@ module FatTerm
 
     private
 
-    def update_cmd(name, payload, terminal:)
+    def update_cmd(name, payload)
       payload ||= {}
       case name
       when :show

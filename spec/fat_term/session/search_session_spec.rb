@@ -11,12 +11,12 @@ module FatTerm
         expect(s.regex).to eq(false)
         expect(s.field.prompt_text).to include("Search string")
 
-        cmds = s.handle_action(:search_toggle_regex, [], terminal: nil, event: nil)
+        cmds = s.handle_action(:search_toggle_regex, [], event: nil)
         expect(cmds).to eq([])
         expect(s.regex).to eq(true)
         expect(s.field.prompt_text).to include("Regex")
 
-        s.handle_action(:search_toggle_regex, [], terminal: nil, event: nil)
+        s.handle_action(:search_toggle_regex, [], event: nil)
         expect(s.regex).to eq(false)
         expect(s.field.prompt_text).to include("Search string")
       end

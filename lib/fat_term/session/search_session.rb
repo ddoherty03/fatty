@@ -28,10 +28,9 @@ module FatTerm
       [:search, :input, :terminal]
     end
 
-    def handle_action(action, args, terminal:, event:)
+    def handle_action(action, args, event:)
       env = ActionEnvironment.new(
         session: self,
-        terminal: terminal,
         counter: counter,
         event: event,
         buffer: @field.buffer,
@@ -57,7 +56,7 @@ module FatTerm
       []
     end
 
-    def view(screen:, renderer:, terminal:)
+    def view(screen:, renderer:)
       row = screen.output_rect.rows - 1
 
       ::Curses.curs_set(1)

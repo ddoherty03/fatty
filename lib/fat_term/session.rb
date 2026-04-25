@@ -6,7 +6,7 @@ module FatTerm
   # Charm/Bubbletea-style contract:
   #
   #   init(terminal:)               => commands
-  #   update(message, terminal:)    => commands
+  #   update(message)               => commands
   #   view(screen:, renderer:, terminal:) => renders only (no return contract)
   #
   # Where `commands` is an Array (possibly empty). Terminal is responsible for
@@ -39,7 +39,7 @@ module FatTerm
     end
 
     # Handle a message and return commands.
-    def update(message, terminal:)
+    def update(message)
       FatTerm.debug("#{self.class}#update(message -> #{message})", tag: :session)
 
       commands =
@@ -51,13 +51,13 @@ module FatTerm
           FatTerm.debug("#{self.class}#update: key ev=#{ev.inspect} action=#{action.inspect} args=#{args.inspect}", tag: :session)
 
           if action
-            handle_action(action, args, terminal: terminal, event: ev)
+            handle_action(action, args, event: ev)
           else
-            update_key(ev, terminal: terminal)
+            update_key(ev)
           end
         when :cmd
           FatTerm.debug("#{self.class}#update: cmd message=#{message.inspect}", tag: :session)
-          update_cmd(message[1], message[2], terminal: terminal)
+          update_cmd(message[1], message[2])
         else
           FatTerm.warn("#{self.class}#update: unknown message[0]=#{message[0].inspect}", tag: :session)
           []
@@ -66,10 +66,10 @@ module FatTerm
     end
 
     # Save any state we want saved on quit, error, etc.
-    def persist!(terminal:)
+    def persist!
     end
 
-    def tick(terminal:)
+    def tick
       false
     end
 
@@ -87,7 +87,7 @@ module FatTerm
     end
 
     # Subclasses override this to react to resolved actions.
-    def handle_action(_action, _args, terminal:, event:)
+    def handle_action(_action, _args, event:)
       []
     end
 
@@ -110,7 +110,7 @@ module FatTerm
     #
     # By default, renders all views belonging to the session, ordered by z-index.
     # Subclasses can override, but should not mutate state here.
-    def view(screen:, renderer:, terminal:)
+    def view(screen:, renderer:)
       views.sort_by(&:z).each do |v|
         v.render(screen:, renderer:, terminal:, session: self)
       end
@@ -126,11 +126,11 @@ module FatTerm
 
     private
 
-    def update_key(_ev, terminal:)
+    def update_key(_ev)
       []
     end
 
-    def update_cmd(_name, _payload, terminal:)
+    def update_cmd(_name, _payload)
       []
     end
 

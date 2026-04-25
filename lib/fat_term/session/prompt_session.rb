@@ -39,14 +39,14 @@ module FatTerm
       []
     end
 
-    def view(screen:, renderer:, terminal:)
+    def view(screen:, renderer:)
       return unless @win
 
       renderer.render_prompt_popup(session: self)
     end
 
-    def handle_action(action, args, terminal:, event:)
-      env = action_env(terminal: terminal, event: event)
+    def handle_action(action, args, event:)
+      env = action_env(event: event)
 
       case action.to_sym
       when :interrupt
@@ -132,10 +132,9 @@ module FatTerm
       }
     end
 
-    def action_env(terminal:, event:)
+    def action_env(event:)
       ActionEnvironment.new(
         session: self,
-        terminal: terminal,
         counter: counter,
         event: event,
         field: @field,

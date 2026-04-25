@@ -30,7 +30,7 @@ module FatTerm
 
     def init(terminal:)
       super
-      resize_output!(terminal: terminal)
+      resize_output!
       []
     end
 
@@ -42,10 +42,9 @@ module FatTerm
       end
     end
 
-    def action_env(terminal:, event:)
+    def action_env(event:)
       FatTerm::ActionEnvironment.new(
         session: self,
-        terminal: terminal,
         counter: counter,
         event: event,
         buffer: @field.buffer,
@@ -54,7 +53,7 @@ module FatTerm
       )
     end
 
-    def update_key(ev, terminal:)
+    def update_key(ev)
       return [] unless ev.is_a?(FatTerm::KeyEvent)
 
       key_str = "key=#{ev} raw=#{ev.raw}"
@@ -70,7 +69,7 @@ module FatTerm
       end
     end
 
-    def view(screen:, renderer:, terminal:)
+    def view(screen:, renderer:)
       if pager_active?
         ::Curses.curs_set(0)
         highlights = pager.search_visible_highlights(viewport: pager_viewport)
@@ -89,7 +88,7 @@ module FatTerm
     end
 
     # Save any state we want saved on quit, error, etc.
-    def persist!(terminal:)
+    def persist!
       return unless @history.respond_to?(:save!)
 
       FatTerm.debug("ShellSession#persist!: saving history", tag: :history)
@@ -100,7 +99,7 @@ module FatTerm
 
     # Called by Terminal#go on every loop iteration.
     # Returns true if any visible state changed (dirty).
-    def tick(terminal:)
+    def tick
       dirty = false
       # Animated autoscroll (e.g. after M-s in paging mode).
       if pager.autoscroll?
@@ -195,14 +194,14 @@ module FatTerm
       end
     end
 
-    def update_cmd(name, payload, terminal:)
+    def update_cmd(name, payload)
       cmds = []
       case name
       when :popup_result
         case payload[:kind]&.to_sym
         when :history_search
           item = payload.fetch(:item, "").to_s
-          env = action_env(terminal: terminal, event: nil)
+          env = action_env(event: nil)
           with_virtual_suffix_sync do
             FatTerm::Actions.call(:replace, env, item)
           end
@@ -257,13 +256,13 @@ module FatTerm
         cmds << [:send, :isearch, :isearch_set_failed, { failed: false }]
       when :paste
         text = payload.fetch(:text, "").to_s
-        env = action_env(terminal: terminal, event: nil)
+        env = action_env(event: nil)
         field.act_on(:paste, text, env: env)
       end
       cmds
     end
 
-    def handle_action(action, args, terminal:, event:)
+    def handle_action(action, args, event:)
       which =
         if event&.respond_to?(:key)
           event.key.inspect
@@ -271,11 +270,11 @@ module FatTerm
           event.mouse.inspect
         end
       FatTerm.debug("ShellSession#handle_action: #{which}", tag: :keymap)
-      env = action_env(terminal: terminal, event: event)
-      apply_action(action, args, event, terminal: terminal, env: env)
+      env = action_env(event: event)
+      apply_action(action, args, event, env: env)
     end
 
-    def apply_action(action, args, ev, terminal:, env:)
+    def apply_action(action, args, ev, env:)
       case action
       when :accept_line
         accept_line

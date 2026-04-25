@@ -148,7 +148,7 @@ module FatTerm
         terminal.instance_variable_set(:@running, true)
 
         allow(terminal).to receive(:push_modal) do |_popup, owner:|
-          owner.update([:terminal, :popup_result, { item: "Assets" }], terminal: terminal)
+          owner.update([:terminal, :popup_result, { item: "Assets" }])
         end
 
         result = terminal.choose(
@@ -173,7 +173,7 @@ module FatTerm
         terminal.instance_variable_set(:@running, true)
 
         allow(terminal).to receive(:push_modal) do |_popup, owner:|
-          owner.update([:terminal, :popup_result, { item: "Liabilities" }], terminal: terminal)
+          owner.update([:terminal, :popup_result, { item: "Liabilities" }])
         end
 
         result = terminal.choose(
@@ -201,7 +201,7 @@ module FatTerm
         terminal.instance_variable_set(:@running, true)
 
         allow(terminal).to receive(:push_modal) do |_popup, owner:|
-          owner.update([:terminal, :popup_cancelled, nil], terminal: terminal)
+          owner.update([:terminal, :popup_cancelled, nil])
         end
 
         result = terminal.choose(
@@ -227,7 +227,7 @@ module FatTerm
         terminal.instance_variable_set(:@running, true)
 
         allow(terminal).to receive(:push_modal) do |_popup, owner:|
-          owner.update([:terminal, :popup_cancelled, nil], terminal: terminal)
+          owner.update([:terminal, :popup_cancelled, nil])
         end
 
         expect(terminal.choose("Select", choices: ["A", "B"])).to be_nil
@@ -261,7 +261,7 @@ module FatTerm
         terminal.instance_variable_set(:@running, true)
 
         allow(terminal).to receive(:push_modal) do |_popup, owner:|
-          owner.update([:cmd, :prompt_result, { text: "Checking" }], terminal: terminal)
+          owner.update([:cmd, :prompt_result, { text: "Checking" }])
         end
 
         result = terminal.prompt("Rename account:", initial: "Savings")
@@ -279,7 +279,7 @@ module FatTerm
         terminal.instance_variable_set(:@running, true)
 
         allow(terminal).to receive(:push_modal) do |_popup, owner:|
-          owner.update([:cmd, :prompt_cancelled, {}], terminal: terminal)
+          owner.update([:cmd, :prompt_cancelled, {}])
         end
 
         result = terminal.prompt("Rename account:", quit_value: :cancelled)
@@ -299,7 +299,7 @@ module FatTerm
 
         allow(terminal).to receive(:push_modal) do |session, owner:|
           popup = session
-          owner.update([:cmd, :prompt_cancelled, {}], terminal: terminal)
+          owner.update([:cmd, :prompt_cancelled, {}])
         end
 
         terminal.prompt("Rename account:", initial: "Checking")
@@ -320,7 +320,7 @@ module FatTerm
 
         allow(terminal).to receive(:push_modal) do |session, owner:|
           popup = session
-          owner.update([:cmd, :prompt_cancelled, {}], terminal: terminal)
+          owner.update([:cmd, :prompt_cancelled, {}])
         end
 
         terminal.prompt("Rename account:", initial: "Checking", history_key: :account_name)
