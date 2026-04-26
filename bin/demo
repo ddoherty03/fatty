@@ -192,9 +192,9 @@ on_accept_proc = lambda do |line, env|
       total.times do |i|
         indicator =
           case i % 4
-          when 0 then "+"
-          when 1 then "-"
-          when 2 then "^"
+          when 0 then "+".green
+          when 1 then "-".red
+          when 2 then "^".yellow
           else "."
           end
 

@@ -22,7 +22,7 @@ module FatTerm
         @style = style.to_sym
         @role = role
         @trail_max = trail_max&.to_i
-        @trail = +""
+        @trail = []
         @current = 0
         @bar_width = bar_width.to_i
         @spinner_index = 0
@@ -78,10 +78,8 @@ module FatTerm
         ch = indicator.to_s
         return if ch.empty?
 
-        @trail << ch[0]
-        return unless @trail_max && @trail_max > 0
-
-        @trail = @trail[-@trail_max, @trail_max] || @trail
+        @trail << ch
+        trim_trail if @trail_max && @trail_max > 0
       end
 
       def refresh
@@ -137,7 +135,7 @@ module FatTerm
         return "#{base}#{trailer}" if @trail.empty?
 
         limit = trail_limit(base, trailer)
-        trail = @trail[-limit, limit] || @trail
+        trail = @trail.last(limit).join
         "#{base}  #{trail}#{trailer}"
       end
 
@@ -149,9 +147,43 @@ module FatTerm
             80
           end
 
-        available = cols - prefix.length - suffix.length - 4
+        available = cols - visible_length(prefix) - visible_length(suffix) - 4
         available = 0 if available < 0
         available
+      end
+
+      def limited_trail(limit)
+        used = 0
+        selected = []
+
+        @trail.reverse_each do |item|
+          width = FatTerm::Ansi.visible_length(item)
+          break if used + width > limit
+
+          selected.unshift(item)
+          used += width
+        end
+
+        selected.join
+      end
+
+      def trim_trail
+        used = 0
+        selected = []
+
+        @trail.reverse_each do |item|
+          width = FatTerm::Ansi.visible_length(item)
+          break if used + width > @trail_max
+
+          selected.unshift(item)
+          used += width
+        end
+
+        @trail = selected
+      end
+
+      def visible_length(text)
+        FatTerm::Ansi.visible_length(text)
       end
 
       def render_bar_text(suffix: nil, mode: :solid)
@@ -208,9 +240,9 @@ module FatTerm
             80
           end
 
-        reserved = base.length
-        reserved += 1 + info.length unless info.empty?
-        reserved += trailer.length unless trailer.empty?
+        reserved = visible_length(base)
+        reserved += 1 + visible_length(info) unless info.empty?
+        reserved += visible_length(trailer) unless trailer.empty?
 
         # Space for:
         #   " ["
@@ -252,7 +284,7 @@ module FatTerm
         bar << (SHADE_FULL * full)
         bar << SHADE_HALF if half == 1
 
-        remaining = width - bar.length
+        remaining = width - FatTerm::Ansi.visible_length(bar)
         remaining = 0 if remaining < 0
         bar << (SHADE_EMPTY * remaining)
         bar
@@ -282,7 +314,7 @@ module FatTerm
           bar << partial
         end
 
-        remaining = width - bar.length
+        remaining = width - FatTerm::Ansi.visible_length(bar)
         remaining = 0 if remaining < 0
         bar << (BRAILLE_STEPS[0] * remaining)
         bar

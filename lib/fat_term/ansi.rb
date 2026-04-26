@@ -67,7 +67,7 @@ module FatTerm
             i += 1
           end
         else
-          buf << s.getbyte(i)
+          buf << s.byteslice(i, 1)
           i += 1
         end
       end
@@ -192,7 +192,69 @@ module FatTerm
       style
     end
 
+    def self.sgr_for(style)
+      codes = []
+      codes << 1 if style.bold
+      codes << 7 if style.reverse
+
+      if style.fg
+        if style.fg.between?(0, 7)
+          codes << 30 + style.fg
+        elsif style.fg.between?(8, 15)
+          codes << 90 + (style.fg - 8)
+        else
+          codes.concat([38, 5, style.fg])
+        end
+      end
+
+      if style.bg
+        if style.bg.between?(0, 7)
+          codes << 40 + style.bg
+        elsif style.bg.between?(8, 15)
+          codes << 100 + (style.bg - 8)
+        else
+          codes.concat([48, 5, style.bg])
+        end
+      end
+
+      if codes.empty?
+        ""
+      else
+        "\e[#{codes.join(';')}m"
+      end
+    end
+
+    def self.plain_text(str)
+      segment(str).map { |text, _style| text }.join
+    end
+
+    def self.visible_length(str)
+      segment(str).sum { |text, _style| text.length }
+    end
+
+    def self.truncate_visible(str, max)
+      remaining = max.to_i
+      out = +""
+
+      if remaining.positive?
+        segment(str).each do |text, style|
+          break unless remaining.positive?
+
+          chunk = text.each_char.take(remaining).join
+          unless chunk.empty?
+            out << sgr_for(style)
+            out << chunk
+            remaining -= chunk.length
+          end
+        end
+
+        out << "\e[0m" unless out.empty?
+      end
+
+      out
+    end
+
     private_class_method :consume_escape!, :parse_params, :apply_sgr!
-    private_class_method :merge_adjacent_segments, :same_style?
+    private_class_method :merge_adjacent_segments, :same_style?, :sgr_for
   end
 end

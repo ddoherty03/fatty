@@ -148,5 +148,32 @@ module FatTerm
       expect(st_b.bold).to eq(false)
       expect(st_b.reverse).to eq(false)
     end
+
+    it "preserves UTF-8 characters while segmenting ANSI text" do
+      segments = FatTerm::Ansi.segment("Demo \e[32m▓▒░\e[0m done")
+
+      text = segments.map { |segment_text, _style| segment_text }.join
+      expect(text).to eq("Demo ▓▒░ done")
+    end
+
+    it "returns plain text without ANSI escape sequences" do
+      text = FatTerm::Ansi.plain_text("a\e[31mred\e[0m▓")
+
+      expect(text).to eq("ared▓")
+    end
+
+    it "returns visible length without counting ANSI escape sequences" do
+      length = FatTerm::Ansi.visible_length("a\e[31mred\e[0m▓")
+
+      expect(length).to eq(5)
+    end
+
+    it "truncates by visible characters while preserving styles" do
+      text = FatTerm::Ansi.truncate_visible("a\e[31mred\e[0m▓", 4)
+
+      expect(FatTerm::Ansi.plain_text(text)).to eq("ared")
+      expect(FatTerm::Ansi.visible_length(text)).to eq(4)
+      expect(text).to end_with("\e[0m")
+    end
   end
 end

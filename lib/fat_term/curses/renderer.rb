@@ -248,6 +248,49 @@ module FatTerm
         nil
       end
 
+      def render_status(text, role: :status_info)
+        msg = text.to_s.tr("\r\n", " ")
+        state = [msg, role]
+        return if state == @last_status_state
+
+        @last_status_state = state
+
+        win = context.status_win
+        cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
+        attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
+
+        win.bkgdset(attr) if win.respond_to?(:bkgdset)
+        win.erase
+        win.attrset(attr)
+        win.setpos(0, 0)
+
+        slices = build_line_slices(msg, ranges: []) do |style|
+          context.ansi_attr(style, fallback_role: role)
+        end
+
+        used = 0
+        slices.each do |slice_attr, slice_text|
+          break if used >= cols
+
+          visible = slice_text.to_s
+          remaining = cols - used
+          clipped = visible[0, remaining]
+
+          win.attrset(slice_attr)
+          win.addstr(clipped)
+
+          used += clipped.length
+        end
+
+        if used < cols
+          win.attrset(attr)
+          win.addstr(" " * (cols - used))
+        end
+
+        stage_window(win)
+        nil
+      end
+
       def render_input_field(field)
         buf = field.buffer
         region =
