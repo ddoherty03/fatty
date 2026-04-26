@@ -1,26 +1,25 @@
 # frozen_string_literal: true
 
-require_relative "lib/fat_term/version"
+require_relative "lib/fatty/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "fat_term"
+  spec.name = "fatty"
   spec.version = FatTerm::VERSION
   spec.authors = ["Daniel E. Doherty"]
   spec.email = ["ded@ddoherty.net"]
 
   spec.summary     = "Stateful terminal UI with editable input and scrollback"
   spec.description = <<~DESC
-    fat_term provides a curses-backed terminal interaction layer with
-    editable single-line input, scrollable output, and programmable
-    keybindings, inspired by modern shells like fish.
+    fatty is a pure Ruby curses-backed terminal interaction library with editable single-line input, scrollable output, and
+    programmable keybindings, inspired by modern shells like fish.
   DESC
-  spec.homepage = "https://github.com/ddoherty03/fat_term"
+  spec.homepage = "https://github.com/ddoherty03/fatty"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.2.0"
 
   spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/ddoherty03/fat_term"
+  spec.metadata["source_code_uri"] = "https://github.com/ddoherty03/fatty"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
