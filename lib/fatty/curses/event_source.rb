@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   module Curses
     class EventSource
       MOUSE_BSTATE_BUTTON_MAP = {
@@ -41,7 +41,7 @@ module FatTerm
         raw = read_raw
         return unless raw
 
-        if raw.is_a?(FatTerm::MouseEvent)
+        if raw.is_a?(Fatty::MouseEvent)
           return [:key, raw]
         end
 
@@ -81,12 +81,12 @@ module FatTerm
 
         if ch.is_a?(Integer) && ch == ::Curses::KEY_MOUSE
           mouse = ::Curses.getmouse
-          FatTerm.debug("EventSource#read_raw: bstate=#{mouse&.bstate}", tag: :mouse)
+          Fatty.debug("EventSource#read_raw: bstate=#{mouse&.bstate}", tag: :mouse)
           return decode_mouse(mouse)
         end
 
-        if FatTerm::Config.config.dig(:log, :tags)&.include?(:keycode)
-          FatTerm.debug(
+        if Fatty::Config.config.dig(:log, :tags)&.include?(:keycode)
+          Fatty.debug(
             :curses_getch,
             tag: :keycode,
             ch_class: ch.class.name,
@@ -146,7 +146,7 @@ module FatTerm
         button = mouse_button_from_bstate(bstate)
         return unless button
 
-        FatTerm::MouseEvent.new(
+        Fatty::MouseEvent.new(
           button: button,
           x: mouse.x,
           y: mouse.y,
@@ -211,7 +211,7 @@ module FatTerm
           end
         end
 
-        FatTerm.debug("EventSource#read_bracketed_paste: hit limit #{limit}", tag: :keycode) if hit_limit
+        Fatty.debug("EventSource#read_bracketed_paste: hit limit #{limit}", tag: :keycode) if hit_limit
         text
       end
 

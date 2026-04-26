@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class PopUpSession < ModalSession
     attr_reader :field, :filtered, :displayed, :selected, :title, :message
 
@@ -147,7 +147,7 @@ module FatTerm
         notify_owner(:popup_changed)
       end
     rescue ActionError => e
-      FatTerm.error("PopUpSession#handle_action: ActionError #{e.message}", tag: :session)
+      Fatty.error("PopUpSession#handle_action: ActionError #{e.message}", tag: :session)
       []
     end
 
@@ -155,9 +155,9 @@ module FatTerm
       return if @displayed.empty?
 
       msg = "PopUpSession#move_selected_by before: selected=#{@selected.inspect} delta=#{delta} len=#{@displayed.length}"
-      FatTerm.debug(msg)
+      Fatty.debug(msg)
       @selected = ((@selected || 0) + delta) % @displayed.length
-      FatTerm.debug("PopUpSession#move_selected_by after: selected=#{@selected.inspect}")
+      Fatty.debug("PopUpSession#move_selected_by after: selected=#{@selected.inspect}")
     end
 
     def accept_selection
@@ -203,7 +203,7 @@ module FatTerm
       return if q == @last_query
 
       @last_query = q.dup.freeze
-      FatTerm.debug("popup query changed", tag: :popup, q: q, last: @last_query)
+      Fatty.debug("popup query changed", tag: :popup, q: q, last: @last_query)
       refresh_items
     end
 
@@ -241,7 +241,7 @@ module FatTerm
     end
 
     def view(screen:, renderer:)
-      FatTerm.debug("PopupSession#view: object_id=#{object_id} win_nil=#{@win.nil?}", tag: :session)
+      Fatty.debug("PopupSession#view: object_id=#{object_id} win_nil=#{@win.nil?}", tag: :session)
       return unless @win
 
       renderer.render_popup(session: self)

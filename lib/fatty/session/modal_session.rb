@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class ModalSession < Session
     attr_reader :win
     private attr_writer :win
 
     def close
-      FatTerm.debug("#{self.class}#close: object_id=#{object_id}", tag: :session)
+      Fatty.debug("#{self.class}#close: object_id=#{object_id}", tag: :session)
       old_win = win
       self.win = nil
       safely_close_window(old_win)

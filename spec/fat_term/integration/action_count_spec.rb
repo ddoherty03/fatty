@@ -2,19 +2,19 @@
 
 require "spec_helper"
 
-module FatTerm
+module Fatty
   RSpec.describe "count injection via ActionEnvironment" do
     around do |example|
-      snap = FatTerm::Actions.snapshot
-      FatTerm::Actions.reset!
+      snap = Fatty::Actions.snapshot
+      Fatty::Actions.reset!
       example.run
     ensure
-      FatTerm::Actions.restore(snap)
+      Fatty::Actions.restore(snap)
     end
 
     let(:target_class) do
       Class.new do
-        include FatTerm::Actionable
+        include Fatty::Actionable
 
         attr_reader :calls
 

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   module Curses
-    # The Curses Renderer is responsible for drawing FatTerm views using curses.
+    # The Curses Renderer is responsible for drawing Fatty views using curses.
     #
     # Renderer provides the drawing API used by View objects.  Views never call
     # curses directly; instead, they request drawing operations from the Renderer.
@@ -10,7 +10,7 @@ module FatTerm
     # Responsibilities:
     #   - translate high-level draw requests into curses window operations
     #   - apply colors, attributes, and cursor placement
-    #   - respect layout information provided by FatTerm::Screen
+    #   - respect layout information provided by Fatty::Screen
     #   - refresh windows at frame boundaries
     #
     # Renderer deliberately does NOT:
@@ -141,7 +141,7 @@ module FatTerm
       end
 
       def draw_output_lines(lines, viewport:, highlights: nil)
-        FatTerm.debug("calling draw_output_lines")
+        Fatty.debug("calling draw_output_lines")
         win = context.output_win
         base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
 
@@ -191,7 +191,7 @@ module FatTerm
       end
 
       def scroll_output_window_delta!(prev:, curr:)
-        FatTerm.debug("calling scroll_output_window_delta!", tag: :scrolling)
+        Fatty.debug("calling scroll_output_window_delta!", tag: :scrolling)
         win = context.output_win
         delta = curr[:top] - prev[:top]
         base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
@@ -356,7 +356,7 @@ module FatTerm
         buf_text = field.buffer.text.to_s
         text = (prompt + buf_text).tr("\r\n", "")
 
-        visible = FatTerm::Ansi.plain_text(text)
+        visible = Fatty::Ansi.plain_text(text)
         line = visible[0, cols].ljust(cols)
 
         win.setpos(row, 0)
@@ -403,7 +403,7 @@ module FatTerm
       def pair_attr(role, fallback:)
         return fallback unless ::Curses.has_colors?
 
-        ::Curses.color_pair(FatTerm::Colors::Pairs::ROLE_TO_PAIR.fetch(role))
+        ::Curses.color_pair(Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(role))
       end
 
       def render_popup(session:)
@@ -746,7 +746,7 @@ module FatTerm
         pos = 0
         ri = 0
 
-        FatTerm::Ansi.segment(line).each do |text, style|
+        Fatty::Ansi.segment(line).each do |text, style|
           text = text.to_s
           seg_attr = yield(style)
 

@@ -1,4 +1,4 @@
-module FatTerm
+module Fatty
   class Alert
     attr_reader :level, :message, :details
 

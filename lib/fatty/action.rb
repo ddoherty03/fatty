@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class ActionError < StandardError; end
 
   module Actions
@@ -28,7 +28,7 @@ module FatTerm
 
     def self.register(name, owner:, on:, method_name: name, doc: nil)
       arg_str = "Action.register: name: #{name}, on: #{on}, method_name: #{method_name}, doc: #{doc}"
-      FatTerm.debug("Action.register(#{arg_str})", tag: :action)
+      Fatty.debug("Action.register(#{arg_str})", tag: :action)
       key = name.to_sym
       raise ActionError, "action already registered for #{key}" if @defs.key?(key)
 
@@ -42,7 +42,7 @@ module FatTerm
 
     def self.call(name, env, *args, **kwargs)
       arg_str = "name: #{name}, env: #{env}, args: #{args}, kwargs: #{kwargs}"
-      FatTerm.debug("Action.call(#{arg_str})", tag: :action)
+      Fatty.debug("Action.call(#{arg_str})", tag: :action)
       key = name.to_sym
       defn = @defs[key] or raise ActionError, "Unknown action: #{key}"
 

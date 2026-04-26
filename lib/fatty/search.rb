@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   module Search
     extend self
 

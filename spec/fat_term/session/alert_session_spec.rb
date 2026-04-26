@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-module FatTerm
+module Fatty
   RSpec.describe AlertSession do
     let(:terminal) { instance_double(Terminal) }
     let(:screen)   { instance_double(Screen) }
@@ -11,14 +11,14 @@ module FatTerm
     it "has an AlertView and renders via the default Session#view pipeline" do
       s = AlertSession.new
 
-      expect(s.views.map(&:class)).to include(FatTerm::AlertView)
+      expect(s.views.map(&:class)).to include(Fatty::AlertView)
 
       allow(renderer).to receive(:render_alert)
 
       s.update([:cmd, :show, { level: :warning, message: "hi" }])
       s.view(screen: screen, renderer: renderer)
 
-      expect(renderer).to have_received(:render_alert).with(instance_of(FatTerm::Alert))
+      expect(renderer).to have_received(:render_alert).with(instance_of(Fatty::Alert))
       expect(s.current.level).to eq(:warning)
       expect(s.current.message).to eq("hi")
     end

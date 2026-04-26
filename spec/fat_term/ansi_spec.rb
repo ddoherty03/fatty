@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-module FatTerm
+module Fatty
   RSpec.describe Ansi do
     def style_of(seg)
       _text, style = seg
@@ -15,7 +15,7 @@ module FatTerm
     end
 
     def segs(str, base: nil)
-      FatTerm::Ansi.segment(str, base:)
+      Fatty::Ansi.segment(str, base:)
     end
 
     it "returns a single segment for plain text" do
@@ -131,7 +131,7 @@ module FatTerm
     end
 
     it "applies base style as the starting point" do
-      base = FatTerm::Ansi::Style.new(fg: 2, bg: 4, bold: true, reverse: false)
+      base = Fatty::Ansi::Style.new(fg: 2, bg: 4, bold: true, reverse: false)
       segments = segs("a\e[0mb", base:)
 
       expect(segments.map { |s| text_of(s) }).to eq(["a", "b"])
@@ -150,29 +150,29 @@ module FatTerm
     end
 
     it "preserves UTF-8 characters while segmenting ANSI text" do
-      segments = FatTerm::Ansi.segment("Demo \e[32m▓▒░\e[0m done")
+      segments = Fatty::Ansi.segment("Demo \e[32m▓▒░\e[0m done")
 
       text = segments.map { |segment_text, _style| segment_text }.join
       expect(text).to eq("Demo ▓▒░ done")
     end
 
     it "returns plain text without ANSI escape sequences" do
-      text = FatTerm::Ansi.plain_text("a\e[31mred\e[0m▓")
+      text = Fatty::Ansi.plain_text("a\e[31mred\e[0m▓")
 
       expect(text).to eq("ared▓")
     end
 
     it "returns visible length without counting ANSI escape sequences" do
-      length = FatTerm::Ansi.visible_length("a\e[31mred\e[0m▓")
+      length = Fatty::Ansi.visible_length("a\e[31mred\e[0m▓")
 
       expect(length).to eq(5)
     end
 
     it "truncates by visible characters while preserving styles" do
-      text = FatTerm::Ansi.truncate_visible("a\e[31mred\e[0m▓", 4)
+      text = Fatty::Ansi.truncate_visible("a\e[31mred\e[0m▓", 4)
 
-      expect(FatTerm::Ansi.plain_text(text)).to eq("ared")
-      expect(FatTerm::Ansi.visible_length(text)).to eq(4)
+      expect(Fatty::Ansi.plain_text(text)).to eq("ared")
+      expect(Fatty::Ansi.visible_length(text)).to eq(4)
       expect(text).to end_with("\e[0m")
     end
   end

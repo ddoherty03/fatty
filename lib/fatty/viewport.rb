@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class Viewport
     attr_accessor :top
     attr_accessor :height

@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   # Screen is a backend-neutral layout model.
   #
   # It describes terminal geometry (rows/cols) and the logical regions that
-  # FatTerm draws into (output/input/alert). Screen does not perform any IO
+  # Fatty draws into (output/input/alert). Screen does not perform any IO
   # and does not depend on curses.
   #
   # Curses uses Screen to allocate resources (windows) and to understand where

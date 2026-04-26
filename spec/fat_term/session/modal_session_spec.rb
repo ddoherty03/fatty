@@ -2,10 +2,10 @@
 
 require "spec_helper"
 
-RSpec.describe FatTerm::ModalSession do
-  class TestModalSession < FatTerm::ModalSession
+RSpec.describe Fatty::ModalSession do
+  class TestModalSession < Fatty::ModalSession
     def initialize
-      super(keymap: FatTerm::Keymaps.emacs, views: [])
+      super(keymap: Fatty::Keymaps.emacs, views: [])
     end
 
     def geometry(cols:, rows:)
@@ -17,7 +17,7 @@ RSpec.describe FatTerm::ModalSession do
 
   describe "#geometry" do
     it "raises NotImplementedError in the base class" do
-      base = FatTerm::ModalSession.new(keymap: FatTerm::Keymaps.emacs, views: [])
+      base = Fatty::ModalSession.new(keymap: Fatty::Keymaps.emacs, views: [])
 
       expect {
         base.geometry(cols: 80, rows: 24)

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   VERSION = "0.2.0"
 end

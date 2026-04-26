@@ -2,11 +2,11 @@
 
 require "spec_helper"
 
-module FatTerm
+module Fatty
   RSpec.describe Terminal::Progress do
     let(:terminal) do
       instance_double(
-        FatTerm::Terminal,
+        Fatty::Terminal,
         set_status: nil,
         render_now: nil,
         screen: nil,
@@ -16,7 +16,7 @@ module FatTerm
     describe "#initialize" do
       it "requires total for non-spinner styles" do
         expect {
-          FatTerm::Terminal::Progress.new(
+          Fatty::Terminal::Progress.new(
             terminal: terminal,
             label: "Importing",
             style: :bar,
@@ -26,7 +26,7 @@ module FatTerm
 
       it "allows spinner without total" do
         expect {
-          FatTerm::Terminal::Progress.new(
+          Fatty::Terminal::Progress.new(
             terminal: terminal,
             label: "Waiting",
             style: :spinner,
@@ -37,7 +37,7 @@ module FatTerm
 
     describe "#update" do
       it "renders spinner without percent when total is unknown" do
-        progress = FatTerm::Terminal::Progress.new(
+        progress = Fatty::Terminal::Progress.new(
           terminal: terminal,
           label: "Waiting",
           style: :spinner,
@@ -53,7 +53,7 @@ module FatTerm
       end
 
       it "renders percent for spinner when total is known" do
-        progress = FatTerm::Terminal::Progress.new(
+        progress = Fatty::Terminal::Progress.new(
           terminal: terminal,
           label: "Importing",
           total: 100,
@@ -66,7 +66,7 @@ module FatTerm
       end
 
       it "advances spinner when updated without current" do
-        progress = FatTerm::Terminal::Progress.new(
+        progress = Fatty::Terminal::Progress.new(
           terminal: terminal,
           label: "Waiting",
           style: :spinner,
@@ -81,7 +81,7 @@ module FatTerm
 
     describe "#finish" do
       it "renders the finish message" do
-        progress = FatTerm::Terminal::Progress.new(
+        progress = Fatty::Terminal::Progress.new(
           terminal: terminal,
           label: "Importing",
           total: 10,
@@ -96,7 +96,7 @@ module FatTerm
       end
 
       it "forces a redraw when render is true" do
-        progress = FatTerm::Terminal::Progress.new(
+        progress = Fatty::Terminal::Progress.new(
           terminal: terminal,
           label: "Importing",
           total: 10,
@@ -111,7 +111,7 @@ module FatTerm
 
     describe "#update with trail style" do
       it "appends indicators across updates" do
-        progress = FatTerm::Terminal::Progress.new(
+        progress = Fatty::Terminal::Progress.new(
           terminal: terminal,
           label: "Importing",
           total: 4,
@@ -129,7 +129,7 @@ module FatTerm
 
     describe "#update with bar style" do
       it "renders percent for bar progress" do
-        progress = FatTerm::Terminal::Progress.new(
+        progress = Fatty::Terminal::Progress.new(
           terminal: terminal,
           label: "Importing",
           total: 100,

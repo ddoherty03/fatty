@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-module FatTerm
-  class AlertView < FatTerm::View
+module Fatty
+  class AlertView < Fatty::View
     def initialize(id: "alert", z: 1_000, log: false)
       super(id: id, z: z, log: log)
     end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   RSpec.describe History::Entry do
     describe "#initialize" do
       it "normalizes text to a string" do
@@ -152,7 +152,7 @@ module FatTerm
       end
 
       it "loads history kinds as symbols" do
-        entry = FatTerm::History::Entry.from_h(
+        entry = Fatty::History::Entry.from_h(
           "text" => "echo four score",
           "kind" => "command",
           "ctx" => { "pwd" => "/tmp" },
@@ -193,7 +193,7 @@ module FatTerm
       end
 
       it "normalizes symbol keys in ctx to strings" do
-        entry = FatTerm::History::Entry.from_h(
+        entry = Fatty::History::Entry.from_h(
           "text" => "echo hello",
           "kind" => "command",
           "ctx" => { pwd: "/tmp/demo" },

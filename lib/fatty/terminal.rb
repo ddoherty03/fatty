@@ -3,7 +3,7 @@
 require_relative './terminal/progress'
 require_relative './terminal/popup_owner'
 
-module FatTerm
+module Fatty
   class Terminal
     SCROLL_RENDER_THROTTLE = 0.05
 
@@ -110,7 +110,7 @@ module FatTerm
     # --- Session management ------------------------------------------------
 
     def push(session)
-      FatTerm.debug("Terminal#push(#{session})", tag: :session)
+      Fatty.debug("Terminal#push(#{session})", tag: :session)
       @stack << session
       register(session)
       commands = session.init(terminal: self)
@@ -119,12 +119,12 @@ module FatTerm
     end
 
     def pop
-      FatTerm.debug("Terminal#pop -> #{@stack.last}", tag: :session)
+      Fatty.debug("Terminal#pop -> #{@stack.last}", tag: :session)
       @stack.pop
     end
 
     def pin(session)
-      FatTerm.debug("Terminal#pin(#{session})", tag: :session)
+      Fatty.debug("Terminal#pin(#{session})", tag: :session)
       @pinned << session
       register(session)
       commands = session.init(terminal: self)
@@ -160,7 +160,7 @@ module FatTerm
     def push_modal(session, owner:)
       @modal_stack << { session: session, owner: owner }
       msg = "Terminal#push_modal: size=#{@modal_stack.length} session=#{session.class} object_id=#{session.object_id}"
-      FatTerm.debug(msg, tag: :session)
+      Fatty.debug(msg, tag: :session)
       register(session)
       @renderer.invalidate! if defined?(@renderer) && @renderer
       commands = session.init(terminal: self)
@@ -170,7 +170,7 @@ module FatTerm
     def pop_modal
       top = @modal_stack.pop
       msg = "Terminal#pop_modal: size=#{@modal_stack.length} popped=#{top && top[:session].class}"
-      FatTerm.debug(msg, tag: :session)
+      Fatty.debug(msg, tag: :session)
       session = top && top[:session]
 
       session.close if session&.respond_to?(:close)
@@ -224,7 +224,7 @@ module FatTerm
           tick_dirty_count += 1 if tick_dirty
           dirty ||= tick_dirty
         rescue StandardError => e
-          FatTerm.error("Terminal#go tick failed: #{e.class}: #{e.message}", tag: :terminal)
+          Fatty.error("Terminal#go tick failed: #{e.class}: #{e.message}", tag: :terminal)
           dirty = true
           immediate = true
         end
@@ -266,7 +266,7 @@ module FatTerm
             end
 
           # Performance logging
-          FatTerm.debug(
+          Fatty.debug(
             "perf loops=#{loop_count} events=#{event_count} " \
               "tick_dirty=#{tick_dirty_count} renders=#{render_count} " \
               "deferred=#{deferred_count} avg_frame_ms=#{avg_frame_ms} " \
@@ -283,22 +283,22 @@ module FatTerm
         end
       end
     rescue => e
-      FatTerm.error("Terminal#go fatal error: #{e.class}: #{e.message}", tag: :terminal)
-      FatTerm.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
+      Fatty.error("Terminal#go fatal error: #{e.class}: #{e.message}", tag: :terminal)
+      Fatty.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
       raise
     ensure
       begin
         stop_curses!
       rescue => e
-        FatTerm.error("Terminal#go stop_curses! failed: #{e.class}: #{e.message}", tag: :terminal)
-        FatTerm.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
+        Fatty.error("Terminal#go stop_curses! failed: #{e.class}: #{e.message}", tag: :terminal)
+        Fatty.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
       end
 
       begin
         persist_sessions!
       rescue => e
-        FatTerm.error("Terminal#go persist_sessions! failed: #{e.class}: #{e.message}", tag: :terminal)
-        FatTerm.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
+        Fatty.error("Terminal#go persist_sessions! failed: #{e.class}: #{e.message}", tag: :terminal)
+        Fatty.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
       end
     end
 
@@ -309,7 +309,7 @@ module FatTerm
       raise ArgumentError, "choices must not be empty" if items.empty?
 
       labels = items.map(&:first)
-      popup = FatTerm::PopUpSession.new(
+      popup = Fatty::PopUpSession.new(
         source: labels,
         kind: :terminal_choose,
         title: "Choose",
@@ -354,7 +354,7 @@ module FatTerm
             tick_dirty = !!s&.tick
             dirty ||= tick_dirty
           rescue StandardError => e
-            FatTerm.error("Terminal#choose tick failed: #{e.class}: #{e.message}", tag: :terminal)
+            Fatty.error("Terminal#choose tick failed: #{e.class}: #{e.message}", tag: :terminal)
             dirty = true
           end
 
@@ -385,7 +385,7 @@ module FatTerm
       raise ArgumentError, "choices must not be empty" if items.empty?
 
       labels = items.map(&:first)
-      popup = FatTerm::PopUpSession.new(
+      popup = Fatty::PopUpSession.new(
         source: labels,
         kind: :terminal_choose_multi,
         title: "Choose Many",
@@ -435,7 +435,7 @@ module FatTerm
             tick_dirty = !!s&.tick
             dirty ||= tick_dirty
           rescue StandardError => e
-            FatTerm.error("Terminal#choose_multi tick failed: #{e.class}: #{e.message}", tag: :terminal)
+            Fatty.error("Terminal#choose_multi tick failed: #{e.class}: #{e.message}", tag: :terminal)
             dirty = true
           end
 
@@ -454,7 +454,7 @@ module FatTerm
     def prompt(prompt, initial: "", quit_value: nil, history_key: nil)
       history_ctx = { prompt: (history_key || prompt).to_s }
 
-      popup = FatTerm::PromptSession.new(
+      popup = Fatty::PromptSession.new(
         title: "Prompt",
         message: prompt,
         prompt: "> ",
@@ -494,7 +494,7 @@ module FatTerm
             tick_dirty = !!s&.tick
             dirty ||= tick_dirty
           rescue StandardError => e
-            FatTerm.error("Terminal#prompt tick failed: #{e.class}: #{e.message}", tag: :terminal)
+            Fatty.error("Terminal#prompt tick failed: #{e.class}: #{e.message}", tag: :terminal)
             dirty = true
           end
 
@@ -537,7 +537,7 @@ module FatTerm
       raise ArgumentError, "choices must not be empty" if items.empty?
 
       labels = items.map(&:first)
-      popup = FatTerm::PopUpSession.new(
+      popup = Fatty::PopUpSession.new(
         source: labels,
         kind: :terminal_menu,
         title: "Menu",
@@ -588,7 +588,7 @@ module FatTerm
             tick_dirty = !!s&.tick
             dirty ||= tick_dirty
           rescue StandardError => e
-            FatTerm.error("Terminal#menu tick failed: #{e.class}: #{e.message}", tag: :terminal)
+            Fatty.error("Terminal#menu tick failed: #{e.class}: #{e.message}", tag: :terminal)
             dirty = true
           end
 
@@ -633,21 +633,21 @@ module FatTerm
     private
 
     def preflight!
-      FatTerm::Config.config
-      FatTerm::Logger.configure
-      if FatTerm::Logger.logger
-        FatTerm.info("Logger configured to log to #{Logger.path}")
-        FatTerm.info("Read config from #{Config.user_config_path}", tag: :config)
-        FatTerm.info("Config", config: Config.config, tag: :config)
+      Fatty::Config.config
+      Fatty::Logger.configure
+      if Fatty::Logger.logger
+        Fatty.info("Logger configured to log to #{Logger.path}")
+        Fatty.info("Read config from #{Config.user_config_path}", tag: :config)
+        Fatty.info("Config", config: Config.config, tag: :config)
       end
-      FatTerm::Config.keydefs
-      FatTerm::Config.keybindings
+      Fatty::Config.keydefs
+      Fatty::Config.keybindings
       Thread.report_on_exception = true
     rescue FatConfig::ParseError => ex
       msg = "Terminal#preflight!: configuration error: #{ex.class}: #{ex.message}"
       warn msg
       begin
-        FatTerm.error(msg, tag: :config)
+        Fatty.error(msg, tag: :config)
       rescue StandardError
         nil
       end
@@ -655,18 +655,18 @@ module FatTerm
     end
 
     def start_curses!
-      @ctx = FatTerm::Curses::Context.new
+      @ctx = Fatty::Curses::Context.new
       @ctx.start
 
-      @screen = FatTerm::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols, status_rows: status_rows)
+      @screen = Fatty::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols, status_rows: status_rows)
       @ctx.apply_layout(@screen)
 
-      @renderer = FatTerm::Curses::Renderer.new(context: @ctx, screen: @screen)
+      @renderer = Fatty::Curses::Renderer.new(context: @ctx, screen: @screen)
 
-      env = @env || FatTerm::Env.detect
-      key_decoder = FatTerm::Curses::KeyDecoder.new(env: env)
+      env = @env || Fatty::Env.detect
+      key_decoder = Fatty::Curses::KeyDecoder.new(env: env)
       @event_source =
-        FatTerm::Curses::EventSource.new(context: @ctx, key_decoder: key_decoder, poll_ms: 50)
+        Fatty::Curses::EventSource.new(context: @ctx, key_decoder: key_decoder, poll_ms: 50)
       self
     end
 
@@ -683,8 +683,8 @@ module FatTerm
     end
 
     def install_default_sessions!
-      pin(FatTerm::AlertSession.new)
-      push(FatTerm::ShellSession.new(
+      pin(Fatty::AlertSession.new)
+      push(Fatty::ShellSession.new(
              prompt: @prompt,
              on_accept: @on_accept,
              completion_proc: @completion_proc,
@@ -776,9 +776,9 @@ module FatTerm
         clear_status
       end
 
-      FatTerm.debug("Terminal#dispatch_message: #{message.inspect}", tag: :session)
+      Fatty.debug("Terminal#dispatch_message: #{message.inspect}", tag: :session)
       commands = s.update(message)
-      FatTerm.debug("Terminal#dispatch_message: session=#{s.class} -> cmds=#{commands.inspect}", tag: :session)
+      Fatty.debug("Terminal#dispatch_message: session=#{s.class} -> cmds=#{commands.inspect}", tag: :session)
 
       apply_commands(commands)
     end
@@ -798,7 +798,7 @@ module FatTerm
     # it's meant to be forwarded to a Session (first element :send).  This
     # method routes the command to its proper destination.
     def apply_command(cmd)
-      FatTerm.debug("Terminal#apply_command(#{cmd})", tag: :session)
+      Fatty.debug("Terminal#apply_command(#{cmd})", tag: :session)
       return if cmd.nil?
 
       unless cmd.is_a?(Array) && cmd.first.is_a?(Symbol)
@@ -830,13 +830,13 @@ module FatTerm
         pop
       when :push_modal
         session = rest.fetch(0)
-        FatTerm.debug("Terminal#apply_terminal_command(:push_modal) before size=#{@modal_stack.length}", tag: :session)
+        Fatty.debug("Terminal#apply_terminal_command(:push_modal) before size=#{@modal_stack.length}", tag: :session)
         push_modal(session, owner: focused_session)
-        FatTerm.debug("Terminal#apply_terminal_command(:push_modal) after size=#{@modal_stack.length}", tag: :session)
+        Fatty.debug("Terminal#apply_terminal_command(:push_modal) after size=#{@modal_stack.length}", tag: :session)
       when :pop_modal
-        FatTerm.debug("Terminal#apply_terminal_command(:pop_modal) before size=#{@modal_stack.length}", tag: :session)
+        Fatty.debug("Terminal#apply_terminal_command(:pop_modal) before size=#{@modal_stack.length}", tag: :session)
         pop_modal
-        FatTerm.debug("Terminal#apply_terminal_command(:pop_modal) aftersize=#{@modal_stack.length}", tag: :session)
+        Fatty.debug("Terminal#apply_terminal_command(:pop_modal) aftersize=#{@modal_stack.length}", tag: :session)
       when :send_modal_owner
         msg = rest.fetch(0)
         owner = modal_owner
@@ -844,12 +844,12 @@ module FatTerm
         cmds = owner ? owner.update(msg) : []
         apply_commands(cmds)
       when :cycle_theme
-        new_theme = FatTerm::Colors::ThemeManager.cycle
+        new_theme = Fatty::Colors::ThemeManager.cycle
         renderer.apply_theme!(new_theme)
         apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{new_theme}"}])
       when :set_theme
         theme = rest.fetch(0)
-        FatTerm::Colors::ThemeManager.set(theme)
+        Fatty::Colors::ThemeManager.set(theme)
         renderer.apply_theme!(theme)
         apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{theme}"}])
       when :handle_resize
@@ -881,7 +881,7 @@ module FatTerm
     end
 
     def prompt_history
-      @prompt_history ||= FatTerm::History.new(path: :default)
+      @prompt_history ||= Fatty::History.new(path: :default)
     end
 
     # --- Choose helpers ---------------------------------------------------------
@@ -906,7 +906,7 @@ module FatTerm
         s.view(screen: screen, renderer: renderer)
       end
 
-      FatTerm::StatusView.new.render(
+      Fatty::StatusView.new.render(
         screen: screen,
         renderer: renderer,
         terminal: self,
@@ -955,7 +955,7 @@ module FatTerm
           cursor_x = session.field.cursor_x
           cursor_x = 0 if cursor_x.nil?
 
-          if session.is_a?(FatTerm::PopUpSession)
+          if session.is_a?(Fatty::PopUpSession)
             input_row = maxy - 2
             cursor_x = cursor_x.clamp(0, [maxx - 3, 0].max)
             begin
@@ -963,7 +963,7 @@ module FatTerm
             rescue RuntimeError
               ::Curses.curs_set(0)
             end
-          elsif session.is_a?(FatTerm::PromptSession)
+          elsif session.is_a?(Fatty::PromptSession)
             message_rows = (session.message && !session.message.empty?) ? 1 : 0
             input_row = 1 + message_rows
             cursor_x = cursor_x.clamp(0, [maxx - 3, 0].max)

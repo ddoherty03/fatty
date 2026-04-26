@@ -1,7 +1,7 @@
 # lib/fat_term/env.rb
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   module Env
     module_function
 

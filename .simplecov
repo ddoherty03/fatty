@@ -12,10 +12,10 @@ SimpleCov.start do
   add_filter %r{^/\.git/}
   add_filter %r{^/\.githib/}
 
-  add_group "Core", %r{^/lib/fat_term/[^/]*\.rb}
-  add_group "Views", %r{^/lib/fat_term/view/[^/]*\.rb}
-  add_group "Sessions", %r{^/lib/fat_term/session/[^/]*\.rb}
-  add_group "Curses", %r{^/lib/fat_term/backends/curses/[^/]*\.rb}
+  add_group "Core", %r{^/lib/fatty/[^/]*\.rb}
+  add_group "Views", %r{^/lib/fatty/view/[^/]*\.rb}
+  add_group "Sessions", %r{^/lib/fatty/session/[^/]*\.rb}
+  add_group "Curses", %r{^/lib/fatty/backends/curses/[^/]*\.rb}
   merge_timeout 3600
   # Make this true to merge rspec and cucumber coverage together
   use_merging false

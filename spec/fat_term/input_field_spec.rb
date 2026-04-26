@@ -3,7 +3,7 @@
 require "tmpdir"
 require "fileutils"
 
-module FatTerm
+module Fatty
   RSpec.describe InputField do
     let(:tmpdir) { Dir.mktmpdir }
     let(:hist_path) { File.join(tmpdir, "history") }
@@ -77,24 +77,24 @@ module FatTerm
     end
 
     it "act_on falls back to calling buffer methods when the action isn't registered" do
-      FatTerm::Actions.reset!  # simulate minimal load / no registration
+      Fatty::Actions.reset!  # simulate minimal load / no registration
 
-      buf = FatTerm::InputBuffer.new
-      field = FatTerm::InputField.new(buffer: buf, prompt: prompt('hello $ '))
+      buf = Fatty::InputBuffer.new
+      field = Fatty::InputField.new(buffer: buf, prompt: prompt('hello $ '))
 
       field.act_on(:insert, "xxxxx")
       expect(buf.text).to eq("xxxxx")
     end
 
     it "act_on raises ActionError when neither registry nor target responds" do
-      FatTerm::Actions.reset!
+      Fatty::Actions.reset!
 
-      buf = FatTerm::InputBuffer.new
-      field = FatTerm::InputField.new(buffer: buf, prompt: prompt('hello $ '))
+      buf = Fatty::InputBuffer.new
+      field = Fatty::InputField.new(buffer: buf, prompt: prompt('hello $ '))
 
       expect {
         field.act_on(:definitely_not_real)
-      }.to raise_error(FatTerm::ActionError, /Unknown action: definitely_not_real/i)
+      }.to raise_error(Fatty::ActionError, /Unknown action: definitely_not_real/i)
     end
 
     it "history_prev replaces buffer with previous entry" do
@@ -238,9 +238,9 @@ module FatTerm
       end
 
       def build_field(text, completion_proc: nil, history: nil)
-        buffer = FatTerm::InputBuffer.new
+        buffer = Fatty::InputBuffer.new
         buffer.replace(text)
-        FatTerm::InputField.new(
+        Fatty::InputField.new(
           prompt: "> ",
           buffer: buffer,
           completion_proc: completion_proc,
@@ -329,7 +329,7 @@ module FatTerm
       end
 
       it "prefers completion suggestions over history while cycling is inactive" do
-        history = FatTerm::History.new
+        history = Fatty::History.new
         history.add("cat ~/Downloads/zz_old.txt", kind: :command, ctx: {})
 
         field = build_field(
@@ -392,13 +392,13 @@ module FatTerm
         FileUtils.mkdir_p(File.join(@tmpdir, "Downloads"))
         File.write(File.join(@tmpdir, "Downloads", "report.pdf"), "x")
 
-        history = FatTerm::History.new
+        history = Fatty::History.new
         history.add("cat ~/Downloads/zzz", kind: :command, ctx: {})
 
-        buffer = FatTerm::InputBuffer.new
+        buffer = Fatty::InputBuffer.new
         buffer.replace("cat ~/Downloads/")
 
-        field = FatTerm::InputField.new(
+        field = Fatty::InputField.new(
           prompt: "> ",
           buffer: buffer,
           history: history,
@@ -436,10 +436,10 @@ module FatTerm
 
     describe "#autosuggestion" do
       it "returns the completion suggestion when completion returns a suggestion" do
-        history = FatTerm::History.new
+        history = Fatty::History.new
         history.add("four score and seven years ago", kind: :command)
 
-        field = FatTerm::InputField.new(
+        field = Fatty::InputField.new(
           prompt: "> ",
           history: history,
           history_kind: :command,
@@ -452,10 +452,10 @@ module FatTerm
       end
 
       it "returns the history suggestion when completion has no suggestion" do
-        history = FatTerm::History.new
+        history = Fatty::History.new
         history.add("four score and seven years ago", kind: :command)
 
-        field = FatTerm::InputField.new(
+        field = Fatty::InputField.new(
           prompt: "> ",
           history: history,
           history_kind: :command,

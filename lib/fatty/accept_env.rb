@@ -3,7 +3,7 @@
 # This class provides a wrapper around components that can be handed off to
 # Terminal's on_accept method for access to the terminal, the session, and a
 # Progress widget.
-module FatTerm
+module Fatty
   class AcceptEnv
     attr_reader :session
 
@@ -17,7 +17,7 @@ module FatTerm
     end
 
     def progress(**opts)
-      @progress ||= FatTerm::Terminal::Progress.new(terminal: terminal, **opts)
+      @progress ||= Fatty::Terminal::Progress.new(terminal: terminal, **opts)
     end
   end
 end

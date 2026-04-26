@@ -3,7 +3,7 @@
 require "tmpdir"
 require "fileutils"
 
-module FatTerm
+module Fatty
   RSpec.describe Color do
     describe ".resolve" do
       it "accepts ANSI names (case-insensitive, punctuation-insensitive)" do
@@ -54,7 +54,7 @@ module FatTerm
             255 255 0 LightYellow
           TXT
 
-          stub_const("FatTerm::Color::RGB_TXT_PATH", rgb_path)
+          stub_const("Fatty::Color::RGB_TXT_PATH", rgb_path)
           Color.instance_variable_set(:@x11_table, nil)
 
           idx = Color.resolve("MidnightBlue", available_colors: 256)

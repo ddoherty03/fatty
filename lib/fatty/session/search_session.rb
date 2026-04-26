@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class SearchSession < Session
     attr_reader :field, :direction, :regex
 
@@ -15,7 +15,7 @@ module FatTerm
 
       prompt = search_prompt(direction: @direction, regex: @regex)
 
-      @field = FatTerm::InputField.new(
+      @field = Fatty::InputField.new(
         prompt: prompt,
         history: history,
         history_kind: -> { @regex ? :search_regex : :search_string },
@@ -52,7 +52,7 @@ module FatTerm
         @field.act_on(action, *args, env: env)
         []
       end
-    rescue FatTerm::ActionError
+    rescue Fatty::ActionError
       []
     end
 

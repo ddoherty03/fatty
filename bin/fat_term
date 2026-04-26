@@ -12,9 +12,9 @@ require "pathname"
 require "debug"
 
 begin
-  require_relative "../lib/fat_term"
+  require_relative "../lib/fatty"
 rescue LoadError
-  require "fat_term"
+  require "fatty"
 end
 
 options = {}

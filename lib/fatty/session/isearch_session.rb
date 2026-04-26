@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class ISearchSession < Session
     attr_reader :field, :direction
 
@@ -17,7 +17,7 @@ module FatTerm
       @last_text = nil
       @last_pattern = last_pattern.to_s
 
-      @field = FatTerm::InputField.new(
+      @field = Fatty::InputField.new(
         prompt: Prompt.new { isearch_prompt },
         history: history,
         history_kind: :search_string,
@@ -74,7 +74,7 @@ module FatTerm
       end
 
       cmds
-    rescue FatTerm::ActionError
+    rescue Fatty::ActionError
       []
     end
 

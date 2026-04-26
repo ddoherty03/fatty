@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   RSpec.describe Prompt do
     it "defaults to a '> ' prompt" do
       p = Prompt.new

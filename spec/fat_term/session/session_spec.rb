@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-module FatTerm
+module Fatty
   RSpec.describe Session do
     let(:terminal)  { instance_double(Terminal) }
     let(:screen)    { instance_double(Screen) }

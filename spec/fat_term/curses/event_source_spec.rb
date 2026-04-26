@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-module FatTerm
+module Fatty
   module Curses
     RSpec.describe EventSource do
       let(:window) { instance_double("window") }

@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-module FatTerm
+module Fatty
   RSpec.describe InputSession do
     def prompt(text = "> ")
       Prompt.new { text }

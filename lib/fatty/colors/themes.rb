@@ -1,12 +1,12 @@
 # lib/fat_term/colors/themes.rb
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   module Colors
     module Themes
       # Theme values may be:
       # - ANSI names (e.g., "yellow", "bright_white")
-      # - Aliases supported by FatTerm::Color (e.g., "navy", "dark_blue")
+      # - Aliases supported by Fatty::Color (e.g., "navy", "dark_blue")
       # - Integers 0..255
       # - Hex strings "#RRGGBB"
       # - X11 color names (if present in your bundled rgb.txt)

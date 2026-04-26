@@ -2,7 +2,7 @@
 
 require "open3"
 
-module FatTerm
+module Fatty
   class ShellSession < OutputSession
     attr_reader :field, :history
 
@@ -10,13 +10,13 @@ module FatTerm
       super(
         keymap: Keymaps.emacs,
         views: [
-          FatTerm::OutputView.new(z: 0),
-          FatTerm::InputView.new(z: 10),
-          FatTerm::CursorView.new(z: 100),
+          Fatty::OutputView.new(z: 0),
+          Fatty::InputView.new(z: 10),
+          Fatty::CursorView.new(z: 100),
         ]
       )
-      @history = FatTerm::History.for_path(history_path)
-      @field = FatTerm::InputField.new(
+      @history = Fatty::History.for_path(history_path)
+      @field = Fatty::InputField.new(
         prompt: prompt,
         history: @history,
         completion_proc: completion_proc,
@@ -43,7 +43,7 @@ module FatTerm
     end
 
     def action_env(event:)
-      FatTerm::ActionEnvironment.new(
+      Fatty::ActionEnvironment.new(
         session: self,
         counter: counter,
         event: event,
@@ -54,10 +54,10 @@ module FatTerm
     end
 
     def update_key(ev)
-      return [] unless ev.is_a?(FatTerm::KeyEvent)
+      return [] unless ev.is_a?(Fatty::KeyEvent)
 
       key_str = "key=#{ev} raw=#{ev.raw}"
-      FatTerm.debug("ShellSession.update_key: #{key_str}", tag: :session)
+      Fatty.debug("ShellSession.update_key: #{key_str}", tag: :session)
       case ev.key
       when :resize
         [[:terminal, :handle_resize]]
@@ -99,10 +99,10 @@ module FatTerm
     def persist!
       return unless @history.respond_to?(:save!)
 
-      FatTerm.debug("ShellSession#persist!: saving history", tag: :history)
+      Fatty.debug("ShellSession#persist!: saving history", tag: :history)
       @history.save!
     rescue => e
-      FatTerm.error("ShellSession#persist!: failed to save history: #{e.class}: #{e.message}", tag: :history)
+      Fatty.error("ShellSession#persist!: failed to save history: #{e.class}: #{e.message}", tag: :history)
     end
 
     # Called by Terminal#go on every loop iteration.
@@ -189,7 +189,7 @@ module FatTerm
     private
 
     def accept_env
-      FatTerm::AcceptEnv.new(session: self)
+      Fatty::AcceptEnv.new(session: self)
     end
 
     def normalize_accept_result(result)
@@ -211,7 +211,7 @@ module FatTerm
           item = payload.fetch(:item, "").to_s
           env = action_env(event: nil)
           with_virtual_suffix_sync do
-            FatTerm::Actions.call(:replace, env, item)
+            Fatty::Actions.call(:replace, env, item)
           end
         when :theme_chooser
           theme = payload.fetch(:item).to_sym
@@ -277,7 +277,7 @@ module FatTerm
         elsif event&.respond_to?(:mouse)
           event.mouse.inspect
         end
-      FatTerm.debug("ShellSession#handle_action: #{which}", tag: :keymap)
+      Fatty.debug("ShellSession#handle_action: #{which}", tag: :keymap)
       env = action_env(event: event)
       apply_action(action, args, event, env: env)
     end
@@ -314,11 +314,11 @@ module FatTerm
       when :cycle_theme
         [[:terminal, :cycle_theme]]
       when :choose_theme
-        current = FatTerm::Colors::ThemeManager.current
-        names = FatTerm::Colors::ThemeManager.theme_names
+        current = Fatty::Colors::ThemeManager.current
+        names = Fatty::Colors::ThemeManager.theme_names
         ordered = [current] + (names - [current])
         @theme_popup_restore = current
-        popup = FatTerm::PopUpSession.new(
+        popup = Fatty::PopUpSession.new(
           source: ordered,
           kind: :theme_chooser,
           title: "Themes",
@@ -340,7 +340,7 @@ module FatTerm
             apply_completion(candidates.first, range: @field.popup_completion_range)
           else
             @completion_range = @field.popup_completion_range
-            popup = FatTerm::PopUpSession.new(
+            popup = Fatty::PopUpSession.new(
               source: candidates,
               kind: :completion,
               title: "Completions",
@@ -356,8 +356,8 @@ module FatTerm
       when :history_search
         # Oldest -> newest, so newest appears at the bottom of the popup.
         src = ->(_q = nil) { @history.entries.select(&:command?).last(500).map(&:text) }
-        FatTerm.debug("ShellSession#apply_action: history_search: building popup", tag: :session)
-        popup = FatTerm::PopUpSession.new(
+        Fatty.debug("ShellSession#apply_action: history_search: building popup", tag: :session)
+        popup = Fatty::PopUpSession.new(
           source: src,
           kind: :history_search,
           title: "History",
@@ -369,25 +369,25 @@ module FatTerm
         [[:terminal, :push_modal, popup]]
       when :pager_search_forward
         regex = consume_search_regex_flag
-        [[:terminal, :push_modal, FatTerm::SearchSession.new(direction: :forward, regex: regex, history: @history)]]
+        [[:terminal, :push_modal, Fatty::SearchSession.new(direction: :forward, regex: regex, history: @history)]]
       when :pager_search_backward
         regex = consume_search_regex_flag
         [[
            :terminal,
            :push_modal,
-           FatTerm::SearchSession.new(direction: :backward, regex: regex, history: @history)
+           Fatty::SearchSession.new(direction: :backward, regex: regex, history: @history)
          ]]
       when :pager_isearch_forward
         [[
            :terminal,
            :push_modal,
-           FatTerm::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)
+           Fatty::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)
          ]]
       when :pager_isearch_backward
         [[
            :terminal,
            :push_modal,
-           FatTerm::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)
+           Fatty::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)
          ]]
       when :pager_search_next
         result = pager.search_repeat_next!
@@ -398,12 +398,12 @@ module FatTerm
       else
         begin
           # Centralized dispatch: actions declare their target (:buffer/:field/:pager)
-          # and FatTerm::Actions routes through ActionEnvironment.
+          # and Fatty::Actions routes through ActionEnvironment.
           with_virtual_suffix_sync do
             @field.reset_completion_cycle!
-            FatTerm::Actions.call(action, env, *args)
+            Fatty::Actions.call(action, env, *args)
           end
-        rescue FatTerm::ActionError => e
+        rescue Fatty::ActionError => e
           return [alert_cmd(:error, e.message, ev: ev)]
         end
         []
@@ -414,7 +414,7 @@ module FatTerm
       line = @field.accept_line.to_s.strip
       return [] if line.empty?
 
-      FatTerm.info("ShellSession: accept_line: #{line}")
+      Fatty.info("ShellSession: accept_line: #{line}")
 
       case line
       when "exit", "quit"

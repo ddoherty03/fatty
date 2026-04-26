@@ -3,7 +3,7 @@
 require "pathname"
 require "strscan"
 
-module FatTerm
+module Fatty
   #   The =InputField= class is a thin controller around an InputBuffer that
   #   adds:
   #   - A prompt (text shown before the editable buffer)
@@ -47,9 +47,9 @@ module FatTerm
         if buffer
           buffer
         else
-          cfg = FatTerm::Config.config
-          word_chars = cfg.dig(:input_buffer, :word_chars) || FatTerm::InputBuffer::DEFAULT_WORD_CHARS
-          FatTerm::InputBuffer.new(word_chars: word_chars)
+          cfg = Fatty::Config.config
+          word_chars = cfg.dig(:input_buffer, :word_chars) || Fatty::InputBuffer::DEFAULT_WORD_CHARS
+          Fatty::InputBuffer.new(word_chars: word_chars)
         end
     end
 
@@ -138,17 +138,17 @@ module FatTerm
 
       reset_history_cursor_for(action)
 
-      if FatTerm::Actions.registered?(action)
+      if Fatty::Actions.registered?(action)
         if env
-          FatTerm::Actions.call(action, env, *args, **kwargs)
+          Fatty::Actions.call(action, env, *args, **kwargs)
         else
-          defn = FatTerm::Actions.lookup(action)
+          defn = Fatty::Actions.lookup(action)
           target =
             case defn[:on]
             when :field then self
             when :buffer then buffer
             else
-              raise FatTerm::ActionError, "Cannot dispatch #{action} without env for target #{defn[:on].inspect}"
+              raise Fatty::ActionError, "Cannot dispatch #{action} without env for target #{defn[:on].inspect}"
             end
           target.public_send(defn[:method], *args, **kwargs)
         end
@@ -157,7 +157,7 @@ module FatTerm
       elsif respond_to?(action)
         public_send(action, *args, **kwargs)
       else
-        raise FatTerm::ActionError, "Unknown action: #{action}"
+        raise Fatty::ActionError, "Unknown action: #{action}"
       end
     end
 

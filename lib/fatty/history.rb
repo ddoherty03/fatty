@@ -2,7 +2,7 @@
 
 require_relative "history/entry"
 
-module FatTerm
+module Fatty
   class History
     DEFAULT_HISTORY_FILE = File.expand_path("~/.fat_term_history")
     DEFAULT_HISTORY_MAX = 10_000
@@ -25,10 +25,10 @@ module FatTerm
       @cursors = {}
 
       if @path
-        FatTerm.info("History loaded from #{@path}")
+        Fatty.info("History loaded from #{@path}")
         load
       else
-        FatTerm.info("In-memory History only: no path")
+        Fatty.info("In-memory History only: no path")
       end
     end
 
@@ -265,7 +265,7 @@ module FatTerm
         f.fsync
       end
     rescue => e
-      FatTerm.error("History#append_to_file failed for #{@path}: #{e.class}: #{e.message}", tag: :history)
+      Fatty.error("History#append_to_file failed for #{@path}: #{e.class}: #{e.message}", tag: :history)
     end
 
     def truncate!

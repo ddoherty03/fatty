@@ -1,4 +1,4 @@
-class NullView < FatTerm::View
+class NullView < Fatty::View
   attr_reader :renders
 
   def initialize(id: nil, z: 0)

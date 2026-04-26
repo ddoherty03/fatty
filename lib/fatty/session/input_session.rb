@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class InputSession < Session
     attr_reader :field
 
@@ -46,7 +46,7 @@ module FatTerm
         else
           nil
         end
-      FatTerm.debug("InputSession#handle_action: #{which}", tag: :session)
+      Fatty.debug("InputSession#handle_action: #{which}", tag: :session)
       env = action_env(event: event)
       case action.to_sym
       when :accept_line
@@ -60,12 +60,12 @@ module FatTerm
         [[:terminal, :cycle_theme]]
       else
         with_virtual_suffix_sync do
-          FatTerm::Actions.call(action, env, *args)
+          Fatty::Actions.call(action, env, *args)
         end
         []
       end
     rescue ActionError => e
-      FatTerm.error("InputSession#handle_action: ActionError #{e.message}", tag: :session)
+      Fatty.error("InputSession#handle_action: ActionError #{e.message}", tag: :session)
       []
     end
 

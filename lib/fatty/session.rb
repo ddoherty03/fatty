@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   # Base class for stateful runtime components.
   #
   # Charm/Bubbletea-style contract:
@@ -40,7 +40,7 @@ module FatTerm
 
     # Handle a message and return commands.
     def update(message)
-      FatTerm.debug("#{self.class}#update(message -> #{message})", tag: :session)
+      Fatty.debug("#{self.class}#update(message -> #{message})", tag: :session)
 
       commands =
         case message[0]
@@ -48,7 +48,7 @@ module FatTerm
           ev = message[1]
           action, args = resolve_action(ev)
 
-          FatTerm.debug("#{self.class}#update: key ev=#{ev.inspect} action=#{action.inspect} args=#{args.inspect}", tag: :session)
+          Fatty.debug("#{self.class}#update: key ev=#{ev.inspect} action=#{action.inspect} args=#{args.inspect}", tag: :session)
 
           if action
             handle_action(action, args, event: ev)
@@ -56,10 +56,10 @@ module FatTerm
             update_key(ev)
           end
         when :cmd
-          FatTerm.debug("#{self.class}#update: cmd message=#{message.inspect}", tag: :session)
+          Fatty.debug("#{self.class}#update: cmd message=#{message.inspect}", tag: :session)
           update_cmd(message[1], message[2])
         else
-          FatTerm.warn("#{self.class}#update: unknown message[0]=#{message[0].inspect}", tag: :session)
+          Fatty.warn("#{self.class}#update: unknown message[0]=#{message[0].inspect}", tag: :session)
           []
         end
       commands
@@ -137,7 +137,7 @@ module FatTerm
     private
 
     def match_all_query_terms?(haystack, query)
-      FatTerm::Search.match_all_terms?(haystack, query)
+      Fatty::Search.match_all_terms?(haystack, query)
     end
 
     def safely_close_window(win)

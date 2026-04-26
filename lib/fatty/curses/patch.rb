@@ -59,7 +59,7 @@ end
 # The ruby implementation of curses apparently does not expose some
 # mouse-related constants.  Here we provide a method to ensure that they are
 # defined.
-module FatTerm
+module Fatty
   module Curses
     module MouseConstants
       CONSTANTS = {

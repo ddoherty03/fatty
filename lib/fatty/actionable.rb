@@ -1,4 +1,4 @@
-module FatTerm
+module Fatty
   module Actionable
     def self.included(base)
       base.extend(ClassMethods)
@@ -52,7 +52,7 @@ module FatTerm
             define_method(name) { |*args, &blk| public_send(to, *args, &blk) }
           end
         end
-        FatTerm::Actions.register(name, owner: self, on: on, method_name: to, doc: doc)
+        Fatty::Actions.register(name, owner: self, on: on, method_name: to, doc: doc)
       end
 
       private

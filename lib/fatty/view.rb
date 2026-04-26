@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class View
     attr_reader :id, :z
 
@@ -14,7 +14,7 @@ module FatTerm
     # Subclasses implement #draw.
     def render(screen:, renderer:, terminal:, session:)
       if @log
-        FatTerm.debug(
+        Fatty.debug(
           "View#render",
           tag: :render,
           view: id,

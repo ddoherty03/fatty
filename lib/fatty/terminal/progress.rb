@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class Terminal
     class Progress
       PARTIAL_BLOCKS = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉"].freeze
@@ -157,7 +157,7 @@ module FatTerm
         selected = []
 
         @trail.reverse_each do |item|
-          width = FatTerm::Ansi.visible_length(item)
+          width = Fatty::Ansi.visible_length(item)
           break if used + width > limit
 
           selected.unshift(item)
@@ -172,7 +172,7 @@ module FatTerm
         selected = []
 
         @trail.reverse_each do |item|
-          width = FatTerm::Ansi.visible_length(item)
+          width = Fatty::Ansi.visible_length(item)
           break if used + width > @trail_max
 
           selected.unshift(item)
@@ -183,7 +183,7 @@ module FatTerm
       end
 
       def visible_length(text)
-        FatTerm::Ansi.visible_length(text)
+        Fatty::Ansi.visible_length(text)
       end
 
       def render_bar_text(suffix: nil, mode: :solid)
@@ -284,7 +284,7 @@ module FatTerm
         bar << (SHADE_FULL * full)
         bar << SHADE_HALF if half == 1
 
-        remaining = width - FatTerm::Ansi.visible_length(bar)
+        remaining = width - Fatty::Ansi.visible_length(bar)
         remaining = 0 if remaining < 0
         bar << (SHADE_EMPTY * remaining)
         bar
@@ -314,7 +314,7 @@ module FatTerm
           bar << partial
         end
 
-        remaining = width - FatTerm::Ansi.visible_length(bar)
+        remaining = width - Fatty::Ansi.visible_length(bar)
         remaining = 0 if remaining < 0
         bar << (BRAILLE_STEPS[0] * remaining)
         bar

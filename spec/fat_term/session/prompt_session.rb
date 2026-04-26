@@ -5,13 +5,13 @@ require "fileutils"
 
 require "spec_helper"
 
-module FatTerm
+module Fatty
   RSpec.describe PromptSession do
     it "accepts the current text and records it in prompt history" do
       Dir.mktmpdir do |dir|
         history_path = File.join(dir, "history.jsonl")
 
-        session = FatTerm::PromptSession.new(
+        session = Fatty::PromptSession.new(
           initial: "four score and seven years ago",
           history_path: history_path,
           history_ctx: { prompt: "Memo:" },
@@ -21,7 +21,7 @@ module FatTerm
           :handle_action,
           :accept_line,
           [],
-          terminal: instance_double(FatTerm::Terminal),
+          terminal: instance_double(Fatty::Terminal),
           event: nil,
         )
 
@@ -40,7 +40,7 @@ module FatTerm
       Dir.mktmpdir do |dir|
         history_path = File.join(dir, "history.jsonl")
 
-        session = FatTerm::PromptSession.new(
+        session = Fatty::PromptSession.new(
           initial: "Checking",
           history_path: history_path,
           history_ctx: { prompt: :account_name },
@@ -50,7 +50,7 @@ module FatTerm
           :handle_action,
           :accept_line,
           [],
-          terminal: instance_double(FatTerm::Terminal),
+          terminal: instance_double(Fatty::Terminal),
           event: nil,
         )
 

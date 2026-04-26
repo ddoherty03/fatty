@@ -2,7 +2,7 @@
 
 require "curses"
 
-module FatTerm
+module Fatty
   module Curses
     # Context represents the active curses environment.
     #
@@ -54,7 +54,7 @@ module FatTerm
           if ENV["ESCDELAY"]
             ENV["ESCDELAY"].to_i
           else
-            FatTerm::Config.config.dig(:esc_delay)&.to_i
+            Fatty::Config.config.dig(:esc_delay)&.to_i
           end
         delay = DEFAULT_ESC_DELAY if delay.nil? || delay <= 0
         if ::Curses.respond_to?(:set_escdelay)
@@ -62,7 +62,7 @@ module FatTerm
         else
           ENV["ESCDELAY"] = delay.to_s
         end
-        FatTerm.info("ESC delay set to #{delay} ms", tag: :input)
+        Fatty.info("ESC delay set to #{delay} ms", tag: :input)
       end
 
       def setup_colors
@@ -75,14 +75,14 @@ module FatTerm
         ::Curses.use_default_colors if ::Curses.respond_to?(:use_default_colors)
 
         # Resolve and apply theme/config colors using stable pair IDs from
-        # FatTerm::Colors::Pairs.
+        # Fatty::Colors::Pairs.
         #
         # Reads:
-        #   FatTerm::Config.config[:ui][:color]
+        #   Fatty::Config.config[:ui][:color]
         #
         # and falls back to theme defaults (if any).
-        FatTerm::Colors::Palette.apply!(
-          FatTerm::Config.config,
+        Fatty::Colors::Palette.apply!(
+          Fatty::Config.config,
           available_colors: ::Curses.colors,
         )
       end
@@ -122,7 +122,7 @@ module FatTerm
       end
 
       def apply_theme!(theme_name)
-        cfg = FatTerm::Config.config
+        cfg = Fatty::Config.config
 
         reset_ansi_pairs!
 
@@ -131,10 +131,10 @@ module FatTerm
         color = ui[:color] ||= {}
         color[:theme] = theme_name.to_sym
 
-        FatTerm::Colors::Palette.apply!(cfg, available_colors: ::Curses.colors)
+        Fatty::Colors::Palette.apply!(cfg, available_colors: ::Curses.colors)
       end
 
-      # Map a FatTerm::Ansi::Style to a curses attribute.
+      # Map a Fatty::Ansi::Style to a curses attribute.
       #
       # - If style has no explicit fg/bg, we keep the themed role pair.
       # - If style specifies fg/bg, we allocate/init a curses pair on demand.
@@ -142,7 +142,7 @@ module FatTerm
       # Note: this is intentionally independent of theme roles; it is for SGR
       # output runs inside the output pane.
       def ansi_attr(style, fallback_role: :output)
-        base_pair_id = FatTerm::Colors::Pairs::ROLE_TO_PAIR.fetch(fallback_role)
+        base_pair_id = Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(fallback_role)
         base_attr = ::Curses.color_pair(base_pair_id)
 
         has_explicit = !(style.fg.nil? && style.bg.nil?)

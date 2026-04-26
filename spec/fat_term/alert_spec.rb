@@ -1,4 +1,4 @@
-module FatTerm
+module Fatty
   RSpec.describe Alert do
     it "requires the message parameter" do
       expect { Alert.new }.to raise_error(ArgumentError)

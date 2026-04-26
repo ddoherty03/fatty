@@ -1,7 +1,7 @@
 # lib/fat_term/colors/pairs.rb
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   module Colors
     # Stable Curses color-pair IDs. These are intentionally constant so the
     # renderer can refer to them without dynamic allocation.

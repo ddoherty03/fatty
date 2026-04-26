@@ -4,8 +4,8 @@ require "tmpdir"
 require "fileutils"
 require "stringio"
 
-module FatTerm
-  RSpec.describe "FatTerm::Config with real FatConfig::Reader" do
+module Fatty
+  RSpec.describe "Fatty::Config with real FatConfig::Reader" do
     def write_cfg(dir, name, content)
       path = File.join(dir, "#{name}.yml")
       FileUtils.mkdir_p(File.dirname(path))

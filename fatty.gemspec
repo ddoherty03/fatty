@@ -4,7 +4,7 @@ require_relative "lib/fatty/version"
 
 Gem::Specification.new do |spec|
   spec.name = "fatty"
-  spec.version = FatTerm::VERSION
+  spec.version = Fatty::VERSION
   spec.authors = ["Daniel E. Doherty"]
   spec.email = ["ded@ddoherty.net"]
 

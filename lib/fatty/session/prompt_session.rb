@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class PromptSession < ModalSession
     attr_reader :field, :title, :message, :history
 
@@ -17,8 +17,8 @@ module FatTerm
       @message = message&.to_s
       @kind = kind&.to_sym
 
-      @history = FatTerm::History.for_path(history_path)
-      @field = FatTerm::InputField.new(
+      @history = Fatty::History.for_path(history_path)
+      @field = Fatty::InputField.new(
         prompt: prompt,
         history: @history,
         history_kind: :prompt,
@@ -79,7 +79,7 @@ module FatTerm
         []
       end
     rescue ActionError => e
-      FatTerm.error("PromptSession#handle_action: ActionError #{e.message}", tag: :session)
+      Fatty.error("PromptSession#handle_action: ActionError #{e.message}", tag: :session)
       []
     end
 

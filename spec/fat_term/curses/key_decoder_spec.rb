@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   module Curses
     RSpec.describe KeyDecoder do
       # Helper to stub a small built-in map without depending on curses.
       def stub_builtin_map
         stub_const(
-          "FatTerm::CURSES_TO_EVENT",
+          "Fatty::CURSES_TO_EVENT",
           {
             9 => KeyEvent.new(key: :tab, raw: 9),
             260 => KeyEvent.new(key: :left, raw: 260),
@@ -22,7 +22,7 @@ module FatTerm
       describe "#decode" do
         it "returns nil for nil raw" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           expect(kd.decode(nil)).to be_nil
@@ -30,7 +30,7 @@ module FatTerm
 
         it "decodes a known integer using CURSES_TO_EVENT" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           e  = kd.decode(260)
@@ -43,7 +43,7 @@ module FatTerm
 
         it "decodes printable strings with self text payload" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           e  = kd.decode("a")
@@ -55,7 +55,7 @@ module FatTerm
 
         it "decodes printable punctuation as self-insert (text set)" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           e  = kd.decode("@")
@@ -67,7 +67,7 @@ module FatTerm
 
         it "treats tab (9) as an action key (:tab) with no text" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           e  = kd.decode(9)
@@ -79,7 +79,7 @@ module FatTerm
 
         it "decodes control keys 1..26 as ctrl-letter with no text" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           e  = kd.decode(1) # C-a
@@ -92,7 +92,7 @@ module FatTerm
 
         it "treats a lone ESC (27) as :escape (not meta)" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           e  = kd.decode(27)
@@ -104,7 +104,7 @@ module FatTerm
 
         it "decodes meta-letter when raw is [27, 'x'] without text" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           e  = kd.decode([27, "f"])
@@ -117,7 +117,7 @@ module FatTerm
 
         it "decodes meta-known-key when raw is [27, code]" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           e  = kd.decode([27, 260])
@@ -130,7 +130,7 @@ module FatTerm
 
         it "decodes meta-unknown-key when raw is [27, code]" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           e  = kd.decode([27, 999])
@@ -142,7 +142,7 @@ module FatTerm
 
         it "decodes NUL (0) as ctrl-@ with key :@ and no text" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           e  = kd.decode(0)
@@ -156,7 +156,7 @@ module FatTerm
 
         it "decodes meta-ctrl-@ when raw is [27, 0]" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           e  = kd.decode([27, 0])
@@ -170,7 +170,7 @@ module FatTerm
 
         it "decodes unknown integer as integer key with no text" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
           kd = KeyDecoder.new(env: env)
           e  = kd.decode(999)
@@ -182,9 +182,9 @@ module FatTerm
         end
 
         it "provides text for printable ASCII even when a keydef maps the integer code" do
-          decoder = FatTerm::Curses::KeyDecoder.new(env: { terminal: :test })
+          decoder = Fatty::Curses::KeyDecoder.new(env: { terminal: :test })
           # Simulate a user keydef that maps 97 ("a") to a KeyEvent without text.
-          decoder.instance_variable_set(:@map, { 97 => FatTerm::KeyEvent.new(key: :a, raw: 97) })
+          decoder.instance_variable_set(:@map, { 97 => Fatty::KeyEvent.new(key: :a, raw: 97) })
 
           ev = decoder.decode(97)
 
@@ -199,7 +199,7 @@ module FatTerm
         it "overrides built-in map for the current terminal" do
           stub_builtin_map
 
-          allow(FatTerm::Config)
+          allow(Fatty::Config)
             .to receive(:keydefs)
                   .and_return(
                     {
@@ -219,7 +219,7 @@ module FatTerm
 
         it "ignores config if terminal section is missing" do
           stub_builtin_map
-          allow(FatTerm::Config).to receive(:keydefs).and_return({ terminal: {} })
+          allow(Fatty::Config).to receive(:keydefs).and_return({ terminal: {} })
 
           kd = KeyDecoder.new(env: env(:xterm))
           e  = kd.decode(260)
@@ -230,7 +230,7 @@ module FatTerm
         it "normalizes spec key string to symbol" do
           stub_builtin_map
 
-          allow(FatTerm::Config)
+          allow(Fatty::Config)
             .to receive(:keydefs)
                   .and_return(
                     {
@@ -255,7 +255,7 @@ module FatTerm
         it "applies modifiers from user keydefs spec" do
           stub_builtin_map
 
-          allow(FatTerm::Config)
+          allow(Fatty::Config)
             .to receive(:keydefs)
                   .and_return(
                     {
@@ -282,7 +282,7 @@ module FatTerm
         it "allows user keydefs to remap tab code to another action key" do
           stub_builtin_map
 
-          allow(FatTerm::Config)
+          allow(Fatty::Config)
             .to receive(:keydefs)
                   .and_return(
                     {

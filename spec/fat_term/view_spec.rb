@@ -2,7 +2,7 @@
 
 require "support/null_view"
 
-module FatTerm
+module Fatty
   RSpec.describe View do
     describe "#render" do
       # it "is abstract by default" do

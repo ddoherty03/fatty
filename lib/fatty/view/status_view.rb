@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class StatusView < View
     def render(screen:, renderer:, terminal:)
       return unless terminal.status_text

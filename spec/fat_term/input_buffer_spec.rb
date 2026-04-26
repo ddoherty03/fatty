@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   RSpec.describe InputBuffer do
     let(:b) { InputBuffer.new }
     let(:bw) { InputBuffer.new(word_chars: "[[:alnum:]_-]") }

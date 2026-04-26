@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   RSpec.describe KeyEvent do
     describe "attributes and defaults" do
       it "stores key and defaults modifiers to false" do

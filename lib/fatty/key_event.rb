@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   # The KeyEvent class is a simple class to store a key with its modifiers.
   # KeyMap will map a KeyEvent to an action (for a given context), and the
   # KeyDecoder class is responsible for turning raw key inputs from curses
   # into a KeyEvent.  The CURSES_TO_EVENT constant is an initial map from
   # known curses key codes to KeyEvents.  These can be overriden for different
-  # terminals in FatTerm::Config.keydefs.
+  # terminals in Fatty::Config.keydefs.
   class KeyEvent
     CTRL_CODE_TO_LETTER = (1..26).each_with_object({}) { |n, h|
       # 1->:a, 2->:b, ... 21->:u, 23->:w

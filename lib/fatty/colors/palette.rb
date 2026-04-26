@@ -1,12 +1,12 @@
 # lib/fat_term/colors/palette.rb
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   module Colors
     # Palette builds an "active" role->(fg,bg,pair) mapping by:
     # 1) taking a builtin theme (optional)
     # 2) deep-merging user overrides from config (optional)
-    # 3) resolving each fg/bg via FatTerm::Color.resolve
+    # 3) resolving each fg/bg via Fatty::Color.resolve
     # 4) initializing Curses color pairs (when apply! is used)
     #
     # It is safe to use without curses if you only call .build (e.g. in specs).
@@ -19,7 +19,7 @@ module FatTerm
       #   { theme: "wordperfect", popup: { fg: "yellow", bg: "navy" }, ... }
       #
       # This method accepts either:
-      # - the whole config hash (FatTerm::Config.config), OR
+      # - the whole config hash (Fatty::Config.config), OR
       # - the ui.color subtree directly
       def build_spec(cfg)
         color_cfg = extract_color_cfg(cfg)
@@ -48,8 +48,8 @@ module FatTerm
           fg_spec = role_spec[:fg] || role_spec["fg"] || DEFAULT_ROLE[:fg]
           bg_spec = role_spec[:bg] || role_spec["bg"] || DEFAULT_ROLE[:bg]
 
-          fg = FatTerm::Color.resolve(fg_spec, available_colors: available_colors)
-          bg = FatTerm::Color.resolve(bg_spec, available_colors: available_colors)
+          fg = Fatty::Color.resolve(fg_spec, available_colors: available_colors)
+          bg = Fatty::Color.resolve(bg_spec, available_colors: available_colors)
 
           out[role] = { fg: fg, bg: bg, pair: pair_id }
         end
@@ -77,7 +77,7 @@ module FatTerm
       def extract_color_cfg(cfg)
         return {} if cfg.nil?
 
-        # Accept passing either FatTerm::Config.config or ui.color subtree.
+        # Accept passing either Fatty::Config.config or ui.color subtree.
         ui = cfg[:ui] || cfg["ui"]
         color = ui && (ui[:color] || ui["color"])
         return color if color

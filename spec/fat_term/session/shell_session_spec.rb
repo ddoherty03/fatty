@@ -5,12 +5,12 @@ require "ostruct"
 require "fileutils"
 require "spec_helper"
 
-RSpec.describe FatTerm::ShellSession do
+RSpec.describe Fatty::ShellSession do
   describe "#handle_action" do
     it "builds a history popup with a callable source for :history_search" do
       Dir.mktmpdir do |dir|
         history_path = File.join(dir, "history.jsonl")
-        session = FatTerm::ShellSession.new(history_path: history_path)
+        session = Fatty::ShellSession.new(history_path: history_path)
         history = session.history
 
         history.add("ls", kind: :command)
@@ -28,7 +28,7 @@ RSpec.describe FatTerm::ShellSession do
         expect(commands.first[1]).to eq(:push_modal)
 
         popup = commands.first[2]
-        expect(popup).to be_a(FatTerm::PopUpSession)
+        expect(popup).to be_a(Fatty::PopUpSession)
         expect(popup.send(:call_source, nil)).to eq(%w[ls pwd])
       end
     end
@@ -40,7 +40,7 @@ RSpec.describe FatTerm::ShellSession do
         File.write(File.join(dir, "src", "beta.rb"), "x")
         allow(Dir).to receive(:home).and_return(dir)
 
-        session = FatTerm::ShellSession.new
+        session = Fatty::ShellSession.new
         buffer = session.field.buffer
         buffer.replace("ls -l ~/src")
 
@@ -57,7 +57,7 @@ RSpec.describe FatTerm::ShellSession do
         expect(commands.first[1]).to eq(:push_modal)
 
         popup = commands.first[2]
-        expect(popup).to be_a(FatTerm::PopUpSession)
+        expect(popup).to be_a(Fatty::PopUpSession)
         expect(popup.instance_variable_get(:@kind)).to eq(:completion)
         expect(popup.instance_variable_get(:@field).buffer.text).to eq("~/src")
 
@@ -68,7 +68,7 @@ RSpec.describe FatTerm::ShellSession do
 
   describe "#update_cmd" do
     it "handles :paste by inserting normalized text into the field" do
-      session = FatTerm::ShellSession.new
+      session = Fatty::ShellSession.new
 
       commands = session.update([:cmd, :paste, { text: "hello\nworld\n" }])
 
@@ -79,7 +79,7 @@ RSpec.describe FatTerm::ShellSession do
 
   describe "completion" do
     it "cycles the visible autosuggestion without changing real buffer text" do
-      session = FatTerm::ShellSession.new
+      session = Fatty::ShellSession.new
       session.field.buffer.replace("git st")
 
       allow(session.field).to receive(:completion_suggestions).and_return(
@@ -101,7 +101,7 @@ RSpec.describe FatTerm::ShellSession do
         %w[cd clear echo exit help history ls pwd theme]
       end
 
-      session = FatTerm::ShellSession.new(completion_proc: completion_proc)
+      session = Fatty::ShellSession.new(completion_proc: completion_proc)
       buffer = session.field.buffer
 
       buffer.text.replace("e four score and seven")
@@ -119,7 +119,7 @@ RSpec.describe FatTerm::ShellSession do
       expect(commands.first[1]).to eq(:push_modal)
 
       popup = commands.first[2]
-      expect(popup).to be_a(FatTerm::PopUpSession)
+      expect(popup).to be_a(Fatty::PopUpSession)
       expect(popup.instance_variable_get(:@kind)).to eq(:completion)
       expect(popup.instance_variable_get(:@field).buffer.text).to eq("")
     end
@@ -128,7 +128,7 @@ RSpec.describe FatTerm::ShellSession do
       completion_proc = lambda do |_buffer|
         %w[cd clear echo exit help history ls less ln pwd theme]
       end
-      session = FatTerm::ShellSession.new(completion_proc: completion_proc)
+      session = Fatty::ShellSession.new(completion_proc: completion_proc)
       buffer = session.field.buffer
 
       buffer.text.replace("l four score and seven")
@@ -146,7 +146,7 @@ RSpec.describe FatTerm::ShellSession do
       expect(commands.first[1]).to eq(:push_modal)
 
       popup = commands.first[2]
-      expect(popup).to be_a(FatTerm::PopUpSession)
+      expect(popup).to be_a(Fatty::PopUpSession)
       expect(popup.instance_variable_get(:@kind)).to eq(:completion)
       expect(popup.instance_variable_get(:@field).buffer.text).to eq("l")
     end

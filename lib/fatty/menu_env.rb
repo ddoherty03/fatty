@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class MenuEnv
     attr_reader :terminal, :session, :label, :payload
 

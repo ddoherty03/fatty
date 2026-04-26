@@ -2,7 +2,7 @@
 
 require_relative 'keymaps/emacs'
 
-module FatTerm
+module Fatty
   # This struct is used as a key into the KeyMap.  It represents only those
   # parts of the KeyEvent that are relevant for resolving bindings.  It also
   # normalizes the use of uppercase letters, like 'G' to convert them to a
@@ -139,7 +139,7 @@ module FatTerm
     # Bind a KeyEvent to an action in the given context.
     def bind(context: :input, key:, ctrl: false, meta: false, shift: false, action: nil)
       bind_str = "#{KeyEvent.key_to_str(key:, ctrl:, meta:, shift:)} -> #{action} in context: #{context}"
-      FatTerm.info("KeyMap#bind: (#{bind_str})", tag: :keybinding)
+      Fatty.info("KeyMap#bind: (#{bind_str})", tag: :keybinding)
 
       raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
       raise ArgumentError, "key must be a Symbol" unless key.is_a?(Symbol)
@@ -162,7 +162,7 @@ module FatTerm
 
     def bind_mouse(context: :input, button:, ctrl: false, meta: false, shift: false, action: nil)
       bind_str = "#{KeyEvent.key_to_str(key: button, ctrl:, meta:, shift:)} -> #{action} in context: #{context}"
-      FatTerm.info("KeyMap#bind_mouse(#{bind_str})", tag: :keybinding)
+      Fatty.info("KeyMap#bind_mouse(#{bind_str})", tag: :keybinding)
 
       raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
       raise ArgumentError, "button must be a Symbol" unless button.is_a?(Symbol)
@@ -197,7 +197,7 @@ module FatTerm
         break if result
       end
       map_str = "#{event} -> #{result.inspect} in contexts: #{contexts} "
-      FatTerm.debug("KeyMap#resolve: #{map_str}", tag: :keybinding)
+      Fatty.debug("KeyMap#resolve: #{map_str}", tag: :keybinding)
       result
     end
 
@@ -209,10 +209,10 @@ module FatTerm
         if binding.is_a?(Array)
           action = binding[0]
           args = binding[1..] || []
-          FatTerm.debug("KeyMap.resolve_action: action: #{action.inspect}, args: #{args.inspect}", tag: :keybinding)
+          Fatty.debug("KeyMap.resolve_action: action: #{action.inspect}, args: #{args.inspect}", tag: :keybinding)
           [action, args]
         else
-          FatTerm.debug("KeyMap.resolve_action: action: #{binding.inspect}, args: []", tag: :keybinding)
+          Fatty.debug("KeyMap.resolve_action: action: #{binding.inspect}, args: []", tag: :keybinding)
           [binding, []]
         end
       elsif event&.printable? && (contexts.include?(:input) || contexts.include?(:pager_input))
@@ -233,17 +233,17 @@ module FatTerm
     # Make the bindings from the user's config file, usually at
     # ~/.config/fat_term/keybindings.yml
     def load_user_config
-      FatTerm.info("Read keybindings from #{Config.user_keybindings_path}", tag: :keybinding)
-      data = FatTerm::Config.keybindings
+      Fatty.info("Read keybindings from #{Config.user_keybindings_path}", tag: :keybinding)
+      data = Fatty::Config.keybindings
       return self unless data.is_a?(Array)
 
-      FatTerm.info("User keybindings", config: data, tag: :keybinding)
+      Fatty.info("User keybindings", config: data, tag: :keybinding)
       data.each_with_index do |entry, idx|
         bind_entry(entry, idx)
       end
       self
     rescue Psych::SyntaxError => e
-      FatTerm.error("KeyMap#load_config syntax error in keybindings: #{e.message}", tag: :keybinding)
+      Fatty.error("KeyMap#load_config syntax error in keybindings: #{e.message}", tag: :keybinding)
       self
     end
 
@@ -267,7 +267,7 @@ module FatTerm
 
     def gesture_from_event(event)
       case event
-      when FatTerm::MouseEvent
+      when Fatty::MouseEvent
         MouseGesture.from_event(event)
       else
         KeyGesture.from_event(event)
@@ -277,11 +277,11 @@ module FatTerm
     # Make a binding from an entry Hash that has keys for context, key (the
     # unmodified key name), the modifiers, 'ctrl', 'meta', and 'shift'.  The
     # valid keynames, apart from all the printable characters on the keyboard,
-    # are given in the constant FatTerm::CURSES_TO_EVENT map defined in the
+    # are given in the constant Fatty::CURSES_TO_EVENT map defined in the
     # curses_coder file.
     def bind_entry(entry, idx, default_context: DEFAULT_CONTEXT)
       unless entry.is_a?(Hash)
-        FatTerm.error("KeyMap#bind_entry invalid keybinding at index #{idx} (not a map)", tag: :keybinding)
+        Fatty.error("KeyMap#bind_entry invalid keybinding at index #{idx} (not a map)", tag: :keybinding)
         return
       end
 
@@ -298,7 +298,7 @@ module FatTerm
         end
 
       unless (key || button) && action
-        FatTerm.error(
+        Fatty.error(
           "KeyMap#bind_entry missing key/button or action for context `#{ctx}` at index #{idx}",
           tag: :keybinding,
         )

@@ -13,7 +13,7 @@ require 'debug'
 #
 # * Introduction
 #
-module FatTerm
+module Fatty
   require_relative "fat_term/version"
   require_relative "fat_term/env"
   require_relative "fat_term/config"

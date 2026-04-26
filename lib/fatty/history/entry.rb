@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class History
     class Entry
       attr_reader :text, :kind, :ctx, :stamp

@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-module FatTerm
+module Fatty
   RSpec.describe Counter do
     describe "#active? / #value" do
       it "starts inactive" do

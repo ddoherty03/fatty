@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class Terminal
     class PopupOwner
       attr_reader :on_result, :on_cancel

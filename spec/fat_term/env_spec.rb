@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   RSpec.describe Env do
     around do |ex|
       old = ENV.to_hash

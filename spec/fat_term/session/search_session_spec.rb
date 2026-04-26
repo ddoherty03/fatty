@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-module FatTerm
+module Fatty
   RSpec.describe SearchSession do
     describe "regex toggle" do
       it "toggles regex mode and updates the prompt" do

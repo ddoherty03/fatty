@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   # Counter accumulates and otherwise managed a numeric prefix count (e.g.,
   # "12").
   #

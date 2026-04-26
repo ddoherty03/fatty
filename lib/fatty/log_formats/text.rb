@@ -23,7 +23,7 @@
 #   end
 # end
 
-module FatTerm
+module Fatty
   module Logger
     class TextFormatter < ::Logger::Formatter
       def call(level, time, progname, msg)

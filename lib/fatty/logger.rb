@@ -8,15 +8,15 @@ require "fileutils"
 require_relative "log_formats/json"
 require_relative "log_formats/text"
 
-module FatTerm
+module Fatty
   module Logger
     class << self
       attr_accessor :logger, :path
     end
 
     def self.configure
-      progname = FatTerm::Config.progname
-      cfg = FatTerm::Config.config || 'fat_term'
+      progname = Fatty::Config.progname
+      cfg = Fatty::Config.config || 'fat_term'
       path =
         if cfg.dig(:log, :file)
           File.expand_path(cfg.dig(:log, :file))
@@ -50,13 +50,13 @@ module FatTerm
     end
 
     def self.active_tags
-      tags = FatTerm::Config.config.dig(:log, :tags) || [:all]
+      tags = Fatty::Config.config.dig(:log, :tags) || [:all]
       Array(tags).map(&:to_sym)
     end
 
     # Convenience: log structured events without repeating formatting.
     #
-    #   FatTerm.log(:decode_getch, ch: 27, note: "escape")
+    #   Fatty.log(:decode_getch, ch: 27, note: "escape")
     #
     #   Supported tags are:
     #     - keycode:: raw curses input / bytes / ESC buffering
@@ -115,7 +115,7 @@ module FatTerm
     end
   end
 
-  # So we can just call FatTerm.log
+  # So we can just call Fatty.log
   def self.log(event = nil, level: :debug, tag: nil, **data)
     Logger.log(event, level: level, tag: tag, **data)
   end

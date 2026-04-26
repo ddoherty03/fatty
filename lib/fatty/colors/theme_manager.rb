@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   module Colors
     module ThemeManager
       def self.theme_names

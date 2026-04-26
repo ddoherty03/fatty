@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   module Keymaps
     def self.emacs
       map = KeyMap.new

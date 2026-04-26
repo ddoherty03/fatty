@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-module FatTerm
+module Fatty
   RSpec.describe Pager do
     def make_pager(lines)
       out = OutputBuffer.new

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class OutputBuffer
     DEFAULT_MAX_LINES = 10_000
 

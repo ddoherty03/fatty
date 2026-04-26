@@ -2,10 +2,10 @@
 
 require "spec_helper"
 
-RSpec.describe FatTerm::PopUpSession do
+RSpec.describe Fatty::PopUpSession do
   describe "#move_selected_by" do
     def build_popup(items)
-      FatTerm::PopUpSession.new(
+      Fatty::PopUpSession.new(
         source: items,
         kind: :completion,
         title: "Completions",
@@ -40,19 +40,19 @@ RSpec.describe FatTerm::PopUpSession do
 
   describe "#call_source" do
     it "returns literal array sources unchanged as an array" do
-      popup = FatTerm::PopUpSession.new(source: %w[alpha beta gamma])
+      popup = Fatty::PopUpSession.new(source: %w[alpha beta gamma])
 
       expect(popup.send(:call_source, "alp")).to eq(%w[alpha beta gamma])
     end
 
     it "calls arity-0 sources with no argument" do
-      popup = FatTerm::PopUpSession.new(source: -> { %w[alpha beta] })
+      popup = Fatty::PopUpSession.new(source: -> { %w[alpha beta] })
 
       expect(popup.send(:call_source, "ignored")).to eq(%w[alpha beta])
     end
 
     it "calls arity-1 sources with the query" do
-      popup = FatTerm::PopUpSession.new(
+      popup = Fatty::PopUpSession.new(
         source: ->(q) { [q, q.upcase] }
       )
 

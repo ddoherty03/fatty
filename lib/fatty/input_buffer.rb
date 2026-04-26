@@ -2,7 +2,7 @@
 
 require "unicode/display_width"
 
-module FatTerm
+module Fatty
   # The InputBuffer class maintains an editable line of input together with a
   # cursor position.  It is responsible only for text editing semantics —
   # inserting and deleting characters, moving the cursor, and reporting the

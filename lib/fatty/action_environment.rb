@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   # For holding the environment in which an action is executed
   class ActionEnvironment
     attr_accessor :session, :event, :counter, :buffer, :field, :pager

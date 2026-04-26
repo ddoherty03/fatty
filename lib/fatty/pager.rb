@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class Pager
     SCROLL_WHEEL_LINES = 3
 
-    include FatTerm::Actionable
+    include Fatty::Actionable
 
     action_on :pager
     attr_reader :mode
@@ -100,14 +100,14 @@ module FatTerm
     end
 
     def act_on(action, *args, env:, **kwargs)
-      raise FatTerm::ActionError, "Unknown action: #{action}" unless action
+      raise Fatty::ActionError, "Unknown action: #{action}" unless action
 
-      if FatTerm::Actions.registered?(action)
-        FatTerm::Actions.call(action, env, *args, **kwargs)
+      if Fatty::Actions.registered?(action)
+        Fatty::Actions.call(action, env, *args, **kwargs)
       elsif respond_to?(action)
         public_send(action, *args, **kwargs)
       else
-        raise FatTerm::ActionError, "Unknown action: #{action}"
+        raise Fatty::ActionError, "Unknown action: #{action}"
       end
     end
 
@@ -451,7 +451,7 @@ module FatTerm
           out[i] = merge_highlight_ranges(ranges)
         end
       else
-        term_res = FatTerm::Search.compile_term_regexps(@search[:pattern])
+        term_res = Fatty::Search.compile_term_regexps(@search[:pattern])
 
         (top..bottom).each do |i|
           text = visible_text(lines[i])
@@ -507,7 +507,7 @@ module FatTerm
     end
 
     def term_regexps
-      FatTerm::Search.compile_term_regexps(@search[:pattern])
+      Fatty::Search.compile_term_regexps(@search[:pattern])
     end
 
     def first_term_match(text, from:)
@@ -633,11 +633,11 @@ module FatTerm
     # Search offsets are computed in this coordinate space so rendering
     # highlights align with what the user sees.
     def visible_text(str)
-      FatTerm::Ansi.segment(str.to_s).map(&:first).join
+      Fatty::Ansi.segment(str.to_s).map(&:first).join
     end
 
     def compile_search_regexp(pattern, regex:)
-      FatTerm::Search.compile_regexp(pattern, regex: regex)
+      Fatty::Search.compile_regexp(pattern, regex: regex)
     end
 
     def search_start_position(direction:, total:, initial:)

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   module Logger
     class JsonFormatter < ::Logger::Formatter
       def call(level, time, progname, msg)

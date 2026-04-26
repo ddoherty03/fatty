@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   class OutputSession < Session
     attr_reader :output, :viewport, :pager, :pager_field
 
     def initialize(keymap: nil, views: [])
       super(keymap: keymap, views: views)
-      @output   = FatTerm::OutputBuffer.new(max_lines: 500_000)
-      @viewport = FatTerm::Viewport.new(height: 10)
-      mode = FatTerm::Config.config.dig(:output, :mode)&.to_sym || :paging
+      @output   = Fatty::OutputBuffer.new(max_lines: 500_000)
+      @viewport = Fatty::Viewport.new(height: 10)
+      mode = Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
       @default_output_mode = mode
-      @pager = FatTerm::Pager.new(output: @output, viewport: @viewport, mode: mode)
-      @pager_field = FatTerm::InputField.new(prompt: -> { pager_status_prompt })
+      @pager = Fatty::Pager.new(output: @output, viewport: @viewport, mode: mode)
+      @pager_field = Fatty::InputField.new(prompt: -> { pager_status_prompt })
     end
 
     def append_output(text, follow: true)
@@ -42,7 +42,7 @@ module FatTerm
 
     def reset_for_command!
       reset_output!
-      mode = @default_output_mode #FatTerm::Config.config.dig(:output, :mode)&.to_sym || :paging
+      mode = @default_output_mode #Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
       @pager.reset!(mode: mode)
     end
 
@@ -57,7 +57,7 @@ module FatTerm
     # content itself.
     def pager_viewport
       if pager_active? && @viewport.height > 1
-        FatTerm::Viewport.new(top: @viewport.top, height: @viewport.height - 1)
+        Fatty::Viewport.new(top: @viewport.top, height: @viewport.height - 1)
       else
         @viewport
       end

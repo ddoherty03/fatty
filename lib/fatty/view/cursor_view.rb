@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-module FatTerm
-  class CursorView < FatTerm::View
+module Fatty
+  class CursorView < Fatty::View
     def draw(screen:, renderer:, terminal:, session:)
       # When paging is active, the output pane owns the screen and the shell
       # input cursor should be turned off. This also prevents the underlying

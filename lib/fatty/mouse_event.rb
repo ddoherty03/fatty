@@ -1,4 +1,4 @@
-module FatTerm
+module Fatty
   # The MouseEvent class is a simple class to store a mouse event with its
   # modifiers.
   class MouseEvent
@@ -12,7 +12,7 @@ module FatTerm
       @ctrl = ctrl
       @meta = meta
       @shift = shift
-      FatTerm.debug("#{self.class}#new(#{self})", tag: :event)
+      Fatty.debug("#{self.class}#new(#{self})", tag: :event)
     end
 
     def to_s

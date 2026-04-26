@@ -4,7 +4,7 @@ require 'spec_helper'
 
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   RSpec.describe KeyMap do
     def ev(key, ctrl: false, meta: false, shift: false)
       KeyEvent.new(key:, ctrl:, meta:, shift:)
@@ -47,7 +47,7 @@ module FatTerm
       end
 
       it "can resolve universal argument (C-u) in paging via :terminal context" do
-        km = FatTerm::Keymaps.emacs
+        km = Fatty::Keymaps.emacs
 
         # ShellSession uses contexts [:paging, :terminal] while paging.
         expect(km.resolve(ev(:u, ctrl: true), contexts: [:paging, :terminal])).to eq(:universal_argument)
@@ -152,7 +152,7 @@ module FatTerm
             { "context" => "paging", "key" => "enter", "action" => "page_down" },
             { "context" => "junk", "key" => "enter", "meta" => "true", "action" => "page_up" },
           ]
-        allow(FatTerm::Config).to receive(:keybindings)
+        allow(Fatty::Config).to receive(:keybindings)
                                     .and_return(cfg)
         km.load_user_config
         expect(km.resolve(ev(:enter), contexts: [:input])).to eq(:submit)
@@ -163,7 +163,7 @@ module FatTerm
 
       it "is a no-op when Config.keybindings returns nil" do
         km = KeyMap.new
-        allow(FatTerm::Config).to receive(:keybindings).and_return(nil)
+        allow(Fatty::Config).to receive(:keybindings).and_return(nil)
 
         expect { km.load_user_config }.not_to raise_error
         expect(km.resolve(ev(:a, ctrl: true))).to be_nil
@@ -171,14 +171,14 @@ module FatTerm
 
       it "is a no-op when Config.keybindings returns a non-array" do
         km = KeyMap.new
-        allow(FatTerm::Config).to receive(:keybindings).and_return({})
+        allow(Fatty::Config).to receive(:keybindings).and_return({})
 
         expect { km.load_user_config }.not_to raise_error
       end
 
       it "binds entries from config (including context/modifiers)" do
         km = KeyMap.new
-        allow(FatTerm::Config)
+        allow(Fatty::Config)
           .to receive(:keybindings)
                 .and_return(
                   [
@@ -196,15 +196,15 @@ module FatTerm
 
       it "skips invalid (non-hash) entries with logging" do
         km = KeyMap.new
-        allow(FatTerm::Config).to receive(:keybindings).and_return([123, "nope"])
-        allow(FatTerm).to receive(:error)
+        allow(Fatty::Config).to receive(:keybindings).and_return([123, "nope"])
+        allow(Fatty).to receive(:error)
         km.load_user_config
-        expect(FatTerm).to have_received(:error).at_least(:once)
+        expect(Fatty).to have_received(:error).at_least(:once)
       end
 
       it "skips entries missing key or action with logging" do
         km = KeyMap.new
-        allow(FatTerm::Config).to receive(:keybindings)
+        allow(Fatty::Config).to receive(:keybindings)
                                     .and_return(
                                       [
                                         { "key" => "a" },                 # missing action
@@ -212,23 +212,23 @@ module FatTerm
                                         { "key" => "b", "action" => nil }, # missing/invalid action
                                       ],
                                     )
-        allow(FatTerm).to receive(:error)
+        allow(Fatty).to receive(:error)
         km.load_user_config
-        expect(FatTerm).to have_received(:error).at_least(:once)
+        expect(Fatty).to have_received(:error).at_least(:once)
       end
 
       it "logs and continues on Psych::SyntaxError" do
         km = KeyMap.new
-        allow(FatTerm::Config).to receive(:keybindings)
+        allow(Fatty::Config).to receive(:keybindings)
                                     .and_raise(Psych::SyntaxError.new("", 0, 0, 0, "", ""))
-        allow(FatTerm).to receive(:error)
+        allow(Fatty).to receive(:error)
         expect { km.load_user_config }.not_to raise_error
-        expect(FatTerm).to have_received(:error).with(a_string_matching(/syntax error/i), tag: :keybinding)
+        expect(Fatty).to have_received(:error).with(a_string_matching(/syntax error/i), tag: :keybinding)
       end
 
       it "defaults missing context to :input" do
         km = KeyMap.new
-        allow(FatTerm::Config).to receive(:keybindings)
+        allow(Fatty::Config).to receive(:keybindings)
                                     .and_return([{ "key" => "a", "ctrl" => true, "action" => "bol" }])
 
         km.load_user_config

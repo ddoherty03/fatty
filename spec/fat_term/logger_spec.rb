@@ -3,18 +3,18 @@
 require "tmpdir"
 require "json"
 
-module FatTerm
+module Fatty
   RSpec.describe Logger do
     let(:progname) { 'fat_term_spec' }
 
     around do |ex|
-      # Preserve global logger + env, since FatTerm::Logger is module-global.
+      # Preserve global logger + env, since Fatty::Logger is module-global.
       old_logger = Logger.logger
       old_xdg = ENV["XDG_STATE_HOME"]
 
       Dir.mktmpdir("fat_term_log_spec") do |dir|
         ENV["XDG_STATE_HOME"] = dir
-        FatTerm::Config.progname = progname
+        Fatty::Config.progname = progname
         ex.run
       end
     ensure
@@ -29,7 +29,7 @@ module FatTerm
     describe ".configure" do
       it "creates the log file under XDG_STATE_HOME when no config path is set" do
         # Ensure config doesn't specify a path
-        allow(FatTerm::Config).to receive(:config).and_return({ log: { level: 'info', format: 'json' } })
+        allow(Fatty::Config).to receive(:config).and_return({ log: { level: 'info', format: 'json' } })
 
         logger = Logger.configure
         expect(logger).to be_a(::Logger)
@@ -42,9 +42,9 @@ module FatTerm
 
       it "uses the XDG_STATE_HOME path when set" do
         custom = File.join(ENV.fetch("XDG_STATE_HOME"), "custom_logs", "ft.log")
-        allow(FatTerm::Config).to receive(:config).and_return(log: { file: custom })
+        allow(Fatty::Config).to receive(:config).and_return(log: { file: custom })
 
-        logger = FatTerm::Logger.configure
+        logger = Fatty::Logger.configure
 
         expect(logger).to be_a(::Logger)
         expect(File.exist?(custom)).to be(true)
@@ -53,7 +53,7 @@ module FatTerm
       end
 
       it "falls back to ~/.state/fat_term/fat_term.log when no config path and no XDG_STATE_HOME" do
-        allow(FatTerm::Config).to receive(:config).and_return({})
+        allow(Fatty::Config).to receive(:config).and_return({})
 
         old_xdg  = ENV.delete("XDG_STATE_HOME")
         old_home = ENV["HOME"]
@@ -61,7 +61,7 @@ module FatTerm
         Dir.mktmpdir("fat_term_home") do |tmp_home|
           ENV["HOME"] = tmp_home
 
-          logger = FatTerm::Logger.configure
+          logger = Fatty::Logger.configure
           expect(logger).to be_a(::Logger)
 
           expected = File.expand_path("~/.state/#{progname}/#{progname}.log")
@@ -79,7 +79,7 @@ module FatTerm
       it "returns nil logger and Logger.log becomes a no-op when the log file is not readable" do
         custom = File.join(ENV.fetch("XDG_STATE_HOME"), "custom_logs", "ft.log")
 
-        allow(FatTerm::Config).to receive(:config).and_return(log: { file: custom })
+        allow(Fatty::Config).to receive(:config).and_return(log: { file: custom })
 
         # Simulate unreadable file
         allow(File).to receive(:readable?) do |p|
@@ -90,14 +90,14 @@ module FatTerm
           p == File.expand_path(custom) ? true : File.writable?(p)
         end
 
-        logger = FatTerm::Logger.configure
+        logger = Fatty::Logger.configure
 
         expect(logger).to be_nil
-        expect(FatTerm::Logger.logger).to be_nil
+        expect(Fatty::Logger.logger).to be_nil
 
         # Should not raise, should not write
         expect {
-          FatTerm::Logger.log(:should_be_ignored, foo: 1)
+          Fatty::Logger.log(:should_be_ignored, foo: 1)
         }.not_to raise_error
 
         expect(File.exist?(custom)).to be(true)
@@ -107,7 +107,7 @@ module FatTerm
       it "returns nil logger and Logger.log becomes a no-op when the log file is not writable" do
         custom = File.join(ENV.fetch("XDG_STATE_HOME"), "custom_logs", "ft.log")
 
-        allow(FatTerm::Config).to receive(:config).and_return(log: { file: custom })
+        allow(Fatty::Config).to receive(:config).and_return(log: { file: custom })
 
         allow(File).to receive(:readable?) do |p|
           p == File.expand_path(custom) ? true : File.readable?(p)
@@ -117,12 +117,12 @@ module FatTerm
           p == File.expand_path(custom) ? false : File.writable?(p)
         end
 
-        logger = FatTerm::Logger.configure
+        logger = Fatty::Logger.configure
         expect(logger).to be_nil
-        expect(FatTerm::Logger.logger).to be_nil
+        expect(Fatty::Logger.logger).to be_nil
 
         expect {
-          FatTerm::Logger.log(:should_be_ignored, foo: 1)
+          Fatty::Logger.log(:should_be_ignored, foo: 1)
         }.not_to raise_error
 
         expect(File.exist?(custom)).to be(true)
@@ -130,21 +130,21 @@ module FatTerm
       end
 
       it "sets logger level and formatter based on config" do
-        allow(FatTerm::Config).to receive(:config).and_return({ log: { level: 'warn', format: 'json' } })
+        allow(Fatty::Config).to receive(:config).and_return({ log: { level: 'warn', format: 'json' } })
 
         logger = Logger.configure
         expect(logger.level).to eq(::Logger::WARN)
         expect(logger.progname).to eq("fat_term_spec")
-        expect(logger.formatter).to be_a(FatTerm::Logger::JsonFormatter)
+        expect(logger.formatter).to be_a(Fatty::Logger::JsonFormatter)
       end
     end
 
     describe "TextFormatter" do
       it "uses TextFormatter when json: false" do
-        allow(FatTerm::Config).to receive(:config).and_return({ log: { level: 'info', format: 'text' } })
+        allow(Fatty::Config).to receive(:config).and_return({ log: { level: 'info', format: 'text' } })
 
         logger = Logger.configure
-        expect(logger.formatter).to be_a(FatTerm::Logger::TextFormatter)
+        expect(logger.formatter).to be_a(Fatty::Logger::TextFormatter)
       end
 
       it "formats as: <iso8601> <SEV> <progname> <msg>\\n" do
@@ -159,8 +159,8 @@ module FatTerm
 
       it "writes plain text lines to the log file" do
         path = File.join("/tmp", "text_#{$$}.log")
-        allow(FatTerm::Config).to receive(:progname).and_return("fat_term_spec")
-        allow(FatTerm::Config).to receive(:config).and_return({
+        allow(Fatty::Config).to receive(:progname).and_return("fat_term_spec")
+        allow(Fatty::Config).to receive(:config).and_return({
                                                                 log: {
                                                                   file: path,
                                                                   level: :debug,
@@ -197,7 +197,7 @@ module FatTerm
 
     describe ".log (tag filtering + payload)" do
       it "writes a JSON line including envelope fields and payload fields when tag is allowed" do
-        allow(FatTerm::Config).
+        allow(Fatty::Config).
           to receive(:config)
                .and_return({ log: { tags: [:all] } })
 
@@ -214,14 +214,14 @@ module FatTerm
         expect(rec["prog"]).to eq("fat_term_spec")
         expect(rec["sev"]).to eq("INFO")
 
-        # payload from FatTerm.log
+        # payload from Fatty.log
         expect(rec["event"]).to eq("hello")
         expect(rec["tag"]).to eq("render")
         expect(rec["foo"]).to eq(123)
       end
 
       it "does not log tagged messages when tag is not in allow-list and :all is absent" do
-        allow(FatTerm::Config)
+        allow(Fatty::Config)
           .to receive(:config)
                 .and_return({
                               log: { tags: [:keybinding] }
@@ -235,7 +235,7 @@ module FatTerm
       end
 
       it "logs untagged messages even when tags are restricted" do
-        allow(FatTerm::Config)
+        allow(Fatty::Config)
           .to receive(:config)
                 .and_return({
                               log: { tags: [:keybinding] }
@@ -253,7 +253,7 @@ module FatTerm
       end
     end
 
-    describe FatTerm::Logger::JsonFormatter do
+    describe Fatty::Logger::JsonFormatter do
       it "merges JSON msg hashes into the envelope" do
         fmt = Logger::JsonFormatter.new
         msg = { event: "x", tag: "y", n: 1 }.to_json
@@ -281,7 +281,7 @@ module FatTerm
 
     describe ".log error handling" do
       it "never raises if the underlying logger blows up" do
-        allow(FatTerm::Config).to receive(:config).and_return({ log: { tags: [:all] } })
+        allow(Fatty::Config).to receive(:config).and_return({ log: { tags: [:all] } })
         Logger.configure
 
         # Force logger.add to raise

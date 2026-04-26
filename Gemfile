@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in fat_term.gemspec
+# Specify your gem's dependencies in fatty.gemspec
 gemspec
 
 group :development do

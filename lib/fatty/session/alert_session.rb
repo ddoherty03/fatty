@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   # A pinned, non-interactive overlay session responsible for rendering alerts.
   #
   # It is intentionally dumb:
@@ -12,7 +12,7 @@ module FatTerm
     attr_reader :current
 
     def initialize
-      super(views: [FatTerm::AlertView.new(z: 1_000)])
+      super(views: [Fatty::AlertView.new(z: 1_000)])
       @current = nil
     end
 
@@ -36,7 +36,7 @@ module FatTerm
     def show_from_payload(payload)
       return if payload.nil?
 
-      if payload.is_a?(FatTerm::Alert)
+      if payload.is_a?(Fatty::Alert)
         @current = payload
         return
       end
@@ -46,7 +46,7 @@ module FatTerm
       details = payload[:details]
       sticky  = !!payload[:sticky]
 
-      @current = FatTerm::Alert.new(level: level, message: message, details: details, sticky: sticky)
+      @current = Fatty::Alert.new(level: level, message: message, details: details, sticky: sticky)
     end
   end
 end

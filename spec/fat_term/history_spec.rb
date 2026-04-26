@@ -2,20 +2,20 @@
 
 require "tmpdir"
 
-module FatTerm
+module Fatty
   RSpec.describe History do
     describe "#initialize" do
       it "does not load from disk when path is nil" do
-        history = FatTerm::History.new(path: nil)
+        history = Fatty::History.new(path: nil)
         expect(history.to_a).to eq([])
       end
     end
 
     describe "class methods" do
-      before { FatTerm::History.reset_instances! }
+      before { Fatty::History.reset_instances! }
 
       it "returns the same default history object" do
-        expect(FatTerm::History.default).to equal(FatTerm::History.default)
+        expect(Fatty::History.default).to equal(Fatty::History.default)
       end
     end
 
@@ -66,7 +66,7 @@ module FatTerm
         hist.add("git status")
         hist.add("ls")
         hist.add("git log")
-        f = FatTerm::InputField.new(prompt: '> ', history: hist)
+        f = Fatty::InputField.new(prompt: '> ', history: hist)
 
         f.buffer.replace("git")
         f.history_prev
@@ -92,7 +92,7 @@ module FatTerm
         end
       end
 
-      it "FatTerm::History#add appends JSONL entries to the history file" do
+      it "Fatty::History#add appends JSONL entries to the history file" do
         Dir.mktmpdir do |dir|
           path = File.join(dir, "hist")
           h = History.new(path: path)
@@ -130,7 +130,7 @@ module FatTerm
         expect(hist.entries.map(&:text)).to eq(["ok"])
       end
 
-      it "FatTerm::History#truncate! enforces max size in memory" do
+      it "Fatty::History#truncate! enforces max size in memory" do
         hist.add("1")
         hist.add("2")
         hist.add("3")
@@ -233,7 +233,7 @@ module FatTerm
 
     describe "#entries_for" do
       it "returns fallback entries before preferred entries, preserving chronological order within each bucket" do
-        h = FatTerm::History.new
+        h = Fatty::History.new
 
         h.add("g1", kind: :command, ctx: { pwd: "/tmp/other" })
         h.add("l1", kind: :command, ctx: { pwd: "/tmp/demo" })
@@ -247,7 +247,7 @@ module FatTerm
     end
 
     describe "#suggest_for" do
-      let(:history) { FatTerm::History.new(path: nil) }
+      let(:history) { Fatty::History.new(path: nil) }
 
       it "prefers ctx-local matches over global matches" do
         history.add("status old", kind: :command, ctx: { pwd: "/other" })
@@ -267,7 +267,7 @@ module FatTerm
 
     describe "#next_for and #previous_for" do
       it "does not walk past the end of the filtered history list" do
-        h = FatTerm::History.new
+        h = Fatty::History.new
 
         h.add("global one", kind: :command, ctx: { pwd: "/tmp/other" })
         h.add("local one", kind: :command, ctx: { pwd: "/tmp/demo" })
@@ -277,7 +277,7 @@ module FatTerm
       end
 
       it "returns scratch when navigating down past the newest matching entry" do
-        h = FatTerm::History.new
+        h = Fatty::History.new
 
         h.add("one", kind: :command, ctx: { pwd: "/tmp/demo" })
         h.add("two", kind: :command, ctx: { pwd: "/tmp/demo" })
@@ -288,7 +288,7 @@ module FatTerm
     end
 
     describe "Enumerable access" do
-      let(:history) { FatTerm::History.new(path: nil) }
+      let(:history) { Fatty::History.new(path: nil) }
 
       before do
         history.add("ls",   kind: :command,       ctx: { pwd: "/a", proj: "x" })
@@ -364,9 +364,9 @@ module FatTerm
 
       describe ".default" do
         it "returns the same object as for_path(:default)" do
-          FatTerm::History.reset_instances! if FatTerm::History.respond_to?(:reset_instances!)
+          Fatty::History.reset_instances! if Fatty::History.respond_to?(:reset_instances!)
 
-          expect(FatTerm::History.default).to equal(FatTerm::History.for_path(:default))
+          expect(Fatty::History.default).to equal(Fatty::History.for_path(:default))
         end
       end
     end

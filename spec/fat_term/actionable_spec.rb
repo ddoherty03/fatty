@@ -1,25 +1,25 @@
 # frozen_string_literal: true
 
-module FatTerm
+module Fatty
   RSpec.describe Actionable do
     around do |ex|
-      saved = FatTerm::Actions.snapshot
+      saved = Fatty::Actions.snapshot
       begin
-        FatTerm::Actions.reset!
+        Fatty::Actions.reset!
         ex.run
       ensure
-        FatTerm::Actions.restore(saved)
+        Fatty::Actions.restore(saved)
       end
     end
 
     def defn(name)
-      FatTerm::Actions.lookup(name)
+      Fatty::Actions.lookup(name)
     end
 
     describe "action class method" do
       it "defines an instance method when action is given a block" do
         klass = Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
           action_on :buffer
 
@@ -41,7 +41,7 @@ module FatTerm
 
       it "registers an action and dispatches it via Actions.call" do
         klass = Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
           action_on :buffer
 
@@ -58,13 +58,13 @@ module FatTerm
         buf.instance_variable_set(:@cursor, 5)
         ctx = ActionEnvironment.new(buffer: buf)
 
-        FatTerm::Actions.call(:__t_bol, ctx)
+        Fatty::Actions.call(:__t_bol, ctx)
         expect(buf.cursor).to eq(0)
       end
 
       it "registers an alias action name to a different method with to:" do
         klass = Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
           action_on :buffer
 
@@ -81,7 +81,7 @@ module FatTerm
 
       it "supports alias form: action :set, to: :replace defines #set and registers action" do
         klass = Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
           action_on :buffer
 
@@ -99,13 +99,13 @@ module FatTerm
         expect(obj.text).to eq("hello")
 
         ctx = ActionEnvironment.new(buffer: obj)
-        FatTerm::Actions.call(:set, ctx, "world")
+        Fatty::Actions.call(:set, ctx, "world")
         expect(obj.text).to eq("world")
       end
 
       it "registers an action and defines the underlying method when given a block" do
         klass = Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
           action_on :buffer
 
@@ -125,7 +125,7 @@ module FatTerm
 
       it "uses on: to select the target in ctx" do
         buffer_klass = Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
           action_on :buffer
 
@@ -137,7 +137,7 @@ module FatTerm
         end
 
         field_klass = Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
           action_on :field
 
@@ -152,8 +152,8 @@ module FatTerm
         fld = field_klass.new
         ctx = ActionEnvironment.new(buffer: buf, field: fld)
 
-        FatTerm::Actions.call(:__t_buf_mark, ctx)
-        FatTerm::Actions.call(:__t_field_mark, ctx)
+        Fatty::Actions.call(:__t_buf_mark, ctx)
+        Fatty::Actions.call(:__t_field_mark, ctx)
 
         expect(buf.marked?).to be(true)
         expect(fld.marked?).to be(true)
@@ -161,7 +161,7 @@ module FatTerm
 
       it "desc applies to the next action only and then resets" do
         Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
           action_on :buffer
 
@@ -172,8 +172,8 @@ module FatTerm
           end
         end
 
-        first  = FatTerm::Actions.lookup(:__t_first)
-        second = FatTerm::Actions.lookup(:__t_second)
+        first  = Fatty::Actions.lookup(:__t_first)
+        second = Fatty::Actions.lookup(:__t_second)
         first_doc =
           first.respond_to?(:doc) ? first.doc : first[:doc]
         second_doc =
@@ -185,7 +185,7 @@ module FatTerm
 
       it "uses desc() as the doc for the next action and consumes it" do
         Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
           action_on :buffer
 
@@ -205,14 +205,14 @@ module FatTerm
 
       it "action doc: kwarg is used when no desc is provided" do
         Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
           action_on :buffer
 
           action :__t_doc_kw, doc: "kw doc" do
           end
         end
-        entry = FatTerm::Actions.lookup(:__t_doc_kw)
+        entry = Fatty::Actions.lookup(:__t_doc_kw)
         doc =
           entry.respond_to?(:doc) ? entry.doc : entry[:doc]
 
@@ -222,9 +222,9 @@ module FatTerm
       it "infers default action target from class name, including special cases" do
         # special-cased name -> :buffer
         Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
-          def self.name = "FatTerm::InputBuffer"
+          def self.name = "Fatty::InputBuffer"
           action :bol do
             :ok
           end
@@ -234,9 +234,9 @@ module FatTerm
 
         # generic CamelCase -> snake_case
         Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
-          def self.name = "FatTerm::FooBar"
+          def self.name = "Fatty::FooBar"
           action :zap do
             :ok
           end
@@ -247,12 +247,12 @@ module FatTerm
 
       it "unknown action raises" do
         ctx = ActionEnvironment.new(buffer: Object.new)
-        expect { FatTerm::Actions.call(:__t_no_such_action, ctx) }.to raise_error(ActionError)
+        expect { Fatty::Actions.call(:__t_no_such_action, ctx) }.to raise_error(ActionError)
       end
 
       it "alias can be declared before the target method (delegator fallback)" do
         klass = Class.new do
-          include FatTerm::Actionable
+          include Fatty::Actionable
 
           action_on :buffer
 
