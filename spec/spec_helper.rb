@@ -5,7 +5,7 @@
 require "simplecov"
 
 require "bundler/setup"
-require "fat_term"
+require "fatty"
 require "debug"
 
 require "fat_term"
