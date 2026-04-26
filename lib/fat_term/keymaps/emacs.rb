@@ -134,7 +134,7 @@ module FatTerm
       map.bind(context: :paging, key: :s, meta: true, action: :toggle_paging)
       map.bind(context: :terminal, key: :s, meta: true, action: :toggle_paging)
       map.bind(context: :paging, key: :c, ctrl: true, action: :quit_paging)
-      map.bind(context: :paging, key: :d, ctrl: true, action: :quit_paging)
+      map.bind(context: :paging, key: :g, ctrl: true, action: :quit_paging)
       map.bind(context: :paging, key: :q, action: :quit_paging)
 
       # Paging search (opens SearchSession via ShellSession actions)
