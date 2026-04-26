@@ -1,4 +1,3 @@
-# lib/fat_term/colors/palette.rb
 # frozen_string_literal: true
 
 module Fatty

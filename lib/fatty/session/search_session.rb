@@ -4,7 +4,7 @@ module Fatty
   class SearchSession < Session
     attr_reader :field, :direction, :regex
 
-    DEFAULT_SEARCH_HISTORY_FILE = File.expand_path("~/.fat_term_search_history")
+    DEFAULT_SEARCH_HISTORY_FILE = File.expand_path("~/.fatty_search_history")
     DEFAULT_SEARCH_HISTORY_MAX  = 200
 
     def initialize(direction: :backward, regex: false, history: nil, prefix: nil)

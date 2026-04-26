@@ -1,14 +1,14 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative "../lib/fat_term"
+require_relative "../lib/fatty"
 require "open3"
 require "shellwords"
 
 require "rainbow/refinement"
 using Rainbow
 
-prompt = FatTerm::Prompt.new { "#{Dir.pwd}> " }
+prompt = Fatty::Prompt.new { "#{Dir.pwd}> " }
 history_ctx_proc = -> { { pwd: Dir.pwd } }
 
 on_accept_proc = lambda do |line, env|
@@ -230,7 +230,7 @@ completion_proc = lambda do |_buffer|
   cutes.to_a
 end
 
-FatTerm::Terminal.new(
+Fatty::Terminal.new(
   prompt: prompt,
   history_ctx: history_ctx_proc,
   on_accept: on_accept_proc,

@@ -231,7 +231,7 @@ module Fatty
 
     describe "completion cycling" do
       around do |example|
-        Dir.mktmpdir("fat_term_paths") do |dir|
+        Dir.mktmpdir("fatty_paths") do |dir|
           @tmpdir = dir
           example.run
         end

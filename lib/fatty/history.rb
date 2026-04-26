@@ -4,7 +4,7 @@ require_relative "history/entry"
 
 module Fatty
   class History
-    DEFAULT_HISTORY_FILE = File.expand_path("~/.fat_term_history")
+    DEFAULT_HISTORY_FILE = File.expand_path("~/.fatty_history")
     DEFAULT_HISTORY_MAX = 10_000
 
     attr_reader :entries

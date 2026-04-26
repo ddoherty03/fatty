@@ -5,7 +5,7 @@
 #   ctrl: true/false (false)
 #   meta: true/false (false)
 #   shift: true/false (false)
-#   action: <FatTerm action> (noop)
+#   action: <Fatty action> (noop)
 
 - key: left
   meta: true
@@ -29,7 +29,7 @@
 #   ctrl: true/false (false)
 #   meta: true/false (false)
 #   shift: true/false (false)
-#   action: <FatTerm action> (noop)
+#   action: <Fatty action> (noop)
 
 # Where <BUTTONNAME> is one of:
 # left_pressed,

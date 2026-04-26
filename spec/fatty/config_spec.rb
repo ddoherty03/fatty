@@ -17,7 +17,7 @@ module Fatty
       old_xdg = ENV["XDG_CONFIG_HOME"]
       Config.progname = progname
       Config.dir = nil
-      Dir.mktmpdir("fat_term_config") do |tmp|
+      Dir.mktmpdir("fatty_config") do |tmp|
         ENV["XDG_CONFIG_HOME"] = tmp
         ex.run
       end

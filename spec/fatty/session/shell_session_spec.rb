@@ -34,7 +34,7 @@ RSpec.describe Fatty::ShellSession do
     end
 
     it "opens a popup instead of applying a single directory completion for a path without a trailing slash" do
-      Dir.mktmpdir("fat_term_popup") do |dir|
+      Dir.mktmpdir("fatty_popup") do |dir|
         FileUtils.mkdir_p(File.join(dir, "src"))
         File.write(File.join(dir, "src", "alpha.rb"), "x")
         File.write(File.join(dir, "src", "beta.rb"), "x")

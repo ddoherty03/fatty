@@ -7,13 +7,13 @@ module Fatty
       attr_accessor :reader
       attr_accessor :dir
     end
-    @progname = 'fat_term'
+    @progname = 'fatty'
     @config = {}
     @reader = nil
     @dir = nil
 
-    # Read in the general configuration for fat_term in config.yml for certain
-    # user-adjustable features of fat_term.  One of these is the logging,
+    # Read in the general configuration for fatty in config.yml for certain
+    # user-adjustable features of fatty.  One of these is the logging,
     # including the location of the log file.
     def self.config
       @reader ||= FatConfig::Reader.new(progname, user_dir: dir)
@@ -21,7 +21,7 @@ module Fatty
     end
 
     def self.progname=(name)
-      @progname = name || 'fat_term'
+      @progname = name || 'fatty'
       @reader = nil
     end
 

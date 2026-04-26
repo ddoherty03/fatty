@@ -1,4 +1,3 @@
-# lib/fat_term/colors/themes.rb
 # frozen_string_literal: true
 
 module Fatty

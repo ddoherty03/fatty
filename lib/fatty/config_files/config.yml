@@ -1,4 +1,4 @@
-# What fat_term considers a "word" in the input buffer
+# What fatty considers a "word" in the input buffer
 
 # # treat dash as part of a word (good for CLI flags / kebab-case)
 # input_buffer:
@@ -21,14 +21,14 @@ input_buffer:
 esc_delay: 25
 
 # file: sets the location of the log file, by default at
-# $XDG_STATE_HOME/fat_term/fat_term.log
+# $XDG_STATE_HOME/fatty/fatty.log
 #
 # level: whether to log at the debug level or info.
 #
 # tags: when at the debug level, what categories of events to log. The special
 # tag 'all' logs all levels, and is the default when the level is debug.
 log:
-  file: "~/log/fat_term.log"
+  file: "~/log/fatty.log"
   level: debug   # debug or info
   tags:
     - keycode    # raw curses input / bytes / ESC buffering
@@ -41,7 +41,7 @@ log:
     - perf       # timings, frame time, slow paths
     # - all        # All of the above
 history:
-  file: "~/.fat_term_history"
+  file: "~/.fatty_history"
   max: 10_000
 
 # Set specific colors

@@ -5,14 +5,14 @@ require "json"
 
 module Fatty
   RSpec.describe Logger do
-    let(:progname) { 'fat_term_spec' }
+    let(:progname) { 'fatty_spec' }
 
     around do |ex|
       # Preserve global logger + env, since Fatty::Logger is module-global.
       old_logger = Logger.logger
       old_xdg = ENV["XDG_STATE_HOME"]
 
-      Dir.mktmpdir("fat_term_log_spec") do |dir|
+      Dir.mktmpdir("fatty_log_spec") do |dir|
         ENV["XDG_STATE_HOME"] = dir
         Fatty::Config.progname = progname
         ex.run
@@ -52,13 +52,13 @@ module Fatty
         expect(File.writable?(custom)).to be(true)
       end
 
-      it "falls back to ~/.state/fat_term/fat_term.log when no config path and no XDG_STATE_HOME" do
+      it "falls back to ~/.state/fatty/fatty.log when no config path and no XDG_STATE_HOME" do
         allow(Fatty::Config).to receive(:config).and_return({})
 
         old_xdg  = ENV.delete("XDG_STATE_HOME")
         old_home = ENV["HOME"]
 
-        Dir.mktmpdir("fat_term_home") do |tmp_home|
+        Dir.mktmpdir("fatty_home") do |tmp_home|
           ENV["HOME"] = tmp_home
 
           logger = Fatty::Logger.configure
@@ -134,7 +134,7 @@ module Fatty
 
         logger = Logger.configure
         expect(logger.level).to eq(::Logger::WARN)
-        expect(logger.progname).to eq("fat_term_spec")
+        expect(logger.progname).to eq("fatty_spec")
         expect(logger.formatter).to be_a(Fatty::Logger::JsonFormatter)
       end
     end
@@ -151,15 +151,15 @@ module Fatty
         fmt = Logger::TextFormatter.new
         t   = Time.utc(2026, 2, 3, 12, 34, 56, 123_456) # stable
 
-        line = fmt.call("INFO", t, "fat_term_spec", "hello")
+        line = fmt.call("INFO", t, "fatty_spec", "hello")
 
-        expect(line).to start_with("2026-02-03T12:34:56.123456Z INFO fat_term_spec hello")
+        expect(line).to start_with("2026-02-03T12:34:56.123456Z INFO fatty_spec hello")
         expect(line).to end_with("\n")
       end
 
       it "writes plain text lines to the log file" do
         path = File.join("/tmp", "text_#{$$}.log")
-        allow(Fatty::Config).to receive(:progname).and_return("fat_term_spec")
+        allow(Fatty::Config).to receive(:progname).and_return("fatty_spec")
         allow(Fatty::Config).to receive(:config).and_return({
                                                                 log: {
                                                                   file: path,
@@ -173,7 +173,7 @@ module Fatty
         Logger.log("evt", level: :info, tag: :render, foo: 1, bar: [2, 4, 6])
 
         lines = File.readlines(path)
-        expect(lines.first).to match(/INFO.*fat_term_spec/)
+        expect(lines.first).to match(/INFO.*fatty_spec/)
         expect(lines.first).to include("[render]")
         expect(lines.first).to include("evt")
         expect(lines.last).to include("foo:")
@@ -211,7 +211,7 @@ module Fatty
         rec = JSON.parse(lines.last)
         # envelope
         expect(rec).to include("t", "sev", "prog")
-        expect(rec["prog"]).to eq("fat_term_spec")
+        expect(rec["prog"]).to eq("fatty_spec")
         expect(rec["sev"]).to eq("INFO")
 
         # payload from Fatty.log
@@ -227,7 +227,7 @@ module Fatty
                               log: { tags: [:keybinding] }
                             })
         Logger.configure
-        path = File.join(ENV.fetch("XDG_STATE_HOME"), "fat_term", "fat_term.log")
+        path = File.join(ENV.fetch("XDG_STATE_HOME"), "fatty", "fatty.log")
         Logger.log(:nope, level: :info, tag: :render, x: 1)
 
         # file exists, but no line added (or at least last line isn't ours)
@@ -258,12 +258,12 @@ module Fatty
         fmt = Logger::JsonFormatter.new
         msg = { event: "x", tag: "y", n: 1 }.to_json
 
-        line = fmt.call("INFO", Time.at(0).utc, "fat_term_spec", msg)
+        line = fmt.call("INFO", Time.at(0).utc, "fatty_spec", msg)
         rec = JSON.parse(line)
 
         expect(rec["t"]).to be_a(String)
         expect(rec["sev"]).to eq("INFO")
-        expect(rec["prog"]).to eq("fat_term_spec")
+        expect(rec["prog"]).to eq("fatty_spec")
 
         expect(rec["event"]).to eq("x")
         expect(rec["tag"]).to eq("y")
@@ -272,7 +272,7 @@ module Fatty
 
       it "stores non-JSON messages under msg" do
         fmt = Logger::JsonFormatter.new
-        line = fmt.call("INFO", Time.at(0).utc, "fat_term_spec", "hello world")
+        line = fmt.call("INFO", Time.at(0).utc, "fatty_spec", "hello world")
         rec = JSON.parse(line)
 
         expect(rec["msg"]).to eq("hello world")

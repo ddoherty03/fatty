@@ -1,4 +1,3 @@
-# lib/fat_term/env.rb
 # frozen_string_literal: true
 
 module Fatty

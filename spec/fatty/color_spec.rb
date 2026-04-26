@@ -43,7 +43,7 @@ module Fatty
       end
 
       it "maps X11 names via the bundled rgb.txt (nearest match)" do
-        Dir.mktmpdir("fat_term_color_spec") do |dir|
+        Dir.mktmpdir("fatty_color_spec") do |dir|
           colors_dir = File.join(dir, "colors")
           FileUtils.mkdir_p(colors_dir)
 

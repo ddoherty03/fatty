@@ -14,7 +14,7 @@ module Fatty
     end
 
     around do |ex|
-      Dir.mktmpdir("fat_term_spec_xdg") do |tmp|
+      Dir.mktmpdir("fatty_spec_xdg") do |tmp|
         old = ENV["XDG_CONFIG_HOME"]
         ENV["XDG_CONFIG_HOME"] = tmp
 
@@ -22,7 +22,7 @@ module Fatty
         old_progname = Fatty::Config.progname
         old_logger = Fatty::Logger.logger
 
-        Fatty::Config.progname = "fat_term"
+        Fatty::Config.progname = "fatty"
         Fatty::Config.reader = nil
         Fatty::Logger.logger = nil
 
@@ -37,7 +37,7 @@ module Fatty
 
     describe "#preflight!" do
       around do |ex|
-        Dir.mktmpdir("fat_term_spec_xdg") do |tmp|
+        Dir.mktmpdir("fatty_spec_xdg") do |tmp|
           old = ENV["XDG_CONFIG_HOME"]
           ENV["XDG_CONFIG_HOME"] = tmp
           ex.run
@@ -51,7 +51,7 @@ module Fatty
         # Broken YAML on purpose.
         write_xdg_config(
           xdg,
-          app: "fat_term",
+          app: "fatty",
           name: "config",
           content: "log: [broken",
         )
@@ -70,7 +70,7 @@ module Fatty
 
         write_xdg_config(
           xdg,
-          app: "fat_term",
+          app: "fatty",
           name: "config",
           content: "log: [broken",
         )

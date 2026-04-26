@@ -16,7 +16,7 @@ module Fatty
 
     def self.configure
       progname = Fatty::Config.progname
-      cfg = Fatty::Config.config || 'fat_term'
+      cfg = Fatty::Config.config || 'fatty'
       path =
         if cfg.dig(:log, :file)
           File.expand_path(cfg.dig(:log, :file))

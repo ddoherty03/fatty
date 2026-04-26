@@ -8,7 +8,7 @@ require "bundler/setup"
 require "fatty"
 require "debug"
 
-require "fat_term"
+require "fatty"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

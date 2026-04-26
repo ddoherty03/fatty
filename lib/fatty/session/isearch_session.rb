@@ -6,7 +6,7 @@ module Fatty
 
     def id = :isearch
 
-    DEFAULT_ISEARCH_HISTORY_FILE = File.expand_path("~/.fat_term_search_history")
+    DEFAULT_ISEARCH_HISTORY_FILE = File.expand_path("~/.fatty_search_history")
     DEFAULT_ISEARCH_HISTORY_MAX  = 200
 
     def initialize(direction: :forward, last_pattern: nil, history: nil)

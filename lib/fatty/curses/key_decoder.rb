@@ -139,7 +139,7 @@ module Fatty
 
       # Add to the @map any keydefs defined by the user for the terminal
       # detected in the environment.  The user config, usually in
-      # ~/.config/fat_term/keydefs.yml, takes into account the vagaries of how
+      # ~/.config/fatty/keydefs.yml, takes into account the vagaries of how
       # different terminal programs process keys.
       def load_user_config
         config = Fatty::Config.keydefs

@@ -6,7 +6,7 @@ module Fatty
 
     # Expected location for a bundled X11 rgb.txt (you provide it in the repo).
     # Recommended path:
-    #   lib/fat_term/color/rgb.txt
+    #   lib/fatty/color/rgb.txt
     RGB_TXT_PATH = File.expand_path("rgb.txt", __dir__)
 
     # ANSI 0..15 names (de-facto standard names)

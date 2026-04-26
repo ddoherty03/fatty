@@ -231,7 +231,7 @@ module Fatty
     end
 
     # Make the bindings from the user's config file, usually at
-    # ~/.config/fat_term/keybindings.yml
+    # ~/.config/fatty/keybindings.yml
     def load_user_config
       Fatty.info("Read keybindings from #{Config.user_keybindings_path}", tag: :keybinding)
       data = Fatty::Config.keybindings
