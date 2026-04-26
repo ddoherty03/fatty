@@ -72,8 +72,10 @@ module FatTerm
     def view(screen:, renderer:)
       if pager_active?
         ::Curses.curs_set(0)
-        highlights = pager.search_visible_highlights(viewport: pager_viewport)
-        renderer.render_output(output, viewport: pager_viewport, highlights: highlights)
+        viewport = pager_status_viewport(screen)
+        highlights = pager.search_visible_highlights(viewport: viewport)
+
+        renderer.render_output(output, viewport: viewport, highlights: highlights)
         renderer.render_pager_field(
           pager_field,
           row: screen.output_rect.rows - 1,
@@ -85,6 +87,12 @@ module FatTerm
         renderer.render_input_field(field)
         renderer.restore_cursor(field)
       end
+    end
+
+    def pager_status_viewport(screen)
+      vp = pager_viewport.dup
+      vp.height = [screen.output_rect.rows - 1, 1].max
+      vp
     end
 
     # Save any state we want saved on quit, error, etc.

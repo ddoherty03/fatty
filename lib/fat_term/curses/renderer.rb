@@ -126,9 +126,17 @@ module FatTerm
 
       def can_incrementally_scroll_output?(prev, curr)
         delta = curr[:top] - prev[:top]
+        output_rows =
+          if context.output_win.respond_to?(:maxy)
+            context.output_win.maxy
+          else
+            @screen.output_rect.rows
+          end
+
+        curr[:height] == output_rows &&
         curr[:height] == prev[:height] &&
-          curr[:highlights] == prev[:highlights] &&
-          delta != 0 &&
+        curr[:highlights] == prev[:highlights] &&
+        delta != 0 &&
           delta.abs < curr[:height]
       end
 
@@ -339,21 +347,22 @@ module FatTerm
         return if state == @last_pager_field_state
 
         @last_pager_field_state = state
+
         win = context.output_win
         cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
-
         attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
-
-        win.setpos(row, 0)
-        win.attrset(attr)
-        win.bkgdset(attr) if win.respond_to?(:bkgdset)
-        win.clrtoeol
 
         prompt = field.prompt_text.to_s
         buf_text = field.buffer.text.to_s
         text = (prompt + buf_text).tr("\r\n", "")
 
-        win.addstr(text.ljust(cols)[0, cols])
+        visible = FatTerm::Ansi.plain_text(text)
+        line = visible[0, cols].ljust(cols)
+
+        win.setpos(row, 0)
+        win.attrset(attr)
+        win.addstr(line)
+
         stage_window(win)
         nil
       end
