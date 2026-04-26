@@ -4,20 +4,24 @@
 - [X] choose_many :: present a list of choices that a user can pick many items
   from
 - [X] menu :: user picks an action by name attached to a proc
-- [ ] run :: run a proc, optionally in the background with feedback on the
-  status line
-  #+begin_src ruby
-    terminal.run(prompt: "Importing", background: false) do |prog|
-      ...
-    end
-  #+end_src
 
-* TODO Add snippet suggestion for unrecognized and unbound keys
+* TODO Change to Fatty?
+and change the name of the demo to fatty for user testing.
+
+* TODO In demo, add `help` and `keytest` commands
+- help :: would explain what commands are available for the demo
+- keytest :: would echo to the output information about pressed keys, including
+  - the detected terminal type
+  - the keycode returned by the keyboard/terminal
+  - the keyname that the key is mapped to
+  - the bindings for the keyname in all contexts
+  - if no keyname, a suggested keydef entry to give it a name in the config
+  - if not bound, a suggested keybinding entry to add to config
+
 * TODO Add modes for vi-like keybindings
 - will require changing keybindongs.yml format to include a mode qualifier
 - for advanced two-step actions, e.g. dw, will require an action-pending
   capability
-* TODO Background Jobs (&)
 * TODO Add attributes (like bold to themes)
 So, in themes, this would be possible:
 #+begin_src ruby
