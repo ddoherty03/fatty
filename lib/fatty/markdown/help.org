@@ -1,0 +1,36 @@
+* Fatty Help
+** The =fatty= demo command
+
+When you =fatty=, it operates as a simple demo of the =fatty= gem by
+presenting an editable command-line using emacs key bindings.  It has several
+builtin commands to demonstrate =fatty= features, and any command it does not
+recognized is handed off to the shell.
+** Builtin commands
+
+Here are the commands builtin to =fatty=
+
+| Command                     | Description                                                             |
+|-----------------------------+-------------------------------------------------------------------------|
+| help                        | Display this file on the output pane                                    |
+| cd                          | Change the current directory used by the shell                          |
+| choose                      | Present a series of choices in a popup window                           |
+| choosevals                  | Also present choices in a popup window but return an associated value   |
+| choose_multi                | Present choices with a "checkbox" for selecting multiple values         |
+| choosevals_multi            | Also present a checkbox but return associated values                    |
+| menu                        | Present a menu of labeled routines to run                               |
+| info                        | Display an "info" message on the status line                            |
+| good                        | Display a "good" message colored to indicate success                    |
+| warn                        | Display a "warn" message colored to indicate caution                    |
+| oops                        | Display an "oops" message colored to indicate failure                   |
+| prompt                      | Popup a text box for entering a value in response to a prompt           |
+| progress count <N>          | Display an animated progress indicator counting up to 40 or the given N |
+| progress percent <N>        | Same but also show the percent complete                                 |
+| progress simple_percent <N> | Same but show only the percent complete                                 |
+| progress trail              | Show progress by displaying an "indicator" character for each step      |
+| progress bar                | Show progress by a filling bar using ASCII characters                   |
+| progress unicode_bar        | Same, but using unicode characters                                      |
+| progress braille_bar        | Same, but using braille characters                                      |
+| progress spinner            | Animate a "spinner" showing a busy state                                |
+
+
+** fatty on the Web

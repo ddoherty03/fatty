@@ -168,6 +168,17 @@ module Fatty
       expect(length).to eq(5)
     end
 
+    it "does not count combining strikethrough marks as visible width" do
+      text = "strike".each_char.map { |ch| "#{ch}\u0336" }.join
+      expect(Fatty::Ansi.visible_length(text)).to eq(6)
+    end
+
+    it "does not count combining marks inside ANSI-styled text" do
+      struck = "ok".each_char.map { |ch| "#{ch}\u0336" }.join
+      text = Rainbow(struck).faint.to_s
+      expect(Fatty::Ansi.visible_length(text)).to eq(2)
+    end
+
     it "truncates by visible characters while preserving styles" do
       text = Fatty::Ansi.truncate_visible("a\e[31mred\e[0m▓", 4)
 

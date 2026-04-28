@@ -1,0 +1,120 @@
+# Fatty Help
+
+## The `fatty` demo command
+
+When you run `fatty`, it operates as a simple demo of the `fatty` gem by
+presenting an editable command-line using emacs key bindings. It has several
+builtin commands to demonstrate `fatty` features, and any command it does not
+recognized is handed off to the shell.
+
+## Builtin commands
+
+Here are the commands builtin to `fatty`
+
+| Command                      | Description                                                             |
+|:-----------------------------|:------------------------------------------------------------------------|
+| help                         | Display this file on the output pane                                    |
+| cd                           | Change the current directory used by the shell                          |
+| choose                       | Present a series of choices in a popup window                           |
+| choosevals                   | Also present choices in a popup window but return an associated value   |
+| choose\_multi                | Present choices with a "checkbox" for selecting multiple values         |
+| choosevals\_multi            | Also present a checkbox but return associated values                    |
+| menu                         | Present a menu of labeled routines to run                               |
+| info                         | Display an "info" message on the status line                            |
+| good                         | Display a "good" message colored to indicate success                    |
+| warn                         | Display a "warn" message colored to indicate caution                    |
+| oops                         | Display an "oops" message colored to indicate failure                   |
+| prompt                       | Popup a text box for entering a value in response to a prompt           |
+| progress count <N>           | Display an animated progress indicator counting up to 40 or the given N |
+| progress percent <N>         | Same but also show the percent complete                                 |
+| progress simple\_percent <N> | Same but show only the percent complete                                 |
+| progress trail               | Show progress by displaying an "indicator" character for each step      |
+| progress bar                 | Show progress by a filling bar using ASCII characters                   |
+| progress unicode\_bar        | Same, but using unicode characters                                      |
+| progress braille\_bar        | Same, but using braille characters                                      |
+| progress spinner             | Animate a "spinner" showing a busy state                                |
+
+
+## Keybindings
+
+The following tables explain the keybindings available in `fatty` in different
+contexts.  Named keys are indicated by `:name` and key categories, such as
+`<digits>` are indicated with brackets.
+
+### Input Context
+
+When editing the input line or text input for widgets like the `prompt`,
+`fatty` provides emacs-like editing keybindings by default.  Many of these
+commands can take a count prefix argument to repeat the command count times.
+For example, `M-8 M-0 #` will insert 80 '#' characters at the cursor.
+
+| Key        | Description                                           |
+|:-----------|:------------------------------------------------------|
+| C-a        | move to the beginning of the line                     |
+| :home      | move to the beginning of the line                     |
+| C-e        | move to the end of the line                           |
+| :end       | move to the end of the line                           |
+| C-f        | move cursor right one character                       |
+| :right     | move cursor right one character                       |
+| C-b        | move cursor left one character                        |
+| :left      | move cursor left one character                        |
+| M-f        | move cursor right one word                            |
+| M-:right   | move cursor right one word                            |
+| C-:right   | move cursor right one word                            |
+| M-b        | move cursor left one word                             |
+| M-:left    | move cursor left one word                             |
+| C-:left    | move cursor left one word                             |
+| C-t        | transpose characters                                  |
+| M-t        | transpose words                                       |
+|            |                                                       |
+| C-d        | delete character at cursor                            |
+| :delete    | delete character at cursor                            |
+| :backspace | delete character before cursor                        |
+| M-d        | kill word at cursor                                   |
+| C-w        | kill word before cursor                               |
+| C-k        | kill to end of line                                   |
+|            |                                                       |
+| C-/        | undo                                                  |
+| C-_        | undo                                                  |
+| C-M-/      | redo                                                  |
+| M-/        | redo                                                  |
+|            |                                                       |
+| C-:space   | set the mark at the current cursor position           |
+| C-@        | set the mark at the current cursor position           |
+| C-g        | clear the mark                                        |
+| C-w        | kill the region                                       |
+| M-w        | copy the region                                       |
+|            |                                                       |
+| C-y        | yank last kill at cursor                              |
+| M-y        | replace last yank with next in kill ring              |
+|            |                                                       |
+| C-u        | universal count argument (time 4 each press)          |
+| M-<digit>  | accumulate count argument                             |
+|            |                                                       |
+| C-p        | replace the line with the prior history item          |
+| :up        | replace the line with the prior history item          |
+| C-n        | replace the line with the next history item           |
+| :down      | replace the line with the prior history item          |
+| C-r        | search the history in a popup                         |
+|            |                                                       |
+| :enter     | feed the line to the on_accept proc and page output   |
+| M-:enter   | feed the line to the on_accept proc and scroll output |
+| C-c        | quit `fatty`                                          |
+| C-d        | quit `fatty` only if the input line is empty          |
+| C-l        | clear the output pane                                 |
+|            |                                                       |
+
+
+## Paging Context
+
+By default, `fatty` sends output to the large output pane, and if the output
+is more than one screen long presents a paging environment for viewing and
+searching the environment.
+
+| Key   | Description               |
+|:------|:--------------------------|
+| :up   | move output one line up   |
+| k     | move output one line up   |
+| :down | move output one line down |
+| j     | move output one line down |
+|       |                           |

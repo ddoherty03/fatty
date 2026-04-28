@@ -6,6 +6,7 @@ require "json"
 require "time"
 require "fileutils"
 require "rainbow"
+require "redcarpet"
 
 require 'debug'
 
@@ -44,5 +45,6 @@ module Fatty
   require_relative "fatty/sessions"
   require_relative "fatty/terminal"
 
+  require_relative "fatty/markdown"
   class Error < StandardError; end
 end

@@ -201,10 +201,15 @@ on_accept_proc = lambda do |line, env|
         prog.update(current: i + 1, indicator: indicator, render: true)
         sleep 0.1
       end
-
       prog.finish("Demo progress complete.".green, render: true)
       session.append_output("progress: style=#{style} completed #{total} steps\n")
     end
+  when 'markdown'
+    file = args.first || File.expand_path("../lib/fatty/markdown/markdown.md", __dir__)
+    text = File.read(File.expand_path(file))
+    env.markdown(text)
+  when 'help'
+    env.markdown(Fatty::Help.text)
   else
     out, _ = Open3.capture2e(line)
     session.append_output(out)

@@ -20,20 +20,49 @@ module Fatty
   module Ansi
     ESC = "\e"
     CSI = "#{ESC}["
+    COMBINING_MARK_RE = /\p{M}/
 
-    Style = Struct.new(:fg, :bg, :bold, :reverse, keyword_init: true) do
+    Style = Struct.new(
+      :fg,
+      :bg,
+      :bold,
+      :italic,
+      :underline,
+      :strike,
+      :reverse,
+      keyword_init: true,
+    ) do
       def dup
-        self.class.new(fg: fg, bg: bg, bold: bold, reverse: reverse)
+        self.class.new(
+          fg: fg,
+          bg: bg,
+          bold: bold,
+          italic: italic,
+          underline: underline,
+          strike: strike,
+          reverse: reverse,
+        )
       end
 
       def normalize!
         self.bold = !!bold
+        self.italic = !!italic
+        self.underline = !!underline
+        self.strike = !!strike
         self.reverse = !!reverse
         self
       end
 
       def self.default
-        new(fg: nil, bg: nil, bold: false, reverse: false)
+        new(
+          fg: nil,
+          bg: nil,
+          bold: false,
+          italic: false,
+          underline: false,
+          strike: false,
+          reverse: false,
+        )
       end
     end
 
@@ -97,7 +126,13 @@ module Fatty
     end
 
     def self.same_style?(a, b)
-      a.fg == b.fg && a.bg == b.bg && a.bold == b.bold && a.reverse == b.reverse
+      a.fg == b.fg &&
+        a.bg == b.bg &&
+        a.bold == b.bold &&
+        a.italic == b.italic &&
+        a.underline == b.underline &&
+        a.strike == b.strike &&
+        a.reverse == b.reverse
     end
 
     # Internal: attempts to consume an ANSI escape starting at position i.
@@ -145,56 +180,73 @@ module Fatty
     end
 
     def self.apply_sgr!(style, params)
-      idx = 0
-      while idx < params.length
-        code = params[idx].to_i
-
+      params = [0] if params.empty?
+      i = 0
+      while i < params.length
+        code = params[i].to_i
         case code
         when 0
           style.fg = nil
           style.bg = nil
           style.bold = false
+          style.italic = false
+          style.underline = false
+          style.strike = false
           style.reverse = false
         when 1
           style.bold = true
-        when 22
-          style.bold = false
+        when 3
+          style.italic = true
+        when 4
+          style.underline = true
         when 7
           style.reverse = true
+        when 9
+          style.strike = true
+        when 22
+          style.bold = false
+        when 23
+          style.italic = false
+        when 24
+          style.underline = false
         when 27
           style.reverse = false
+        when 29
+          style.strike = false
         when 30..37
           style.fg = code - 30
+        when 39
+          style.fg = nil
         when 40..47
           style.bg = code - 40
+        when 49
+          style.bg = nil
         when 90..97
-          style.fg = 8 + (code - 90)
+          style.fg = code - 90 + 8
         when 100..107
-          style.bg = 8 + (code - 100)
+          style.bg = code - 100 + 8
         when 38
-          # 38;5;<n>
-          if params[idx + 1] == 5 && params[idx + 2]
-            style.fg = params[idx + 2].to_i
-            idx += 2
+          if params[i + 1].to_i == 5 && params[i + 2]
+            style.fg = params[i + 2].to_i
+            i += 2
           end
         when 48
-          # 48;5;<n>
-          if params[idx + 1] == 5 && params[idx + 2]
-            style.bg = params[idx + 2].to_i
-            idx += 2
+          if params[i + 1].to_i == 5 && params[i + 2]
+            style.bg = params[i + 2].to_i
+            i += 2
           end
         end
-
-        idx += 1
+        i += 1
       end
-
       style.normalize!
-      style
     end
 
     def self.sgr_for(style)
       codes = []
       codes << 1 if style.bold
+      codes << 3 if style.italic
+      codes << 4 if style.underline
+      codes << 9 if style.strike
       codes << 7 if style.reverse
 
       if style.fg
@@ -229,7 +281,13 @@ module Fatty
     end
 
     def self.visible_length(str)
-      segment(str).sum { |text, _style| text.length }
+      segment(str.to_s).sum do |segment_text, _style|
+        segment_text.each_char.count { |ch| visible_char?(ch) }
+      end
+    end
+
+    def self.visible_char?(ch)
+      !ch.match?(COMBINING_MARK_RE)
     end
 
     def self.truncate_visible(str, max)

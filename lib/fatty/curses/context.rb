@@ -146,6 +146,7 @@ module Fatty
         base_attr = ::Curses.color_pair(base_pair_id)
 
         has_explicit = !(style.fg.nil? && style.bg.nil?)
+
         attr =
           if has_explicit
             pair_id = ansi_pair_id(style.fg, style.bg, fallback_pair_id: base_pair_id)
@@ -155,7 +156,17 @@ module Fatty
           end
 
         attr |= ::Curses::A_BOLD if style.bold
+        attr |= ::Curses::A_UNDERLINE if style.underline
         attr |= ::Curses::A_REVERSE if style.reverse
+
+        if style.italic && defined?(::Curses::A_ITALIC)
+          attr |= ::Curses::A_ITALIC
+        end
+
+        if style.strike && defined?(::Curses::A_HORIZONTAL)
+          attr |= ::Curses::A_HORIZONTAL
+        end
+
         attr
       end
 
