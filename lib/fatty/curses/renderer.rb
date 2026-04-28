@@ -343,11 +343,6 @@ module Fatty
       # the cursor; ShellSession decides whether to show a cursor in paging
       # vs input mode.
       def render_pager_field(field, row:, role: :status_info)
-        state = [field.prompt_text.to_s, field.buffer.text.to_s, row, role]
-        return if state == @last_pager_field_state
-
-        @last_pager_field_state = state
-
         win = context.output_win
         cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
         attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
