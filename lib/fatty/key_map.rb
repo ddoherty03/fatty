@@ -182,20 +182,27 @@ module Fatty
       self
     end
 
+    # def resolve(event, contexts: [])
+    #   return unless event
+
+    #   ctxs = normalize_contexts(contexts)
+    #   gest = gesture_from_event(event)
+
+    #   result = nil
+    #   ctxs.each do |ctx|
+    #     map = @bindings.fetch(ctx, nil)
+    #     next unless map
+
+    #     result = map[gest]
+    #     break if result
+    #   end
+    #   map_str = "#{event} -> #{result.inspect} in contexts: #{contexts} "
+    #   Fatty.debug("KeyMap#resolve: #{map_str}", tag: :keybinding)
+    #   result
+    # end
+
     def resolve(event, contexts: [])
-      return unless event
-
-      ctxs = normalize_contexts(contexts)
-      gest = gesture_from_event(event)
-
-      result = nil
-      ctxs.each do |ctx|
-        map = @bindings.fetch(ctx, nil)
-        next unless map
-
-        result = map[gest]
-        break if result
-      end
+      result = binding_for(event, contexts: contexts)
       map_str = "#{event} -> #{result.inspect} in contexts: #{contexts} "
       Fatty.debug("KeyMap#resolve: #{map_str}", tag: :keybinding)
       result
@@ -261,6 +268,25 @@ module Fatty
           action: [:count_digit, n],
         )
       end
+    end
+
+    # Return the keybinding for event in contexts without executing.  For
+    # reporting purposes, especially in Session::KeyTest.
+    def binding_for(event, contexts: [])
+      return unless event
+
+      ctxs = normalize_contexts(contexts)
+      gest = gesture_from_event(event)
+
+      result = nil
+      ctxs.each do |ctx|
+        map = @bindings.fetch(ctx, nil)
+        next unless map
+
+        result = map[gest]
+        break if result
+      end
+      result
     end
 
     private

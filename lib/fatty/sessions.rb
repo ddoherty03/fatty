@@ -9,3 +9,4 @@ require_relative "session/input_session"
 require_relative "session/output_session"
 require_relative "session/shell_session"
 require_relative 'session/prompt_session'
+require_relative 'session/keytest_session'

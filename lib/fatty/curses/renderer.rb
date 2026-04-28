@@ -641,6 +641,17 @@ module Fatty
         self
       end
 
+      def reset_frame_cache
+        @last_output_state = nil
+        @last_input_state = nil
+        @last_alert_state = nil
+        @last_pager_field_state = nil
+        @last_popup_state = nil
+        @frame_touched = false
+        @last_status_state = nil
+        nil
+      end
+
       private
 
       def stage_window(win)
@@ -650,17 +661,6 @@ module Fatty
         else
           win.refresh
         end
-        nil
-      end
-
-      def reset_frame_cache
-        @last_output_state = nil
-        @last_input_state = nil
-        @last_alert_state = nil
-        @last_pager_field_state = nil
-        @last_popup_state = nil
-        @frame_touched = false
-        @last_status_state = nil
         nil
       end
 

@@ -22,7 +22,7 @@ module Fatty
     #
     # You can add more later; Terminal only needs a small dispatcher.
 
-    attr_reader :screen, :renderer, :event_source, :status_text, :status_role
+    attr_reader :screen, :renderer, :event_source, :status_text, :status_role, :env
 
     def initialize(prompt: "> ", on_accept: nil, completion_proc: nil, history_ctx: nil, env: nil)
       @prompt = Prompt.ensure(prompt)
@@ -663,8 +663,8 @@ module Fatty
 
       @renderer = Fatty::Curses::Renderer.new(context: @ctx, screen: @screen)
 
-      env = @env || Fatty::Env.detect
-      key_decoder = Fatty::Curses::KeyDecoder.new(env: env)
+      @env ||= Fatty::Env.detect
+      key_decoder = Fatty::Curses::KeyDecoder.new(env: @env)
       @event_source =
         Fatty::Curses::EventSource.new(context: @ctx, key_decoder: key_decoder, poll_ms: 50)
       self

@@ -204,6 +204,8 @@ on_accept_proc = lambda do |line, env|
       prog.finish("Demo progress complete.".green, render: true)
       session.append_output("progress: style=#{style} completed #{total} steps\n")
     end
+  when "keytest"
+    return [[:terminal, :push_modal, Fatty::KeyTestSession.new(owner: session)], [:send, :alert, :clear, {}]]
   when 'markdown'
     file = args.first || File.expand_path("../lib/fatty/markdown/markdown.md", __dir__)
     text = File.read(File.expand_path(file))
