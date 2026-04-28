@@ -165,7 +165,7 @@ module Fatty
       map.bind_mouse(context: :paging, button: :scroll_down, action: :scroll_down)
 
       # Load the user's keybindings
-      map.load_user_config
+      map.load_user_config.activate!
     end
   end
 end

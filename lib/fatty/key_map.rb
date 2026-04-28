@@ -109,6 +109,10 @@ module Fatty
 
     DEFAULT_CONTEXT = :input
 
+    class << self
+      attr_accessor :active
+    end
+
     def self.registered_contexts
       @registered_contexts ||= [DEFAULT_CONTEXT, :paging]
     end
@@ -134,6 +138,12 @@ module Fatty
 
     def initialize
       @bindings = Hash.new { |h, ctx| h[ctx] = {} }
+      self.class.active ||= self
+    end
+
+    def activate!
+      self.class.active = self
+      self
     end
 
     # Bind a KeyEvent to an action in the given context.
