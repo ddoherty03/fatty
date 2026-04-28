@@ -17,7 +17,7 @@ module Fatty
     end
 
     def progress(**opts)
-      @progress ||= FatTerm::Terminal::Progress.new(terminal: terminal, **opts)
+      @progress ||= Fatty::Terminal::Progress.new(terminal: terminal, **opts)
     end
 
     def markdown(text)
