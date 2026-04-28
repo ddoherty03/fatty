@@ -192,25 +192,6 @@ module Fatty
       self
     end
 
-    # def resolve(event, contexts: [])
-    #   return unless event
-
-    #   ctxs = normalize_contexts(contexts)
-    #   gest = gesture_from_event(event)
-
-    #   result = nil
-    #   ctxs.each do |ctx|
-    #     map = @bindings.fetch(ctx, nil)
-    #     next unless map
-
-    #     result = map[gest]
-    #     break if result
-    #   end
-    #   map_str = "#{event} -> #{result.inspect} in contexts: #{contexts} "
-    #   Fatty.debug("KeyMap#resolve: #{map_str}", tag: :keybinding)
-    #   result
-    # end
-
     def resolve(event, contexts: [])
       result = binding_for(event, contexts: contexts)
       map_str = "#{event} -> #{result.inspect} in contexts: #{contexts} "
@@ -295,6 +276,21 @@ module Fatty
 
         result = map[gest]
         break if result
+      end
+      result
+    end
+
+    # Return all keybindings for event across every context actually loaded
+    # without executing.
+    def bindings_for(event)
+      result = {}
+      return result unless event
+
+      gest = gesture_from_event(event)
+
+      @bindings.each do |context, map|
+        binding = map[gest]
+        result[context] = binding if binding
       end
       result
     end

@@ -76,8 +76,100 @@ module Fatty
       text && !text.empty? && text != "\n" && text != "\r"
     end
 
-    def decoded?
+    def coded?
       key.is_a?(Symbol)
+    end
+
+    def uncoded?
+      !key.is_a?(Symbol)
+    end
+
+    def bindings
+      Fatty::KeyMap.active.bindings_for(self) || {}
+    end
+
+    def unbound?
+      coded? && bindings.empty?
+    end
+
+    def key_name
+      coded? ? to_s : "(none)"
+    end
+
+    def code
+      case raw
+      when Integer
+        raw
+      when Array
+        raw.reverse.find { |item| item.is_a?(Integer) }
+      end
+    end
+
+    def raw_bytes
+      bytes_from_raw(raw)
+    end
+
+    def bytes_from_raw(value)
+      case value
+      when Array
+        value.flat_map { |item| bytes_from_raw(item) }
+      when String
+        value.bytes
+      when Integer
+        [value]
+      else
+        []
+      end
+    end
+
+    def modifier_text
+      mods = []
+      mods << "ctrl" if ctrl?
+      mods << "meta" if meta?
+      mods << "shift" if shift?
+      mods.empty? ? "(none)" : mods.join(", ")
+    end
+
+    def bindings_text
+      return "(none)" if bindings.empty?
+
+      text = bindings.map do |context, binding|
+        "    context: #{context}: #{binding_text(binding)}"
+      end.join("\n")
+      text
+    end
+
+    def binding_text(binding)
+      case binding
+      when nil
+        "(none)"
+      when Array
+        action = binding[0]
+        args = binding[1..] || []
+        args.empty? ? action.inspect : "#{action.inspect} #{args.inspect}"
+      else
+        binding.inspect
+      end
+    end
+
+    def color
+      if uncoded?
+        :oops
+      elsif unbound?
+        :warn
+      else
+        :good
+      end
+    end
+
+    def status_string
+      if uncoded?
+        "(UNCODED)"
+      elsif unbound?
+        "(UNBOUND)"
+      else
+        "(BOUND)"
+      end
     end
 
     def ctrl?
@@ -90,6 +182,126 @@ module Fatty
 
     def shift?
       @shift
+    end
+
+    def report
+      if uncoded?
+        report_for_uncoded
+      elsif unbound?
+        report_for_unbound
+      else
+        report_for_bound
+      end
+    end
+
+    def report_for_uncoded
+      rule = colorize("=" * 55) + "\n"
+      out = +""
+      out << rule
+      out << colorize("Key report #{status_string}:\n")
+      out << "  code:      #{code.inspect}\n"
+      out << "  raw:       #{raw.inspect}\n"
+      out << "  bytes:     #{raw_bytes.inspect}\n"
+      out << "  key:       #{key.inspect}\n"
+      out << "\n"
+
+      # snippet = suggested_keydef
+      # @suggestions << snippet
+      # out << "\n"
+      # out << snippet
+      # out << "\n"
+    end
+
+    def report_for_unbound
+      rule = colorize("=" * 55) + "\n"
+      out = +""
+      out << rule
+      out << colorize("Key report #{status_string}:\n")
+      # out << "  TERM:      #{terminal_name}\n"
+      out << "  code:      #{code.inspect}\n"
+      out << "  raw:       #{raw.inspect}\n"
+      out << "  bytes:     #{raw_bytes.inspect}\n"
+      out << "  key:       #{key.inspect}\n"
+      out << "  name:      #{key_name}\n"
+      out << "  text:      #{text.inspect}\n"
+      out << "  modifiers: #{modifier_text}\n"
+
+      # snippet = suggested_keybinding(ev)
+      # @suggestions << snippet
+      # out << "\n"
+      # out << snippet
+      # out << "\n"
+    end
+
+    def report_for_bound
+      rule = colorize("=" * 55) + "\n"
+      out = +""
+      out << rule
+      out << colorize("Key report #{status_string}:\n")
+      # out << "  TERM:      #{terminal_name}\n"
+      out << "  code:      #{code.inspect}\n"
+      out << "  raw:       #{raw.inspect}\n"
+      out << "  bytes:     #{raw_bytes.inspect}\n"
+      out << "  key:       #{key.inspect}\n"
+      out << "  name:      #{key_name}\n"
+      out << "  text:      #{text.inspect}\n"
+      out << "  modifiers: #{modifier_text}\n"
+      out << "  bindings:\n#{bindings_text}\n"
+      out << "\n"
+    end
+
+    def colorize(text)
+      case color
+      when :good
+        Rainbow(text).green
+      when :warn
+        Rainbow(text).yellow
+      when :oops
+        Rainbow(text).red
+      else
+        text
+      end
+    end
+
+    def suggested_snippet(terminal_name)
+      if uncoded?
+        suggested_keydef(terminal_name)
+      elsif unbound?
+        suggested_keybinding
+      else
+        ''
+      end
+    end
+
+    def suggested_keydef(terminal_name)
+      return "" unless code
+
+      <<~TEXT
+
+        No key name is associated with this keycode.
+
+        Suggested keydefs.yml entry:
+
+        #{terminal_name}:
+          map:
+            #{code}:
+              key: key_name
+              shift: <true/false>
+              ctrl: <true/false>
+              meta: <true/false>
+      TEXT
+    end
+
+    def suggested_keybinding
+      <<~TEXT
+
+        No action is bound to #{key_name}.
+
+        Suggested keybindings.yml entry:
+
+        - key: #{key_name}
+          action: <action-name>
+      TEXT
     end
   end
 end
