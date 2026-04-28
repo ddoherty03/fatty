@@ -39,7 +39,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "unicode-display_width", "~> 2.5"
   spec.add_dependency "yaml"
   spec.add_dependency "rainbow"
-
-  # For more information and examples about making a new gem, check out our
-  # guide at: https://bundler.io/guides/creating_gem.html
+  spec.add_dependency "redcarpet"
+  spec.add_dependency "rouge"
 end
