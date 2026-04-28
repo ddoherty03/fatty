@@ -53,17 +53,17 @@ module Fatty
       end
     end
 
-    describe "#decoded?" do
+    describe "#coded?" do
       it "is true when key is a Symbol" do
-        expect(KeyEvent.new(key: :left).decoded?).to be(true)
+        expect(KeyEvent.new(key: :left).coded?).to be(true)
       end
 
       it "is false when key is an Integer (unrecognized/raw code)" do
-        expect(KeyEvent.new(key: 555, raw: 555).decoded?).to be(false)
+        expect(KeyEvent.new(key: 555, raw: 555).coded?).to be(false)
       end
 
       it "is false when key is not a Symbol" do
-        expect(KeyEvent.new(key: "x", text: "x").decoded?).to be(false)
+        expect(KeyEvent.new(key: "x", text: "x").coded?).to be(false)
       end
     end
 

@@ -178,7 +178,7 @@ module Fatty
           expect(e.key).to eq(999)
           expect(e.text).to be_nil
           expect(e.raw).to eq(999)
-          expect(e.decoded?).to be(false)
+          expect(e.coded?).to be(false)
         end
 
         it "provides text for printable ASCII even when a keydef maps the integer code" do
