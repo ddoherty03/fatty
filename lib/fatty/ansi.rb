@@ -280,12 +280,17 @@ module Fatty
       segment(str).map { |text, _style| text }.join
     end
 
+    # Return the screen width taken up by an ANSI-encoded sequence, taking
+    # into account Unicode combining characters.
     def self.visible_length(str)
       segment(str.to_s).sum do |segment_text, _style|
         segment_text.each_char.count { |ch| visible_char?(ch) }
       end
     end
 
+    # Don't count a "combining character" as visible in the sense that it
+    # contributes to width.  It overlays the prior character so it does not
+    # add to the visible width.
     def self.visible_char?(ch)
       !ch.match?(COMBINING_MARK_RE)
     end

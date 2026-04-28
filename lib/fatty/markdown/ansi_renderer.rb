@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "rouge"
+require "cgi"
 
 module Fatty
   class AnsiRenderer < Redcarpet::Render::Base
@@ -12,11 +13,18 @@ module Fatty
     def block_code(code, language)
       lexer = rouge_lexer(language.to_s, code.to_s)
       formatter = Rouge::Formatters::Terminal256.new
-
       gutter = Rainbow("│ ").faint.to_s
-      formatter.format(lexer.lex(code.to_s)).rstrip.lines.map do |line|
+
+      highlighted = formatter.format(lexer.lex(code.to_s))
+      lines = highlighted.lines.map(&:chomp)
+
+      lines.pop while lines.any? && Fatty::Ansi.plain_text(lines.last).strip.empty?
+
+      body = lines.map do |line|
         "#{gutter}#{line}"
-      end.join + "\n\n"
+      end.join("\n")
+
+      "#{body}\n\n"
     end
 
     def codespan(code)
@@ -24,34 +32,41 @@ module Fatty
     end
 
     def normal_text(text)
-      text
+      CGI.unescapeHTML(text.to_s)
+    end
+
+    def normal_text(text)
+      render_inline_html(CGI.unescapeHTML(text.to_s))
     end
 
     def double_emphasis(text)
       Rainbow(text).bright.to_s
     end
 
-    def underline(text)
-      Rainbow(text).underline.to_s
+    # def underline(text)
+    #   Rainbow(text).underline.to_s
+    # end
+
+    def raw_html(html)
+      render_inline_html(CGI.unescapeHTML(html.to_s))
     end
 
+    def render_inline_html(text)
+      text.to_s.gsub(%r{<span\s+class=["']underline["']>(.*?)</span>}m) do
+        Rainbow(Regexp.last_match(1)).underline.to_s
+      end
+    end
+
+    # Curses does not reliably render true italics, so we use underline instead.
     def emphasis(text)
-      Rainbow(text).italic.to_s
-      # Rainbow(text).underline.to_s
-    rescue StandardError
       Rainbow(text).underline.to_s
     end
 
-    def strikethrough(text)
-      Rainbow(text).strike.to_s
-    rescue StandardError
-      "~#{text}~"
-    end
-
-    def strikethrough(text)
-      Rainbow("~#{text}~").faint.to_s
-    end
-
+    # Curses does not support strike-through, but this emulates it with
+    # unicode "combining characters" by adding a "Long Stroke Overlay"
+    # (U+0366) after each character, which overlays each with a strike-through
+    # overlay.  We just had to make sure that Ansi.visible_length takes these
+    # into account in computing width.
     def strikethrough(text)
       text.to_s.each_char.map { |ch| "#{ch}\u0336" }.join
     end
@@ -74,15 +89,33 @@ module Fatty
     end
 
     def block_quote(quote)
-      quote.lines.map { |line| Rainbow("│ ").bright.to_s + line }.join + "\n"
+      gutter = Rainbow("│ ").bright.to_s
+      quote = CGI.unescapeHTML(quote.to_s)
+      paragraphs = quote.to_s.split(/\n{2,}/).map do |para|
+        text = para.lines.map(&:strip).reject(&:empty?).join(" ")
+
+        if text.empty?
+          gutter
+        else
+          wrap(text, first_prefix: gutter, rest_prefix: gutter)
+        end
+      end
+      paragraphs.join("\n#{gutter}\n") + "\n\n"
     end
 
     def header(text, level)
-      case level
-      when 1 then "\e[1;36m#{text}\e[0m\n\n"
-      when 2 then "\e[1;33m#{text}\e[0m\n"
-      else "\e[1m#{text}\e[0m\n"
-      end
+      body =
+        case level
+        when 1
+          h1(text)
+        when 2
+          h2(text)
+        when 3
+          h3(text)
+        else
+          Rainbow(text.to_s).bright.to_s
+        end
+      "#{body}\n\n"
     end
 
     def paragraph(text)
@@ -94,11 +127,31 @@ module Fatty
     end
 
     def list_item(text, _type)
-      wrap(
-        text.strip,
+      text = render_inline_html(CGI.unescapeHTML(text.to_s))
+      head, rest = text.to_s.strip.split(/\n+/, 2)
+      out = wrap(
+        head.to_s.strip,
         first_prefix: "  • ",
         rest_prefix: "    ",
-      ) + "\n"
+      )
+
+      if rest && !rest.empty?
+        out << "\n"
+        out << indent_block(rest.rstrip, "  ")
+      end
+
+      out << "\n"
+      out
+    end
+
+    def indent_block(text, prefix)
+      text.to_s.lines.map do |line|
+        if line.strip.empty?
+          line
+        else
+          "#{prefix}#{line}"
+        end
+      end.join
     end
 
     CELL_SEP = "\u001F"
@@ -181,7 +234,15 @@ module Fatty
     end
 
     def h1(text)
-      Rainbow(text).cyan.bright
+      Rainbow(text.to_s).cyan.bright
+    end
+
+    def h2(text)
+      Rainbow(text.to_s).yellow.bright
+    end
+
+    def h3(text)
+      Rainbow(text.to_s).magenta.underline
     end
 
     def rouge_lexer(language, code)
@@ -198,7 +259,7 @@ module Fatty
     end
 
     def wrap(text, first_prefix: "", rest_prefix: first_prefix)
-      width = [@width.to_i, 20].max
+      width = @width.to_i.clamp(20, 80)
 
       words = text.to_s.split(/\s+/)
       lines = []
