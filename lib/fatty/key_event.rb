@@ -204,12 +204,6 @@ module Fatty
       out << "  bytes:     #{raw_bytes.inspect}\n"
       out << "  key:       #{key.inspect}\n"
       out << "\n"
-
-      # snippet = suggested_keydef
-      # @suggestions << snippet
-      # out << "\n"
-      # out << snippet
-      # out << "\n"
     end
 
     def report_for_unbound
@@ -225,12 +219,6 @@ module Fatty
       out << "  name:      #{key_name}\n"
       out << "  text:      #{text.inspect}\n"
       out << "  modifiers: #{modifier_text}\n"
-
-      # snippet = suggested_keybinding(ev)
-      # @suggestions << snippet
-      # out << "\n"
-      # out << snippet
-      # out << "\n"
     end
 
     def report_for_bound
@@ -278,10 +266,11 @@ module Fatty
 
       <<~TEXT
 
-        No key name is associated with this keycode.
+        No key name is associated with keycode #{code}.
 
         Suggested keydefs.yml entry:
 
+        8<8<8<8<8<8<8< snip here 8<8<8<8<8<8<8<8<8<8<8<
         #{terminal_name}:
           map:
             #{code}:
@@ -289,19 +278,36 @@ module Fatty
               shift: <true/false>
               ctrl: <true/false>
               meta: <true/false>
+        >8>8>8>8>8>8>8 snip here >8>8>8>8>8>8>8>8>8>8>8
       TEXT
     end
 
     def suggested_keybinding
-      <<~TEXT
+      out = <<~TEXT
 
         No action is bound to #{key_name}.
 
         Suggested keybindings.yml entry:
 
-        - key: #{key_name}
-          action: <action-name>
+        8<8<8<8<8<8<8< snip here 8<8<8<8<8<8<8<8<8<8<8<
+        #{yaml_desc}
+        >8>8>8>8>8>8>8 snip here >8>8>8>8>8>8>8>8>8>8>8
       TEXT
+
+      out << <<~TEXT
+
+      TEXT
+      out
+    end
+
+    def yaml_desc
+      lines = ["# #{key_name}", "- key: #{key}"]
+      lines << "  shift: true" if shift?
+      lines << "  ctrl: true" if ctrl?
+      lines << "  meta: true" if meta?
+      lines << "  context: <valid_context>"
+      lines << "  action <action_name>"
+      lines.join("\n")
     end
   end
 end

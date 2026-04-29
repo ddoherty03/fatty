@@ -36,7 +36,7 @@ module Fatty
       # append "  TERM:      #{terminal_name}\n"
       append ev.report
       snippet = ev.suggested_snippet(terminal_name)
-      append anippet + "\n"
+      append snippet + "\n"
       @suggestions << snippet unless snippet.empty?
       show_quit_status
       []
@@ -90,6 +90,17 @@ module Fatty
         (ev.key == :g && ev.ctrl?)
     end
 
+    def terminal_name
+      env =
+        if terminal.respond_to?(:env)
+          terminal.env
+        else
+          terminal.instance_variable_get(:@env)
+        end
+
+      env && env[:terminal] || ENV.fetch("TERM", "unknown")
+    end
+
     def show_quit_status
       terminal.warn("KeyTest — press q, ESC, or C-g to quit  (TERM: #{terminal_name})")
     end
@@ -98,12 +109,9 @@ module Fatty
       suggestions = @suggestions.uniq
       return if suggestions.empty?
 
-      path = File.join(
-        Dir.tmpdir,
-        "fatty-keytest-#{Time.now.strftime('%Y%m%d-%H%M%S')}.yml"
-      )
+      path = File.join(Dir.tmpdir, "fatty-keytest-#{Time.now.strftime('%Y%m%d-%H%M%S')}.yml")
 
-      File.write(path, suggestions.join("\n\n"))
+      File.write(path, suggestion_file_text(suggestions))
 
       append <<~TEXT
         =======================================================
@@ -115,8 +123,94 @@ module Fatty
       terminal.good("KeyTest suggestions written to #{path}")
     end
 
+    def suggestion_file_text(suggestions)
+      out = <<~TEXT
+        # Fatty keytest suggestions
+        # Generated at #{Time.now}
+
+        KEYNAMES
+
+        Known/common key names for keydefs.yml/keybindings.yml:
+      TEXT
+
+      Fatty::Curses.valid_keynames.each do |name|
+        out << "   #{name}\n"
+      end
+
+      out << <<~TEXT
+
+        Printable keys are also valid key names, for example:
+          a
+          y
+          ]
+          /
+        Use ctrl/meta/shift flags in keybindings.yml for modifiers.
+
+        NOTE: You can also define additional key names in keydefs.yml.
+        For example: if your terminal reports code 652 for the Pause key:
+
+         terminal:
+           tmux:
+             map:
+               652:
+                 key: pause
+
+         Then you can bind it to an action in keybindings.yml:
+
+         - key: pause
+           action: your_action
+
+        ACTIONS
+
+        Valid action names for keybindings.yml:
+
+        NOTE: Fatty also supports user-defined actions. The extension mechanism is still
+        evolving; see README.md for the current plugin/action registration details.
+      TEXT
+
+      Fatty::Actions.catalog_by_target.each do |target, names|
+        out << "\n"
+        out << "#{target} actions:\n"
+
+        names.each do |name|
+          out << "   #{name}\n"
+        end
+      end
+
+      out << <<~TEXT
+
+        CONTEXTS
+
+        Valid contexts for keybindings.yml:\n
+      TEXT
+
+      Fatty::KeyMap.valid_contexts.each do |name|
+        out << "    #{name}\n"
+      end
+
+      out << <<~TEXT
+        If context is omitted, the default is #{Fatty::KeyMap::DEFAULT_CONTEXT}.
+
+        MOUSE EVENTS
+
+        Mouse events may also be bound in keybindings.yml, for example:
+
+        - mouse: scroll_up
+          context: paging
+          action: page_up
+
+        - mouse: scroll_down
+          context: paging
+          action: page_down
+      TEXT
+      out << "\n"
+      out << suggestions.join("\n\n")
+      out << "\n"
+      out
+    end
+
     def restore_owner_pager!
-      if @owner && @owner.respond_to?(:pager)
+      if @owner&.respond_to?(:pager)
         @owner.pager.quit_paging
       end
     end
