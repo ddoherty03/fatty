@@ -117,6 +117,10 @@ module Fatty
       @registered_contexts ||= [DEFAULT_CONTEXT, :paging]
     end
 
+    def self.valid_contexts
+      registered_contexts.map(&:to_s).sort
+    end
+
     # Register a context (optionally before/after another for precedence/printing)
     def self.register_context(ctx, before: nil, after: nil)
       ctx = ctx.to_s.to_sym

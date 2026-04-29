@@ -519,6 +519,22 @@ require 'curses'
 
 module Fatty
   module Curses
+    # These come from special handling in KeyDecoder#fallback_decode.
+    COMMON_KEYNAMES = %i[
+      enter
+      escape
+      return
+      space
+      ].freeze
+
+    # After this list is read in, return an Array of the known key names.
+    def self.valid_keynames
+      (
+        CURSES_TO_EVENT.values.map(&:key).compact +
+        COMMON_KEYNAMES
+      ).map(&:to_s).uniq.sort
+    end
+
     CURSES_TO_EVENT = {
       # Special case for TAB.  Curses::KEY_CTRL_I may not get defined on all
       # platforms.

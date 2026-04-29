@@ -6,6 +6,36 @@ module Fatty
   module Actions
     @defs = {} # { Symbol => { owner:, on:, doc:, method: } }
 
+    def self.names
+      @defs.keys.sort
+    end
+
+    def self.valid_names
+      names.map(&:to_s)
+    end
+
+    def self.catalog
+      names.map do |name|
+        defn = @defs[name]
+        {
+          name: name.to_s,
+          doc: defn[:doc],
+          on: defn[:on].to_s,
+          method: defn[:method].to_s,
+        }
+      end
+    end
+
+    def self.catalog_by_target
+      @defs
+        .group_by { |_name, defn| defn[:on].to_s }
+        .sort
+        .to_h do |target, entries|
+          names = entries.map { |name, _defn| name.to_s }.sort
+          [target, names]
+        end
+    end
+
     def self.snapshot
       @defs.dup
     end
