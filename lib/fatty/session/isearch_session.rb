@@ -2,6 +2,8 @@
 
 module Fatty
   class ISearchSession < Session
+    action_on :session
+
     attr_reader :field, :direction
 
     def id = :isearch
@@ -25,8 +27,12 @@ module Fatty
       )
     end
 
+    #########################################################################################
+    # Framework and Session Hooks
+    #########################################################################################
+
     def keymap_contexts
-      [:isearch, :input, :terminal]
+      [:isearch, :text, :terminal]
     end
 
     def view(screen:, renderer:)
@@ -35,6 +41,30 @@ module Fatty
       ::Curses.curs_set(1)
       renderer.render_pager_field(@field, row: row, role: :search)
       renderer.restore_output_cursor(@field, row: row)
+    end
+
+    ############################################################################################
+    # Actions
+    ############################################################################################
+
+    desc "Return the line so far as the search string"
+    action :isearch_accept do
+      accept!
+    end
+
+    desc "Quit the I-Search session"
+    action :isearch_cancel do
+      cancel!
+    end
+
+    desc "Move to the next matching text"
+    action :isearch_next do
+      step_next!
+    end
+
+    desc "Move to the prior matching text"
+    action :isearch_prev do
+      step_prev!
     end
 
     private

@@ -53,7 +53,7 @@ module Fatty
 
       # Counts (prefix arg)
       map.bind(key: :u, ctrl: true, action: :universal_argument)
-      map.bind_digits(context: :input, meta: true)
+      map.bind_digits(context: :text, meta: true)
       map.bind_digits(context: :popup)
       map.bind_digits(context: :paging)
       # ShellSession uses contexts [:paging, :terminal] while the pager is
@@ -62,11 +62,11 @@ module Fatty
       map.bind(context: :terminal, key: :u, ctrl: true, action: :universal_argument)
 
       # History
-      map.bind(key: :p, ctrl: true, action: :history_prev)
-      map.bind(key: :n, ctrl: true, action: :history_next)
-      map.bind(key: :up, action: :history_prev)
-      map.bind(key: :down, action: :history_next)
-      map.bind(key: :r, ctrl: true, action: :history_search)
+      map.bind(context: :input, key: :p, ctrl: true, action: :history_prev)
+      map.bind(context: :input, key: :n, ctrl: true, action: :history_next)
+      map.bind(context: :input, key: :up, action: :history_prev)
+      map.bind(context: :input, key: :down, action: :history_next)
+      map.bind(context: :input, key: :r, ctrl: true, action: :history_search)
 
       # Completion on input
       map.bind(context: :input, key: :tab, action: :complete)
@@ -97,17 +97,25 @@ module Fatty
       # context that steals the SPACE key for toggling selection
       map.bind(context: :popup_multi, key: :space, action: :popup_toggle_selected)
 
+      # Prompt
+      map.bind(context: :prompt, key: :c, ctrl: true, action: :prompt_cancel)
+      map.bind(context: :prompt, key: :g, ctrl: true, action: :prompt_cancel)
+      map.bind(context: :prompt, key: :enter, action: :prompt_accept)
+      map.bind(context: :prompt, key: :return, action: :prompt_accept)
+      map.bind(context: :prompt, key: :j, ctrl: true, action: :accept_prompt)
+
+      #
       # Themes
       map.bind(context: :terminal, key: :t, meta: true, ctrl: true, action: :cycle_theme)
       map.bind(context: :terminal, key: :'=', meta: true, action: :choose_theme)
 
       # Final States
-      map.bind(key: :c, ctrl: true, action: :interrupt)
-      map.bind(key: :d, ctrl: true, action: :interrupt_if_empty)
-      map.bind(key: :enter, action: :accept_line)
-      map.bind(key: :return, action: :accept_line)
-      map.bind(key: :j, ctrl: true, action: :accept_line)
-      map.bind(key: :j, ctrl: true, meta: true, action: :accept_and_scroll)
+      map.bind(context: :terminal, key: :c, ctrl: true, action: :interrupt)
+      map.bind(context: :input, key: :d, ctrl: true, action: :interrupt_if_empty)
+      map.bind(context: :input, key: :enter, action: :submit_line)
+      map.bind(context: :input, key: :return, action: :submit_line)
+      map.bind(context: :input, key: :j, ctrl: true, action: :submit_line)
+      map.bind(context: :input, key: :j, ctrl: true, meta: true, action: :submit_and_scroll)
 
       # Output control
       map.bind(key: :l, ctrl: true, action: :clear_output)
@@ -146,16 +154,18 @@ module Fatty
       map.bind(context: :paging, key: :r, ctrl: true, action: :pager_isearch_backward)
 
       # I-search controls (within ISearchSession)
+      map.bind(context: :isearch, key: :enter, action: :isearch_accept)
       map.bind(context: :isearch, key: :s, ctrl: true, action: :isearch_next)
       map.bind(context: :isearch, key: :r, ctrl: true, action: :isearch_prev)
-      map.bind(context: :isearch, key: :g, ctrl: true, action: :popup_cancel)
-      map.bind(context: :isearch, key: :escape, action: :popup_cancel)
+      map.bind(context: :isearch, key: :g, ctrl: true, action: :isearch_cancel)
+      map.bind(context: :isearch, key: :escape, action: :isearch_cancel)
 
       # Repeat last search (no minibuffer)
       map.bind(context: :paging, key: :n, action: :pager_search_next)
       map.bind(context: :paging, key: :N, action: :pager_search_prev)
 
       # Search minibuffer stepping (SearchSession)
+      map.bind(context: :search, key: :enter, action: :search_accept)
       map.bind(context: :search, key: :s, ctrl: true, action: :search_step_forward)
       map.bind(context: :search, key: :r, ctrl: true, action: :search_step_backward)
       map.bind(context: :search, key: :r, meta: true, action: :search_toggle_regex)

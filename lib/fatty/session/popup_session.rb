@@ -2,6 +2,8 @@
 
 module Fatty
   class PopUpSession < ModalSession
+    action_on :session
+
     attr_reader :field, :filtered, :displayed, :selected, :title, :message
 
     MAX_WIDTH      = 120
@@ -58,20 +60,27 @@ module Fatty
       @scroll_start = 0
     end
 
-    def keymap_contexts
-      [:popup, :input]
-    end
-
-    def keymap_contexts
-      contexts = [:popup, :input]
-      contexts.unshift(:popup_multi) if multi_select?
-      contexts
-    end
+    #########################################################################################
+    # Framework and Session Hooks
+    #########################################################################################
 
     def init(terminal:)
       refresh_items
       rebuild_windows!
       notify_owner(:popup_changed)
+    end
+
+    def keymap_contexts
+      contexts = [:popup, :text]
+      contexts.unshift(:popup_multi) if multi_select?
+      contexts
+    end
+
+    def view(screen:, renderer:)
+      Fatty.debug("PopupSession#view: object_id=#{object_id} win_nil=#{@win.nil?}", tag: :session)
+      return unless @win
+
+      renderer.render_popup(session: self)
     end
 
     # Return the outer width and height of the window for this modal,
@@ -93,54 +102,79 @@ module Fatty
       [width, height]
     end
 
+    ############################################################################################
+    # Actions
+    ############################################################################################
+
+    action :popup_cancel do
+      notify_owner(:popup_cancelled) + [[:terminal, :pop_modal]]
+    end
+
+    action :popup_accept do
+      accept_selection
+    end
+
+    action :popup_next do
+      move_selected_by(1)
+      ensure_scroll_visible
+      notify_owner(:popup_changed)
+    end
+
+    action :popup_prev do
+      move_selected_by(-1)
+      ensure_scroll_visible
+      notify_owner(:popup_changed)
+    end
+
+    action :popup_page_down do
+      move_selected_by(popup_list_height)
+      ensure_scroll_visible
+      notify_owner(:popup_changed)
+    end
+
+    action :popup_page_up do
+      move_selected_by(-popup_list_height)
+      ensure_scroll_visible
+      notify_owner(:popup_changed)
+    end
+
+    action :popup_top do
+      unless @filtered.empty?
+        @selected = 0
+        recenter_scroll
+      end
+      notify_owner(:popup_changed)
+    end
+
+    action :popup_bottom do
+      unless @filtered.empty?
+        @selected = [@filtered.length - 1, 0].max
+        recenter_scroll
+      end
+      notify_owner(:popup_changed)
+    end
+
+    action :popup_recenter do
+      recenter_scroll
+      []
+    end
+
+    action :popup_toggle_selected do
+      if multi_select?
+        toggle_selected_current!
+        ensure_scroll_visible
+        notify_owner(:popup_changed)
+      else
+        []
+      end
+    end
+
     def handle_action(action, args, event:)
       env = action_env(event: event)
-      case action.to_sym
-      when :popup_cancel, :interrupt
-        notify_owner(:popup_cancelled) + [[:terminal, :pop_modal]]
-      when :popup_accept
-        accept_selection
-      when :popup_next
-        move_selected_by(1)
-        ensure_scroll_visible
-        notify_owner(:popup_changed)
-      when :popup_prev
-        move_selected_by(-1)
-        ensure_scroll_visible
-        notify_owner(:popup_changed)
-      when :popup_page_down
-        move_selected_by(popup_list_height)
-        ensure_scroll_visible
-        notify_owner(:popup_changed)
-      when :popup_page_up
-        move_selected_by(-popup_list_height)
-        ensure_scroll_visible
-        notify_owner(:popup_changed)
-      when :popup_top
-        unless @filtered.empty?
-          @selected = 0
-          recenter_scroll
-        end
-        notify_owner(:popup_changed)
-      when :popup_bottom
-        unless @filtered.empty?
-          @selected = [@filtered.length - 1, 0].max
-          recenter_scroll
-        end
-        notify_owner(:popup_changed)
-      when :popup_recenter
-        recenter_scroll
-        []
-      when :popup_toggle_selected
-        if multi_select?
-          toggle_selected_current!
-          ensure_scroll_visible
-          notify_owner(:popup_changed)
-        else
-          []
-        end
+
+      if Fatty::Actions.lookup(action)&.fetch(:on) == :session
+        Fatty::Actions.call(action, env, *args)
       else
-        # fallthrough: normal input editing actions
         @field.act_on(action, *args, env: env)
         refresh_items_if_query_changed
         ensure_scroll_visible
@@ -238,13 +272,6 @@ module Fatty
 
       refresh_displayed_items
       apply_selection_policy!
-    end
-
-    def view(screen:, renderer:)
-      Fatty.debug("PopupSession#view: object_id=#{object_id} win_nil=#{@win.nil?}", tag: :session)
-      return unless @win
-
-      renderer.render_popup(session: self)
     end
 
     # Renderer calls this to determine which slice of items to display.

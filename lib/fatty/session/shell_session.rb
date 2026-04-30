@@ -4,6 +4,8 @@ require "open3"
 
 module Fatty
   class ShellSession < OutputSession
+    action_on :session
+
     attr_reader :field, :history
 
     def initialize(prompt: "sh> ", on_accept: nil, completion_proc: nil, history_ctx: nil, history_path: :default)
@@ -28,6 +30,10 @@ module Fatty
       @completion_proc = completion_proc
     end
 
+    #########################################################################################
+    # Framework and Session Hooks
+    #########################################################################################
+
     def init(terminal:)
       super
       resize_output!
@@ -35,22 +41,7 @@ module Fatty
     end
 
     def keymap_contexts
-      if pager_active?
-        [:paging, :terminal]
-      else
-        [:input, :terminal]
-      end
-    end
-
-    def action_env(event:)
-      Fatty::ActionEnvironment.new(
-        session: self,
-        counter: counter,
-        event: event,
-        buffer: @field.buffer,
-        field: @field,
-        pager: pager,
-      )
+      pager_active? ? [:paging, :terminal] : [:input, :text, :terminal]
     end
 
     def update_key(ev)
@@ -116,6 +107,214 @@ module Fatty
       end
       dirty
     end
+
+    ############################################################################################
+    # Actions
+    ############################################################################################
+
+    def action_env(event:)
+      Fatty::ActionEnvironment.new(
+        session: self,
+        counter: counter,
+        event: event,
+        buffer: @field.buffer,
+        field: @field,
+        pager: pager,
+      )
+    end
+
+    desc "Pass the current shell input line to the proc"
+    action :submit_line do
+      submit_line
+    end
+
+    # Perform the on_accept action if defined, but catch a few special
+    # commands for quiting and clearing.
+    def submit_line
+      line = @field.accept_line.to_s.strip
+      return [] if line.empty?
+
+      Fatty.info("ShellSession: accept_line: #{line}")
+
+      case line
+      when "exit", "quit"
+        [[:terminal, :quit]]
+      when "clear"
+        reset_output!
+        [[:send, :alert, :clear, {}]]
+      else
+        reset_for_command!
+        anchor = output.lines.length
+        pager.begin_command!(anchor: anchor)
+
+        result =
+          if @on_accept
+            @on_accept.call(line, accept_env)
+          else
+            run_default_command(line)
+          end
+        normalize_accept_result(result)
+      end
+    rescue Errno::ENOENT
+      [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
+    end
+
+    desc "Accept the current shell input line and switch output to scrolling"
+    action :submit_and_scroll do
+      before = output.lines.length
+      cmds = accept_line
+      pager.paging_to_scrolling if output.lines.length > before
+      cmds
+    end
+
+    desc "Interrupt scrolling, otherwise quit Fatty"
+    action :interrupt do
+      if pager.mode == :scrolling
+        pager.quit_paging
+        []
+      else
+        [[:terminal, :quit]]
+      end
+    end
+
+    desc "Quit if input is empty, otherwise delete forward"
+    action :interrupt_if_empty do
+      if pager.mode == :scrolling
+        pager.quit_paging
+        []
+      elsif @field.empty?
+        [[:terminal, :quit]]
+      else
+        @field.act_on(:delete_char_forward, env: action_env(event: nil))
+        []
+      end
+    end
+
+    desc "Clear shell output"
+    action :clear_output do
+      reset_output!
+      []
+    end
+
+    desc "Cycle to the next theme"
+    action :cycle_theme do
+      [[:terminal, :cycle_theme]]
+    end
+
+    desc "Choose a theme from a popup"
+    action :choose_theme do
+      current = Fatty::Colors::ThemeManager.current
+      names = Fatty::Colors::ThemeManager.theme_names
+      ordered = [current] + (names - [current])
+      @theme_popup_restore = current
+
+      popup = Fatty::PopUpSession.new(
+        source: ordered,
+        kind: :theme_chooser,
+        title: "Themes",
+        prompt: "Theme: ",
+        selection: :top,
+      )
+
+      [[:terminal, :push_modal, popup]]
+    end
+
+    desc "Add a digit to the current numeric prefix"
+    action :prefix_digit do |digit|
+      counter.push_digit(digit)
+      []
+    end
+
+    desc "Complete the current input prefix"
+    action :complete do
+      with_virtual_suffix_sync do
+        @field.cycle_completion!
+        []
+      end
+    end
+
+    desc "Open completion popup"
+    action :completion_popup do
+      with_virtual_suffix_sync do
+        candidates = @field.popup_completion_candidates
+
+        if candidates.empty?
+          []
+        elsif candidates.length == 1
+          apply_completion(candidates.first, range: @field.popup_completion_range)
+        else
+          @completion_range = @field.popup_completion_range
+          popup = Fatty::PopUpSession.new(
+            source: candidates,
+            kind: :completion,
+            title: "Completions",
+            prompt: "Complete: ",
+            order: :as_given,
+            selection: :top,
+            initial_query: @field.popup_completion_query.to_s,
+            matcher: ->(item, q) { item.to_s.start_with?(q.to_s) },
+          )
+          [[:terminal, :push_modal, popup]]
+        end
+      end
+    end
+
+    desc "Search pager forward"
+    action :pager_search_forward do
+      regex = consume_search_regex_flag
+      [[:terminal, :push_modal,
+        Fatty::SearchSession.new(direction: :forward, regex: regex, history: @history)]]
+    end
+
+    desc "Search pager backward"
+    action :pager_search_backward do
+      regex = consume_search_regex_flag
+      [[:terminal, :push_modal,
+        Fatty::SearchSession.new(direction: :backward, regex: regex, history: @history)]]
+    end
+
+    desc "Start incremental pager search forward"
+    action :pager_isearch_forward do
+      [[:terminal, :push_modal,
+        Fatty::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)]]
+    end
+
+    desc "Start incremental pager search backward"
+    action :pager_isearch_backward do
+      [[:terminal, :push_modal,
+        Fatty::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)]]
+    end
+
+    desc "Repeat pager search forward"
+    action :pager_search_next do
+      handle_search_result(pager.search_repeat_next!)
+    end
+
+    desc "Repeat pager search backward"
+    action :pager_search_prev do
+      handle_search_result(pager.search_repeat_prev!)
+    end
+
+    desc "Open command history search"
+    action :history_search do
+      src = ->(_q = nil) { @history.entries.select(&:command?).last(500).map(&:text) }
+
+      popup = Fatty::PopUpSession.new(
+        source: src,
+        kind: :history_search,
+        title: "History",
+        prompt: "I-search: ",
+        order: :as_given,
+        selection: :bottom,
+        initial_query: @field.buffer.text,
+      )
+
+      [[:terminal, :push_modal, popup]]
+    end
+
+    #########################################################################################
+    # Completion
+    #########################################################################################
 
     def completion_candidates
       path_candidates = @field.path_completion_candidates
@@ -282,174 +481,18 @@ module Fatty
       apply_action(action, args, event, env: env)
     end
 
+    # Centralized dispatch: actions declare their target (:buffer/:field/:pager)
+    # and Fatty::Actions routes through ActionEnvironment.
     def apply_action(action, args, ev, env:)
-      case action
-      when :accept_line
-        accept_line
-      when :accept_and_scroll
-        accept_line_and_scroll(env: env)
-      when :interrupt
-        if pager.mode == :scrolling
-          pager.quit_paging
-          []
-        else
-          [[:terminal, :quit]]
-        end
-      when :interrupt_if_empty
-        if pager.mode == :scrolling
-          pager.quit_paging
-          []
-        elsif @field.empty?
-          [[:terminal, :quit]]
-        else
-          @field.act_on(:delete_char_forward, env: env)
-          []
-        end
-      when :prefix_digit
-        counter.push_digit(args.first)
-        []
-      when :clear_output
-        reset_output!
-        []
-      when :cycle_theme
-        [[:terminal, :cycle_theme]]
-      when :choose_theme
-        current = Fatty::Colors::ThemeManager.current
-        names = Fatty::Colors::ThemeManager.theme_names
-        ordered = [current] + (names - [current])
-        @theme_popup_restore = current
-        popup = Fatty::PopUpSession.new(
-          source: ordered,
-          kind: :theme_chooser,
-          title: "Themes",
-          prompt: "Theme: ",
-          selection: :top,
-        )
-        [[:terminal, :push_modal, popup]]
-      when :complete
-        with_virtual_suffix_sync do
-          @field.cycle_completion!
-          []
-        end
-      when :completion_popup
-        with_virtual_suffix_sync do
-          candidates = @field.popup_completion_candidates
-          if candidates.empty?
-            []
-          elsif candidates.length == 1
-            apply_completion(candidates.first, range: @field.popup_completion_range)
-          else
-            @completion_range = @field.popup_completion_range
-            popup = Fatty::PopUpSession.new(
-              source: candidates,
-              kind: :completion,
-              title: "Completions",
-              prompt: "Complete: ",
-              order: :as_given,
-              selection: :top,
-              initial_query: @field.popup_completion_query.to_s,
-              matcher: ->(item, q) { item.to_s.start_with?(q.to_s) },
-            )
-            [[:terminal, :push_modal, popup]]
-          end
-        end
-      when :history_search
-        # Oldest -> newest, so newest appears at the bottom of the popup.
-        src = ->(_q = nil) { @history.entries.select(&:command?).last(500).map(&:text) }
-        Fatty.debug("ShellSession#apply_action: history_search: building popup", tag: :session)
-        popup = Fatty::PopUpSession.new(
-          source: src,
-          kind: :history_search,
-          title: "History",
-          prompt: "I-search: ",
-          order: :as_given,
-          selection: :bottom,
-          initial_query: @field.buffer.text,
-        )
-        [[:terminal, :push_modal, popup]]
-      when :pager_search_forward
-        regex = consume_search_regex_flag
-        [[:terminal, :push_modal, Fatty::SearchSession.new(direction: :forward, regex: regex, history: @history)]]
-      when :pager_search_backward
-        regex = consume_search_regex_flag
-        [[
-           :terminal,
-           :push_modal,
-           Fatty::SearchSession.new(direction: :backward, regex: regex, history: @history)
-         ]]
-      when :pager_isearch_forward
-        [[
-           :terminal,
-           :push_modal,
-           Fatty::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)
-         ]]
-      when :pager_isearch_backward
-        [[
-           :terminal,
-           :push_modal,
-           Fatty::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)
-         ]]
-      when :pager_search_next
-        result = pager.search_repeat_next!
-        handle_search_result(result)
-      when :pager_search_prev
-        result = pager.search_repeat_prev!
-        handle_search_result(result)
-      else
-        begin
-          # Centralized dispatch: actions declare their target (:buffer/:field/:pager)
-          # and Fatty::Actions routes through ActionEnvironment.
-          with_virtual_suffix_sync do
-            @field.reset_completion_cycle!
-            Fatty::Actions.call(action, env, *args)
-          end
-        rescue Fatty::ActionError => e
-          return [alert_cmd(:error, e.message, ev: ev)]
-        end
-        []
-      end
-    end
-
-    def accept_line
-      line = @field.accept_line.to_s.strip
-      return [] if line.empty?
-
-      Fatty.info("ShellSession: accept_line: #{line}")
-
-      case line
-      when "exit", "quit"
-        [[:terminal, :quit]]
-      when "clear"
-        reset_output!
-        [[:send, :alert, :clear, {}]]
-      else
-        reset_for_command!
-        anchor = output.lines.length
-        pager.begin_command!(anchor: anchor)
-        append_output("$ #{line}\n", follow: true)
-
-        result =
-          if @on_accept
-            @on_accept.call(line, accept_env)
-          else
-            run_default_command(line)
-          end
-        normalize_accept_result(result)
-      end
-    rescue Errno::ENOENT
-      [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
-    end
-
-    def accept_line_and_scroll(env:)
-      before = output.lines.length
-      cmds = accept_line
-      if output.lines.length > before
-        env.pager.act_on(:paging_to_scrolling, env: env)
-      end
-      cmds
+      @field.reset_completion_cycle!
+      result = Fatty::Actions.call(action, env, *args)
+      result.is_a?(Array) ? result : []
+    rescue Fatty::ActionError => e
+      [alert_cmd(:error, e.message, ev: ev)]
     end
 
     def run_default_command(line)
+      append_output("$ #{line}\n", follow: true)
       out, status = Open3.capture2e(line)
       # optional: include exit status line
       out << "\n[exit #{status.exitstatus}]\n" if status && status.exitstatus && status.exitstatus != 0

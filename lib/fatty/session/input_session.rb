@@ -13,9 +13,9 @@ module Fatty
 
     def keymap_contexts
       if paging_mode?
-        [:paging, :input, :terminal]
+        [:paging, :text, :terminal]
       else
-        [:input, :terminal]
+        [:text, :terminal]
       end
     end
 

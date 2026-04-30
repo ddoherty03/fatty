@@ -2,6 +2,8 @@
 
 module Fatty
   class SearchSession < Session
+    action_on :session
+
     attr_reader :field, :direction, :regex
 
     DEFAULT_SEARCH_HISTORY_FILE = File.expand_path("~/.fatty_search_history")
@@ -24,36 +26,12 @@ module Fatty
       @field.buffer.replace(text) unless text.empty?
     end
 
+    #########################################################################################
+    # Framework and Session Hooks
+    #########################################################################################
+
     def keymap_contexts
-      [:search, :input, :terminal]
-    end
-
-    def handle_action(action, args, event:)
-      env = ActionEnvironment.new(
-        session: self,
-        counter: counter,
-        event: event,
-        buffer: @field.buffer,
-        field: @field,
-      )
-
-      case action.to_sym
-      when :accept_line
-        accept_search
-      when :popup_cancel, :interrupt
-        [[:terminal, :pop_modal]]
-      when :search_toggle_regex
-        toggle_regex
-      when :search_step_forward
-        step_search(:forward)
-      when :search_step_backward
-        step_search(:backward)
-      else
-        @field.act_on(action, *args, env: env)
-        []
-      end
-    rescue Fatty::ActionError
-      []
+      [:search, :text, :terminal]
     end
 
     def view(screen:, renderer:)
@@ -66,6 +44,49 @@ module Fatty
         role: :search,
       )
       renderer.restore_output_cursor(@field, row: row)
+    end
+
+    ############################################################################################
+    # Actions
+    ############################################################################################
+
+    desc "Return the line so far as the prompt input"
+    action :search_accept do
+      accept_search
+    end
+
+    desc "Terminate the prompt session"
+    action :search_cancel do
+      [[:terminal, :pop_modal]]
+    end
+
+    desc "Toggle between string i-search and regex search"
+    action :search_toggle_regex do
+      toggle_regex
+    end
+
+    desc "Move to the next search match"
+    action :search_step_forward do
+      step_search(:forward)
+    end
+
+    desc "Move to the prior search match"
+    action :search_step_backward do
+      step_search(:backward)
+    end
+
+    def handle_action(action, args, event:)
+      env = ActionEnvironment.new(
+        session: self,
+        counter: counter,
+        event: event,
+        buffer: @field.buffer,
+        field: @field,
+      )
+      @field.act_on(action, *args, env: env)
+      []
+    rescue Fatty::ActionError
+      []
     end
 
     def toggle_regex

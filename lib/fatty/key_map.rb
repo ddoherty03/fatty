@@ -107,14 +107,14 @@ module Fatty
   class KeyMap
     attr_reader :bindings
 
-    DEFAULT_CONTEXT = :input
+    DEFAULT_CONTEXT = :text
 
     class << self
       attr_accessor :active
     end
 
     def self.registered_contexts
-      @registered_contexts ||= [DEFAULT_CONTEXT, :paging]
+      @registered_contexts ||= [DEFAULT_CONTEXT, :input, :paging]
     end
 
     def self.valid_contexts
@@ -151,7 +151,7 @@ module Fatty
     end
 
     # Bind a KeyEvent to an action in the given context.
-    def bind(context: :input, key:, ctrl: false, meta: false, shift: false, action: nil)
+    def bind(context: DEFAULT_CONTEXT, key:, ctrl: false, meta: false, shift: false, action: nil)
       bind_str = "#{KeyEvent.key_to_str(key:, ctrl:, meta:, shift:)} -> #{action} in context: #{context}"
       Fatty.info("KeyMap#bind: (#{bind_str})", tag: :keybinding)
 
@@ -217,7 +217,7 @@ module Fatty
           Fatty.debug("KeyMap.resolve_action: action: #{binding.inspect}, args: []", tag: :keybinding)
           [binding, []]
         end
-      elsif event&.printable? && (contexts.include?(:input) || contexts.include?(:pager_input))
+      elsif event&.printable? && (contexts.include?(:text) || contexts.include?(:pager_input))
         # Default: treat printable characters as a self-insert but only in
         # those contexts designed to take text input, not contexts like
         # :paging where keys are meant for control.

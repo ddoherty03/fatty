@@ -2,6 +2,8 @@
 
 module Fatty
   class PromptSession < ModalSession
+    action_on :session
+
     attr_reader :field, :title, :message, :history
 
     PROMPT_POPUP_MAX_WIDTH = 120
@@ -29,14 +31,18 @@ module Fatty
       @win = nil
     end
 
-    def keymap_contexts
-      [:input]
-    end
+    #########################################################################################
+    # Framework and Session Hooks
+    #########################################################################################
 
     def init(terminal:)
       super
       rebuild_windows!
       []
+    end
+
+    def keymap_contexts
+      [:prompt, :text, :terminal]
     end
 
     def view(screen:, renderer:)
@@ -45,39 +51,46 @@ module Fatty
       renderer.render_prompt_popup(session: self)
     end
 
+    ############################################################################################
+    # Actions
+    ############################################################################################
+
+    action_on :session
+
+    desc "Accept prompt input"
+    action :prompt_accept do
+      text = @field.accept_line.to_s
+      [
+        [:terminal, :send_modal_owner, [:cmd, :prompt_result, { kind: @kind, text: text }]],
+        [:terminal, :pop_modal],
+      ]
+    end
+
+    desc "Cancel prompt input"
+    action :prompt_cancel do
+      [
+        [:terminal, :send_modal_owner, [:cmd, :prompt_cancelled, prompt_payload]],
+        [:terminal, :pop_modal],
+      ]
+    end
+
+    desc "Cancel prompt if empty, otherwise delete forward"
+    action :prompt_cancel_if_empty do
+      if @field.buffer.text.to_s.empty?
+        interrupt
+      else
+        with_virtual_suffix_sync { @field.act_on(:delete_char_forward, env: action_env(event: nil)) }
+        []
+      end
+    end
+
     def handle_action(action, args, event:)
       env = action_env(event: event)
 
-      case action.to_sym
-      when :interrupt
-        [
-          [:terminal, :send_modal_owner, [:cmd, :prompt_cancelled, prompt_payload]],
-          [:terminal, :pop_modal]
-        ]
-      when :accept_line
-        text = @field.accept_line.to_s
-        [
-          [:terminal, :send_modal_owner, [:cmd, :prompt_result, { kind: @kind, text: text }]],
-          [:terminal, :pop_modal]
-        ]
-      when :interrupt_if_empty
-        if @field.buffer.text.to_s.empty?
-          [
-            [:terminal, :send_modal_owner, [:cmd, :prompt_cancelled, prompt_payload]],
-            [:terminal, :pop_modal]
-          ]
-        else
-          with_virtual_suffix_sync do
-            @field.act_on(action, *args, env: env)
-          end
-          []
-        end
-      else
-        with_virtual_suffix_sync do
-          @field.act_on(action, *args, env: env)
-        end
-        []
+      with_virtual_suffix_sync do
+        @field.act_on(action, *args, env: env)
       end
+      []
     rescue ActionError => e
       Fatty.error("PromptSession#handle_action: ActionError #{e.message}", tag: :session)
       []
