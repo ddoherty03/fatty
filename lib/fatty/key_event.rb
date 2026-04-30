@@ -299,8 +299,7 @@ module Fatty
 
         Suggested keydefs.yml entry:
 
-        8<8<8<8<8<8<8< snip here 8<8<8<8<8<8<8<8<8<8<8<
-
+        ............>8 snip here 8<....................
         #{terminal_name}:
           map:
             #{code}:
@@ -308,8 +307,7 @@ module Fatty
               shift: <true/false>
               ctrl: <true/false>
               meta: <true/false>
-
-        >8>8>8>8>8>8>8 snip here >8>8>8>8>8>8>8>8>8>8>8
+        ............>8 snip here 8<....................
       TEXT
     end
 
@@ -320,11 +318,9 @@ module Fatty
 
         Suggested keybindings.yml entry:
 
-        8<8<8<8<8<8<8< snip here 8<8<8<8<8<8<8<8<8<8<8<
-
+        ............>8 snip here 8<....................
         #{yaml_desc}
-
-        >8>8>8>8>8>8>8 snip here >8>8>8>8>8>8>8>8>8>8>8
+        ............>8 snip here 8<....................
       TEXT
 
       out << <<~TEXT
