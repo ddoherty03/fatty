@@ -134,9 +134,19 @@ module Fatty
       return "(none)" if bindings.empty?
 
       text = bindings.map do |context, binding|
-        "    context: #{context}: #{binding_text(binding)}"
+        action, _args = binding_action(binding)
+        "    context: #{context}: #{binding_text(binding)}#{action_target_text(action)}"
       end.join("\n")
       text
+    end
+
+    def binding_action(binding)
+      case binding
+      when Array
+        [binding[0], binding[1..] || []]
+      else
+        [binding, []]
+      end
     end
 
     def binding_text(binding)
@@ -150,6 +160,25 @@ module Fatty
       else
         binding.inspect
       end
+    end
+
+    def action_target_text(action)
+      return "" unless action
+
+      defn = Fatty::Actions.lookup(action)
+      return "  (unregistered action)" unless defn
+
+      "  (#{defn[:on]}: #{action_owner_name(defn[:owner])}##{defn[:method]})"
+    end
+
+    def action_owner_name(owner)
+      name =
+        if owner.respond_to?(:name) && owner.name
+          owner.name
+        else
+          owner.to_s
+        end
+      name.split("::").last
     end
 
     def color
@@ -271,6 +300,7 @@ module Fatty
         Suggested keydefs.yml entry:
 
         8<8<8<8<8<8<8< snip here 8<8<8<8<8<8<8<8<8<8<8<
+
         #{terminal_name}:
           map:
             #{code}:
@@ -278,6 +308,7 @@ module Fatty
               shift: <true/false>
               ctrl: <true/false>
               meta: <true/false>
+
         >8>8>8>8>8>8>8 snip here >8>8>8>8>8>8>8>8>8>8>8
       TEXT
     end
@@ -290,7 +321,9 @@ module Fatty
         Suggested keybindings.yml entry:
 
         8<8<8<8<8<8<8< snip here 8<8<8<8<8<8<8<8<8<8<8<
+
         #{yaml_desc}
+
         >8>8>8>8>8>8>8 snip here >8>8>8>8>8>8>8>8>8>8>8
       TEXT
 
@@ -306,7 +339,7 @@ module Fatty
       lines << "  ctrl: true" if ctrl?
       lines << "  meta: true" if meta?
       lines << "  context: <valid_context>"
-      lines << "  action <action_name>"
+      lines << "  action: <action_name>"
       lines.join("\n")
     end
   end
