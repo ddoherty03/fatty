@@ -445,6 +445,7 @@ module Fatty
 
       break_undo_chain!
       copied = text[r] || ""
+      @mark = nil
       push_kill(copied)
       @last_action = :copy
       copied
