@@ -79,31 +79,25 @@ module Fatty
       cmds
     end
 
-    def handle_action(action, args, event:)
-      env = ActionEnvironment.new(
+    def action_env(event:)
+      ActionEnvironment.new(
         session: self,
         counter: counter,
         event: event,
         buffer: @field.buffer,
         field: @field,
       )
+    end
 
-      cmds = []
-      case action.to_sym
-      when :accept_line
-        cmds.concat(accept!)
-      when :popup_cancel, :interrupt
-        cmds.concat(cancel!)
-      when :isearch_next
-        cmds.concat(step_next!)
-      when :isearch_prev
-        cmds.concat(step_prev!)
+    def handle_action(action, args, event:)
+      env = action_env(event: event)
+
+      if Fatty::Actions.lookup(action)&.fetch(:on) == :session
+        Fatty::Actions.call(action, env, *args)
       else
         @field.act_on(action, *args, env: env)
-        cmds.concat(maybe_preview!)
+        maybe_preview!
       end
-
-      cmds
     rescue Fatty::ActionError
       []
     end

@@ -102,7 +102,7 @@ module Fatty
       map.bind(context: :prompt, key: :g, ctrl: true, action: :prompt_cancel)
       map.bind(context: :prompt, key: :enter, action: :prompt_accept)
       map.bind(context: :prompt, key: :return, action: :prompt_accept)
-      map.bind(context: :prompt, key: :j, ctrl: true, action: :accept_prompt)
+      map.bind(context: :prompt, key: :j, ctrl: true, action: :prompt_accept)
 
       #
       # Themes
@@ -155,6 +155,8 @@ module Fatty
 
       # I-search controls (within ISearchSession)
       map.bind(context: :isearch, key: :enter, action: :isearch_accept)
+      map.bind(context: :isearch, key: :return, action: :isearch_accept)
+      map.bind(context: :isearch, key: :j, ctrl: true, action: :isearch_accept)
       map.bind(context: :isearch, key: :s, ctrl: true, action: :isearch_next)
       map.bind(context: :isearch, key: :r, ctrl: true, action: :isearch_prev)
       map.bind(context: :isearch, key: :g, ctrl: true, action: :isearch_cancel)
@@ -166,6 +168,8 @@ module Fatty
 
       # Search minibuffer stepping (SearchSession)
       map.bind(context: :search, key: :enter, action: :search_accept)
+      map.bind(context: :search, key: :return, action: :search_accept)
+      map.bind(context: :search, key: :j, ctrl: true, action: :search_accept)
       map.bind(context: :search, key: :s, ctrl: true, action: :search_step_forward)
       map.bind(context: :search, key: :r, ctrl: true, action: :search_step_backward)
       map.bind(context: :search, key: :r, meta: true, action: :search_toggle_regex)

@@ -174,7 +174,7 @@ module Fatty
       self
     end
 
-    def bind_mouse(context: :input, button:, ctrl: false, meta: false, shift: false, action: nil)
+    def bind_mouse(context: DEFAULT_CONTEXT, button:, ctrl: false, meta: false, shift: false, action: nil)
       bind_str = "#{KeyEvent.key_to_str(key: button, ctrl:, meta:, shift:)} -> #{action} in context: #{context}"
       Fatty.info("KeyMap#bind_mouse(#{bind_str})", tag: :keybinding)
 
@@ -251,7 +251,7 @@ module Fatty
 
     # Bind the digits in the given context with either meta, ctrl, neither or
     # both as the required modifier keys.
-    def bind_digits(context: :input, meta: nil, ctrl: nil)
+    def bind_digits(context: DEFAULT_CONTEXT, meta: nil, ctrl: nil)
       meta = !!meta
       ctrl = !!ctrl
       (0..9).each do |n|

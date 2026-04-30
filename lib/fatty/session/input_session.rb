@@ -11,12 +11,36 @@ module Fatty
       @on_accept = on_accept
     end
 
+    #########################################################################################
+    # Framework and Session Hooks
+    #########################################################################################
+
     def keymap_contexts
       if paging_mode?
         [:paging, :text, :terminal]
       else
         [:text, :terminal]
       end
+    end
+
+    ############################################################################################
+    # Actions
+    ############################################################################################
+
+    action_on :session
+
+    action :input_accept do
+      line = @field.accept_line
+
+      if @on_accept
+        Array(@on_accept.call(line, self, terminal))
+      else
+        Array(emit([:accept_line, line]))
+      end
+    end
+
+    action :input_cycle_theme do
+      [[:terminal, :cycle_theme]]
     end
 
     private
@@ -48,22 +72,11 @@ module Fatty
         end
       Fatty.debug("InputSession#handle_action: #{which}", tag: :session)
       env = action_env(event: event)
-      case action.to_sym
-      when :accept_line
-        line = @field.accept_line
-        if @on_accept
-          Array(@on_accept.call(line, self, terminal))
-        else
-          Array(emit([:accept_line, line]))
-        end
-      when :cycle_theme
-        [[:terminal, :cycle_theme]]
-      else
-        with_virtual_suffix_sync do
-          Fatty::Actions.call(action, env, *args)
-        end
-        []
+
+      with_virtual_suffix_sync do
+        Fatty::Actions.call(action, env, *args)
       end
+      []
     rescue ActionError => e
       Fatty.error("InputSession#handle_action: ActionError #{e.message}", tag: :session)
       []

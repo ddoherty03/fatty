@@ -2,8 +2,6 @@
 
 module Fatty
   class PromptSession < ModalSession
-    action_on :session
-
     attr_reader :field, :title, :message, :history
 
     PROMPT_POPUP_MAX_WIDTH = 120
