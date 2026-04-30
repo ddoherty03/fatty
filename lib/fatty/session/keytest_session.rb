@@ -195,13 +195,31 @@ module Fatty
 
         Mouse events may also be bound in keybindings.yml, for example:
 
-        - mouse: scroll_up
+        - mouse: <BUTTONNAME>
           context: paging
           action: page_up
 
-        - mouse: scroll_down
-          context: paging
-          action: page_down
+       Where <BUTTONNAME> is one of:
+         scroll_up
+         scroll_down
+         left_pressed,
+         left_released,
+         left_clicked,
+         left_double_clicked,
+         left_triple_clicked,
+         middle_pressed,
+         middle_released,
+         middle_clicked,
+         middle_double_clicked,
+         middle_triple_clicked,
+         right_pressed,
+         right_released,
+         right_clicked,
+         right_double_clicked,
+         right_triple_clicked
+
+       All of which may also be combined with modifiers: ctrl, meta, and shift.
+
       TEXT
       out << "\n"
       out << suggestions.join("\n\n")
