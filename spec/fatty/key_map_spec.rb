@@ -94,8 +94,8 @@ module Fatty
         km.bind(key: :home, action: :bol)
         km.bind(key: :home, ctrl: true, action: :page_top)
 
-        expect(km.resolve(ev(:home, ctrl: true), contexts: :input)).to eq(:page_top)
-        expect(km.resolve(ev(:home), contexts: :input)).to eq(:bol)
+        expect(km.resolve(ev(:home, ctrl: true), contexts: :text)).to eq(:page_top)
+        expect(km.resolve(ev(:home), contexts: :text)).to eq(:bol)
       end
 
       it "treats contexts: nil as 'search all contexts' (registered order)" do
@@ -116,9 +116,9 @@ module Fatty
         km = KeyMap.new
         km.bind(key: :a, ctrl: true, action: :bol)
 
-        expect(km.resolve(ev(:a, ctrl: true), contexts: :input)).to eq(:bol)
-        expect(km.resolve(ev(:a, ctrl: true), contexts: "input")).to eq(:bol)
-        expect(km.resolve(ev(:a, ctrl: true), contexts: [:input])).to eq(:bol)
+        expect(km.resolve(ev(:a, ctrl: true), contexts: :text)).to eq(:bol)
+        expect(km.resolve(ev(:a, ctrl: true), contexts: "text")).to eq(:bol)
+        expect(km.resolve(ev(:a, ctrl: true), contexts: [:text])).to eq(:bol)
         expect(km.resolve(ev(:a, ctrl: true), contexts: nil)).to eq(:bol)
         expect(km.resolve(ev(:a, ctrl: true), contexts: [])).to eq(:bol)
       end
@@ -189,7 +189,7 @@ module Fatty
                 )
         km.load_user_config
 
-        expect(km.resolve(ev(:a, ctrl: true), contexts: :input)).to eq(:bol)
+        expect(km.resolve(ev(:a, ctrl: true), contexts: :text)).to eq(:bol)
         expect(km.resolve(ev(:space), contexts: :paging)).to eq(:page_down)
         expect(km.resolve(ev(:G, shift: true), contexts: :paging)).to eq(:page_bottom)
       end
@@ -233,7 +233,7 @@ module Fatty
 
         km.load_user_config
 
-        expect(km.resolve(ev(:a, ctrl: true), contexts: :input)).to eq(:bol)
+        expect(km.resolve(ev(:a, ctrl: true), contexts: :text)).to eq(:bol)
         expect(km.resolve(ev(:a, ctrl: true), contexts: :paging)).to be_nil
       end
     end

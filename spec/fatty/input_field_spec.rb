@@ -77,24 +77,24 @@ module Fatty
     end
 
     it "act_on falls back to calling buffer methods when the action isn't registered" do
-      Fatty::Actions.reset!  # simulate minimal load / no registration
+      without_registered_actions do
+        buf = Fatty::InputBuffer.new
+        field = Fatty::InputField.new(buffer: buf, prompt: prompt('hello $ '))
 
-      buf = Fatty::InputBuffer.new
-      field = Fatty::InputField.new(buffer: buf, prompt: prompt('hello $ '))
-
-      field.act_on(:insert, "xxxxx")
-      expect(buf.text).to eq("xxxxx")
+        field.act_on(:insert, "xxxxx")
+        expect(buf.text).to eq("xxxxx")
+      end
     end
 
     it "act_on raises ActionError when neither registry nor target responds" do
-      Fatty::Actions.reset!
+      without_registered_actions do
+        buf = Fatty::InputBuffer.new
+        field = Fatty::InputField.new(buffer: buf, prompt: prompt('hello $ '))
 
-      buf = Fatty::InputBuffer.new
-      field = Fatty::InputField.new(buffer: buf, prompt: prompt('hello $ '))
-
-      expect {
-        field.act_on(:definitely_not_real)
-      }.to raise_error(Fatty::ActionError, /Unknown action: definitely_not_real/i)
+        expect {
+          field.act_on(:definitely_not_real)
+        }.to raise_error(Fatty::ActionError, /Unknown action: definitely_not_real/i)
+      end
     end
 
     it "history_prev replaces buffer with previous entry" do

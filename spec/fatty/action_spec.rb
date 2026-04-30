@@ -4,12 +4,12 @@ module Fatty
   RSpec.describe Actions do
     let(:snapshot) { Actions.snapshot }
 
-    before do
-      Actions.reset!
+    around do |example|
+      with_action_registry { example.run }
     end
 
-    after do
-      Actions.restore(snapshot)
+    before do
+      Fatty::Actions.reset!
     end
 
     describe ".register / .lookup / .registered?" do
@@ -112,6 +112,17 @@ module Fatty
         Actions.reset!
         expect(Actions.lookup(:a)).to be_nil
         expect(Actions.registered?(:a)).to be(false)
+      end
+
+      it "does not leak action registrations between examples" do
+        before = Fatty::Actions.defs.keys.sort
+
+        with_action_registry do
+          Fatty::Actions.register(:temp_action, owner: self, on: :session)
+        end
+
+        after = Fatty::Actions.defs.keys.sort
+        expect(after).to eq(before)
       end
     end
   end

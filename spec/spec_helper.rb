@@ -8,8 +8,6 @@ require "bundler/setup"
 require "fatty"
 require "debug"
 
-require "fatty"
-
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
@@ -23,4 +21,19 @@ RSpec.configure do |config|
 
   config.order = :random
   Kernel.srand config.seed
+end
+
+def with_action_registry
+  snapshot = Fatty::Actions.snapshot
+  yield
+ensure
+  Fatty::Actions.restore(snapshot)
+end
+
+def without_registered_actions
+  snapshot = Fatty::Actions.snapshot
+  Fatty::Actions.reset!
+  yield
+ensure
+  Fatty::Actions.restore(snapshot)
 end
