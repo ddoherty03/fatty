@@ -6,6 +6,16 @@
    user would find useful.
 5. Give each heading a version number and an inactive date (C-c ! is useful here).
 
-* Version 0.3.0 [2025-12-27 Sat]
-- First change
-- Second change
+* Version 0.4.0 [2026-04-30 Thu]
+- Add `keytest` interactive keybinding inspector
+- Add markdown rendering support in demo
+- Internal: unified action dispatch system (actionize)
+
+* Version 0.3.0 [2025-04-26 Sat]
+- Change name from fat_term to fatty: it was too tempting to resist
+- Add widgets for `choose` `choosevals` `progress` `prompt` `menu`
+  `choose_multi` `choosevals_multi`
+- Add status line
+- Improve scroll speed
+- Add completions and predictive completions
+- Many, many internal improvements
