@@ -485,7 +485,11 @@ module Fatty
     # and Fatty::Actions routes through ActionEnvironment.
     def apply_action(action, args, ev, env:)
       @field.reset_completion_cycle!
+      defn = Fatty::Actions.lookup(action)
       result = Fatty::Actions.call(action, env, *args)
+      if defn && [:field, :buffer].include?(defn[:on])
+        @field.sync_virtual_suffix!
+      end
       result.is_a?(Array) ? result : []
     rescue Fatty::ActionError => e
       [alert_cmd(:error, e.message, ev: ev)]
