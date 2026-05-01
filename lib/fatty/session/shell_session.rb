@@ -244,6 +244,7 @@ module Fatty
           apply_completion(candidates.first, range: @field.popup_completion_range)
         else
           @completion_range = @field.popup_completion_range
+          # NOTE: we don't pass a matcher so that the default_matcher is used.
           popup = Fatty::PopUpSession.new(
             source: candidates,
             kind: :completion,
@@ -252,7 +253,6 @@ module Fatty
             order: :as_given,
             selection: :top,
             initial_query: @field.popup_completion_query.to_s,
-            matcher: ->(item, q) { item.to_s.start_with?(q.to_s) },
           )
           [[:terminal, :push_modal, popup]]
         end

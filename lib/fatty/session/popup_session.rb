@@ -39,7 +39,7 @@ module Fatty
       @title = title&.to_s
       @message = message&.to_s
       @prompt = Prompt.ensure(prompt)
-      @matcher = matcher
+      @matcher = matcher || method(:default_matcher)
       @order = order.to_sym
       @kind = kind&.to_sym
       @selection = selection.to_sym
