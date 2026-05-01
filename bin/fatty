@@ -228,13 +228,34 @@ ENV['PATH'].split(':').each do |dir|
   next unless Dir.exist?(dir)
 
   Dir.children(dir).each do |name|
+    next if name.match?(/\A\./)
+
     path = File.join(dir, name)
     cutes << name if File.file?(path) && File.executable?(path)
   end
 end
-cutes = cutes.compact.sort.uniq
+cutes = cutes.compact.sort_by(&:downcase).uniq
+
+builtins = %w[
+  cd
+  choose
+  choosevals
+  choose_multi
+  choosevals_multi
+  help
+  info
+  good
+  keytest
+  markdown
+  menu
+  oops
+  progress
+  prompt
+  warn
+]
+commands = (builtins + cutes).uniq
 completion_proc = lambda do |_buffer|
-  cutes.to_a
+  commands.to_a
 end
 
 Fatty::Terminal.new(
