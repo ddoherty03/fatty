@@ -643,6 +643,7 @@ module Fatty
       Fatty::Config.keydefs
       Fatty::Config.keybindings
       Fatty::Config.install_default_themes!
+      Fatty::Themes::Manager.load!
       Thread.report_on_exception = true
     rescue FatConfig::ParseError => ex
       msg = "Terminal#preflight!: configuration error: #{ex.class}: #{ex.message}"
