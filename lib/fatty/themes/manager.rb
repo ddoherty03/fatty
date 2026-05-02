@@ -3,7 +3,7 @@
 module Fatty
   module Themes
     module Manager
-      FALLBACK_THEME = :mono
+      FALLBACK_THEME = :terminal
 
       def self.registry
         @registry ||=
@@ -25,12 +25,22 @@ module Fatty
       end
 
       def self.current
-        @current ||= :wordperfect
+        cfg = Fatty::Config.config
+        theme = cfg[:theme]
+        theme = theme.to_s.strip unless theme.nil?
+        theme = nil if theme&.empty?
+
+        theme ? theme.to_sym : :terminal
       end
 
       def self.set(theme)
         t = theme.to_sym
-        @current = theme_names.include?(t) ? t : FALLBACK_THEME
+        if theme_names.include?(t)
+          @current = t
+        else
+          Fatty.warn("Unknown theme: #{theme}, falling back to #{FALLBACK_THEME}", tag: :theme)
+          @current = FALLBACK_THEME
+        end
       end
 
       def self.cycle
