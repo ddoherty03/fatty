@@ -70,5 +70,5 @@ popup_selection:
 popup_frame:
   fg: navy
   bg: yellow
-  border: double
+  border: single
   corners: rounded

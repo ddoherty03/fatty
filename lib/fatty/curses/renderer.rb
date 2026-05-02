@@ -36,13 +36,21 @@ module Fatty
 
       DETAIL_ORDER = %i[terminal key ctrl meta shift].freeze
 
-      POPUP_BORDER = {
-        tl: "┌",
-        tr: "┐",
-        bl: "└",
-        br: "┘",
-        h: "─",
-        v: "│",
+      FRAME_STYLES = {
+        ascii:  { h: "-", v: "|" },
+        single: { h: "─", v: "│" },
+        double: { h: "═", v: "║" },
+      }.freeze
+
+      CORNER_STYLES = {
+        square: {
+          ascii:  { tl: "+", tr: "+", bl: "+", br: "+" },
+          single: { tl: "┌", tr: "┐", bl: "└", br: "┘" },
+          double: { tl: "╔", tr: "╗", bl: "╚", br: "╝" },
+        },
+        rounded: {
+          single: { tl: "╭", tr: "╮", bl: "╰", br: "╯" },
+        },
       }.freeze
 
       POPUP_SELECTED_GUTTER = "▶ "
@@ -689,6 +697,7 @@ module Fatty
 
       def popup_state(session)
         [
+          popup_border,
           session.displayed.map(&:to_s),
           session.selected,
           session.field.buffer.text.to_s,
@@ -844,8 +853,40 @@ module Fatty
         "  #{icon} #{msg}#{details_str}"
       end
 
+      def popup_border
+        spec = popup_frame_spec
+
+        border = (spec[:border] || spec["border"] || :single).to_sym
+        corners = (spec[:corners] || spec["corners"] || :square).to_sym
+
+        edge = FRAME_STYLES.fetch(border, FRAME_STYLES[:single])
+        corner_set = CORNER_STYLES.fetch(corners, CORNER_STYLES[:square])
+        corner =
+          corner_set[border] ||
+          corner_set[:single] ||
+          CORNER_STYLES[:square][border] ||
+          CORNER_STYLES[:square][:single]
+
+        {
+          h: edge[:h],
+          v: edge[:v],
+          tl: corner[:tl],
+          tr: corner[:tr],
+          bl: corner[:bl],
+          br: corner[:br],
+        }
+      end
+
+      def popup_frame_spec
+        spec = Fatty::Colors::Palette.build_spec(Fatty::Config.config)
+        spec[:popup_frame] || spec["popup_frame"] || {}
+      rescue StandardError => e
+        Fatty.warn("Could not resolve popup frame style: #{e.class}: #{e.message}", tag: :theme)
+        {}
+      end
+
       def draw_popup_frame(win, width:, height:)
-        b = POPUP_BORDER
+        b = popup_border
         # top
         win.setpos(0, 0)
         win.addstr(b[:tl] + (b[:h] * (width - 2)) + b[:tr])

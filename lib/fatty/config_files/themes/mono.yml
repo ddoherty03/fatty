@@ -1,0 +1,76 @@
+name: mono
+inherit: nil
+
+output:
+  fg: black
+  bg: white
+
+ input:
+   fg: white
+   bg: black
+
+input_suggestion:
+  fg: gray
+  bg: white
+
+cursor:
+  fg: black
+  bg: white
+
+region:
+  fg: black
+  bg: white
+
+match_current:
+  fg: black
+  bg: yellow
+
+match_other:
+  fg: black
+  bg: lightgray
+
+search:
+  fg: black
+  bg: cyan
+
+pager_status:
+  fg: black
+  bg: white
+
+good:
+  fg: "green"
+  bg: "white"
+
+info:
+  fg: black
+  bg: white
+
+warn:
+  fg: default
+  bg: default
+
+error:
+  fg: default
+  bg: default
+
+popup:
+  fg: black
+  bg: white
+
+popup_selection:
+  fg: white
+  bg: black
+
+popup_input:
+  fg: white
+  bg: black
+
+popup_counts:
+  fg: white
+  bg: gray
+
+popup_frame:
+  fg: black
+  bg: white
+  corners: square
+  border: ascii
