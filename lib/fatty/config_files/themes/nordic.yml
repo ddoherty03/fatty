@@ -10,7 +10,7 @@ input:
   bg: "#3b4252"
   attrs: [bold]
 
-input_suggestion
+input_suggestion:
   fg: "#81a1c1"
   bg: "#3b4252"
 

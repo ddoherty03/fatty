@@ -1,11 +1,11 @@
 name: mono
-inherit: nil
+inherit: null
 
 output:
   fg: black
   bg: white
 
- input:
+input:
    fg: white
    bg: black
 
