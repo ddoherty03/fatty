@@ -203,8 +203,8 @@ module Fatty
 
     desc "Choose a theme from a popup"
     action :choose_theme do
-      current = Fatty::Colors::ThemeManager.current
-      names = Fatty::Colors::ThemeManager.theme_names
+      current = Fatty::Themes::Manager.current
+      names = Fatty::Themes::Manager.theme_names
       ordered = [current] + (names - [current])
       @theme_popup_restore = current
 

@@ -23,11 +23,11 @@ module Fatty
       def build_spec(cfg)
         color_cfg = extract_color_cfg(cfg)
 
-        theme_name = color_cfg[:theme] || color_cfg["theme"] || :wordperfect
-        theme = Themes.fetch(theme_name)
+        theme_name = color_cfg[:theme] || color_cfg["theme"] || Fatty::Themes::Manager.current
+        theme_roles = Fatty::Themes::Manager.roles(theme_name)
 
         merged = {}
-        merged = deep_merge(merged, theme) if theme
+        merged = deep_merge(merged, theme_roles) if theme_roles
         merged = deep_merge(merged, color_cfg_without_theme(color_cfg))
 
         merged
@@ -49,8 +49,9 @@ module Fatty
 
           fg = Fatty::Color.resolve(fg_spec, available_colors: available_colors)
           bg = Fatty::Color.resolve(bg_spec, available_colors: available_colors)
+          attrs = Array(role_spec[:attrs] || role_spec["attrs"]).map(&:to_sym)
 
-          out[role] = { fg: fg, bg: bg, pair: pair_id }
+          out[role] = { fg: fg, bg: bg, pair: pair_id, attrs: attrs }
         end
 
         out
@@ -94,7 +95,8 @@ module Fatty
         color_cfg.each do |k, v|
           next if k.to_sym == :theme
 
-          h[k.to_sym] = v
+          role = Fatty::Themes::Loader.normalize_role_name(k)
+          h[role] = v
         end
         h
       end

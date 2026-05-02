@@ -37,14 +37,14 @@ module Fatty
         cursor: CURSOR,
         region: REGION,
 
-        status_good: STATUS_GOOD,
-        status_info: STATUS_INFO,
-        status_warn: STATUS_WARN,
-        status_error: STATUS_ERROR,
+        good: STATUS_GOOD,
+        info: STATUS_INFO,
+        warn: STATUS_WARN,
+        error: STATUS_ERROR,
 
-        search_highlight: SEARCH_HIGHLIGHT,
-        search_highlight_secondary: SEARCH_HIGHLIGHT_SECONDARY,
-        search: SEARCH,
+        match_current: SEARCH_HIGHLIGHT,
+        match_other: SEARCH_HIGHLIGHT_SECONDARY,
+        search_input: SEARCH,
 
         pager_status: PAGER_STATUS,
 

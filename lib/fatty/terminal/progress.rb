@@ -15,7 +15,7 @@ module Fatty
 
       attr_reader :terminal, :label, :total, :style, :role
 
-      def initialize(terminal:, label:, total: nil, style: :percent, role: :status_info, trail_max: nil, bar_width: 40)
+      def initialize(terminal:, label:, total: nil, style: :percent, role: :info, trail_max: nil, bar_width: 40)
         @terminal = terminal
         @label = label.to_s
         @total = total&.to_i

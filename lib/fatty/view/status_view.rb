@@ -7,7 +7,7 @@ module Fatty
 
       renderer.render_status(
         terminal.status_text,
-        role: terminal.status_role || :status_info,
+        role: terminal.status_role || :info,
       )
     end
   end

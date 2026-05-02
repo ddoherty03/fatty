@@ -60,5 +60,27 @@ module Fatty
     def self.default_user_path(name = 'config')
       "~/.config/#{progname}/#{name}.yml"
     end
+
+    def self.sys_themes_dir
+      File.expand_path("config_files/themes", __dir__)
+    end
+
+    def self.user_config_dir
+      dir || File.join(ENV.fetch("XDG_CONFIG_HOME", File.expand_path("~/.config")), progname)
+    end
+
+    def self.user_themes_dir
+      File.join(user_config_dir, "themes")
+    end
+
+    def self.install_default_themes!
+      FileUtils.mkdir_p(user_themes_dir)
+
+      Dir.glob(File.join(sys_themes_dir, "*.yml")).each do |src|
+        dst = File.join(user_themes_dir, File.basename(src))
+        FileUtils.cp(src, dst) unless File.exist?(dst)
+      end
+      nil
+    end
   end
 end

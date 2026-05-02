@@ -76,15 +76,15 @@ ui:
       bg: yellow
 
     # Status / alerts
-    status_info:
+    info:
       fg: black
       bg: lightyellow      # X11 name
 
-    status_warn:
+    warn:
       fg: black
       bg: 208              # integer (orange)
 
-    status_error:
+    error:
       fg: white
       bg: red              # ANSI name
 

@@ -1,0 +1,90 @@
+# lib/fatty/config_files/themes/terminal.yml
+name: terminal
+inherit: null
+
+output:
+  fg: default
+  bg: default
+
+input:
+  fg: default
+  bg: default
+
+input_suggestion:
+  fg: default
+  bg: default
+  attrs: [dim]
+
+cursor:
+  fg: default
+  bg: default
+  attrs: [reverse]
+
+region:
+  fg: default
+  bg: default
+  attrs: [reverse]
+
+info:
+  fg: default
+  bg: default
+
+good:
+  fg: default
+  bg: default
+  attrs: [bold]
+
+warn:
+  fg: default
+  bg: default
+  attrs: [reverse]
+
+error:
+  fg: default
+  bg: default
+  attrs: [bold, reverse]
+
+pager_status:
+  fg: default
+  bg: default
+  attrs: [reverse]
+
+search_input:
+  fg: default
+  bg: default
+  attrs: [reverse]
+
+match_current:
+  fg: default
+  bg: default
+  attrs: [reverse]
+
+match_other:
+  fg: default
+  bg: default
+  attrs: [underline]
+
+popup:
+  fg: default
+  bg: default
+
+popup_selection:
+  fg: default
+  bg: default
+  attrs: [reverse]
+
+popup_input:
+  fg: default
+  bg: default
+  attrs: [reverse]
+
+popup_frame:
+  fg: default
+  bg: default
+  border: single
+  corners: square
+
+popup_counts:
+  fg: default
+  bg: default
+  attrs: [bold]

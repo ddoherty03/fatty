@@ -38,19 +38,19 @@ module Fatty
       @sessions_by_id = {}
       @modal_stack = []
       @status_text = nil
-      @status_role = :status_info
+      @status_role = :info
       @status_transient = false
     end
 
     # --- Status line management ------------------------------------------------
 
-    def set_status(text, role: :status_info, transient: false)
+    def set_status(text, role: :info, transient: false)
       was_visible = status_visible?
 
       str = text.to_s
       if str.empty?
         @status_text = nil
-        @status_role = :status_info
+        @status_role = :info
         @status_transient = false
       else
         @status_text = str
@@ -65,7 +65,7 @@ module Fatty
     def clear_status
       was_visible = status_visible?
       @status_text = nil
-      @status_role = :status_info
+      @status_role = :info
       @status_transient = false
       refresh_layout! if was_visible
     end
@@ -79,7 +79,7 @@ module Fatty
     def info(text)
       return $stderr.puts(text) unless @ctx
 
-      set_status(text.to_s, role: :status_info, transient: true)
+      set_status(text.to_s, role: :info, transient: true)
     end
 
     # Display a message to the user in the status line, colored according to
@@ -87,7 +87,7 @@ module Fatty
     def good(text)
       return $stderr.puts(text) unless @ctx
 
-      set_status(text.to_s, role: :status_good, transient: true)
+      set_status(text.to_s, role: :good, transient: true)
     end
 
     # Display a message to the user in the status line, colored according to
@@ -96,7 +96,7 @@ module Fatty
     def warn(text)
       return $stderr.puts(text) unless @ctx
 
-      set_status(text.to_s, role: :status_warn, transient: true)
+      set_status(text.to_s, role: :warn, transient: true)
     end
 
     # Display a message to the user in the status line, colored according to
@@ -104,7 +104,7 @@ module Fatty
     def oops(text)
       return $stderr.puts(text) unless @ctx
 
-      set_status(text.to_s, role: :status_error, transient: true)
+      set_status(text.to_s, role: :error, transient: true)
     end
 
     # --- Session management ------------------------------------------------
@@ -509,7 +509,7 @@ module Fatty
 
     # Create a transient status-line progress indicator.
     # For style :spinner, total may be omitted for indeterminate progress.
-    def progress(label:, total: nil, style: :percent, role: :status_info, trail_max: nil)
+    def progress(label:, total: nil, style: :percent, role: :info, trail_max: nil)
       Progress.new(
         terminal: self,
         label: label,
@@ -642,6 +642,7 @@ module Fatty
       end
       Fatty::Config.keydefs
       Fatty::Config.keybindings
+      Fatty::Config.install_default_themes!
       Thread.report_on_exception = true
     rescue FatConfig::ParseError => ex
       msg = "Terminal#preflight!: configuration error: #{ex.class}: #{ex.message}"
@@ -844,12 +845,12 @@ module Fatty
         cmds = owner ? owner.update(msg) : []
         apply_commands(cmds)
       when :cycle_theme
-        new_theme = Fatty::Colors::ThemeManager.cycle
+        new_theme = Fatty::Themes::Manager.cycle
         renderer.apply_theme!(new_theme)
         apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{new_theme}"}])
       when :set_theme
         theme = rest.fetch(0)
-        Fatty::Colors::ThemeManager.set(theme)
+        Fatty::Themes::Manager.set(theme)
         renderer.apply_theme!(theme)
         apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{theme}"}])
       when :handle_resize

@@ -34,6 +34,7 @@ module Fatty
   require_relative "fatty/key_event"
   require_relative "fatty/mouse_event"
   require_relative "fatty/key_map"
+  require_relative "fatty/themes"
   require_relative "fatty/ansi"
   require_relative "fatty/colors"
   require_relative "fatty/curses"

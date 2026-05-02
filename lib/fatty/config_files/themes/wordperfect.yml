@@ -55,6 +55,14 @@ popup:
   fg: white
   bg: navy
 
+popup_input:
+  fg: white
+  bg: navy
+
+popup_counts:
+  fg: navy
+  bg: red
+
 popup_selection:
   fg: navy
   bg: yellow

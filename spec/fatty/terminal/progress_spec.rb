@@ -46,10 +46,10 @@ module Fatty
         progress.update(render: false)
 
         expect(terminal).to have_received(:set_status)
-                              .with(match(/\AWaiting /), role: :status_info).at_least(:once)
+                              .with(match(/\AWaiting /), role: :info).at_least(:once)
 
         expect(terminal).not_to have_received(:set_status)
-                                  .with(match(/%/), role: :status_info)
+                                  .with(match(/%/), role: :info)
       end
 
       it "renders percent for spinner when total is known" do
@@ -92,7 +92,7 @@ module Fatty
 
         expect(terminal)
           .to have_received(:set_status)
-                .with(match(/Complete/), role: :status_info, transient: true)
+                .with(match(/Complete/), role: :info, transient: true)
       end
 
       it "forces a redraw when render is true" do

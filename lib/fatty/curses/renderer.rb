@@ -166,8 +166,8 @@ module Fatty
 
       def draw_output_row(win, line:, y:, abs_line:, highlights:)
         base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
-        hi_attr = pair_attr(:search_highlight, fallback: ::Curses::A_REVERSE)
-        hi2_attr = pair_attr(:search_highlight_secondary, fallback: hi_attr)
+        hi_attr = pair_attr(:match_current, fallback: ::Curses::A_REVERSE)
+        hi2_attr = pair_attr(:match_other, fallback: hi_attr)
 
         ranges = highlight_ranges_for_line(highlights, abs_line)
         ranges =
@@ -235,7 +235,7 @@ module Fatty
         nil
       end
 
-      def render_status(text, role: :status_info)
+      def render_status(text, role: :info)
         msg = text.to_s.tr("\r\n", " ")
         state = [msg, role]
         return if state == @last_status_state
@@ -256,7 +256,7 @@ module Fatty
         nil
       end
 
-      def render_status(text, role: :status_info)
+      def render_status(text, role: :info)
         msg = text.to_s.tr("\r\n", " ")
         state = [msg, role]
         return if state == @last_status_state
@@ -342,7 +342,7 @@ module Fatty
       # Used for pager mode ("--More--" etc.). It intentionally does not move
       # the cursor; ShellSession decides whether to show a cursor in paging
       # vs input mode.
-      def render_pager_field(field, row:, role: :status_info)
+      def render_pager_field(field, row:, role: :info)
         win = context.output_win
         cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
         attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
@@ -372,7 +372,7 @@ module Fatty
 
         attr =
           if alert.nil?
-            pair_attr(:status_info, fallback: ::Curses::A_REVERSE)
+            pair_attr(:info, fallback: ::Curses::A_REVERSE)
           else
             alert_attr(alert)
           end
@@ -813,9 +813,9 @@ module Fatty
 
         role =
           case alert.level
-          when :error   then :status_error
-          when :warning then :status_warn
-          else               :status_info
+          when :error   then :error
+          when :warning then :warn
+          else               :info
           end
         pair_attr(role, fallback: ::Curses::A_REVERSE)
       end
