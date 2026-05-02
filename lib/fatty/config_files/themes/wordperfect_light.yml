@@ -1,0 +1,77 @@
+name: wordperfect_light
+inherit: wordperfect
+
+output:
+  fg: white
+  bg: lightblue
+
+# input:
+#   fg: white
+#   bg: navy
+#   attrs: [bold]
+
+# input_suggestion:
+#   fg: lightgray
+#   bg: navy
+
+# cursor:
+#   fg: white
+#   bg: red
+
+# region:
+#   fg: navy
+#   bg: yellow
+
+# good:
+#   fg: green
+#   bg: navy
+
+# info:
+#   fg: black
+#   bg: navy
+
+# warn:
+#   fg: black
+#   bg: magenta
+
+# error:
+#   fg: white
+#   bg: red
+
+# pager_status:
+#   fg: black
+#   bg: lightgreen
+
+# search_input:
+#   fg: black
+#   bg: cyan
+
+# match_current:
+#   fg: black
+#   bg: red
+
+# match_other:
+#   fg: grey
+#   bg: pink
+
+# popup:
+#   fg: white
+#   bg: navy
+
+# popup_input:
+#   fg: white
+#   bg: navy
+
+# popup_counts:
+#   fg: navy
+#   bg: red
+
+# popup_selection:
+#   fg: navy
+#   bg: yellow
+
+# popup_frame:
+#   fg: navy
+#   bg: yellow
+#   border: single
+#   corners: rounded
