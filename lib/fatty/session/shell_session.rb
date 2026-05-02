@@ -54,7 +54,7 @@ module Fatty
         [[:terminal, :handle_resize]]
       when :enter, :return
         # safety: if somehow not bound, still accept
-        accept_line
+        submit_line
       else
         [alert_cmd(:info, "Unbound key: #{ev} (edit config in 'keybindings.yml' to bind)", ev: ev)]
       end
@@ -162,7 +162,7 @@ module Fatty
     desc "Accept the current shell input line and switch output to scrolling"
     action :submit_and_scroll do
       before = output.lines.length
-      cmds = accept_line
+      cmds = submit_line
       pager.paging_to_scrolling if output.lines.length > before
       cmds
     end
