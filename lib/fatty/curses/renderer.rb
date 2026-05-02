@@ -53,6 +53,13 @@ module Fatty
         },
       }.freeze
 
+      ATTR_FLAGS = {
+        bold: ::Curses::A_BOLD,
+        dim: ::Curses::A_DIM,
+        reverse: ::Curses::A_REVERSE,
+        underline: ::Curses::A_UNDERLINE,
+      }.freeze
+
       POPUP_SELECTED_GUTTER = "▶ "
       POPUP_UNSELECTED_GUTTER = "  "
 
@@ -403,12 +410,6 @@ module Fatty
         nil
       end
 
-      def pair_attr(role, fallback:)
-        return fallback unless ::Curses.has_colors?
-
-        ::Curses.color_pair(Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(role))
-      end
-
       def render_popup(session:)
         state = popup_state(session)
         return if state == @last_popup_state
@@ -640,7 +641,7 @@ module Fatty
       end
 
       def apply_theme!(theme)
-        context.apply_theme!(theme)
+        @palette = context.apply_theme!(theme)
         reset_frame_cache
       end
 
@@ -661,6 +662,22 @@ module Fatty
       end
 
       private
+
+      def pair_attr(role, fallback:)
+        palette = @palette || context.palette
+        spec = palette&.[](role)
+        return fallback unless spec
+
+        attr = ::Curses.color_pair(spec[:pair])
+        Array(spec[:attrs]).each do |a|
+          attr |= attr_flag(a)
+        end
+        attr
+      end
+
+      def attr_flag(name)
+        ATTR_FLAGS.fetch(name.to_sym, 0)
+      end
 
       def stage_window(win)
         if win.respond_to?(:noutrefresh)

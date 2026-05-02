@@ -24,7 +24,7 @@ module Fatty
       DEFAULT_ESC_DELAY = 25
 
       attr_reader :input_win, :output_win, :status_win, :alert_win
-      attr_reader :rows, :cols
+      attr_reader :rows, :cols, :palette
 
       def initialize
         @started = false
@@ -81,7 +81,7 @@ module Fatty
         #   Fatty::Config.config[:ui][:color]
         #
         # and falls back to theme defaults (if any).
-        Fatty::Colors::Palette.apply!(
+        @palette = Fatty::Colors::Palette.apply!(
           Fatty::Config.config,
           available_colors: ::Curses.colors,
         )
