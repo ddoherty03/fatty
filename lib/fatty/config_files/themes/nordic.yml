@@ -1,0 +1,77 @@
+name: nordic
+inherit: null
+
+output:
+  fg: "#d8dee9"
+  bg: "#2e3440"
+
+input:
+  fg: "#eceff4"
+  bg: "#3b4252"
+  attrs: [bold]
+
+input_suggestion
+  fg: "#81a1c1"
+  bg: "#3b4252"
+
+cursor:
+  fg: "#2e3440"
+  bg: "#88c0d0"
+
+region:
+  fg: "#2e3440"
+  bg: "#88c0d0"
+
+good:
+  fg: "green"
+  bg: "#2e3440"
+
+info:
+  fg: "#d8dee9"
+  bg: "#2e3440"
+
+warn:
+  fg: "#2e3440"
+  bg: "#ebcb8b"
+
+error:
+  fg: "#eceff4"
+  bg: "#bf616a"
+
+pager_status:
+  fg: "black"
+  bg: "lightgreen"
+
+search_input:
+  fg: "black"
+  bg: "cyan"
+
+match_current:
+  fg: "black"
+  bg: "yellow"
+
+match_other:
+  fg: "black"
+  bg: "lightgray"
+
+popup:
+  fg: "#d8dee9"
+  bg: "#3b4252"
+
+popup_input:
+  fg: "#eceff4"
+  bg: "#434c5e"
+
+popup_counts:
+  fg: "#2e3440"
+  bg: "white"
+
+popup_selection:
+  fg: "#2e3440"
+  bg: "#88c0d0"
+
+popup_frame:
+  fg: "#81a1c1"
+  bg: "#3b4252"
+  border: single
+  corners: rounded

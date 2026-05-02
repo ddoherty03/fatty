@@ -1,0 +1,77 @@
+name: solarized_dark
+inherit: null
+
+output:
+  fg: "#839496"
+  bg: "#002b36"
+
+input:
+  fg: "#93a1a1"
+  bg: "#073642"
+  attrs: [bold]
+
+input_suggestion:
+  fg: "#657b83"
+  bg: "#073642"
+
+cursor:
+  fg: "#002b36"
+  bg: "#b58900"
+
+region:
+  fg: "#002b36"
+  bg: "#b58900"
+
+good:
+  fg: "green"
+  bg: "#002b36"
+
+info:
+  fg: "#839496"
+  bg: "#002b36"
+
+warn:
+  fg: "#002b36"
+  bg: "#cb4b16"
+
+error:
+  fg: "#fdf6e3"
+  bg: "red"
+
+pager_status:
+  fg: "black"
+  bg: "lightgreen"
+
+search_input:
+  fg: "black"
+  bg: "cyan"
+
+match_current:
+  fg: "black"
+  bg: "yellow"
+
+match_other:
+  fg: "black"
+  bg: "lightgray"
+
+popup:
+  fg: "#839496"
+  bg: "#073642"
+
+popup_input:
+  fg: "#93a1a1"
+  bg: "#002b36"
+
+popup_counts:
+  fg: "#002b36"
+  bg: "white"
+
+popup_selection:
+  fg: "#002b36"
+  bg: "#b58900"
+
+popup_frame:
+  fg: "#268bd2"
+  bg: "#073642"
+  border: single
+  corners: rounded
