@@ -7,6 +7,42 @@ module Fatty
     class InheritanceCycleError < ResolveError; end
 
     module Resolver
+      ROLE_PARENTS = {
+        input: :output,
+        input_suggestion: :input,
+
+        region: :output,
+        cursor: :input,
+
+        popup: :output,
+        popup_frame: :popup,
+        popup_input: :popup,
+        popup_selection: :popup,
+        popup_counts: :popup,
+
+        search_input: :popup,
+
+        match_current: :region,
+        match_other: :region,
+
+        pager_status: :output,
+
+        info: :output,
+        good: :info,
+        warn: :info,
+        error: :warn,
+      }.freeze
+
+      def self.empty_theme
+        {
+          name: nil,
+          inherit: nil,
+          roles: {},
+          markdown: {},
+          source: nil,
+        }
+      end
+
       def self.resolve(registry, name)
         resolved = {}
         resolve_one(registry, name.to_sym, resolved: resolved, stack: [])
@@ -31,6 +67,7 @@ module Fatty
           end
 
         merged = deep_merge(parent, defn)
+        merged[:roles] = resolve_role_inheritance(merged[:roles])
         merged[:name] = name
         merged[:inherit] = defn[:inherit]
         merged[:source] = defn[:source]
@@ -38,14 +75,38 @@ module Fatty
         resolved[name] = merged
       end
 
-      def self.empty_theme
-        {
-          name: nil,
-          inherit: nil,
-          roles: {},
-          markdown: {},
-          source: nil,
-        }
+      def self.resolve_role_inheritance(roles)
+        resolved = {}
+        roles.each_key do |name|
+          resolve_role(name, roles, resolved, stack: [])
+        end
+        resolved
+      end
+
+      def self.resolve_role(name, roles, resolved, stack:)
+        return resolved[name] if resolved.key?(name)
+
+        if stack.include?(name)
+          raise InheritanceCycleError, "Role inheritance cycle: #{(stack + [name]).join(' -> ')}"
+        end
+
+        spec = roles[name] || {}
+
+        parent_name =
+          if spec.key?(:inherit)
+            spec[:inherit]&.to_sym
+          else
+            ROLE_PARENTS[name]
+          end
+
+        parent_spec =
+          if parent_name
+            resolve_role(parent_name, roles, resolved, stack: stack + [name])
+          else
+            {}
+          end
+
+        resolved[name] = deep_merge_hash(parent_spec, spec.reject { |k, _| k == :inherit })
       end
 
       def self.deep_merge(parent, child)
