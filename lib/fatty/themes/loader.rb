@@ -102,8 +102,16 @@ module Fatty
         return if value.nil?
 
         text = value.to_s.strip
-        text.empty? || text == "null" ? nil : text.to_sym
+        return if text.empty?
+
+        case text.downcase
+        when "null", "nil", "none"
+          nil
+        else
+          text.to_sym
+        end
       end
+
     end
   end
 end
