@@ -11,13 +11,10 @@ module Fatty
         region: { attrs: [:reverse] },
         cursor: { attrs: [:reverse] },
         input_suggestion: { attrs: [:dim] },
-
         pager_status: { attrs: [:reverse] },
         search_input: { attrs: [:reverse] },
         match_current: { attrs: [:reverse] },
         match_other: { attrs: [:underline] },
-
-        # popup_input: { attrs: [:reverse] },
         popup_counts: { attrs: [:bold] },
       }.freeze
 
@@ -58,13 +55,13 @@ module Fatty
       end
 
       def self.resolve(registry, name)
-        resolved = {}
-        resolve_one(registry, name.to_sym, resolved: resolved, stack: [])
+        raw = merge_theme_chain(registry, name.to_sym, stack: [])
+        raw[:roles] = resolve_role_inheritance(raw[:roles])
+        raw[:name] = name.to_sym
+        raw
       end
 
-      def self.resolve_one(registry, name, resolved:, stack:)
-        return resolved[name] if resolved.key?(name)
-
+      def self.merge_theme_chain(registry, name, stack:)
         defn = registry.fetch(name)
         raise MissingThemeError, "Theme not found: #{name}" unless defn
 
@@ -75,18 +72,16 @@ module Fatty
 
         parent =
           if defn[:inherit]
-            resolve_one(registry, defn[:inherit], resolved: resolved, stack: stack + [name])
+            merge_theme_chain(registry, defn[:inherit], stack: stack + [name])
           else
             empty_theme
           end
 
         merged = deep_merge(parent, defn)
-        merged[:roles] = resolve_role_inheritance(merged[:roles])
         merged[:name] = name
         merged[:inherit] = defn[:inherit]
         merged[:source] = defn[:source]
-
-        resolved[name] = merged
+        merged
       end
 
       def self.resolve_role_inheritance(roles)
