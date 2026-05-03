@@ -288,31 +288,39 @@ module Fatty
 
     desc "Delete the character before the cursor"
     action :delete_char_backward do |count: 1|
-      n = normalize_count(count)
-      return if @cursor.zero?
+      if region_active?
+        delete_region
+      else
+        n = normalize_count(count)
+        return if @cursor.zero?
 
-      with_undo do
-        @last_action = nil
-        repeat(n) do
-          break if @cursor.zero?
+        with_undo do
+          @last_action = nil
+          repeat(n) do
+            break if @cursor.zero?
 
-          text.slice!(@cursor - 1)
-          @cursor -= 1
+            text.slice!(@cursor - 1)
+            @cursor -= 1
+          end
         end
       end
     end
 
     desc "Delete count characters after the cursor"
     action :delete_char_forward do |count: 1|
-      n = normalize_count(count)
-      return if @cursor == text.length
+      if region_active?
+        delete_region
+      else
+        n = normalize_count(count)
+        return if @cursor == text.length
 
-      with_undo do
-        @last_action = nil
-        repeat(n) do
-          break if @cursor == text.length
+        with_undo do
+          @last_action = nil
+          repeat(n) do
+            break if @cursor == text.length
 
-          text.slice!(@cursor, 1)
+            text.slice!(@cursor, 1)
+          end
         end
       end
     end
@@ -434,6 +442,21 @@ module Fatty
         @mark = nil
         push_kill(deleted)
         @last_action = :kill
+      end
+      deleted
+    end
+
+    desc "Delete the active region without pushing it to the kill ring."
+    action :delete_region do
+      r = region_range
+      return "" unless r
+
+      deleted = ""
+      with_undo do
+        deleted = delete_range(r)
+        @cursor = r.begin
+        @mark = nil
+        @last_action = nil
       end
       deleted
     end
