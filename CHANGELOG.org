@@ -6,6 +6,14 @@
    user would find useful.
 5. Give each heading a version number and an inactive date (C-c ! is useful here).
 
+* Version 0.5.0 [2026-05-03 Sun]
+- Implemented YAML-driven theme system with inheritance, both for themes and
+  for roles within a theme.
+- Themes allow popup frames to be styled now with single or double lines and
+  square or rounded corners.
+- Use the default multi-term matcher for popups
+- Fix auto-completion regression on input line to trigger on self-insert.
+
 * Version 0.4.0 [2026-04-30 Thu]
 - Add `keytest` interactive keybinding inspector
 - Add markdown rendering support in demo
