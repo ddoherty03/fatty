@@ -11,6 +11,116 @@ So, in themes, this would be possible:
 #+end_src
 ** Develop a ruby DSL for defining themes
 ** Develop more builtin themes
+* TODO Truecolor Support
+Remember this from ChatGPT:
+
+#+begin_quote
+1. Can you detect truecolor support?
+
+Yes—best practice is a combination of environment hints:
+
+def truecolor_supported?
+  ct = ENV["COLORTERM"]&.downcase
+  return true if ct&.include?("truecolor") || ct&.include?("24bit")
+
+  term = ENV["TERM"]&.downcase
+  return true if term&.include?("direct")  # e.g. xterm-direct
+
+  false
+end
+
+This catches most modern terminals:
+
+COLORTERM=truecolor (very common)
+TERM=xterm-direct (less common but explicit)
+
+You can also sanity-check:
+
+ENV["TERM_PROGRAM"] # iTerm, Apple_Terminal, etc.
+
+…but COLORTERM is the main signal.
+
+2. The real blocker: ncurses
+
+Even if truecolor is available, ncurses color pairs:
+
+Curses.init_pair(...)
+
+are limited to:
+
+256 colors (best case)
+often fewer
+
+So your current renderer cannot display truecolor, even if the terminal supports it.
+
+3. What it would take to use truecolor
+
+You’d need to bypass color pairs and emit ANSI directly:
+
+\e[38;2;R;G;Bm   # foreground
+\e[48;2;R;G;Bm   # background
+
+Example:
+
+"\e[48;2;135;206;250m"
+
+That means:
+
+no color_pair
+renderer writes ANSI sequences inline
+you manage resets (\e[0m or partial resets)
+4. Can you mix curses + truecolor?
+
+Sort of—but awkwardly:
+
+keep curses for cursor/window management
+use ANSI for colors
+don’t rely on attrset / color pairs
+
+This is doable, but:
+
+you lose some curses conveniences
+you must be careful about redraws and state
+5. Recommended path (incremental)
+
+Don’t rewrite everything yet. Do this:
+
+Step 1 — detect capability
+Fatty.truecolor? = truecolor_supported?
+Step 2 — extend color model
+
+Your Color object should carry:
+
+{ r: 135, g: 206, b: 250 }
+
+in addition to (or instead of) pair indices.
+
+Step 3 — dual rendering path (later)
+
+In renderer:
+
+if truecolor?
+  emit ANSI
+else
+  use color_pair
+end
+6. Why this is worth it
+
+Your theme system is now perfectly positioned for truecolor:
+
+you already use semantic roles
+you already parse X11 names
+you already separate rendering
+
+So switching later is contained.
+
+Bottom line
+✅ You can detect truecolor
+❌ You cannot use it with curses color pairs
+✅ Your architecture is ready to support it later
+
+#+end_quote
+
 * DONE Change to Fatty?
 CLOSED: [2026-04-30 Thu 03:39]
 and change the name of the demo to fatty for user testing.
