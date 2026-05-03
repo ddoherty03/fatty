@@ -328,7 +328,7 @@ module Fatty
         win = context.input_win
         base_attr = pair_attr(:input, fallback: ::Curses::A_NORMAL)
         region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
-        suggestion_attr = pair_attr(:input_suggestion, fallback: 0) | ::Curses::A_DIM
+        suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
 
         win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
         win.erase
@@ -509,8 +509,9 @@ module Fatty
           inner.addstr(counts_text[0, inner_w].to_s.ljust(inner_w))
         end
 
+        base_attr = pair_attr(:popup_input, fallback: ::Curses::A_NORMAL)
         region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
-        suggestion_attr = pair_attr(:input_suggestion, fallback: 0) | ::Curses::A_DIM
+        suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
         render_field_into(
           win: inner,
           field: session.field,
@@ -569,8 +570,9 @@ module Fatty
             row += 1
           end
 
+          base_attr = pair_attr(:popup_input, fallback: ::Curses::A_NORMAL)
           region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
-          suggestion_attr = pair_attr(:input_suggestion, fallback: 0) | ::Curses::A_DIM
+          suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
           render_field_into(
             win: inner,
             field: session.field,

@@ -7,6 +7,20 @@ module Fatty
     class InheritanceCycleError < ResolveError; end
 
     module Resolver
+      DEFAULT_ROLE_SPECS = {
+        region: { attrs: [:reverse] },
+        cursor: { attrs: [:reverse] },
+        input_suggestion: { attrs: [:dim] },
+
+        pager_status: { attrs: [:reverse] },
+        search_input: { attrs: [:reverse] },
+        match_current: { attrs: [:reverse] },
+        match_other: { attrs: [:underline] },
+
+        # popup_input: { attrs: [:reverse] },
+        popup_counts: { attrs: [:bold] },
+      }.freeze
+
       ROLE_PARENTS = {
         input: :output,
         input_suggestion: :input,
@@ -16,8 +30,8 @@ module Fatty
 
         popup: :output,
         popup_frame: :popup,
-        popup_input: :popup,
-        popup_selection: :popup,
+        popup_input: :input,
+        popup_selection: :region,
         popup_counts: :popup,
 
         search_input: :popup,
@@ -77,9 +91,17 @@ module Fatty
 
       def self.resolve_role_inheritance(roles)
         resolved = {}
-        roles.each_key do |name|
+        names = (
+          ROLE_PARENTS.keys +
+          ROLE_PARENTS.values +
+          DEFAULT_ROLE_SPECS.keys +
+          roles.keys
+        ).compact.uniq
+
+        names.each do |name|
           resolve_role(name, roles, resolved, stack: [])
         end
+
         resolved
       end
 
@@ -90,8 +112,7 @@ module Fatty
           raise InheritanceCycleError, "Role inheritance cycle: #{(stack + [name]).join(' -> ')}"
         end
 
-        spec = roles[name] || {}
-
+        spec = roles[name] || DEFAULT_ROLE_SPECS.fetch(name, {})
         parent_name =
           if spec.key?(:inherit)
             spec[:inherit]&.to_sym
