@@ -75,7 +75,7 @@ module Fatty
     desc "Cancel prompt if empty, otherwise delete forward"
     action :prompt_cancel_if_empty do
       if @field.buffer.text.to_s.empty?
-        interrupt
+        prompt_cancel
       else
         with_virtual_suffix_sync { @field.act_on(:delete_char_forward, env: action_env(event: nil)) }
         []
@@ -85,10 +85,11 @@ module Fatty
     def handle_action(action, args, event:)
       env = action_env(event: event)
 
-      with_virtual_suffix_sync do
+      result =
+        with_virtual_suffix_sync do
         @field.act_on(action, *args, env: env)
       end
-      []
+      result.is_a?(Array) ? result : []
     rescue ActionError => e
       Fatty.error("PromptSession#handle_action: ActionError #{e.message}", tag: :session)
       []
