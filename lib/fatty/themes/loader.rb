@@ -81,21 +81,36 @@ module Fatty
         end
       end
 
-      def self.normalize_spec(value)
-        return {} unless value.is_a?(Hash)
+      def self.normalize_spec(spec_hash)
+        return {} unless spec_hash.is_a?(Hash)
 
-        value.each_with_object({}) do |(k, v), h|
+        normalized =
+          spec_hash.each_with_object({}) do |(k, v), h|
           key = k.to_sym
           h[key] =
             case key
+            when :attr
+              v
             when :attrs
-              Array(v).map { |attr| attr.to_sym }
+              normalize_attrs(v)
             when :border, :corners
               normalize_optional_symbol(v)
             else
               v
             end
+          end
+
+        if normalized.key?(:attr)
+          attr = normalized.delete(:attr)
+          attrs = normalized.key?(:attrs) ? normalized[:attrs] : []
+          normalized[:attrs] = normalize_attrs(attrs + Array(attr))
         end
+
+        normalized
+      end
+
+      def self.normalize_attrs(value)
+        Array(value).map { |attr| attr.to_sym }
       end
 
       def self.normalize_optional_symbol(value)
