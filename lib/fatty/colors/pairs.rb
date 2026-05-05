@@ -17,6 +17,7 @@ module Fatty
       STATUS_WARN      = 7
       STATUS_ERROR     = 8
       STATUS_GOOD      = 9
+      STATUS           = 10
 
       SEARCH = 20
       SEARCH_HIGHLIGHT = 21
@@ -41,6 +42,7 @@ module Fatty
         info: STATUS_INFO,
         warn: STATUS_WARN,
         error: STATUS_ERROR,
+        status: STATUS,
 
         match_current: SEARCH_HIGHLIGHT,
         match_other: SEARCH_HIGHLIGHT_SECONDARY,
