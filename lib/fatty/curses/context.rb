@@ -24,7 +24,7 @@ module Fatty
       DEFAULT_ESC_DELAY = 25
 
       attr_reader :input_win, :output_win, :status_win, :alert_win
-      attr_reader :rows, :cols, :palette
+      attr_reader :rows, :cols, :palette, :truecolor
 
       def initialize
         @started = false
@@ -44,6 +44,7 @@ module Fatty
         ::Curses.mousemask(::Curses::ALL_MOUSE_EVENTS)
         enable_bracketed_paste!
         setup_colors
+        truecolor_enabled?
 
         @started = true
         self
@@ -76,11 +77,6 @@ module Fatty
 
         # Resolve and apply theme/config colors using stable pair IDs from
         # Fatty::Colors::Pairs.
-        #
-        # Reads:
-        #   Fatty::Config.config[:ui][:color]
-        #
-        # and falls back to theme defaults (if any).
         @palette = Fatty::Colors::Palette.apply!(
           Fatty::Config.config,
           available_colors: ::Curses.colors,
@@ -126,10 +122,7 @@ module Fatty
 
         reset_ansi_pairs!
 
-        # Make sure ui/color exists, then override theme in-memory.
-        ui = cfg[:ui] ||= {}
-        color = ui[:color] ||= {}
-        color[:theme] = theme_name.to_sym
+        cfg[:theme] = theme_name.to_sym
 
         Fatty::Colors::Palette.apply!(cfg, available_colors: ::Curses.colors)
       end
@@ -141,6 +134,64 @@ module Fatty
       #
       # Note: this is intentionally independent of theme roles; it is for SGR
       # output runs inside the output pane.
+      def truecolor_enabled?
+        cfg = Fatty::Config.config
+        setting = cfg[:truecolor] || cfg["truecolor"] || "auto"
+
+        @truecolor =
+          case setting.to_s.downcase
+          when "true", "yes", "on", "1"
+            true
+          when "false", "no", "off", "0"
+            false
+          else
+            ENV["COLORTERM"].to_s.match?(/truecolor|24bit/i) ||
+              ENV["TERM"].to_s.match?(/truecolor|24bit/i)
+          end
+      end
+
+      def truecolor_enabled?
+        cfg = Fatty::Config.config
+        setting = cfg[:truecolor] || cfg["truecolor"] || "auto"
+
+        @truecolor =
+          case setting.to_s.downcase
+          when "true", "yes", "on", "1"
+            true
+          when "false", "no", "off", "0"
+            false
+          else
+            truecolor_env?
+          end
+
+        Fatty.info(
+          "truecolor=#{@truecolor} setting=#{setting.inspect} " \
+          "TERM=#{ENV['TERM'].inspect} COLORTERM=#{ENV['COLORTERM'].inspect} " \
+          "TERM_PROGRAM=#{ENV['TERM_PROGRAM'].inspect} TMUX=#{ENV.key?('TMUX')}",
+          tag: :theme,
+        )
+
+        @truecolor
+      end
+
+      def truecolor_env?
+        colorterm = ENV["COLORTERM"].to_s
+        term = ENV["TERM"].to_s
+        term_program = ENV["TERM_PROGRAM"].to_s
+
+        colorterm.match?(/truecolor|24bit/i) ||
+        term.match?(/truecolor|24bit|direct/i) ||
+        term.match?(/kitty|wezterm|alacritty|ghostty|foot/i) ||
+          term_program.match?(/kitty|wezterm|alacritty|ghostty|iTerm/i)
+      end
+
+      # Map a Fatty::Ansi::Style to a curses attribute.
+      #
+      # - If style has no explicit fg/bg, keep the themed role pair.
+      # - If style specifies fg/bg, allocate/init a curses pair on demand.
+      #
+      # This is intentionally independent of theme roles; it is for SGR output
+      # runs inside the output pane.
       def ansi_attr(style, fallback_role: :output)
         base_pair_id = Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(fallback_role)
         base_attr = ::Curses.color_pair(base_pair_id)

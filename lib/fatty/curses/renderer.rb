@@ -66,6 +66,8 @@ module Fatty
       def initialize(context:, screen:)
         @context = context
         @screen = screen
+        @ansi_renderer = Fatty::Ansi::Renderer.new
+        @pending_ansi_draws = []
         reset_frame_cache
       end
 
@@ -76,15 +78,16 @@ module Fatty
 
       def begin_frame
         @frame_touched = false
+        @pending_ansi_draws = []
         nil
       end
 
       def finish_frame
         if @frame_touched
-          if ::Curses.respond_to?(:doupdate)
-            ::Curses.doupdate
-          end
+          ::Curses.doupdate if ::Curses.respond_to?(:doupdate)
         end
+
+        flush_ansi_draws unless @pending_ansi_draws.empty?
         nil
       end
 
@@ -156,7 +159,6 @@ module Fatty
       end
 
       def draw_output_lines(lines, viewport:, highlights: nil)
-        Fatty.debug("calling draw_output_lines")
         win = context.output_win
         base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
 
@@ -184,24 +186,44 @@ module Fatty
         hi_attr = pair_attr(:match_current, fallback: ::Curses::A_REVERSE)
         hi2_attr = pair_attr(:match_other, fallback: hi_attr)
 
-        ranges = highlight_ranges_for_line(highlights, abs_line)
-        ranges =
-          Array(ranges).map do |from, to, role|
+        semantic_ranges = highlight_ranges_for_line(highlights, abs_line)
+
+        curses_ranges =
+          Array(semantic_ranges).map do |from, to, role|
           attr =
             case role
             when :secondary then hi2_attr
             else hi_attr
             end
+
           [from.to_i, to.to_i, attr]
         end
 
+        plain = Fatty::Ansi.plain_text(line.to_s)
+
         win.setpos(y, 0)
         win.attrset(base_attr)
-        slices = build_line_slices(line, ranges: ranges) do |style|
-          context.ansi_attr(style, fallback_role: :output)
+
+        slices = build_line_slices(plain, ranges: curses_ranges) do |_style|
+          base_attr
         end
+
         render_slices(win, slices)
         win.clrtoeol
+
+        if context.truecolor
+          row0, col0 = window_origin(win)
+
+          if row0 && col0
+            queue_ansi_segments_line(
+              row: row0 + y,
+              col: col0,
+              width: @screen.output_rect.cols,
+              segments: output_segments(line, ranges: semantic_ranges),
+            )
+          end
+        end
+
         nil
       end
 
@@ -251,64 +273,34 @@ module Fatty
       end
 
       def render_status(text, role: :info)
-        msg = text.to_s.tr("\r\n", " ")
-        state = [msg, role]
+        raw = text.to_s
+        msg = Fatty::Ansi.plain_text(raw).tr("\r\n", " ")
+        visual_role = status_visual_role(role)
+
+        win = context.status_win
+        cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
+
+        if context.truecolor
+          queue_ansi_segments_line(
+            row: @screen.status_rect.row,
+            col: @screen.status_rect.col,
+            width: cols,
+            segments: status_segments(raw, role: visual_role),
+          )
+        end
+
+        state = [msg, role, visual_role, cols]
         return if state == @last_status_state
 
         @last_status_state = state
 
-        win = context.status_win
-        cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
-        attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
+        attr = pair_attr(visual_role, fallback: pair_attr(role, fallback: ::Curses::A_REVERSE))
 
         win.bkgdset(attr) if win.respond_to?(:bkgdset)
         win.erase
         win.attrset(attr)
         win.setpos(0, 0)
         win.addstr(msg.ljust(cols)[0, cols])
-
-        stage_window(win)
-        nil
-      end
-
-      def render_status(text, role: :info)
-        msg = text.to_s.tr("\r\n", " ")
-        state = [msg, role]
-        return if state == @last_status_state
-
-        @last_status_state = state
-
-        win = context.status_win
-        cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
-        attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
-
-        win.bkgdset(attr) if win.respond_to?(:bkgdset)
-        win.erase
-        win.attrset(attr)
-        win.setpos(0, 0)
-
-        slices = build_line_slices(msg, ranges: []) do |style|
-          context.ansi_attr(style, fallback_role: role)
-        end
-
-        used = 0
-        slices.each do |slice_attr, slice_text|
-          break if used >= cols
-
-          visible = slice_text.to_s
-          remaining = cols - used
-          clipped = visible[0, remaining]
-
-          win.attrset(slice_attr)
-          win.addstr(clipped)
-
-          used += clipped.length
-        end
-
-        if used < cols
-          win.attrset(attr)
-          win.addstr(" " * (cols - used))
-        end
 
         stage_window(win)
         nil
@@ -345,6 +337,26 @@ module Fatty
           region_attr: region_attr,
           suggestion_attr: suggestion_attr,
         )
+        if context.truecolor
+          win = context.input_win
+          row0, col0 = window_origin(win)
+
+          if row0 && col0
+            width = win.respond_to?(:maxx) ? win.maxx : @screen.cols
+
+            queue_ansi_segments_line(
+              row: row0,
+              col: col0,
+              width: width,
+              segments: field_segments(
+                field,
+                base_role: :input,
+                suggestion_role: :input_suggestion,
+                region_role: :region,
+              ),
+            )
+          end
+        end
 
         cursor_x = field.cursor_x.to_i.clamp(0, [width - 1, 0].max)
         win.setpos(0, cursor_x)
@@ -372,6 +384,19 @@ module Fatty
         win.setpos(row, 0)
         win.attrset(attr)
         win.addstr(line)
+        if context.truecolor
+          row0, col0 = window_origin(win)
+
+          if row0 && col0
+            queue_ansi_line(
+              row: row0 + row,
+              col: col0,
+              width: cols,
+              text: line,
+              role: role,
+            )
+          end
+        end
 
         stage_window(win)
         nil
@@ -462,6 +487,15 @@ module Fatty
           line = session.message.to_s[0, inner_w]
           inner.addstr(line.ljust(inner_w))
           row += 1
+          if context.truecolor
+            queue_ansi_popup_line(
+              win: win,
+              inner_row: row - 1,
+              width: inner_w,
+              text: line,
+              role: :popup,
+            )
+          end
         end
 
         input_row = inner_h - 1
@@ -478,6 +512,7 @@ module Fatty
         (0...list_h).each do |i|
           idx = start + i
           is_sel = (idx == sel)
+          row_role = is_sel ? :popup_selection : :popup
           row_attr = is_sel ? selected_attr : results_attr
 
           inner.attrset(row_attr)
@@ -485,15 +520,27 @@ module Fatty
           inner.addstr(" " * list_w)
           inner.setpos(list_row + i, 0)
 
-          next if idx >= items.length
+          line = ""
 
-          item = items[idx]
-          gutter = session.gutter_for(item: item, selected: is_sel)
-          avail = [list_w - gutter.length, 0].max
-          s = item.to_s[0, avail]
-          line = (gutter + s)[0, list_w]
+          if idx < items.length
+            item = items[idx]
+            gutter = session.gutter_for(item: item, selected: is_sel)
+            avail = [list_w - gutter.length, 0].max
+            s = item.to_s[0, avail]
+            line = (gutter + s)[0, list_w]
 
-          inner.addstr(line.ljust(list_w))
+            inner.addstr(line.ljust(list_w))
+          end
+
+          if context.truecolor
+            queue_ansi_popup_line(
+              win: win,
+              inner_row: list_row + i,
+              width: list_w,
+              text: line,
+              role: row_role,
+            )
+          end
         end
 
         counts = session.counts
@@ -507,6 +554,15 @@ module Fatty
           inner.attrset(counts_attr)
           inner.setpos(counts_row, 0)
           inner.addstr(counts_text[0, inner_w].to_s.ljust(inner_w))
+          if context.truecolor
+            queue_ansi_popup_line(
+              win: win,
+              inner_row: counts_row,
+              width: inner_w,
+              text: counts_text[0, inner_w].to_s,
+              role: :popup_counts,
+            )
+          end
         end
 
         base_attr = pair_attr(:popup_input, fallback: ::Curses::A_NORMAL)
@@ -521,10 +577,22 @@ module Fatty
           region_attr: region_attr,
           suggestion_attr: suggestion_attr,
         )
+        if context.truecolor
+          input_text = session.field.prompt_text.to_s + session.field.buffer.text.to_s
+
+          queue_ansi_popup_line(
+            win: win,
+            inner_row: input_row,
+            width: list_w,
+            text: input_text[0, list_w],
+            role: :popup_input,
+          )
+        end
 
         cursor_in_inner = session.field.cursor_x.clamp(0, [list_w - 1, 0].max)
         win.setpos(1 + input_row, 1 + cursor_in_inner)
 
+        queue_ansi_popup_frame(win: win, width: width, height: height)
         stage_window(inner)
         stage_window(win)
         nil
@@ -546,7 +614,7 @@ module Fatty
 
           inner_h = height - 2
           inner_w = width - 2
-          return nil if inner_h <= 0 || inner_w <= 0
+          return if inner_h <= 0 || inner_w <= 0
 
           inner = win.derwin(inner_h, inner_w, 1, 1)
           inner.erase
@@ -560,12 +628,23 @@ module Fatty
           input_attr = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
 
           row = 0
-
           if session.message && !session.message.empty?
+            message_row = row
+
             inner.attron(text_attr) do
-              inner.setpos(row, 0)
+              inner.setpos(message_row, 0)
               line = session.message.to_s[0, inner_w]
               inner.addstr(line.ljust(inner_w))
+
+              if context.truecolor
+                queue_ansi_popup_line(
+                  win: win,
+                  inner_row: message_row,
+                  width: inner_w,
+                  text: line,
+                  role: :popup,
+                )
+              end
             end
             row += 1
           end
@@ -573,23 +652,42 @@ module Fatty
           base_attr = pair_attr(:popup_input, fallback: ::Curses::A_NORMAL)
           region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
           suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
+          input_row = row
           render_field_into(
             win: inner,
             field: session.field,
-            row: row,
+            row: input_row,
             width: inner_w,
             base_attr: input_attr,
             region_attr: region_attr,
             suggestion_attr: suggestion_attr,
           )
+          if context.truecolor
+            row0, col0 = window_origin(win)
 
+            if row0 && col0
+              queue_ansi_segments_line(
+                row: row0 + 1 + input_row,
+                col: col0 + 1,
+                width: inner_w,
+                segments: field_segments(
+                  session.field,
+                  base_role: :popup_input,
+                  suggestion_role: :input_suggestion,
+                  region_role: :region,
+                ),
+              )
+            end
+          end
           cursor_in_inner = session.field.cursor_x.clamp(0, [inner_w - 1, 0].max)
           win.setpos(1 + row, 1 + cursor_in_inner)
 
+          queue_ansi_popup_frame(win: win, width: width, height: height)
           stage_window(inner)
           stage_window(win)
         rescue RuntimeError => e
           raise unless e.message.include?("closed window") || e.message.include?("already closed window")
+
           nil
         end
 
@@ -663,6 +761,14 @@ module Fatty
         nil
       end
 
+      def flush_truecolor_overlay
+        flush_ansi_draws
+      end
+
+      def flush_ansi_overlay
+        flush_ansi_draws
+      end
+
       private
 
       def pair_attr(role, fallback:)
@@ -681,6 +787,34 @@ module Fatty
         ATTR_FLAGS.fetch(name.to_sym, 0)
       end
 
+      def status_visual_role(role)
+        palette = @palette || context.palette
+
+        if palette&.key?(:status)
+          :status
+        else
+          role
+        end
+      end
+
+      def window_origin(win)
+        row =
+          if win.respond_to?(:begy)
+            win.begy
+          elsif win.respond_to?(:begin_y)
+            win.begin_y
+          end
+
+        col =
+          if win.respond_to?(:begx)
+            win.begx
+          elsif win.respond_to?(:begin_x)
+            win.begin_x
+          end
+
+        [row, col]
+      end
+
       def stage_window(win)
         if win.respond_to?(:noutrefresh)
           win.noutrefresh
@@ -688,6 +822,184 @@ module Fatty
         else
           win.refresh
         end
+        nil
+      end
+
+      def queue_ansi_line(row:, col:, width:, text:, role:)
+        @pending_ansi_draws << {
+          row: row,
+          col: col,
+          width: width,
+          text: text,
+          role: role,
+        }
+        @frame_touched = true
+        nil
+      end
+
+      def queue_ansi_segments_line(row:, col:, width:, segments:)
+        @pending_ansi_draws << {
+          type: :segments_line,
+          row: row,
+          col: col,
+          width: width,
+          segments: segments,
+        }
+
+        @frame_touched = true
+        nil
+      end
+
+      def queue_ansi_rect(row:, col:, width:, height:, role:)
+        return if height <= 0 || width <= 0
+
+        height.times do |i|
+          queue_ansi_line(
+            row: row + i,
+            col: col,
+            width: width,
+            text: " " * width,
+            role: role,
+          )
+        end
+
+        nil
+      end
+
+      def queue_ansi_popup_line(win:, inner_row:, inner_col: 0, width:, text:, role:)
+        row, col = window_origin(win)
+        return unless row && col
+
+        queue_ansi_line(
+          row: row + 1 + inner_row,
+          col: col + 1 + inner_col,
+          width: width,
+          text: text.to_s,
+          role: role,
+        )
+
+        nil
+      end
+
+      def queue_popup_truecolor(win:, width:, height:, role: :popup)
+        return unless context.truecolor
+        return if width <= 0 || height <= 0
+
+        row, col = window_origin(win)
+        return unless row && col
+
+        queue_ansi_rect(
+          row: row,
+          col: col,
+          width: width,
+          height: height,
+          role: role,
+        )
+
+        nil
+      end
+
+      def queue_ansi_popup_frame(win:, width:, height:)
+        return unless context.truecolor
+        return if width < 2 || height < 2
+
+        row, col = window_origin(win)
+        return unless row && col
+
+        b = popup_border
+
+        queue_ansi_line(
+          row: row,
+          col: col,
+          width: width,
+          text: b[:tl] + (b[:h] * (width - 2)) + b[:tr],
+          role: :popup_frame,
+        )
+
+        (1...(height - 1)).each do |y|
+          queue_ansi_line(
+            row: row + y,
+            col: col,
+            width: 1,
+            text: b[:v],
+            role: :popup_frame,
+          )
+
+          queue_ansi_line(
+            row: row + y,
+            col: col + width - 1,
+            width: 1,
+            text: b[:v],
+            role: :popup_frame,
+          )
+        end
+
+        queue_ansi_line(
+          row: row + height - 1,
+          col: col,
+          width: width,
+          text: b[:bl] + (b[:h] * (width - 2)) + b[:br],
+          role: :popup_frame,
+        )
+
+        nil
+      end
+
+      def field_segments(field, base_role:, suggestion_role: :input_suggestion, region_role: :region)
+        buf = field.buffer
+        text = buf.text.to_s
+        segments = [{ text: field.prompt_text.to_s, role: base_role }]
+
+        region =
+          if buf.respond_to?(:region_range)
+            buf.region_range
+          end
+
+        if region && region.begin < region.end
+          max = text.length
+          s = region.begin.clamp(0, max)
+          e = region.end.clamp(0, max)
+
+          segments << { text: text[0...s].to_s, role: base_role }
+          segments << { text: text[s...e].to_s, role: region_role }
+          segments << { text: text[e..].to_s, role: base_role }
+        else
+          segments << { text: text, role: base_role }
+        end
+
+        suffix = buf.virtual_suffix.to_s
+        segments << { text: suffix, role: suggestion_role } unless suffix.empty?
+
+        segments.reject { |seg| seg[:text].empty? }
+      end
+
+      def flush_ansi_draws
+        return unless context.truecolor
+
+        palette = @palette || context.palette
+
+        @pending_ansi_draws.each do |draw|
+          case draw[:type]
+          when :segments_line
+            @ansi_renderer.render_segments_line(
+              row: draw[:row],
+              col: draw[:col],
+              width: draw[:width],
+              segments: draw[:segments],
+              palette: palette,
+            )
+          else
+            @ansi_renderer.render_line(
+              row: draw[:row],
+              col: draw[:col],
+              width: draw[:width],
+              text: draw[:text],
+              role: draw[:role],
+              palette: palette,
+            )
+          end
+        end
+        @pending_ansi_draws.clear
         nil
       end
 
@@ -818,6 +1130,43 @@ module Fatty
         slices
       end
 
+      def build_output_segments(line, ranges:)
+        base_role = :output
+        segments = []
+
+        pos = 0
+
+        ranges = Array(ranges).sort_by(&:first)
+
+        ranges.each do |from, to, role|
+          from = from.to_i
+          to   = to.to_i
+
+          if from > pos
+            segments << {
+              text: line[pos...from].to_s,
+              role: base_role,
+            }
+          end
+
+          segments << {
+            text: line[from...to].to_s,
+            role: role == :secondary ? :match_other : :match_current,
+          }
+
+          pos = to
+        end
+
+        if pos < line.length
+          segments << {
+            text: line[pos..].to_s,
+            role: base_role,
+          }
+        end
+
+        segments.reject { |s| s[:text].empty? }
+      end
+
       def emit_slice(slices, attr, text)
         return if text.nil? || text.empty?
 
@@ -834,6 +1183,85 @@ module Fatty
           win.attrset(attr)
           win.addstr(text.to_s)
         end
+      end
+
+      def output_segments(line, ranges:)
+        plain = Fatty::Ansi.plain_text(line.to_s)
+        base_segments = []
+
+        Fatty::Ansi.segment(line.to_s).each do |text, style|
+          base_segments << {
+            text: text.to_s,
+            role: :output,
+            style: style,
+          }
+        end
+
+        apply_highlight_ranges_to_segments(base_segments, plain:, ranges:)
+      end
+
+      def status_segments(text, role:)
+        segments = []
+
+        Fatty::Ansi.segment(text.to_s).each do |txt, style|
+          if style && (style.fg || style.bg || style.bold || style.underline || style.reverse)
+            segments << {
+              text: txt.to_s,
+              role: role,   # fallback palette
+              style: style, # real color
+            }
+          else
+            segments << {
+              text: txt.to_s,
+              role: role,
+            }
+          end
+        end
+
+        segments.reject { |s| s[:text].empty? }
+      end
+
+      def apply_highlight_ranges_to_segments(segments, plain:, ranges:)
+        ranges = Array(ranges).sort_by(&:first)
+        return segments if ranges.empty?
+
+        out = []
+        pos = 0
+
+        segments.each do |seg|
+          text = seg[:text].to_s
+          seg_start = pos
+          seg_end = pos + text.length
+          cursor = 0
+
+          ranges.each do |from, to, highlight_role|
+            from = from.to_i
+            to = to.to_i
+            next if to <= seg_start || from >= seg_end
+
+            local_from = [from - seg_start, cursor].max
+            local_to = [to - seg_start, text.length].min
+
+            if local_from > cursor
+              out << seg.merge(text: text[cursor...local_from].to_s)
+            end
+
+            out << {
+              text: text[local_from...local_to].to_s,
+              role: highlight_role == :secondary ? :match_other : :match_current,
+            }
+
+            cursor = local_to
+          end
+
+          if cursor < text.length
+            out << seg.merge(text: text[cursor..].to_s)
+          end
+
+          pos = seg_end
+        end
+
+        out.reject { |seg| seg[:text].empty? }
       end
 
       def alert_attr(alert)

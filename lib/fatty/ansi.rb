@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "ansi/renderer"
+
 module Fatty
   # Parse ANSI escape sequences (primarily SGR, i.e. "\e[...m") into styled text
   # segments. This is intentionally curses-agnostic: the renderer/context decides

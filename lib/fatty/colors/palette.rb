@@ -50,10 +50,18 @@ module Fatty
           fg = Fatty::Color.resolve(fg_spec, available_colors: available_colors)
           bg = Fatty::Color.resolve(bg_spec, available_colors: available_colors)
           attrs = Array(role_spec[:attrs] || role_spec["attrs"]).map(&:to_sym)
+          fg_rgb = Fatty::Color.rgb(fg_spec)
+          bg_rgb = Fatty::Color.rgb(bg_spec)
 
-          out[role] = { fg: fg, bg: bg, pair: pair_id, attrs: attrs }
+          out[role] = {
+            fg: fg,
+            bg: bg,
+            fg_rgb: fg_rgb,
+            bg_rgb: bg_rgb,
+            pair: pair_id,
+            attrs: attrs,
+          }
         end
-
         out
       end
 
@@ -73,21 +81,12 @@ module Fatty
         palette
       end
 
-      # Helpers
+      private
+
       def extract_color_cfg(cfg)
-        return {} if cfg.nil?
+        return {} unless cfg.is_a?(Hash)
 
-        # Accept passing either Fatty::Config.config or ui.color subtree.
-        ui = cfg[:ui] || cfg["ui"]
-        color = ui && (ui[:color] || ui["color"])
-        return color if color
-
-        # maybe already the color subtree
-        if cfg.key?(:theme) || cfg.key?("theme") || cfg.key?(:popup) || cfg.key?("popup")
-          cfg
-        else
-          {}
-        end
+        cfg
       end
 
       def color_cfg_without_theme(color_cfg)

@@ -195,6 +195,35 @@ module Fatty
       end
     end
 
+    def self.rgb(spec)
+      if spec.is_a?(Integer)
+        xterm_rgb_for_index(spec)
+      elsif spec.nil?
+        nil
+      else
+        s = normalize_name(spec.to_s)
+
+        if s.start_with?("ansi:")
+          s = s.delete_prefix("ansi:")
+        elsif s.start_with?("x11:")
+          s = s.delete_prefix("x11:")
+        end
+
+        idx = ALIASES_256[s]
+        if idx
+          xterm_rgb_for_index(idx)
+        else
+          parsed = parse_hex(s)
+          parsed ||= x11_rgb_for_name(s)
+          parsed ||= begin
+                       ansi = ANSI_NAMES[s]
+                       xterm_rgb_for_index(ansi) unless ansi == DEFAULT_INDEX || ansi.nil?
+                     end
+          parsed
+        end
+      end
+    end
+
     # Convert any RGB to an xterm-256 index (16..255).
     # We consider both the 6x6x6 cube and the grayscale ramp and pick the closer.
     def self.xterm_index_for_rgb(r, g, b)
@@ -320,7 +349,13 @@ module Fatty
     end
 
     def self.x11_table
-      @x11_table ||= load_x11_rgb_txt(RGB_TXT_PATH)
+      path = RGB_TXT_PATH
+
+      if @x11_table_path != path
+        @x11_table = load_x11_rgb_txt(path)
+        @x11_table_path = path
+      end
+      @x11_table
     end
 
     def self.load_x11_rgb_txt(path)

@@ -25,12 +25,16 @@ module Fatty
       end
 
       def self.current
-        cfg = Fatty::Config.config
-        theme = cfg[:theme]
-        theme = theme.to_s.strip unless theme.nil?
-        theme = nil if theme&.empty?
+        return @current if @current
 
-        theme ? theme.to_sym : :terminal
+        theme = Fatty::Config.config[:theme]
+
+        @current =
+          if theme && !theme.to_s.strip.empty?
+            theme.to_sym
+          else
+            FALLBACK_THEME
+          end
       end
 
       def self.set(theme)

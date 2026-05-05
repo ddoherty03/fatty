@@ -46,3 +46,5 @@ history:
 
 # By default the theme is 'terminal'
 theme: wordperfect
+
+truecolor: auto
