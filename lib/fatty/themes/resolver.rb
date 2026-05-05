@@ -38,6 +38,7 @@ module Fatty
 
         pager_status: :output,
 
+        status: :output,
         info: :output,
         good: :info,
         warn: :info,
