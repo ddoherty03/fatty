@@ -317,6 +317,7 @@ module Fatty
             col: @screen.status_rect.col,
             width: cols,
             segments: status_segments(raw, role: visual_role),
+            fill_role: :status,
           )
         end
 
@@ -385,6 +386,7 @@ module Fatty
                 suggestion_role: :input_suggestion,
                 region_role: :region,
               ),
+              fill_role: :input,
             )
           end
         end
@@ -707,6 +709,7 @@ module Fatty
                   suggestion_role: :input_suggestion,
                   region_role: :region,
                 ),
+                fill_role: :popup_input,
               )
             end
           end
@@ -868,13 +871,14 @@ module Fatty
         nil
       end
 
-      def queue_ansi_segments_line(row:, col:, width:, segments:)
+      def queue_ansi_segments_line(row:, col:, width:, segments:, fill_role: :output)
         @pending_ansi_draws << {
           type: :segments_line,
           row: row,
           col: col,
           width: width,
           segments: segments,
+          fill_role: fill_role,
         }
 
         @frame_touched = true
@@ -1018,6 +1022,7 @@ module Fatty
               width: draw[:width],
               segments: draw[:segments],
               palette: palette,
+              fill_role: draw[:fill_role] || :output,
             )
           else
             @ansi_renderer.render_line(

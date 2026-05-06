@@ -30,7 +30,7 @@ module Fatty
         nil
       end
 
-      def render_segments_line(row:, col:, width:, segments:, palette:)
+      def render_segments_line(row:, col:, width:, segments:, palette:, fill_role: :output)
         rendered = +""
         visible = 0
 
@@ -57,8 +57,7 @@ module Fatty
         end
 
         if visible < width
-          default_role = segments.last&.dig(:role) || :output
-          spec = palette&.[](default_role)
+          spec = palette&.[](fill_role)
           rendered << sgr_for_role(spec) if spec
           rendered << (" " * (width - visible))
         end
