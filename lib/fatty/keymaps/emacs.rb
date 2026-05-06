@@ -159,6 +159,7 @@ module Fatty
       map.bind(context: :isearch, key: :j, ctrl: true, action: :isearch_accept)
       map.bind(context: :isearch, key: :s, ctrl: true, action: :isearch_next)
       map.bind(context: :isearch, key: :r, ctrl: true, action: :isearch_prev)
+      map.bind(context: :isearch, key: :c, ctrl: true, action: :isearch_cancel)
       map.bind(context: :isearch, key: :g, ctrl: true, action: :isearch_cancel)
       map.bind(context: :isearch, key: :escape, action: :isearch_cancel)
 
@@ -166,13 +167,16 @@ module Fatty
       map.bind(context: :paging, key: :n, action: :pager_search_next)
       map.bind(context: :paging, key: :N, action: :pager_search_prev)
 
-      # Search minibuffer stepping (SearchSession)
+      # Search controls (within SearchSession)
       map.bind(context: :search, key: :enter, action: :search_accept)
       map.bind(context: :search, key: :return, action: :search_accept)
       map.bind(context: :search, key: :j, ctrl: true, action: :search_accept)
       map.bind(context: :search, key: :s, ctrl: true, action: :search_step_forward)
       map.bind(context: :search, key: :r, ctrl: true, action: :search_step_backward)
       map.bind(context: :search, key: :r, meta: true, action: :search_toggle_regex)
+      map.bind(context: :search, key: :c, ctrl: true, action: :search_cancel)
+      map.bind(context: :search, key: :g, ctrl: true, action: :search_cancel)
+      map.bind(context: :search, key: :escape, action: :search_cancel)
 
       # Mouse scrolling in paging
       map.bind_mouse(context: :paging, button: :scroll_up, action: :scroll_up)

@@ -41,7 +41,7 @@ module Fatty
       renderer.render_pager_field(
         @field,
         row: row,
-        role: :search,
+        role: :search_input,
       )
       renderer.restore_output_cursor(@field, row: row)
     end
@@ -52,12 +52,12 @@ module Fatty
 
     desc "Return the line so far as the prompt input"
     action :search_accept do
-      accept_search
+      search_accept
     end
 
-    desc "Terminate the prompt session"
+    desc "End the search session"
     action :search_cancel do
-      [[:terminal, :pop_modal]]
+      cancel!
     end
 
     desc "Toggle between string i-search and regex search"
@@ -83,8 +83,12 @@ module Fatty
         buffer: @field.buffer,
         field: @field,
       )
-      @field.act_on(action, *args, env: env)
-      []
+
+      if Fatty::Actions.lookup(action)&.fetch(:on) == :session
+        Fatty::Actions.call(action, env, *args)
+      else
+        @field.act_on(action, *args, env: env)
+      end
     rescue Fatty::ActionError
       []
     end
@@ -95,7 +99,9 @@ module Fatty
       []
     end
 
-    private
+    def cancel!
+      [[:terminal, :pop_modal]]
+    end
 
     def search_prompt(direction:, regex:)
       label =
@@ -110,7 +116,7 @@ module Fatty
       dir + label
     end
 
-    def accept_search
+    def search_accept
       pattern = @field.accept_line.to_s
 
       cmds = []
