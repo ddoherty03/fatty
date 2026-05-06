@@ -132,13 +132,40 @@ module Fatty
 
         prev = @last_output_state
 
-        if prev && can_incrementally_scroll_output?(prev, curr)
+        if context.truecolor
+          draw_truecolor_output_lines(lines, viewport: viewport, highlights: highlights)
+        elsif prev && can_incrementally_scroll_output?(prev, curr)
           scroll_output_window_delta!(prev: prev, curr: curr)
         else
           draw_output_lines(lines, viewport: viewport, highlights: highlights)
         end
 
         @last_output_state = curr
+        nil
+      end
+
+      def draw_truecolor_output_lines(lines, viewport:, highlights: nil)
+        win = context.output_win
+        row0, col0 = window_origin(win)
+        row0 ||= @screen.output_rect.row
+        col0 ||= @screen.output_rect.col
+
+        width = @screen.output_rect.cols
+        height = viewport.height
+
+        height.times do |y|
+          line = lines[y].to_s
+          abs_line = viewport.top + y
+          semantic_ranges = highlight_ranges_for_line(highlights, abs_line)
+
+          queue_ansi_segments_line(
+            row: row0 + y,
+            col: col0,
+            width: width,
+            segments: output_segments(line, ranges: semantic_ranges),
+          )
+        end
+
         nil
       end
 
@@ -188,30 +215,14 @@ module Fatty
 
         semantic_ranges = highlight_ranges_for_line(highlights, abs_line)
 
-        curses_ranges =
-          Array(semantic_ranges).map do |from, to, role|
-          attr =
-            case role
-            when :secondary then hi2_attr
-            else hi_attr
-            end
-
-          [from.to_i, to.to_i, attr]
-        end
-
-        plain = Fatty::Ansi.plain_text(line.to_s)
-
         win.setpos(y, 0)
         win.attrset(base_attr)
 
-        slices = build_line_slices(plain, ranges: curses_ranges) do |_style|
-          base_attr
-        end
-
-        render_slices(win, slices)
-        win.clrtoeol
-
         if context.truecolor
+          # Curses remains responsible for clearing the row in the fallback/output window.
+          # ANSI owns the visible text rendering.
+          win.addstr(" " * @screen.output_rect.cols)
+
           row0, col0 = window_origin(win)
 
           if row0 && col0
@@ -222,6 +233,26 @@ module Fatty
               segments: output_segments(line, ranges: semantic_ranges),
             )
           end
+        else
+          curses_ranges =
+            Array(semantic_ranges).map do |from, to, role|
+            attr =
+              case role
+              when :secondary then hi2_attr
+              else hi_attr
+              end
+
+            [from.to_i, to.to_i, attr]
+          end
+
+          plain = Fatty::Ansi.plain_text(line.to_s)
+
+          slices = build_line_slices(plain, ranges: curses_ranges) do |_style|
+            base_attr
+          end
+
+          render_slices(win, slices)
+          win.clrtoeol
         end
 
         nil
