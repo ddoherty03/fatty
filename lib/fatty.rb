@@ -38,6 +38,7 @@ module Fatty
   require_relative "fatty/ansi"
   require_relative "fatty/colors"
   require_relative "fatty/curses"
+  require_relative "fatty/renderer"
   require_relative "fatty/prompt"
   require_relative "fatty/menu_env"
   require_relative "fatty/screen"
