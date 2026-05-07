@@ -232,7 +232,7 @@ module Fatty
         if dirty
           now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-          if immediate || !scrolling_output?
+          if immediate || renderer.context.truecolor || !scrolling_output?
             render_frame
             last_render = now
             pending_scroll_render = false
@@ -722,15 +722,40 @@ module Fatty
     end
 
     def handle_resize
+      old_rows = screen.rows
+      old_cols = screen.cols
       rows = ::Curses.lines
       cols = ::Curses.cols
+      size = [rows, cols]
+
+      return [] if size == @last_handled_resize_size
+
+      @last_handled_resize_size = size
+
+      did_resize_term = false
+
+      # ncurses must be told to finalize internal resize state before we
+      # draw ANSI output. Without this, ANSI writes after resize may be
+      # ignored or clipped. Guarded to avoid recursive resize storms.
+      unless @inside_resize_term
+        @inside_resize_term = true
+        did_resize_term = true
+
+        # Use ncurses' high-level resize finalizer. This updates stdscr/curscr
+        # and ncurses bookkeeping before we rebuild Fatty's own layout and draw
+        # the ANSI overlay. resize_term is lower-level and is not equivalent here.
+        ::Curses.resizeterm(rows, cols)
+      end
+
+      renderer.clear_physical_screen! if renderer.context.truecolor
+
       screen.resize(rows: rows, cols: cols, status_rows: status_rows)
       renderer.context.apply_layout(screen)
       renderer.screen = screen
       renderer.invalidate!
 
-      if (out = find_session(:shell) || find_session(:output))
-        out.resize_output!(self) if out.respond_to?(:resize_output!)
+      if (out = focused_session)
+        out.resize_output! if out.respond_to?(:resize_output!)
       end
 
       if (top = @modal_stack.last)
@@ -738,6 +763,9 @@ module Fatty
         cmds = session.handle_resize
         apply_commands(cmds)
       end
+      []
+    ensure
+      @inside_resize_term = false if did_resize_term
     end
 
     def persist_sessions!
@@ -762,14 +790,8 @@ module Fatty
       s = active_session
       return [] unless s
 
-      if resize_message?(message)
-        handle_resize
-        render_frame
-        return []
-      end
-
       # Clear transient alerts on the next user keypress.
-      if key_event_message?(message) && find_session(:alert)
+      if key_event_message?(message) && !resize_message?(message) && find_session(:alert)
         apply_command([:send, :alert, :clear, {}])
       end
 
@@ -820,7 +842,6 @@ module Fatty
     # Apply a command meant to be applied by this Terminal
     def apply_terminal_command(cmd)
       _, name, *rest = cmd
-
       case name
       when :quit
         persist_sessions!

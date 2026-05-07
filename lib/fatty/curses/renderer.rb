@@ -86,8 +86,8 @@ module Fatty
         if @frame_touched
           ::Curses.doupdate if ::Curses.respond_to?(:doupdate)
         end
-
         flush_ansi_draws unless @pending_ansi_draws.empty?
+        @force_truecolor_full_repaint = false
         nil
       end
 
@@ -100,7 +100,25 @@ module Fatty
 
       def restore_cursor(field)
         win = context.input_win
-        win.setpos(0, field.cursor_x)
+
+        x = field.cursor_x.to_i
+
+        if context.truecolor
+          row0 = @screen.input_rect.row
+          col0 = @screen.input_rect.col
+          cols = @screen.input_rect.cols
+
+          @pending_ansi_draws << {
+            type: :cursor,
+            row: row0,
+            col: col0 + x.clamp(0, [cols - 1, 0].max),
+          }
+
+          @frame_touched = true
+          return
+        end
+
+        win.setpos(0, x)
         stage_window(win)
         nil
       end
@@ -113,6 +131,21 @@ module Fatty
 
         x = field.cursor_x.to_i
         x = x.clamp(0, [cols - 1, 0].max)
+
+        if context.truecolor
+          row0 = @screen.output_rect.row
+          col0 = @screen.output_rect.col
+          cols = @screen.output_rect.cols
+
+          @pending_ansi_draws << {
+            type: :cursor,
+            row: row0 + row,
+            col: col0 + x.clamp(0, [cols - 1, 0].max),
+          }
+
+          @frame_touched = true
+          return
+        end
 
         win.setpos(row, x)
         stage_window(win)
@@ -153,6 +186,13 @@ module Fatty
         width = @screen.output_rect.cols
         height = viewport.height
 
+        Fatty.debug(
+          "Renderer#draw_truecolor_output_lines: origin=#{row0},#{col0} " \
+          "width=#{width} height=#{height} lines=#{lines.length} " \
+          "first=#{lines.first.to_s[0, 40].inspect}",
+          tag: :terminal,
+        )
+
         height.times do |y|
           line = lines[y].to_s
           abs_line = viewport.top + y
@@ -163,6 +203,7 @@ module Fatty
             col: col0,
             width: width,
             segments: output_segments(line, ranges: semantic_ranges),
+            fill_role: :output,
           )
         end
 
@@ -218,43 +259,25 @@ module Fatty
         win.setpos(y, 0)
         win.attrset(base_attr)
 
-        if context.truecolor
-          # Curses remains responsible for clearing the row in the fallback/output window.
-          # ANSI owns the visible text rendering.
-          win.addstr(" " * @screen.output_rect.cols)
+        curses_ranges =
+          Array(semantic_ranges).map do |from, to, role|
+          attr =
+            case role
+            when :secondary then hi2_attr
+            else hi_attr
+            end
 
-          row0, col0 = window_origin(win)
-
-          if row0 && col0
-            queue_ansi_segments_line(
-              row: row0 + y,
-              col: col0,
-              width: @screen.output_rect.cols,
-              segments: output_segments(line, ranges: semantic_ranges),
-            )
-          end
-        else
-          curses_ranges =
-            Array(semantic_ranges).map do |from, to, role|
-            attr =
-              case role
-              when :secondary then hi2_attr
-              else hi_attr
-              end
-
-            [from.to_i, to.to_i, attr]
-          end
-
-          plain = Fatty::Ansi.plain_text(line.to_s)
-
-          slices = build_line_slices(plain, ranges: curses_ranges) do |_style|
-            base_attr
-          end
-
-          render_slices(win, slices)
-          win.clrtoeol
+          [from.to_i, to.to_i, attr]
         end
 
+        plain = Fatty::Ansi.plain_text(line.to_s)
+
+        slices = build_line_slices(plain, ranges: curses_ranges) do |_style|
+          base_attr
+        end
+
+        render_slices(win, slices)
+        win.clrtoeol
         nil
       end
 
@@ -319,6 +342,7 @@ module Fatty
             segments: status_segments(raw, role: visual_role),
             fill_role: :status,
           )
+          return
         end
 
         state = [msg, role, visual_role, cols]
@@ -391,9 +415,11 @@ module Fatty
           end
         end
 
-        cursor_x = field.cursor_x.to_i.clamp(0, [width - 1, 0].max)
-        win.setpos(0, cursor_x)
-        stage_window(win)
+        unless context.truecolor
+          cursor_x = field.cursor_x.to_i.clamp(0, [width - 1, 0].max)
+          win.setpos(0, cursor_x)
+          stage_window(win)
+        end
         nil
       end
 
@@ -405,32 +431,31 @@ module Fatty
       def render_pager_field(field, row:, role: :info)
         win = context.output_win
         cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
-        attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
 
         prompt = field.prompt_text.to_s
         buf_text = field.buffer.text.to_s
         text = (prompt + buf_text).tr("\r\n", "")
-
         visible = Fatty::Ansi.plain_text(text)
         line = visible[0, cols].ljust(cols)
 
+        if context.truecolor
+          row0 = @screen.output_rect.row
+          col0 = @screen.output_rect.col
+          cols = @screen.output_rect.cols
+          queue_ansi_line(
+            row: row0 + row,
+            col: col0,
+            width: cols,
+            text: line[0, cols].ljust(cols),
+            role: role,
+          )
+          return
+        end
+
+        attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
         win.setpos(row, 0)
         win.attrset(attr)
         win.addstr(line)
-        if context.truecolor
-          row0, col0 = window_origin(win)
-
-          if row0 && col0
-            queue_ansi_line(
-              row: row0 + row,
-              col: col0,
-              width: cols,
-              text: line,
-              role: role,
-            )
-          end
-        end
-
         stage_window(win)
         nil
       end
@@ -440,6 +465,33 @@ module Fatty
         return if state == @last_alert_state
 
         @last_alert_state = state
+
+        text =
+          if alert.nil?
+            ""
+          else
+            format_alert(alert)
+          end
+
+        if context.truecolor
+          role =
+            if alert.nil?
+              :info
+            else
+              alert.role
+            end
+
+          queue_ansi_line(
+            row: @screen.alert_rect.row,
+            col: @screen.alert_rect.col,
+            width: @screen.alert_rect.cols,
+            text: text,
+            role: role,
+          )
+
+          return
+        end
+
         win = context.alert_win
         cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
 
@@ -454,14 +506,6 @@ module Fatty
         win.erase
         win.attrset(attr)
         win.setpos(0, 0)
-
-        text =
-          if alert.nil?
-            ""
-          else
-            format_alert(alert)
-          end
-
         win.addstr(text.ljust(cols)[0, cols])
 
         stage_window(win)
@@ -506,6 +550,7 @@ module Fatty
         results_attr = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
         input_attr = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
         selected_attr = pair_attr(:popup_selection, fallback: ::Curses::A_REVERSE)
+
         counts_attr =
           begin
             pair_attr(:popup_counts, fallback: results_attr)
@@ -514,21 +559,25 @@ module Fatty
           end
 
         row = 0
+
         if session.message && !session.message.empty?
           inner.attrset(results_attr)
           inner.setpos(row, 0)
+
           line = session.message.to_s[0, inner_w]
           inner.addstr(line.ljust(inner_w))
-          row += 1
+
           if context.truecolor
             queue_ansi_popup_line(
               win: win,
-              inner_row: row - 1,
+              inner_row: row,
               width: inner_w,
               text: line,
               role: :popup,
             )
           end
+
+          row += 1
         end
 
         input_row = inner_h - 1
@@ -587,6 +636,7 @@ module Fatty
           inner.attrset(counts_attr)
           inner.setpos(counts_row, 0)
           inner.addstr(counts_text[0, inner_w].to_s.ljust(inner_w))
+
           if context.truecolor
             queue_ansi_popup_line(
               win: win,
@@ -601,6 +651,7 @@ module Fatty
         base_attr = pair_attr(:popup_input, fallback: ::Curses::A_NORMAL)
         region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
         suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
+
         render_field_into(
           win: inner,
           field: session.field,
@@ -610,24 +661,48 @@ module Fatty
           region_attr: region_attr,
           suggestion_attr: suggestion_attr,
         )
-        if context.truecolor
-          input_text = session.field.prompt_text.to_s + session.field.buffer.text.to_s
 
-          queue_ansi_popup_line(
-            win: win,
-            inner_row: input_row,
-            width: list_w,
-            text: input_text[0, list_w],
-            role: :popup_input,
-          )
+        if context.truecolor
+          row0, col0 = window_origin(win)
+
+          if row0 && col0
+            queue_ansi_segments_line(
+              row: row0 + 1 + input_row,
+              col: col0 + 1,
+              width: list_w,
+              segments: field_segments(
+                session.field,
+                base_role: :popup_input,
+                suggestion_role: :input_suggestion,
+                region_role: :region,
+              ),
+              fill_role: :popup_input,
+            )
+          end
         end
 
         cursor_in_inner = session.field.cursor_x.clamp(0, [list_w - 1, 0].max)
-        win.setpos(1 + input_row, 1 + cursor_in_inner)
 
         queue_ansi_popup_frame(win: win, width: width, height: height)
-        stage_window(inner)
-        stage_window(win)
+
+        if context.truecolor
+          row0, col0 = window_origin(win)
+
+          if row0 && col0
+            @pending_ansi_draws << {
+              type: :cursor,
+              row: row0 + 1 + input_row,
+              col: col0 + 1 + cursor_in_inner,
+            }
+
+            @frame_touched = true
+          end
+        else
+          win.setpos(1 + input_row, 1 + cursor_in_inner)
+          stage_window(inner)
+          stage_window(win)
+        end
+
         nil
       end
 
@@ -638,6 +713,7 @@ module Fatty
         begin
           width = win.maxx
           height = win.maxy
+
           win.erase
 
           frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
@@ -657,15 +733,17 @@ module Fatty
             win.addstr(" #{session.title} ")
           end
 
-          text_attr  = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
+          text_attr = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
           input_attr = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
 
           row = 0
+
           if session.message && !session.message.empty?
             message_row = row
 
             inner.attron(text_attr) do
               inner.setpos(message_row, 0)
+
               line = session.message.to_s[0, inner_w]
               inner.addstr(line.ljust(inner_w))
 
@@ -679,6 +757,7 @@ module Fatty
                 )
               end
             end
+
             row += 1
           end
 
@@ -686,6 +765,7 @@ module Fatty
           region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
           suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
           input_row = row
+
           render_field_into(
             win: inner,
             field: session.field,
@@ -695,6 +775,7 @@ module Fatty
             region_attr: region_attr,
             suggestion_attr: suggestion_attr,
           )
+
           if context.truecolor
             row0, col0 = window_origin(win)
 
@@ -713,12 +794,28 @@ module Fatty
               )
             end
           end
+
           cursor_in_inner = session.field.cursor_x.clamp(0, [inner_w - 1, 0].max)
-          win.setpos(1 + row, 1 + cursor_in_inner)
 
           queue_ansi_popup_frame(win: win, width: width, height: height)
-          stage_window(inner)
-          stage_window(win)
+
+          if context.truecolor
+            row0, col0 = window_origin(win)
+
+            if row0 && col0
+              @pending_ansi_draws << {
+                type: :cursor,
+                row: row0 + 1 + input_row,
+                col: col0 + 1 + cursor_in_inner,
+              }
+
+              @frame_touched = true
+            end
+          else
+            win.setpos(1 + input_row, 1 + cursor_in_inner)
+            stage_window(inner)
+            stage_window(win)
+          end
         rescue RuntimeError => e
           raise unless e.message.include?("closed window") || e.message.include?("already closed window")
 
@@ -726,7 +823,7 @@ module Fatty
         end
 
         nil
-      end
+end
 
       def render_field_into(win:, field:, row:, width:, base_attr:, region_attr:, suggestion_attr:)
         buf = field.buffer
@@ -788,11 +885,27 @@ module Fatty
         @last_output_state = nil
         @last_input_state = nil
         @last_alert_state = nil
+        @last_status_state = nil
         @last_pager_field_state = nil
         @last_popup_state = nil
-        @frame_touched = false
-        @last_status_state = nil
+        @pending_ansi_draws = []
+        @frame_touched = true
+        @force_truecolor_full_repaint = true
         nil
+      end
+
+      def clear_physical_screen!
+        return self unless context.truecolor
+
+        @ansi_renderer.write_ansi(
+          "\e[0m",     # reset attributes
+          "\e[?6l",    # normal cursor addressing, not origin mode
+          "\e[r",      # reset scroll region to whole screen
+          "\e[2J",     # clear screen
+          "\e[H",      # home
+        )
+
+        self
       end
 
       def flush_truecolor_overlay
@@ -1015,6 +1128,8 @@ module Fatty
 
         @pending_ansi_draws.each do |draw|
           case draw[:type]
+          when :cursor
+            @ansi_renderer.write_ansi("\e[#{draw[:row] + 1};#{draw[:col] + 1}H")
           when :segments_line
             @ansi_renderer.render_segments_line(
               row: draw[:row],

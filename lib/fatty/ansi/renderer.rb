@@ -18,15 +18,12 @@ module Fatty
 
         sgr = sgr_for_role(spec)
 
-        io.write(
-          "\e7",
+        write_ansi(
           "#{CSI}#{row + 1};#{col + 1}H",
           sgr,
           msg,
           reset,
-          "\e8",
         )
-        io.flush
         nil
       end
 
@@ -62,22 +59,32 @@ module Fatty
           rendered << (" " * (width - visible))
         end
 
-        io.write(
-          "\e7",
+        write_ansi(
           "#{CSI}#{row + 1};#{col + 1}H",
           rendered,
           reset,
-          "\e8",
         )
-        io.flush
         nil
       end
 
-      private
+      def write_ansi(*parts)
+        text = parts.join
+
+        if defined?(::Curses) && ::Curses.respond_to?(:putp)
+          ::Curses.putp(text)
+        else
+          io.write(text)
+          io.flush
+        end
+
+        nil
+      end
 
       def io
         @io || $stdout
       end
+
+      private
 
       def save_cursor
         "#{CSI}s"
