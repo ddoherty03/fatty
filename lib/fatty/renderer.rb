@@ -2,10 +2,18 @@
 
 module Fatty
   class Renderer
+    attr_reader :screen, :palette, :context
+
     def initialize(screen:, palette:, context:)
       @screen = screen
       @palette = palette
       @context = context
+      @last_status_state = nil
+    end
+
+    def screen=(screen)
+      @screen = screen
+      @legacy.screen = screen if defined?(@legacy) && @legacy.respond_to?(:screen=)
     end
 
     def render_output(...)
@@ -36,7 +44,19 @@ module Fatty
       raise NotImplementedError, "#{self.class} must implement #render_alert"
     end
 
+    def invalidate!
+      @last_status_state = nil
+      @legacy.invalidate! if defined?(@legacy) && @legacy.respond_to?(:invalidate!)
+      nil
+    end
+
     protected
+
+    # protected
+    def status_line(text, width:)
+      msg = text.to_s.tr("\r\n", " ")
+      msg.ljust(width)[0, width]
+    end
 
     def pager_field_line(field, width:)
       prompt = field.prompt_text.to_s
@@ -45,6 +65,11 @@ module Fatty
       visible = Fatty::Ansi.plain_text(text)
 
       visible[0, width].ljust(width)
+    end
+    private
+
+    def queue_ansi_line(...)
+      @legacy.queue_ansi_line(...)
     end
   end
 end

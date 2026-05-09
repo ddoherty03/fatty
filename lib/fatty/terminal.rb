@@ -663,7 +663,13 @@ module Fatty
       @screen = Fatty::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols, status_rows: status_rows)
       @ctx.apply_layout(@screen)
 
-      @renderer = Fatty::Curses::Renderer.new(context: @ctx, screen: @screen)
+      @renderer =
+        if @ctx.truecolor
+          Fatty::Renderer::Truecolor.new(context: @ctx, screen: @screen, palette: @ctx.palette)
+        else
+          Fatty::Renderer::Curses.new(context: @ctx, screen: @screen, palette: @ctx.palette)
+        end
+      @renderer.sync_backgrounds! if @ctx.truecolor
 
       @env ||= Fatty::Env.detect
       key_decoder = Fatty::Curses::KeyDecoder.new(env: @env)
