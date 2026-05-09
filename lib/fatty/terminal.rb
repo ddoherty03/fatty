@@ -713,6 +713,7 @@ module Fatty
       )
       @ctx.apply_layout(screen)
       renderer.screen = screen
+      renderer.sync_backgrounds! if renderer.context.truecolor
       renderer.invalidate!
     end
 
@@ -752,6 +753,7 @@ module Fatty
       screen.resize(rows: rows, cols: cols, status_rows: status_rows)
       renderer.context.apply_layout(screen)
       renderer.screen = screen
+      renderer.sync_backgrounds! if renderer.context.truecolor
       renderer.invalidate!
 
       if (out = focused_session)
