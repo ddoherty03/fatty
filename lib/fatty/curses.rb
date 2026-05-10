@@ -1,3 +1,11 @@
+module Curses
+  class Window
+    def origin
+      [begy, begx]
+    end
+  end
+end
+
 require_relative "curses/patch"
 require_relative "curses/curses_coder"
 require_relative "curses/renderer"
