@@ -424,25 +424,6 @@ module Fatty
         @last_alert_state = state
 
         text = alert ? alert.format : ""
-        if context.truecolor
-          role =
-            if alert.nil?
-              :info
-            else
-              alert.role
-            end
-
-          queue_ansi_line(
-            row: @screen.alert_rect.row,
-            col: @screen.alert_rect.col,
-            width: @screen.alert_rect.cols,
-            text: text,
-            role: role,
-          )
-
-          return
-        end
-
         win = context.alert_win
         cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
 
@@ -774,7 +755,7 @@ module Fatty
         end
 
         nil
-end
+      end
 
       def render_field_into(win:, field:, row:, width:, base_attr:, region_attr:, suggestion_attr:)
         buf = field.buffer
@@ -923,112 +904,32 @@ end
         end
       end
 
-      def window_origin(win)
-        row =
-          if win.respond_to?(:begy)
-            win.begy
-          elsif win.respond_to?(:begin_y)
-            win.begin_y
-          end
-
-        col =
-          if win.respond_to?(:begx)
-            win.begx
-          elsif win.respond_to?(:begin_x)
-            win.begin_x
-          end
-
-        [row, col]
-      end
+      # def window_origin(win)
+      #   [win.begy, win.begx]
+      # end
 
       def stage_window(win)
-        if win.respond_to?(:noutrefresh)
-          win.noutrefresh
-          @frame_touched = true
-        else
-          win.refresh
-        end
-        nil
+        win.noutrefresh
+        @frame_touched = true
       end
 
-      def queue_ansi_popup_line(win:, inner_row:, inner_col: 0, width:, text:, role:)
-        row, col = window_origin(win)
-        return unless row && col
+      # def queue_popup_truecolor(win:, width:, height:, role: :popup)
+      #   return unless context.truecolor
+      #   return if width <= 0 || height <= 0
 
-        queue_ansi_line(
-          row: row + 1 + inner_row,
-          col: col + 1 + inner_col,
-          width: width,
-          text: text.to_s,
-          role: role,
-        )
+      #   row, col = window_origin(win)
+      #   return unless row && col
 
-        nil
-      end
+      #   queue_ansi_rect(
+      #     row: row,
+      #     col: col,
+      #     width: width,
+      #     height: height,
+      #     role: role,
+      #   )
 
-      def queue_popup_truecolor(win:, width:, height:, role: :popup)
-        return unless context.truecolor
-        return if width <= 0 || height <= 0
-
-        row, col = window_origin(win)
-        return unless row && col
-
-        queue_ansi_rect(
-          row: row,
-          col: col,
-          width: width,
-          height: height,
-          role: role,
-        )
-
-        nil
-      end
-
-      def queue_ansi_popup_frame(win:, width:, height:)
-        return unless context.truecolor
-        return if width < 2 || height < 2
-
-        row, col = window_origin(win)
-        return unless row && col
-
-        b = popup_border
-
-        queue_ansi_line(
-          row: row,
-          col: col,
-          width: width,
-          text: b[:tl] + (b[:h] * (width - 2)) + b[:tr],
-          role: :popup_frame,
-        )
-
-        (1...(height - 1)).each do |y|
-          queue_ansi_line(
-            row: row + y,
-            col: col,
-            width: 1,
-            text: b[:v],
-            role: :popup_frame,
-          )
-
-          queue_ansi_line(
-            row: row + y,
-            col: col + width - 1,
-            width: 1,
-            text: b[:v],
-            role: :popup_frame,
-          )
-        end
-
-        queue_ansi_line(
-          row: row + height - 1,
-          col: col,
-          width: width,
-          text: b[:bl] + (b[:h] * (width - 2)) + b[:br],
-          role: :popup_frame,
-        )
-
-        nil
-      end
+      #   nil
+      # end
 
       def normalized_highlights(highlights)
         return if highlights.nil?
