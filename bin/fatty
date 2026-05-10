@@ -139,7 +139,7 @@ on_accept_proc = lambda do |line, env|
     terminal.good(message)
     session.append_output("good: #{message}\n")
   when "warn"
-    message = args.empty? ? "Dange Will Robinson!" : args.join(" ")
+    message = args.empty? ? "Danger Will Robinson!" : args.join(" ")
     terminal.warn(message)
     session.append_output("warn: #{message}\n")
   when "oops"
