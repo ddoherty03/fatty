@@ -9,6 +9,7 @@ module Fatty
       @palette = palette
       @context = context
       @last_status_state = nil
+      @last_alert_state = nil
     end
 
     def screen=(screen)

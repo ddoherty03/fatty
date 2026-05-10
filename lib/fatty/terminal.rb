@@ -17,7 +17,7 @@ module Fatty
     #   [:terminal, :pop]
     #
     # Session-targeted commands (no special casing):
-    #   [:send, :alert, :show, { level: :warning, message: "No matches" }]
+    #   [:send, :alert, :show, { level: :warn, message: "No matches" }]
     #   [:send, :alert, :clear, {}]
     #
     # You can add more later; Terminal only needs a small dispatcher.
@@ -91,7 +91,7 @@ module Fatty
     end
 
     # Display a message to the user in the status line, colored according to
-    # the Config for "warning," i.e., short of an error but not complete
+    # the Config for "warn," i.e., short of an error but not complete
     # success either.
     def warn(text)
       return $stderr.puts(text) unless @ctx

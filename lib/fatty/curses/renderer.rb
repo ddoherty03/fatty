@@ -466,13 +466,7 @@ module Fatty
 
         @last_alert_state = state
 
-        text =
-          if alert.nil?
-            ""
-          else
-            format_alert(alert)
-          end
-
+        text = alert ? alert.format : ""
         if context.truecolor
           role =
             if alert.nil?
@@ -1199,7 +1193,7 @@ end
 
       def alert_state(alert)
         if alert
-          [alert.level, format_alert(alert), alert_attr(alert)]
+          [alert.level, alert.format, alert_attr(alert)]
         else
           [:empty, @screen.cols]
         end
@@ -1400,83 +1394,11 @@ end
         segments.reject { |s| s[:text].empty? }
       end
 
-      def apply_highlight_ranges_to_segments(segments, plain:, ranges:)
-        ranges = Array(ranges).sort_by(&:first)
-        return segments if ranges.empty?
-
-        out = []
-        pos = 0
-
-        segments.each do |seg|
-          text = seg[:text].to_s
-          seg_start = pos
-          seg_end = pos + text.length
-          cursor = 0
-
-          ranges.each do |from, to, highlight_role|
-            from = from.to_i
-            to = to.to_i
-            next if to <= seg_start || from >= seg_end
-
-            local_from = [from - seg_start, cursor].max
-            local_to = [to - seg_start, text.length].min
-
-            if local_from > cursor
-              out << seg.merge(text: text[cursor...local_from].to_s)
-            end
-
-            out << {
-              text: text[local_from...local_to].to_s,
-              role: highlight_role == :secondary ? :match_other : :match_current,
-            }
-
-            cursor = local_to
-          end
-
-          if cursor < text.length
-            out << seg.merge(text: text[cursor..].to_s)
-          end
-
-          pos = seg_end
-        end
-
-        out.reject { |seg| seg[:text].empty? }
-      end
-
       def alert_attr(alert)
         return ::Curses::A_REVERSE unless ::Curses.has_colors?
 
-        role =
-          case alert.level
-          when :error   then :error
-          when :warning then :warn
-          else               :info
-          end
+        role = alert.level
         pair_attr(role, fallback: ::Curses::A_REVERSE)
-      end
-
-      def format_alert(alert)
-        icon =
-          case alert.level
-          when :warning then "⚠"
-          when :error   then "✖"
-          else               "ℹ"
-          end
-
-        msg = alert.message.to_s
-
-        details_str = ""
-        if alert.details.respond_to?(:empty?) ? !alert.details.empty? : !!alert.details
-          if alert.details.is_a?(Hash)
-            details_str =
-              " (" +
-              DETAIL_ORDER.filter_map { |k| "#{k}=#{alert.details[k]}" if alert.details.key?(k) }.join(" ") +
-              ")"
-          else
-            details_str = " (#{alert.details})"
-          end
-        end
-        "  #{icon} #{msg}#{details_str}"
       end
 
       def popup_border

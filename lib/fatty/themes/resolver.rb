@@ -16,6 +16,7 @@ module Fatty
         match_current: { attrs: [:reverse] },
         match_other: { attrs: [:underline] },
         popup_counts: { attrs: [:bold] },
+        alert: { attrs: [:bold] },
       }.freeze
 
       ROLE_PARENTS = {
@@ -39,6 +40,7 @@ module Fatty
         pager_status: :output,
 
         status: :output,
+        alert: :output,
         info: :output,
         good: :info,
         warn: :info,

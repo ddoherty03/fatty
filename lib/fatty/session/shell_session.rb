@@ -56,7 +56,7 @@ module Fatty
         # safety: if somehow not bound, still accept
         submit_line
       else
-        [alert_cmd(:info, "Unbound key: #{ev} (edit config in 'keybindings.yml' to bind)", ev: ev)]
+        [alert_cmd(:warn, "Unbound key: #{ev} (edit config in 'keybindings.yml' to bind)", ev: ev)]
       end
     end
 

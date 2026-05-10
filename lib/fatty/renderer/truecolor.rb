@@ -67,32 +67,18 @@ module Fatty
         @legacy.render_prompt_popup(...)
       end
 
-      def render_alert(...)
-        @legacy.render_alert(...)
-      end
-
       def render_alert(alert)
         state = [
           alert&.message,
           alert&.role,
+          alert&.details,
           screen.alert_rect.row,
           screen.alert_rect.cols,
         ]
         return if state == @last_alert_state
 
         @last_alert_state = state
-        text =
-          if alert
-            format_alert(alert)
-          else
-            ""
-          end
-        role =
-          if alert
-            alert.role
-          else
-            :info
-          end
+        text = alert ? alert.format : ""
         queue_ansi_line(
           row: screen.alert_rect.row,
           col: screen.alert_rect.col,

@@ -20,11 +20,11 @@ module Fatty
       expect(a).not_to be_sticky
     end
 
-    it "initializes using .warning with just the message parameter" do
-      a = Alert.warning("hello, world")
+    it "initializes using .warn with just the message parameter" do
+      a = Alert.warn("hello, world")
       expect(a).to be_a(Alert)
       expect(a.message).to eq('hello, world')
-      expect(a.level).to eq(:warning)
+      expect(a.level).to eq(:warn)
       expect(a).not_to be_sticky
     end
 
