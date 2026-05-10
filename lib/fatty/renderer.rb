@@ -2,6 +2,26 @@
 
 module Fatty
   class Renderer
+    FRAME_STYLES = {
+      ascii:  { h: "-", v: "|" },
+      single: { h: "─", v: "│" },
+      double: { h: "═", v: "║" },
+    }.freeze
+
+    CORNER_STYLES = {
+      square: {
+        ascii:  { tl: "+", tr: "+", bl: "+", br: "+" },
+        single: { tl: "┌", tr: "┐", bl: "└", br: "┘" },
+        double: { tl: "╔", tr: "╗", bl: "╚", br: "╝" },
+      },
+      rounded: {
+        single: { tl: "╭", tr: "╮", bl: "╰", br: "╯" },
+      },
+    }.freeze
+
+    POPUP_SELECTED_GUTTER = "▶ "
+    POPUP_UNSELECTED_GUTTER = "  "
+
     attr_reader :screen, :palette, :context
 
     def initialize(screen:, palette:, context:)
@@ -10,6 +30,7 @@ module Fatty
       @context = context
       @last_status_state = nil
       @last_alert_state = nil
+      @last_popup_state = nil
     end
 
     def screen=(screen)
@@ -52,6 +73,82 @@ module Fatty
     end
 
     protected
+
+    def alert_state(alert)
+      [
+        alert&.message,
+        alert&.role,
+        alert&.details,
+        screen.alert_rect.row,
+        screen.alert_rect.cols,
+      ]
+    end
+
+    def status_state(text, role)
+      [
+        text.to_s,
+        role,
+        screen.status_rect.row,
+        screen.status_rect.cols,
+      ]
+    end
+
+    def input_field_state(field)
+      [
+        field.prompt_text.to_s,
+        field.buffer.text.to_s,
+        field.buffer.cursor,
+        field.buffer.virtual_suffix.to_s,
+        field.buffer.region_active?,
+        field.buffer.region_range,
+        screen.input_rect.row,
+        screen.input_rect.cols,
+      ]
+    end
+
+    def popup_state(session)
+      [
+        popup_border,
+        session.displayed.map(&:to_s),
+        session.selected,
+        session.field.buffer.text.to_s,
+        session.field.cursor_x,
+        session.selected_labels.sort,
+        session.counts,
+      ]
+    end
+
+    def popup_border
+      spec = popup_frame_spec
+
+      border = (spec[:border] || spec["border"] || :single).to_sym
+      corners = (spec[:corners] || spec["corners"] || :square).to_sym
+
+      edge = FRAME_STYLES.fetch(border, FRAME_STYLES[:single])
+      corner_set = CORNER_STYLES.fetch(corners, CORNER_STYLES[:square])
+      corner =
+        corner_set[border] ||
+        corner_set[:single] ||
+        CORNER_STYLES[:square][border] ||
+        CORNER_STYLES[:square][:single]
+
+      {
+        h: edge[:h],
+        v: edge[:v],
+        tl: corner[:tl],
+        tr: corner[:tr],
+        bl: corner[:bl],
+        br: corner[:br],
+      }
+    end
+
+    def popup_frame_spec
+      spec = Fatty::Colors::Palette.build_spec(Fatty::Config.config)
+      spec[:popup_frame] || spec["popup_frame"] || {}
+    rescue StandardError => e
+      Fatty.warn("Could not resolve popup frame style: #{e.class}: #{e.message}", tag: :theme)
+      {}
+    end
 
     def status_line(text, width:)
       msg = text.to_s.tr("\r\n", " ")

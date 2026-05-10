@@ -25,20 +25,31 @@ module Fatty
       end
 
       def render_status(text, role: :info)
-        state = [
-          text.to_s,
-          role,
-          screen.status_rect.row,
-          screen.status_rect.cols,
-        ]
+        state = status_state(text, role)
         return if state == @last_status_state
-        @last_status_state = state
 
+        @last_status_state = state
         spec = merged_role_spec(:status, role)
         queue_ansi_line(
           row: screen.status_rect.row,
           col: screen.status_rect.col,
           width: screen.status_rect.cols,
+          text: text,
+          spec: spec,
+        )
+      end
+
+      def render_alert(alert)
+        state = alert_state(alert)
+        return if state == @last_alert_state
+
+        @last_alert_state = state
+        text = alert ? alert.format : ""
+        spec = merged_role_spec(:alert, alert ? alert.role : :alert)
+        queue_ansi_line(
+          row: screen.alert_rect.row,
+          col: screen.alert_rect.col,
+          width: screen.alert_rect.cols,
           text: text,
           spec: spec,
         )
@@ -58,26 +69,11 @@ module Fatty
         @last_output_state = curr
       end
 
-      def render_input_field(...)
-        @legacy.render_input_field(...)
-      end
-
       def render_input_field(field)
-        state = [
-          field.prompt_text.to_s,
-          field.buffer.text.to_s,
-          field.buffer.cursor,
-          field.buffer.virtual_suffix.to_s,
-          field.buffer.region_active?,
-          field.buffer.region_range,
-          screen.input_rect.row,
-          screen.input_rect.cols,
-        ]
-
+        state = input_field_state(field)
         return if state == @last_input_state
 
         @last_input_state = state
-
         queue_ansi_segments_line(
           row: screen.input_rect.row,
           col: screen.input_rect.col,
