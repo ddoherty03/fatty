@@ -53,7 +53,6 @@ module Fatty
 
     protected
 
-    # protected
     def status_line(text, width:)
       msg = text.to_s.tr("\r\n", " ")
       msg.ljust(width)[0, width]

@@ -106,7 +106,6 @@ module Fatty
         # “mystery” blank lines if a newline slips into output
         @output_win.scrollok(true)
         @input_win.keypad(true)
-
         self
       end
 
@@ -145,32 +144,14 @@ module Fatty
           when "false", "no", "off", "0"
             false
           else
-            ENV["COLORTERM"].to_s.match?(/truecolor|24bit/i) ||
-              ENV["TERM"].to_s.match?(/truecolor|24bit/i)
-          end
-      end
-
-      def truecolor_enabled?
-        cfg = Fatty::Config.config
-        setting = cfg[:truecolor] || cfg["truecolor"] || "auto"
-
-        @truecolor =
-          case setting.to_s.downcase
-          when "true", "yes", "on", "1"
-            true
-          when "false", "no", "off", "0"
-            false
-          else
             truecolor_env?
           end
-
         Fatty.info(
           "truecolor=#{@truecolor} setting=#{setting.inspect} " \
           "TERM=#{ENV['TERM'].inspect} COLORTERM=#{ENV['COLORTERM'].inspect} " \
           "TERM_PROGRAM=#{ENV['TERM_PROGRAM'].inspect} TMUX=#{ENV.key?('TMUX')}",
           tag: :theme,
         )
-
         @truecolor
       end
 

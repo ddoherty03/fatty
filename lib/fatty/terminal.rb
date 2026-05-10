@@ -729,8 +729,6 @@ module Fatty
     end
 
     def handle_resize
-      old_rows = screen.rows
-      old_cols = screen.cols
       rows = ::Curses.lines
       cols = ::Curses.cols
       size = [rows, cols]
@@ -931,18 +929,15 @@ module Fatty
 
     def render_frame
       renderer.begin_frame
-
       sessions = @pinned + @stack
       sessions.each do |s|
         s.view(screen: screen, renderer: renderer)
       end
-
       Fatty::StatusView.new.render(
         screen: screen,
         renderer: renderer,
         terminal: self,
       )
-
       if (top = @modal_stack.last)
         top[:session].view(screen: screen, renderer: renderer)
       end
