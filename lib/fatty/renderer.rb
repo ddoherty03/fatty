@@ -66,11 +66,58 @@ module Fatty
 
       visible[0, width].ljust(width)
     end
-    private
 
-    def queue_ansi_line(...)
-      @legacy.queue_ansi_line(...)
+    def merged_role_spec(base_role, overlay_role)
+      base = palette&.[](base_role) || {}
+      overlay = palette&.[](overlay_role) || {}
+
+      base.merge(
+        overlay.slice(:fg, :fg_rgb, :attrs)
+      )
     end
+
+    def normalized_highlights(highlights)
+      return if highlights.nil?
+
+      highlights.each_with_object({}) do |(line_no, ranges), out|
+        out[line_no] =
+          Array(ranges).map do |r|
+          if r.is_a?(Hash)
+            [r[:from].to_i, r[:to].to_i, (r[:role] || :primary).to_sym]
+          else
+            [r[0].to_i, r[1].to_i, (r[2] || :primary).to_sym]
+          end
+        end
+      end
+    end
+
+    def highlight_ranges_for_line(highlights, abs_line)
+      return [] unless highlights
+
+      raw = highlights[abs_line]
+      return [] unless raw
+
+      # Accept any of:
+      #   [[from,to], ...]
+      #   [[from,to,:primary], [from,to,:secondary], ...]
+      #   [{from:, to:, role:}, ...]
+      ranges =
+        Array(raw).map do |r|
+        if r.is_a?(Hash)
+          [r[:from].to_i, r[:to].to_i, (r[:role] || :primary).to_sym]
+        else
+          a = r[0].to_i
+          b = r[1].to_i
+          role = (r[2] || :primary).to_sym
+          [a, b, role]
+        end
+      end
+
+      ranges.sort_by!(&:first)
+      ranges
+    end
+
+    private
   end
 end
 

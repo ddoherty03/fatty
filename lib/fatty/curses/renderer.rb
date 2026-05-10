@@ -79,14 +79,17 @@ module Fatty
       def begin_frame
         @frame_touched = false
         @pending_ansi_draws = []
+        @force_truecolor_full_repaint = context.truecolor && @last_output_state.nil?
         nil
       end
 
       def finish_frame
-        if @frame_touched
-          ::Curses.doupdate if ::Curses.respond_to?(:doupdate)
+        if context.truecolor
+          flush_ansi_draws unless @pending_ansi_draws.empty?
+        else
+          ::Curses.doupdate if @frame_touched && ::Curses.respond_to?(:doupdate)
         end
-        flush_ansi_draws unless @pending_ansi_draws.empty?
+
         @force_truecolor_full_repaint = false
         nil
       end
@@ -113,11 +116,10 @@ module Fatty
             row: row0,
             col: col0 + x.clamp(0, [cols - 1, 0].max),
           }
-
-          @frame_touched = true
           return
         end
 
+        @frame_touched = true
         win.setpos(0, x)
         stage_window(win)
         nil
@@ -142,11 +144,9 @@ module Fatty
             row: row0 + row,
             col: col0 + x.clamp(0, [cols - 1, 0].max),
           }
-
-          @frame_touched = true
           return
         end
-
+        @frame_touched = true
         win.setpos(row, x)
         stage_window(win)
         nil
@@ -174,39 +174,6 @@ module Fatty
         end
 
         @last_output_state = curr
-        nil
-      end
-
-      def draw_truecolor_output_lines(lines, viewport:, highlights: nil)
-        win = context.output_win
-        row0, col0 = window_origin(win)
-        row0 ||= @screen.output_rect.row
-        col0 ||= @screen.output_rect.col
-
-        width = @screen.output_rect.cols
-        height = viewport.height
-
-        Fatty.debug(
-          "Renderer#draw_truecolor_output_lines: origin=#{row0},#{col0} " \
-          "width=#{width} height=#{height} lines=#{lines.length} " \
-          "first=#{lines.first.to_s[0, 40].inspect}",
-          tag: :terminal,
-        )
-
-        height.times do |y|
-          line = lines[y].to_s
-          abs_line = viewport.top + y
-          semantic_ranges = highlight_ranges_for_line(highlights, abs_line)
-
-          queue_ansi_segments_line(
-            row: row0 + y,
-            col: col0,
-            width: width,
-            segments: output_segments(line, ranges: semantic_ranges),
-            fill_role: :output,
-          )
-        end
-
         nil
       end
 
@@ -363,17 +330,33 @@ module Fatty
       end
 
       def render_input_field(field)
-        buf = field.buffer
-        region =
-          if buf.respond_to?(:region_range)
-            buf.region_range
-          end
-        state = field.snapshot_input_state
-        return if state == @last_input_state
+        if context.truecolor
+          render_truecolor_input_field(field)
+        else
+          render_curses_input_field(field)
+        end
+      end
 
-        @last_input_state = state
+      def render_truecolor_input_field(field)
+        queue_ansi_segments_line(
+          row: @screen.input_rect.row,
+          col: @screen.input_rect.col,
+          width: @screen.input_rect.cols,
+          segments: field_segments(
+            field,
+            base_role: :input,
+            suggestion_role: :input_suggestion,
+            region_role: :region,
+          ),
+          fill_role: :input,
+        )
+        nil
+      end
 
+      def render_curses_input_field(field)
         win = context.input_win
+        width = win.respond_to?(:maxx) ? win.maxx : @screen.cols
+
         base_attr = pair_attr(:input, fallback: ::Curses::A_NORMAL)
         region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
         suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
@@ -381,8 +364,6 @@ module Fatty
         win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
         win.erase
         win.attrset(base_attr)
-
-        width = win.respond_to?(:maxx) ? win.maxx : @screen.cols
 
         render_field_into(
           win: win,
@@ -393,33 +374,9 @@ module Fatty
           region_attr: region_attr,
           suggestion_attr: suggestion_attr,
         )
-        if context.truecolor
-          win = context.input_win
-          row0, col0 = window_origin(win)
-
-          if row0 && col0
-            width = win.respond_to?(:maxx) ? win.maxx : @screen.cols
-
-            queue_ansi_segments_line(
-              row: row0,
-              col: col0,
-              width: width,
-              segments: field_segments(
-                field,
-                base_role: :input,
-                suggestion_role: :input_suggestion,
-                region_role: :region,
-              ),
-              fill_role: :input,
-            )
-          end
-        end
-
-        unless context.truecolor
-          cursor_x = field.cursor_x.to_i.clamp(0, [width - 1, 0].max)
-          win.setpos(0, cursor_x)
-          stage_window(win)
-        end
+        cursor_x = field.cursor_x.to_i.clamp(0, [width - 1, 0].max)
+        win.setpos(0, cursor_x)
+        stage_window(win)
         nil
       end
 
@@ -883,7 +840,7 @@ end
         @last_pager_field_state = nil
         @last_popup_state = nil
         @pending_ansi_draws = []
-        @frame_touched = true
+        @frame_touched = false
         @force_truecolor_full_repaint = true
         nil
       end
@@ -994,48 +951,6 @@ end
         nil
       end
 
-      def queue_ansi_line(row:, col:, width:, text:, role:)
-        @pending_ansi_draws << {
-          row: row,
-          col: col,
-          width: width,
-          text: text,
-          role: role,
-        }
-        @frame_touched = true
-        nil
-      end
-
-      def queue_ansi_segments_line(row:, col:, width:, segments:, fill_role: :output)
-        @pending_ansi_draws << {
-          type: :segments_line,
-          row: row,
-          col: col,
-          width: width,
-          segments: segments,
-          fill_role: fill_role,
-        }
-
-        @frame_touched = true
-        nil
-      end
-
-      def queue_ansi_rect(row:, col:, width:, height:, role:)
-        return if height <= 0 || width <= 0
-
-        height.times do |i|
-          queue_ansi_line(
-            row: row + i,
-            col: col,
-            width: width,
-            text: " " * width,
-            role: role,
-          )
-        end
-
-        nil
-      end
-
       def queue_ansi_popup_line(win:, inner_row:, inner_col: 0, width:, text:, role:)
         row, col = window_origin(win)
         return unless row && col
@@ -1112,67 +1027,6 @@ end
           role: :popup_frame,
         )
 
-        nil
-      end
-
-      def field_segments(field, base_role:, suggestion_role: :input_suggestion, region_role: :region)
-        buf = field.buffer
-        text = buf.text.to_s
-        segments = [{ text: field.prompt_text.to_s, role: base_role }]
-
-        region =
-          if buf.respond_to?(:region_range)
-            buf.region_range
-          end
-
-        if region && region.begin < region.end
-          max = text.length
-          s = region.begin.clamp(0, max)
-          e = region.end.clamp(0, max)
-
-          segments << { text: text[0...s].to_s, role: base_role }
-          segments << { text: text[s...e].to_s, role: region_role }
-          segments << { text: text[e..].to_s, role: base_role }
-        else
-          segments << { text: text, role: base_role }
-        end
-
-        suffix = buf.virtual_suffix.to_s
-        segments << { text: suffix, role: suggestion_role } unless suffix.empty?
-
-        segments.reject { |seg| seg[:text].empty? }
-      end
-
-      def flush_ansi_draws
-        return unless context.truecolor
-
-        palette = @palette || context.palette
-
-        @pending_ansi_draws.each do |draw|
-          case draw[:type]
-          when :cursor
-            @ansi_renderer.write_ansi("\e[#{draw[:row] + 1};#{draw[:col] + 1}H")
-          when :segments_line
-            @ansi_renderer.render_segments_line(
-              row: draw[:row],
-              col: draw[:col],
-              width: draw[:width],
-              segments: draw[:segments],
-              palette: palette,
-              fill_role: draw[:fill_role] || :output,
-            )
-          else
-            @ansi_renderer.render_line(
-              row: draw[:row],
-              col: draw[:col],
-              width: draw[:width],
-              text: draw[:text],
-              role: draw[:role],
-              palette: palette,
-            )
-          end
-        end
-        @pending_ansi_draws.clear
         nil
       end
 
@@ -1356,21 +1210,6 @@ end
           win.attrset(attr)
           win.addstr(text.to_s)
         end
-      end
-
-      def output_segments(line, ranges:)
-        plain = Fatty::Ansi.plain_text(line.to_s)
-        base_segments = []
-
-        Fatty::Ansi.segment(line.to_s).each do |text, style|
-          base_segments << {
-            text: text.to_s,
-            role: :output,
-            style: style,
-          }
-        end
-
-        apply_highlight_ranges_to_segments(base_segments, plain:, ranges:)
       end
 
       def status_segments(text, role:)

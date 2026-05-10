@@ -10,21 +10,16 @@ module Fatty
       end
 
       def render_line(row:, col:, width:, text:, role:, palette:)
-        spec = palette&.[](role)
+        render_line_spec(row:, col:, width:, text:, spec: palette&.[](role))
+      end
+
+      def render_line_spec(row:, col:, width:, text:, spec:)
         return unless spec
 
         msg = text.to_s.tr("\r\n", " ")
         msg = msg.ljust(width)[0, width]
-
         sgr = sgr_for_role(spec)
-
-        write_ansi(
-          "#{CSI}#{row + 1};#{col + 1}H",
-          sgr,
-          msg,
-          reset,
-        )
-        nil
+        write_ansi("#{CSI}#{row + 1};#{col + 1}H", sgr, msg, reset)
       end
 
       def render_segments_line(row:, col:, width:, segments:, palette:, fill_role: :output)
