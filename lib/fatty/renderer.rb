@@ -53,6 +53,15 @@ module Fatty
       @legacy.screen = screen if defined?(@legacy) && @legacy.respond_to?(:screen=)
     end
 
+    def apply_theme!(theme)
+      Fatty::Themes::Manager.set(theme)
+      # Renderer invariant:
+      # @palette is always a fully resolved palette (never raw spec)
+      @palette = context.apply_theme!(Fatty::Themes::Manager.current)
+      invalidate!
+      sync_backgrounds!
+    end
+
     def render_output(...)
       raise NotImplementedError, "#{self.class} must implement #render_output"
     end
@@ -82,9 +91,13 @@ module Fatty
     end
 
     def invalidate!
+      @last_output_state = nil
+      @last_input_state = nil
+      @last_alert_state = nil
       @last_status_state = nil
+      @last_pager_field_state = nil
+      @last_popup_state = nil
       @legacy.invalidate! if defined?(@legacy) && @legacy.respond_to?(:invalidate!)
-      nil
     end
 
     protected

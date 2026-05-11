@@ -118,12 +118,9 @@ module Fatty
 
       def apply_theme!(theme_name)
         cfg = Fatty::Config.config
-
         reset_ansi_pairs!
-
         cfg[:theme] = theme_name.to_sym
-
-        Fatty::Colors::Palette.apply!(cfg, available_colors: ::Curses.colors)
+        @palette = Fatty::Colors::Palette.apply!(cfg, available_colors: ::Curses.colors)
       end
 
       # Map a Fatty::Ansi::Style to a curses attribute.

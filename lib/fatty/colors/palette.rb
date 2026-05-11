@@ -28,9 +28,7 @@ module Fatty
 
         merged = {}
         merged = deep_merge(merged, theme_roles) if theme_roles
-        merged = deep_merge(merged, color_cfg_without_theme(color_cfg))
-
-        merged
+        deep_merge(merged, color_cfg_without_theme(color_cfg))
       end
 
       # Build resolved palette (no curses required).
