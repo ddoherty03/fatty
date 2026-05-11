@@ -92,10 +92,6 @@ module Fatty
         @legacy.render_pager_field(...)
       end
 
-      def render_prompt_popup(...)
-        @legacy.render_prompt_popup(...)
-      end
-
       def render_popup(session:)
         state = popup_state(session)
         return if state == @last_popup_state
@@ -114,99 +110,31 @@ module Fatty
         inner_h = [height - 2, 0].max
 
         # Draw the window with the border
-        queue_ansi_popup_frame(win: win)
-
-        # Keep track of what row we're drawing
-        row = 0
+        render_popup_frame(session: session)
 
         # Draw the message if any inside the window
-        if session.message && !session.message.empty?
-          queue_ansi_line(
-            row: row0 + 1 + row,
-            col: col0 + 1,
-            width: inner_w,
-            text: session.message.to_s,
-            role: :popup,
-          )
-          row += 1
-        end
+        layout = PopupLayout.new(row: 0, width: inner_w)
+        row = render_popup_message(session: session, layout: layout)
+
+        counts_present = !!session.counts
+        input_row = inner_h - 1
+        counts_row = counts_present ? input_row - 1 : nil
 
         # Draw the displayed items inside the window with a gutter to have an
         # indicator of what is selected, if any.
-        input_row = inner_h - 1
-        counts_row = inner_h - 2
-        list_h = [counts_row - row, 0].max
-        list_w = inner_w
-
-        session.displayed.first(list_h).each_with_index do |candidate, idx|
-          selected = idx == session.selected
-          role = selected ? :popup_selection : :popup
-
-          label =
-            if session.selected_labels.include?(candidate)
-              "* "
-            else
-              "  "
-            end
-
-          text = "#{label}#{candidate}"
-
-          queue_ansi_line(
-            row: row0 + 1 + row + idx,
-            col: col0 + 1,
-            width: list_w,
-            text: text,
-            role: role,
-          )
-        end
-
-        # Blanks for any remaining window lines without anything to display
-        list_h.times do |idx|
-          next if idx < session.displayed.length
-
-          queue_ansi_line(
-            row: row0 + 1 + row + idx,
-            col: col0 + 1,
-            width: list_w,
-            text: "",
-            role: :popup,
-          )
-        end
+        list_h = [inner_h - row - 1 - (counts_present ? 1 : 0), 0].max
+        layout = PopupLayout.new(row: row, width: inner_w, height: list_h)
+        render_popup_items(session: session, layout: layout)
 
         # Draw the "counts" line to indicate the total number of items, items
         # selected, and items displayed.
-        if session.counts
-          counts_text = session.counts.to_s
-
-          queue_ansi_line(
-            row: row0 + 1 + counts_row,
-            col: col0 + 1,
-            width: list_w,
-            text: counts_text,
-            role: :popup_counts,
-          )
-        end
+        layout = PopupLayout.new(row: counts_row, width: inner_w)
+        render_popup_counts(session: session, layout: layout) if counts_present
 
         # Draw the input field for the user to type narrowing selection
         # queries.
-        queue_ansi_segments_line(
-          row: row0 + 1 + input_row,
-          col: col0 + 1,
-          width: list_w,
-          segments: field_segments(
-            session.field,
-            base_role: :popup_input,
-            suggestion_role: :input_suggestion,
-            region_role: :region,
-          ),
-          fill_role: :popup_input,
-        )
-
-        cursor_x = session.field.cursor_x.to_i.clamp(0, [list_w - 1, 0].max)
-        queue_ansi_cursor(
-          row: row0 + 1 + input_row,
-          col: col0 + 1 + cursor_x,
-        )
+        layout = PopupLayout.new(row: input_row, width: inner_w)
+        render_popup_input_field(session: session, layout: layout)
       end
 
       def render_prompt_popup(session:)
@@ -280,7 +208,7 @@ module Fatty
           )
 
           if context.truecolor
-            row0, col0 = window_origin(win)
+            row0, col0 = win.origin
 
             if row0 && col0
               queue_ansi_segments_line(
@@ -303,7 +231,7 @@ module Fatty
           queue_ansi_popup_frame(win: win, width: width, height: height)
 
           if context.truecolor
-            row0, col0 = window_origin(win)
+            row0, col0 = win.origin
 
             if row0 && col0
               @pending_ansi_draws << {
@@ -362,6 +290,158 @@ module Fatty
           screen.rows,
           screen.cols,
         ]
+      end
+
+      def render_popup_frame(session:)
+        win = session.win
+        return unless win
+
+        width = win.maxx
+        height = win.maxy
+        return if width < 2 || height < 2
+
+        row, col = win.origin
+        return unless row && col
+
+        b = popup_border
+        # Draw the top frame
+        queue_ansi_line(
+          row: row,
+          col: col,
+          width: width,
+          text: b[:tl] + (b[:h] * (width - 2)) + b[:tr],
+          role: :popup_frame,
+        )
+        (1...(height - 1)).each do |y|
+          # Draw the left frame
+          queue_ansi_line(
+            row: row + y,
+            col: col,
+            width: 1,
+            text: b[:v],
+            role: :popup_frame,
+          )
+          # Draw the right frame
+          queue_ansi_line(
+            row: row + y,
+            col: col + width - 1,
+            width: 1,
+            text: b[:v],
+            role: :popup_frame,
+          )
+        end
+        # Draw the bottom frame
+        queue_ansi_line(
+          row: row + height - 1,
+          col: col,
+          width: width,
+          text: b[:bl] + (b[:h] * (width - 2)) + b[:br],
+          role: :popup_frame,
+        )
+      end
+
+      def render_popup_message(session:, layout:)
+        win = session.win
+        return layout.row unless win
+
+        return layout.row unless session.message && !session.message.empty?
+
+        row = win.origin[0] + 1 + layout.row
+        col = win.origin[1] + 1
+        queue_ansi_line(
+          row: row,
+          col: col,
+          width: layout.width,
+          text: session.message.to_s,
+          role: :popup,
+        )
+        layout.row + 1
+      end
+
+      def render_popup_items(session:, layout:)
+        win = session.win
+        return unless win
+
+        items = session.displayed
+        sel = session.selected
+        start = session.scroll_start(list_h: layout.height)
+        row = layout.row
+
+        (0...layout.height).each do |i|
+          idx = start + i
+          selected = idx == sel
+          role = selected ? :popup_selection : :popup
+          line = ""
+          if idx < items.length
+            item = items[idx]
+            gutter = session.gutter_for(item: item, selected: selected)
+            avail = [layout.width - gutter.length, 0].max
+            line = (gutter + item.to_s[0, avail])[0, layout.width]
+          end
+          queue_ansi_popup_line(
+            win: win,
+            inner_row: row + i,
+            width: layout.width,
+            text: line,
+            role: role,
+          )
+        end
+      end
+
+      def render_popup_counts(session:, layout:)
+        win = session.win
+        return unless win
+
+        row = win.origin[0] + 1 + layout.row
+        col = win.origin[1] + 1
+        queue_ansi_line(
+          row: row,
+          col: col,
+          width: layout.width,
+          text: popup_counts_text(session),
+          role: :popup_counts,
+        )
+      end
+
+      def render_popup_input_field(session:, layout:)
+        win = session.win
+        return unless win
+
+        row = win.origin[0] + 1 + layout.row
+        col = win.origin[1] + 1
+        queue_ansi_segments_line(
+          row: row,
+          col: col,
+          width: layout.width,
+          segments: field_segments(
+            session.field,
+            base_role: :popup_input,
+            suggestion_role: :input_suggestion,
+            region_role: :region,
+          ),
+          fill_role: :popup_input,
+        )
+        cursor_x = session.field.cursor_x.to_i.clamp(0, [layout.width - 1, 0].max)
+        queue_ansi_cursor(row: row, col: col + cursor_x)
+      end
+
+      def queue_ansi_popup_title(win:, title:)
+        return unless title
+
+        row, col = win.origin
+        return unless row && col
+
+        width = win.maxx
+        text = " #{title} "[0, [width - 4, 0].max]
+        return if text.empty?
+
+        queue_ansi_line(
+          row: row,
+          col: col + 2,
+          width: text.length,
+          text: text,
+          role: :popup_frame,
+        )
       end
 
       def queue_ansi_cursor(row:, col:)
@@ -478,7 +558,7 @@ module Fatty
     end
 
     def queue_ansi_popup_line(win:, inner_row:, inner_col: 0, width:, text:, role:)
-      row, col = window_origin(win)
+      row, col = win.origin
       return unless row && col
 
       queue_ansi_line(
@@ -487,54 +567,6 @@ module Fatty
         width: width,
         text: text.to_s,
         role: role,
-      )
-
-      nil
-    end
-
-    def queue_ansi_popup_frame(win:)
-      width = win.maxx
-      height = win.maxy
-      return unless context.truecolor
-      return if width < 2 || height < 2
-
-      row, col = win.origin
-      return unless row && col
-
-      b = popup_border
-
-      queue_ansi_line(
-        row: row,
-        col: col,
-        width: width,
-        text: b[:tl] + (b[:h] * (width - 2)) + b[:tr],
-        role: :popup_frame,
-      )
-
-      (1...(height - 1)).each do |y|
-        queue_ansi_line(
-          row: row + y,
-          col: col,
-          width: 1,
-          text: b[:v],
-          role: :popup_frame,
-        )
-
-        queue_ansi_line(
-          row: row + y,
-          col: col + width - 1,
-          width: 1,
-          text: b[:v],
-          role: :popup_frame,
-        )
-      end
-
-      queue_ansi_line(
-        row: row + height - 1,
-        col: col,
-        width: width,
-        text: b[:bl] + (b[:h] * (width - 2)) + b[:br],
-        role: :popup_frame,
       )
     end
 

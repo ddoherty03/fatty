@@ -1,16 +1,31 @@
 # frozen_string_literal: true
 
+# This Struct encapsulates the geometry of popup windows often needed in
+# rendering.
+PopupLayout = Struct.new(
+  :row,
+  :width,
+  :height,
+  keyword_init: true,
+)
+
 module Fatty
+  # The Renderer class implements drawing the elements of a Fatty terminal
+  # (output, input, alert, status, and popups) on the screen.  There are two
+  # ways of doing so: (1) using normal curses operations with curses-defined
+  # pairs and (2) using ANSI codes to write with a Truecolor full-color
+  # palette.  This class is the base class for those two rendering methods and
+  # provides methods common to them.
   class Renderer
     FRAME_STYLES = {
-      ascii:  { h: "-", v: "|" },
+      ascii: { h: "-", v: "|" },
       single: { h: "─", v: "│" },
       double: { h: "═", v: "║" },
     }.freeze
 
     CORNER_STYLES = {
       square: {
-        ascii:  { tl: "+", tr: "+", bl: "+", br: "+" },
+        ascii: { tl: "+", tr: "+", bl: "+", br: "+" },
         single: { tl: "┌", tr: "┐", bl: "└", br: "┘" },
         double: { tl: "╔", tr: "╗", bl: "╚", br: "╝" },
       },
@@ -118,6 +133,15 @@ module Fatty
       ]
     end
 
+    def popup_counts_text(session)
+      counts = session.counts
+
+      "#{counts[:total]} total · " \
+      "#{counts[:selected]} selected · " \
+      "#{counts[:matching]} matching · " \
+      "#{counts[:showing]} showing"
+    end
+
     def popup_border
       spec = popup_frame_spec
 
@@ -143,8 +167,7 @@ module Fatty
     end
 
     def popup_frame_spec
-      spec = Fatty::Colors::Palette.build_spec(Fatty::Config.config)
-      spec[:popup_frame] || spec["popup_frame"] || {}
+      palette[:popup_frame] || {}
     rescue StandardError => e
       Fatty.warn("Could not resolve popup frame style: #{e.class}: #{e.message}", tag: :theme)
       {}
