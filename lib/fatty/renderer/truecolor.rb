@@ -88,8 +88,27 @@ module Fatty
         )
       end
 
-      def render_pager_field(...)
-        @legacy.render_pager_field(...)
+      def render_pager_field(field, row:, role: :pager_status)
+        win = context.output_win
+        return unless win
+
+        row0, col0 = win.origin
+        return unless row0 && col0
+
+        cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
+
+        queue_ansi_segments_line(
+          row: row0 + row,
+          col: col0,
+          width: cols,
+          segments: field_segments(
+            field,
+            base_role: role,
+            suggestion_role: :input_suggestion,
+            region_role: :region,
+          ),
+          fill_role: role,
+        )
       end
 
       def render_popup(session:)
@@ -111,6 +130,9 @@ module Fatty
 
         # Draw the window with the border
         render_popup_frame(session: session)
+
+        # Add any title
+        render_popup_title(session: session) if session.title
 
         # Draw the message if any inside the window
         layout = PopupLayout.new(row: 0, width: inner_w)
@@ -141,117 +163,24 @@ module Fatty
         win = session.win
         return unless win
 
-        begin
-          width = win.maxx
-          height = win.maxy
+        row0, col0 = win.origin
+        return unless row0 && col0
 
-          win.erase
+        inner_w = [win.maxx - 2, 0].max
+        inner_h = [win.maxy - 2, 0].max
+        return if inner_w <= 0 || inner_h <= 0
 
-          frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
-          win.attron(frame_attr) do
-          draw_popup_frame(win, width: width, height: height)
-        end
+        render_popup_frame(session: session)
+        render_popup_title(session: session) if session.title
 
-          inner_h = height - 2
-          inner_w = width - 2
-          return if inner_h <= 0 || inner_w <= 0
+        layout = PopupLayout.new(row: 0, width: inner_w)
+        row = render_popup_message(session: session, layout: layout)
 
-          inner = win.derwin(inner_h, inner_w, 1, 1)
-          inner.erase
-
-          if session.title
-            win.setpos(0, 2)
-            win.addstr(" #{session.title} ")
-          end
-
-          text_attr = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
-          input_attr = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
-
-          row = 0
-
-          if session.message && !session.message.empty?
-            message_row = row
-
-            inner.attron(text_attr) do
-              inner.setpos(message_row, 0)
-
-              line = session.message.to_s[0, inner_w]
-              inner.addstr(line.ljust(inner_w))
-
-              if context.truecolor
-                queue_ansi_popup_line(
-                  win: win,
-                  inner_row: message_row,
-                  width: inner_w,
-                  text: line,
-                  role: :popup,
-                )
-              end
-            end
-
-            row += 1
-          end
-
-          base_attr = pair_attr(:popup_input, fallback: ::Curses::A_NORMAL)
-          region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
-          suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
-          input_row = row
-
-          render_field_into(
-            win: inner,
-            field: session.field,
-            row: input_row,
-            width: inner_w,
-            base_attr: input_attr,
-            region_attr: region_attr,
-            suggestion_attr: suggestion_attr,
-          )
-
-          if context.truecolor
-            row0, col0 = win.origin
-
-            if row0 && col0
-              queue_ansi_segments_line(
-                row: row0 + 1 + input_row,
-                col: col0 + 1,
-                width: inner_w,
-                segments: field_segments(
-                  session.field,
-                  base_role: :popup_input,
-                  suggestion_role: :input_suggestion,
-                  region_role: :region,
-                ),
-                fill_role: :popup_input,
-              )
-            end
-          end
-
-          cursor_in_inner = session.field.cursor_x.clamp(0, [inner_w - 1, 0].max)
-
-          queue_ansi_popup_frame(win: win, width: width, height: height)
-
-          if context.truecolor
-            row0, col0 = win.origin
-
-            if row0 && col0
-              @pending_ansi_draws << {
-                type: :cursor,
-                row: row0 + 1 + input_row,
-                col: col0 + 1 + cursor_in_inner,
-              }
-
-              @frame_touched = true
-            end
-          else
-            win.setpos(1 + input_row, 1 + cursor_in_inner)
-            stage_window(inner)
-            stage_window(win)
-          end
-        rescue RuntimeError => e
-          raise unless e.message.include?("closed window") || e.message.include?("already closed window")
-
-          nil
-        end
+        layout = PopupLayout.new(row: row, width: inner_w)
+        render_popup_input_field(session: session, layout: layout)
+      rescue RuntimeError => e
+        raise unless e.message.include?("closed window") ||
+                     e.message.include?("already closed window")
 
         nil
       end
@@ -290,6 +219,27 @@ module Fatty
           screen.rows,
           screen.cols,
         ]
+      end
+
+      def render_popup_title(session:)
+        win = session.win
+        return unless win
+        return unless session.title
+
+        row, col = win.origin
+        return unless row && col
+
+        width = [win.maxx - 4, 0].max
+        text = " #{session.title} "[0, width]
+        return if text.empty?
+
+        queue_ansi_line(
+          row: row,
+          col: col + 2,
+          width: text.length,
+          text: text,
+          role: :popup_frame,
+        )
       end
 
       def render_popup_frame(session:)

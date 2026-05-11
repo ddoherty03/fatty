@@ -37,14 +37,14 @@ module Fatty
         match_current: :region,
         match_other: :region,
 
-        pager_status: :output,
-
         status: :output,
         alert: :output,
         info: :output,
         good: :info,
         warn: :info,
         error: :warn,
+
+        pager_status: :status,
       }.freeze
 
       def self.empty_theme
