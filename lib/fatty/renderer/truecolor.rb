@@ -201,8 +201,6 @@ module Fatty
         queue_ansi_cursor(row: rect.row, col: rect.col + x)
       end
 
-      private
-
       # In truecolor mode, curses windows must still have themed backgrounds.
       # ncurses may repaint or expose its backing store during getch/doupdate,
       # so we must keep the backing store visually consistent with ANSI output.
@@ -218,6 +216,8 @@ module Fatty
         end
         self
       end
+
+      private
 
       def sync_window_background(win, role)
         return unless win
