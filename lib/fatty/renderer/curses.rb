@@ -3,6 +3,8 @@
 module Fatty
   class Renderer
     class Curses < Fatty::Renderer
+      include Fatty::Curses::WindowStyling
+
       def initialize(...)
         super
         @legacy = Fatty::Curses::Renderer.new(

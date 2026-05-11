@@ -237,7 +237,9 @@ module Fatty
       ranges
     end
 
-    private
+    def sync_backgrounds!
+      nil
+    end
   end
 end
 

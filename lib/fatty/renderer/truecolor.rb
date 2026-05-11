@@ -2,6 +2,8 @@
 module Fatty
   class Renderer
     class Truecolor < Fatty::Renderer
+      include Fatty::Curses::WindowStyling
+
       def initialize(...)
         super
         @legacy = Fatty::Curses::Renderer.new(
@@ -199,11 +201,32 @@ module Fatty
         queue_ansi_cursor(row: rect.row, col: rect.col + x)
       end
 
+      private
+
+      # In truecolor mode, curses windows must still have themed backgrounds.
+      # ncurses may repaint or expose its backing store during getch/doupdate,
+      # so we must keep the backing store visually consistent with ANSI output.
       def sync_backgrounds!
-        @legacy.sync_backgrounds!
+        return self unless context.truecolor
+
+        sync_window_background(context.output_win, :output)
+        sync_window_background(context.input_win, :input)
+        sync_window_background(context.alert_win, :info)
+
+        if @screen.status_rect.rows.positive?
+          sync_window_background(context.status_win, :status)
+        end
+        self
       end
 
-      private
+      def sync_window_background(win, role)
+        return unless win
+
+        attr = pair_attr(role, fallback: ::Curses::A_NORMAL)
+        win.bkgdset(attr) if win.respond_to?(:bkgdset)
+        win.erase
+        win.noutrefresh if win.respond_to?(:noutrefresh)
+      end
 
       def popup_state(session)
         [
