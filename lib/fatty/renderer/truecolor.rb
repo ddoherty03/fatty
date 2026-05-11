@@ -14,17 +14,17 @@ module Fatty
         @pending_ansi_draws = []
       end
 
-      def method_missing(name, ...)
-        if @legacy.respond_to?(name)
-          @legacy.public_send(name, ...)
-        else
-          super
-        end
-      end
+      # def method_missing(name, ...)
+      #   if @legacy.respond_to?(name)
+      #     @legacy.public_send(name, ...)
+      #   else
+      #     super
+      #   end
+      # end
 
-      def respond_to_missing?(name, include_private = false)
-        @legacy.respond_to?(name, include_private) || super
-      end
+      # def respond_to_missing?(name, include_private = false)
+      #   @legacy.respond_to?(name, include_private) || super
+      # end
 
       def render_status(text, role: :info)
         state = status_state(text, role)

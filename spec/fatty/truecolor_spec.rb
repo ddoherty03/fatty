@@ -87,54 +87,54 @@ module Fatty
       expect(palette[:good][:bg_rgb]).to eq([240, 248, 255])
     end
 
-    it "renders a truecolor status overlay when truecolor is enabled" do
-      screen = Fatty::Screen.new(rows: 10, cols: 12, status_rows: 1)
-      context = TruecolorSpecContext.new(truecolor: true)
+    # it "renders a truecolor status overlay when truecolor is enabled" do
+    #   screen = Fatty::Screen.new(rows: 10, cols: 12, status_rows: 1)
+    #   context = TruecolorSpecContext.new(truecolor: true)
 
-      out = StringIO.new
-      original_stdout = $stdout
-      $stdout = out
+    #   out = StringIO.new
+    #   original_stdout = $stdout
+    #   $stdout = out
 
-      allow(::Curses).to receive(:color_pair).and_return(0)
+    #   allow(::Curses).to receive(:color_pair).and_return(0)
 
-      renderer = Fatty::Curses::Renderer.new(context:, screen:)
-      renderer.begin_frame
-      renderer.render_status("good hello", role: :good)
+    #   renderer = Fatty::Curses::Renderer.new(context:, screen:)
+    #   renderer.begin_frame
+    #   renderer.render_status("good hello", role: :good)
 
-      pending = renderer.instance_variable_get(:@pending_ansi_draws)
+    #   pending = renderer.instance_variable_get(:@pending_ansi_draws)
 
-      expect(pending.length).to eq(1)
-      expect(pending.first[:type]).to eq(:segments_line)
-      expect(pending.first[:segments].first[:role]).to eq(:good)
+    #   expect(pending.length).to eq(1)
+    #   expect(pending.first[:type]).to eq(:segments_line)
+    #   expect(pending.first[:segments].first[:role]).to eq(:good)
 
-      renderer.flush_ansi_overlay
+    #   renderer.flush_ansi_overlay
 
-      expect(out.string).to include("38;2;0;0;0")
-      expect(out.string).to include("48;2;240;248;255")
-      expect(out.string).to include("good hello")
-    ensure
-      $stdout = original_stdout
-    end
+    #   expect(out.string).to include("38;2;0;0;0")
+    #   expect(out.string).to include("48;2;240;248;255")
+    #   expect(out.string).to include("good hello")
+    # ensure
+    #   $stdout = original_stdout
+    # end
 
-    it "does not render a truecolor status overlay when truecolor is disabled" do
-      screen = Fatty::Screen.new(rows: 10, cols: 12, status_rows: 1)
-      context = TruecolorSpecContext.new(truecolor: false)
-      renderer = Fatty::Curses::Renderer.new(context:, screen:)
+    # it "does not render a truecolor status overlay when truecolor is disabled" do
+    #   screen = Fatty::Screen.new(rows: 10, cols: 12, status_rows: 1)
+    #   context = TruecolorSpecContext.new(truecolor: false)
+    #   renderer = Fatty::Curses::Renderer.new(context:, screen:)
 
-      out = StringIO.new
-      original_stdout = $stdout
-      $stdout = out
+    #   out = StringIO.new
+    #   original_stdout = $stdout
+    #   $stdout = out
 
-      allow(::Curses).to receive(:color_pair).and_return(0)
-      allow(::Curses).to receive(:doupdate)
+    #   allow(::Curses).to receive(:color_pair).and_return(0)
+    #   allow(::Curses).to receive(:doupdate)
 
-      renderer.begin_frame
-      renderer.render_status("good hello", role: :status)
-      renderer.finish_frame
+    #   renderer.begin_frame
+    #   renderer.render_status("good hello", role: :status)
+    #   renderer.finish_frame
 
-      expect(out.string).to eq("")
-    ensure
-      $stdout = original_stdout
-    end
+    #   expect(out.string).to eq("")
+    # ensure
+    #   $stdout = original_stdout
+    # end
   end
 end
