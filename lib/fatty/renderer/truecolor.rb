@@ -1,4 +1,5 @@
-# lib/fatty/renderer/curses.rb
+# frozen_string_literal: true
+
 module Fatty
   class Renderer
     class Truecolor < Fatty::Renderer

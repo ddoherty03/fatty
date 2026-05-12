@@ -44,8 +44,7 @@ module Fatty
         ::Curses.mousemask(::Curses::ALL_MOUSE_EVENTS)
         enable_bracketed_paste!
         setup_colors
-        truecolor_enabled?
-
+        @truecolor = truecolor_enabled?
         @started = true
         self
       end
@@ -132,8 +131,13 @@ module Fatty
       # output runs inside the output pane.
       def truecolor_enabled?
         cfg = Fatty::Config.config
-        setting = cfg[:truecolor] || cfg["truecolor"] || "auto"
 
+        setting =
+          if cfg.key?(:truecolor)
+            cfg[:truecolor]
+          else
+            "auto"
+          end
         @truecolor =
           case setting.to_s.downcase
           when "true", "yes", "on", "1"
@@ -147,7 +151,7 @@ module Fatty
           "truecolor=#{@truecolor} setting=#{setting.inspect} " \
           "TERM=#{ENV['TERM'].inspect} COLORTERM=#{ENV['COLORTERM'].inspect} " \
           "TERM_PROGRAM=#{ENV['TERM_PROGRAM'].inspect} TMUX=#{ENV.key?('TMUX')}",
-          tag: :theme,
+          tag: :themes,
         )
         @truecolor
       end
