@@ -19,6 +19,12 @@ module Fatty
       STATUS_GOOD      = 9
       STATUS           = 10
 
+      ALERT_INFO  = 11
+      ALERT_WARN  = 12
+      ALERT_ERROR = 13
+      ALERT_GOOD  = 14
+      ALERT = 15
+
       SEARCH = 20
       SEARCH_HIGHLIGHT = 21
       SEARCH_HIGHLIGHT_SECONDARY = 22
@@ -43,6 +49,12 @@ module Fatty
         warn: STATUS_WARN,
         error: STATUS_ERROR,
         status: STATUS,
+
+        alert_info: ALERT_INFO,
+        alert_warn: ALERT_WARN,
+        alert_error: ALERT_ERROR,
+        alert_good: ALERT_GOOD,
+        alert: ALERT,
 
         match_current: SEARCH_HIGHLIGHT,
         match_other: SEARCH_HIGHLIGHT_SECONDARY,

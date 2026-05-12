@@ -42,11 +42,20 @@ module Fatty
       new(message: msg, level: :error)
     end
 
-    # Translate the "level" to a "role" used by the renderers.
-    # @param level [:info, :warn, :error]
-    # @return [Symbol] role used by renderer (e.g., :info, :warn, :error)
+    # Translate the "level" to a "role" used by the renderers. The returned
+    # roles are "composite" roles in the resolver in that they take the
+    # background ot the alert panel and apply a foreground color based on
+    # severity.
+    #   @param level [:info, :warn, :error]
+    #   @return [Symbol] composite or semantic role
+    # used by renderer (e.g., alert_good, :alert_info, :alert_warn, :alert_error)
     def role
-      level
+      case level
+      when :good then :alert_good
+      when :warn then :alert_warn
+      when :error then :alert_error
+      else :alert_info
+      end
     end
 
     # Build a string version of the Alert suitable for display to the user.

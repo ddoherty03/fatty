@@ -60,6 +60,7 @@ module Fatty
       def self.resolve(registry, name)
         raw = merge_theme_chain(registry, name.to_sym, stack: [])
         raw[:roles] = resolve_role_inheritance(raw[:roles])
+        raw[:roles] = add_composite_roles(raw[:roles])
         raw[:name] = name.to_sym
         raw
       end
@@ -152,6 +153,26 @@ module Fatty
           end
         end
       end
+
+      def self.add_composite_roles(roles)
+        roles = roles.dup
+
+        roles[:alert_info]  = composite_role(roles[:alert] || {}, roles[:info]  || {})
+        roles[:alert_good]  = composite_role(roles[:alert] || {}, roles[:good]  || {})
+        roles[:alert_warn]  = composite_role(roles[:alert] || {}, roles[:warn]  || {})
+        roles[:alert_error] = composite_role(roles[:alert] || {}, roles[:error] || {})
+        roles
+      end
+      private_class_method :add_composite_roles
+
+      def self.composite_role(base, accent)
+        {
+          fg: accent[:fg] || accent["fg"] || base[:fg] || base["fg"],
+          bg: base[:bg] || base["bg"] || accent[:bg] || accent["bg"],
+          attrs: accent[:attrs] || accent["attrs"] || base[:attrs] || base["attrs"],
+        }.compact
+      end
+      private_class_method :composite_role
     end
   end
 end
