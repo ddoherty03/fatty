@@ -54,32 +54,30 @@ module Fatty
         @legacy.render_prompt_popup(...)
       end
 
-      def render_alert(...)
+      def render_alert(alert)
         state = alert_state(alert)
         return if state == @last_alert_state
 
         @last_alert_state = state
 
-        text =
-          if alert.nil?
-            ""
-          else
-            format_alert(alert)
-          end
         win = context.alert_win
-        cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
+        return unless win
 
-        attr =
-          if alert.nil?
-            pair_attr(:info, fallback: ::Curses::A_REVERSE)
-          else
-            alert_attr(alert)
-          end
+        text = alert ? alert.format : ""
+        role = alert ? alert.role : :alert
+        attr = pair_attr(role, fallback: pair_attr(:alert, fallback: ::Curses::A_REVERSE))
+        # attr = pair_attr(:alert, fallback: ::Curses::A_REVERSE)
+        cols = win.respond_to?(:maxx) ? win.maxx : screen.alert_rect.cols
+
+        Fatty.debug("alert palette spec: #{context.palette[:alert].inspect}", tag: :render)
+        Fatty.debug("alert attr: #{attr.inspect}", tag: :render)
+
         win.bkgdset(attr) if win.respond_to?(:bkgdset)
         win.erase
         win.attrset(attr)
         win.setpos(0, 0)
         win.addstr(text.ljust(cols)[0, cols])
+
         stage_window(win)
       end
 
@@ -93,6 +91,74 @@ module Fatty
 
       def restore_cursor(...)
         @legacy.restore_cursor(...)
+      end
+
+      private
+
+      def stage_window(win)
+        win.noutrefresh
+        @frame_touched = true
+      end
+
+      def draw_popup_frame(win, width:, height:)
+        b = popup_border
+        # top
+        win.setpos(0, 0)
+        win.addstr(b[:tl] + (b[:h] * (width - 2)) + b[:tr])
+        # sides
+        (1...(height - 1)).each do |y|
+          win.setpos(y, 0)
+          win.addstr(b[:v])
+          win.setpos(y, width - 1)
+          win.addstr(b[:v])
+        end
+        # bottom
+        win.setpos(height - 1, 0)
+        win.addstr(b[:bl] + (b[:h] * (width - 2)) + b[:br])
+      end
+
+      def render_field_into(win:, field:, row:, width:, base_attr:, region_attr:, suggestion_attr:)
+        buf = field.buffer
+        region =
+          if buf.respond_to?(:region_range)
+            buf.region_range
+          end
+
+        win.attrset(base_attr)
+        win.setpos(row, 0)
+        win.addstr(" " * width)
+        win.setpos(row, 0)
+        win.addstr(field.prompt_text.to_s)
+
+        text = buf.text.to_s
+
+        if region && region.begin < region.end
+          max = text.length
+          s = region.begin.clamp(0, max)
+          e = region.end.clamp(0, max)
+
+          before = text[0...s].to_s
+          mid    = text[s...e].to_s
+          after  = text[e..].to_s
+
+          win.attrset(base_attr)
+          win.addstr(before)
+
+          win.attrset(region_attr)
+          win.addstr(mid)
+
+          win.attrset(base_attr)
+          win.addstr(after)
+        else
+          win.attrset(base_attr)
+          win.addstr(text)
+        end
+
+        suffix = buf.virtual_suffix.to_s
+        unless suffix.empty?
+          win.attrset(base_attr)
+          win.attron(suggestion_attr) { win.addstr(suffix) }
+        end
       end
     end
   end
