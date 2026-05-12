@@ -10,15 +10,12 @@ module Fatty
       end
 
       def render_line(row:, col:, width:, text:, role:, palette:)
-        render_line_spec(row:, col:, width:, text:, spec: palette&.[](role))
-      end
-
-      def render_line_spec(row:, col:, width:, text:, spec:)
+        spec = palette&.[](role)
         return unless spec
 
         msg = text.to_s.tr("\r\n", " ")
         msg = msg.ljust(width)[0, width]
-        sgr = sgr_for_role(spec)
+        sgr = sgr_for_spec(spec)
         write_ansi("#{CSI}#{row + 1};#{col + 1}H", sgr, msg, reset)
       end
 
@@ -41,7 +38,7 @@ module Fatty
             if seg[:style]
               sgr_for_style(seg[:style], fallback_spec: spec)
             else
-              sgr_for_role(spec)
+              sgr_for_spec(spec)
             end
 
           rendered << sgr
@@ -50,7 +47,7 @@ module Fatty
 
         if visible < width
           spec = palette&.[](fill_role)
-          rendered << sgr_for_role(spec) if spec
+          rendered << sgr_for_spec(spec) if spec
           rendered << (" " * (width - visible))
         end
 
@@ -97,7 +94,7 @@ module Fatty
         "#{CSI}#{row + 1};#{col + 1}H"
       end
 
-      def sgr_for_role(spec)
+      def sgr_for_spec(spec)
         fg = spec[:fg_rgb]
         bg = spec[:bg_rgb]
         codes = []

@@ -47,13 +47,14 @@ module Fatty
 
         @last_alert_state = state
         text = alert ? alert.format : ""
-        spec = merged_role_spec(:alert, alert ? alert.role : :alert)
+        role = alert ? alert.role : :alert_info
+
         queue_ansi_line(
           row: screen.alert_rect.row,
           col: screen.alert_rect.col,
           width: screen.alert_rect.cols,
           text: text,
-          spec: spec,
+          role: role,
         )
       end
 
@@ -555,7 +556,8 @@ module Fatty
       nil
     end
 
-    def queue_ansi_line(row:, col:, width:, text:, role: nil, spec: nil)
+    def queue_ansi_line(row:, col:, width:, text:, role: nil)
+      spec = palette[role] || {}
       @pending_ansi_draws << {
         row: row,
         col: col,
@@ -600,24 +602,14 @@ module Fatty
             fill_role: draw[:fill_role] || :output,
           )
         else
-          if draw[:spec]
-            @ansi_renderer.render_line_spec(
-              row: draw[:row],
-              col: draw[:col],
-              width: draw[:width],
-              text: draw[:text],
-              spec: draw[:spec],
-            )
-          else
-            @ansi_renderer.render_line(
-              row: draw[:row],
-              col: draw[:col],
-              width: draw[:width],
-              text: draw[:text],
-              role: draw[:role],
-              palette: palette,
-            )
-          end
+          @ansi_renderer.render_line(
+            row: draw[:row],
+            col: draw[:col],
+            width: draw[:width],
+            text: draw[:text],
+            role: draw[:role],
+            palette: palette,
+          )
         end
       end
       @pending_ansi_draws.clear

@@ -200,15 +200,6 @@ module Fatty
       visible[0, width].ljust(width)
     end
 
-    def merged_role_spec(base_role, overlay_role)
-      base = palette&.[](base_role) || {}
-      overlay = palette&.[](overlay_role) || {}
-
-      base.merge(
-        overlay.slice(:fg, :fg_rgb, :attrs)
-      )
-    end
-
     def normalized_highlights(highlights)
       return if highlights.nil?
 
