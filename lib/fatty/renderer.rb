@@ -103,6 +103,14 @@ module Fatty
 
     protected
 
+    def available_colors
+      nil
+    end
+
+    def after_apply_theme!
+      nil
+    end
+
     def alert_state(alert)
       [
         alert&.message,

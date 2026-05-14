@@ -95,6 +95,14 @@ module Fatty
 
       private
 
+      def available_colors
+        ::Curses.colors
+      end
+
+      def after_apply_theme!
+        context.apply_palette_to_curses!(palette)
+      end
+
       def stage_window(win)
         win.noutrefresh
         @frame_touched = true
