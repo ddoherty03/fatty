@@ -55,9 +55,10 @@ module Fatty
 
     def apply_theme!(theme)
       Fatty::Themes::Manager.set(theme)
-      # Renderer invariant:
-      # @palette is always a fully resolved palette (never raw spec)
-      @palette = context.apply_theme!(Fatty::Themes::Manager.current)
+      theme_spec = Fatty::Themes::Manager.roles(Fatty::Themes::Manager.current) || {}
+      @palette = Fatty::Colors::Palette.compile(theme_spec, available_colors: available_colors)
+
+      after_apply_theme!
       invalidate!
       sync_backgrounds!
     end

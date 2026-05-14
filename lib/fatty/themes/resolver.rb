@@ -6,6 +6,31 @@ module Fatty
     class MissingThemeError < ResolveError; end
     class InheritanceCycleError < ResolveError; end
 
+    # The Resolver module is responsible for transforming a raw theme loaded
+    # by the Loader into a fully-resolved "theme_spec".
+    #
+    # Resolution includes:
+    # - applying inheritance between themes
+    # - applying inheritance between roles
+    # - filling in default attributes
+    # - synthesizing "composite" roles used by the alert panel
+    #
+    # Composite alert roles (e.g., :alert_info, :alert_warn, etc.) combine the
+    # background and structural properties of the :alert role with the foreground
+    # and attributes of the semantic roles (:good, :info, :warn, :error).
+    #
+    # The result of resolution is a Hash keyed by role names, where each value
+    # is a symbolic color specification (typically using color names and attrs).
+    # We refer to this Hash as a "theme_spec".
+    #
+    # A theme_spec is not directly renderable. Before rendering, it must be
+    # "compiled" into a palette by Fatty::Colors::Palette.apply!. The palette
+    # maps each role to concrete rendering data (RGB values for truecolor or
+    # Curses color pairs, along with attributes).
+    #
+    # Renderer classes consume only the compiled palette and never operate
+    # directly on the theme_spec.
+    # module Resolver
     module Resolver
       DEFAULT_ROLE_SPECS = {
         region: { attrs: [:reverse] },

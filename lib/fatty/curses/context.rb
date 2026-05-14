@@ -69,17 +69,15 @@ module Fatty
         return unless ::Curses.has_colors?
 
         reset_ansi_pairs!
-
-        # Important: ::Curses.colors is not reliable until after start_color.
         ::Curses.start_color
         ::Curses.use_default_colors if ::Curses.respond_to?(:use_default_colors)
 
-        # Resolve and apply theme/config colors using stable pair IDs from
-        # Fatty::Colors::Pairs.
-        @palette = Fatty::Colors::Palette.apply!(
-          Fatty::Config.config,
+        theme_spec = Fatty::Themes::Manager.roles(Fatty::Themes::Manager.current) || {}
+        palette = Fatty::Colors::Palette.compile(
+          theme_spec,
           available_colors: ::Curses.colors,
         )
+        apply_palette(palette)
       end
 
       # Allocate or reallocate windows using Screen layout.
@@ -113,13 +111,6 @@ module Fatty
         disable_bracketed_paste! if @started
         ::Curses.close_screen if @started
         @started = false
-      end
-
-      def apply_theme!(theme_name)
-        cfg = Fatty::Config.config
-        reset_ansi_pairs!
-        cfg[:theme] = theme_name.to_sym
-        @palette = Fatty::Colors::Palette.apply!(cfg, available_colors: ::Curses.colors)
       end
 
       # Map a Fatty::Ansi::Style to a curses attribute.
@@ -218,9 +209,22 @@ module Fatty
         @status_win&.close
 
         @output_win = nil
-        @input_win  = nil
-        @alert_win  = nil
-        @status_win  = nil
+        @input_win = nil
+        @alert_win = nil
+        @status_win = nil
+      end
+
+      def apply_palette(palette)
+        if ::Curses.has_colors?
+          ::Curses.start_color
+          ::Curses.use_default_colors if ::Curses.respond_to?(:use_default_colors)
+
+          palette.each_value do |entry|
+            ::Curses.init_pair(entry[:pair], entry[:fg], entry[:bg])
+          end
+        end
+
+        @palette = palette
       end
 
       # Generate a map from [fg, bg] pairs to Cuses pair ids.
