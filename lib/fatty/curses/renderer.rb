@@ -799,8 +799,6 @@ module Fatty
           win.attrset(base_attr)
           win.attron(suggestion_attr) { win.addstr(suffix) }
         end
-
-        nil
       end
 
       def apply_theme!(theme)
@@ -1173,22 +1171,22 @@ module Fatty
         {}
       end
 
-      def draw_popup_frame(win, width:, height:)
-        b = popup_border
-        # top
-        win.setpos(0, 0)
-        win.addstr(b[:tl] + (b[:h] * (width - 2)) + b[:tr])
-        # sides
-        (1...(height - 1)).each do |y|
-          win.setpos(y, 0)
-          win.addstr(b[:v])
-          win.setpos(y, width - 1)
-          win.addstr(b[:v])
-        end
-        # bottom
-        win.setpos(height - 1, 0)
-        win.addstr(b[:bl] + (b[:h] * (width - 2)) + b[:br])
-      end
+      # def draw_popup_frame(win, width:, height:)
+      #   b = popup_border
+      #   # top
+      #   win.setpos(0, 0)
+      #   win.addstr(b[:tl] + (b[:h] * (width - 2)) + b[:tr])
+      #   # sides
+      #   (1...(height - 1)).each do |y|
+      #     win.setpos(y, 0)
+      #     win.addstr(b[:v])
+      #     win.setpos(y, width - 1)
+      #     win.addstr(b[:v])
+      #   end
+      #   # bottom
+      #   win.setpos(height - 1, 0)
+      #   win.addstr(b[:bl] + (b[:h] * (width - 2)) + b[:br])
+      # end
     end
   end
 end
