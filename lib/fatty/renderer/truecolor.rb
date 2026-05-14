@@ -32,13 +32,12 @@ module Fatty
         return if state == @last_status_state
 
         @last_status_state = state
-        spec = merged_role_spec(:status, role)
         queue_ansi_line(
           row: screen.status_rect.row,
           col: screen.status_rect.col,
           width: screen.status_rect.cols,
           text: text,
-          spec: spec,
+          role: role,
         )
       end
 
