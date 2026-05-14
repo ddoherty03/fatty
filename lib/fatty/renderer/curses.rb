@@ -27,7 +27,7 @@ module Fatty
         win.erase
         win.attrset(attr)
         win.setpos(0, 0)
-        win.addstr(line)
+        win.addstr(Fatty::Ansi.strip(line))
         win.bkgdset(attr) if win.respond_to?(:bkgdset)
 
         stage_window(win)
@@ -64,13 +64,10 @@ module Fatty
         return unless win
 
         text = alert ? alert.format : ""
+        text = Fatty::Ansi.strip(text)
         role = alert ? alert.role : :alert
         attr = pair_attr(role, fallback: pair_attr(:alert, fallback: ::Curses::A_REVERSE))
-        # attr = pair_attr(:alert, fallback: ::Curses::A_REVERSE)
         cols = win.respond_to?(:maxx) ? win.maxx : screen.alert_rect.cols
-
-        Fatty.debug("alert palette spec: #{context.palette[:alert].inspect}", tag: :render)
-        Fatty.debug("alert attr: #{attr.inspect}", tag: :render)
 
         win.bkgdset(attr) if win.respond_to?(:bkgdset)
         win.erase
@@ -138,8 +135,7 @@ module Fatty
         win.setpos(row, 0)
         win.addstr(field.prompt_text.to_s)
 
-        text = buf.text.to_s
-
+        text = Fatty::Ansi.strip(buf.text.to_s)
         if region && region.begin < region.end
           max = text.length
           s = region.begin.clamp(0, max)

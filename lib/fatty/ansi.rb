@@ -3,6 +3,11 @@
 require_relative "ansi/renderer"
 
 module Fatty
+  module Ansi
+  end
+end
+
+module Fatty
   # Parse ANSI escape sequences (primarily SGR, i.e. "\e[...m") into styled text
   # segments. This is intentionally curses-agnostic: the renderer/context decides
   # how to map Style -> terminal attributes / color pairs.
@@ -23,6 +28,12 @@ module Fatty
     ESC = "\e"
     CSI = "#{ESC}["
     COMBINING_MARK_RE = /\p{M}/
+
+    ANSI_ESCAPE = /
+      \e\[ [0-9;?]* [A-Za-z]   | # CSI sequences
+      \e\] .*? (?:\a|\e\\)     | # OSC sequences
+      \e[@-Z\\-_]                # single-char escapes
+    /x
 
     Style = Struct.new(
       :fg,
@@ -66,6 +77,11 @@ module Fatty
           reverse: false,
         )
       end
+    end
+
+    # Remove any ANSI escape sequences from text.
+    def self.strip(text)
+      text.to_s.gsub(ANSI_ESCAPE, "")
     end
 
     # Public: segment a string into [[text, Style], ...]
