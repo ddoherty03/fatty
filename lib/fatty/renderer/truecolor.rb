@@ -586,7 +586,8 @@ module Fatty
     def flush_ansi_draws
       Fatty.debug("flush_ansi_draws pending_count=#{@pending_ansi_draws.length}", tag: :render)
 
-      palette = @palette || context.palette
+      # Hide the cursor
+      @ansi_renderer.write_ansi("\e[?25l")
 
       @pending_ansi_draws.each do |draw|
         case draw[:type]
@@ -613,7 +614,9 @@ module Fatty
         end
       end
       @pending_ansi_draws.clear
-      nil
+    ensure
+      # Unhide the cursor
+      @ansi_renderer.write_ansi("\e[?25h")
     end
   end
 end
