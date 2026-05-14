@@ -7,6 +7,7 @@ require "time"
 require "fileutils"
 require "rainbow"
 require "redcarpet"
+require "strscan"
 
 require 'debug'
 
@@ -16,6 +17,7 @@ require 'debug'
 #
 module Fatty
   require_relative "fatty/version"
+  require_relative "fatty/core_ext"
   require_relative "fatty/env"
   require_relative "fatty/config"
   require_relative "fatty/logger"

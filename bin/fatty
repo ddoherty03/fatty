@@ -192,9 +192,9 @@ on_accept_proc = lambda do |line, env|
       total.times do |i|
         indicator =
           case i % 4
-          when 0 then "+".green
-          when 1 then "-".red
-          when 2 then "^".yellow
+          when 0 then "+".fatty_good
+          when 1 then "-".fatty_error
+          when 2 then "^".fatty_warn
           else "."
           end
 
