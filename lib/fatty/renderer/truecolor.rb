@@ -15,29 +15,17 @@ module Fatty
         @pending_ansi_draws = []
       end
 
-      # def method_missing(name, ...)
-      #   if @legacy.respond_to?(name)
-      #     @legacy.public_send(name, ...)
-      #   else
-      #     super
-      #   end
-      # end
-
-      # def respond_to_missing?(name, include_private = false)
-      #   @legacy.respond_to?(name, include_private) || super
-      # end
-
-      def render_status(text, role: :info)
-        state = status_state(text, role)
+      def render_status(text, role: :status_info)
+        state = [renderable_text(text), role]
         return if state == @last_status_state
 
         @last_status_state = state
-        queue_ansi_line(
+        queue_ansi_segments_line(
           row: screen.status_rect.row,
           col: screen.status_rect.col,
           width: screen.status_rect.cols,
-          text: text,
-          role: role,
+          segments: renderable_segments(text, role: role),
+          fill_role: role,
         )
       end
 

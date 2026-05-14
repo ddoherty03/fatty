@@ -46,14 +46,19 @@ module Fatty
 
     def set_status(text, role: :info, transient: false)
       was_visible = status_visible?
+      str =
+        if text.is_a?(Array)
+          text.map { |part| part.is_a?(Hash) && part.key?(:text) ? part[:text] : part }.join
+        else
+          text.to_s
+        end
 
-      str = text.to_s
       if str.empty?
         @status_text = nil
         @status_role = :info
         @status_transient = false
       else
-        @status_text = str
+        @status_text = text
         @status_role = role
         @status_transient = transient
       end

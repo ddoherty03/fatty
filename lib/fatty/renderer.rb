@@ -130,6 +130,37 @@ module Fatty
       ]
     end
 
+    def renderable_text(value)
+      renderable_parts(value).map do |part|
+        if part.is_a?(Hash) && part.key?(:text)
+          part[:text].to_s
+        else
+          part.to_s
+        end
+      end.join
+    end
+
+    def renderable_segments(value, role:)
+      renderable_parts(value).map do |part|
+        if part.is_a?(Hash) && part.key?(:text)
+          {
+            text: part[:text].to_s,
+            role: part[:role] || role,
+            style: part[:style],
+          }.compact
+        else
+          {
+            text: part.to_s,
+            role: role,
+          }
+        end
+      end
+    end
+
+    def renderable_parts(value)
+      value.is_a?(Array) ? value : [value]
+    end
+
     def input_field_state(field)
       [
         field.prompt_text.to_s,

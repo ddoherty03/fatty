@@ -14,25 +14,28 @@ module Fatty
         return unless spec
 
         msg = text.to_s.tr("\r\n", " ")
-        msg = msg.ljust(width)[0, width]
+        msg = Fatty::Ansi.truncate_visible(msg, width)
+        visible = Fatty::Ansi.visible_length(msg)
+        pad = width - visible
         sgr = sgr_for_spec(spec)
-        write_ansi("#{CSI}#{row + 1};#{col + 1}H", sgr, msg, reset)
+        padding = pad.positive? ? " " * pad : ""
+        write_ansi("#{CSI}#{row + 1};#{col + 1}H", sgr, msg, sgr, padding, reset)
       end
 
       def render_segments_line(row:, col:, width:, segments:, palette:, fill_role: :output)
         rendered = +""
         visible = 0
-
         segments.each do |seg|
           spec = palette&.[](seg[:role])
           next unless spec
 
-          text = seg[:text].to_s
           remaining = width - visible
           break if remaining <= 0
 
-          text = text[0, remaining]
-          visible += text.length
+          text = Fatty::Ansi.truncate_visible(seg[:text].to_s, remaining)
+          next if text.empty?
+
+          visible += Fatty::Ansi.visible_length(text)
 
           sgr =
             if seg[:style]
@@ -50,13 +53,7 @@ module Fatty
           rendered << sgr_for_spec(spec) if spec
           rendered << (" " * (width - visible))
         end
-
-        write_ansi(
-          "#{CSI}#{row + 1};#{col + 1}H",
-          rendered,
-          reset,
-        )
-        nil
+        write_ansi("#{CSI}#{row + 1};#{col + 1}H", rendered, reset)
       end
 
       def write_ansi(*parts)

@@ -75,11 +75,27 @@ module Fatty
       attr_reader :current
 
       def append_indicator(indicator)
-        ch = indicator.to_s
-        return if ch.empty?
+        return if indicator.nil?
 
-        @trail << ch
+        item =
+          if indicator.is_a?(Hash) && indicator.key?(:text)
+            indicator
+          else
+            indicator.to_s
+          end
+
+        return if renderable_indicator_text(item).empty?
+
+        @trail << item
         trim_trail if @trail_max && @trail_max > 0
+      end
+
+      def renderable_indicator_text(item)
+        if item.is_a?(Hash) && item.key?(:text)
+          item[:text].to_s
+        else
+          item.to_s
+        end
       end
 
       def refresh
@@ -129,14 +145,12 @@ module Fatty
             "#{label} [#{current}]"
           end
 
-        extra = suffix.to_s
-        trailer = extra.empty? ? "" : "  #{extra}"
-
+        trailer = suffix.to_s.empty? ? "" : "  #{suffix}"
         return "#{base}#{trailer}" if @trail.empty?
 
         limit = trail_limit(base, trailer)
-        trail = @trail.last(limit).join
-        "#{base}  #{trail}#{trailer}"
+        trail = limited_trail(limit)
+        [base, "  ", *trail, trailer]
       end
 
       def trail_limit(prefix, suffix = "")
@@ -157,14 +171,14 @@ module Fatty
         selected = []
 
         @trail.reverse_each do |item|
-          width = Fatty::Ansi.visible_length(item)
+          width = visible_length(item)
           break if used + width > limit
 
           selected.unshift(item)
           used += width
         end
 
-        selected.join
+        selected
       end
 
       def trim_trail
@@ -172,7 +186,7 @@ module Fatty
         selected = []
 
         @trail.reverse_each do |item|
-          width = Fatty::Ansi.visible_length(item)
+          width = visible_length(item)
           break if used + width > @trail_max
 
           selected.unshift(item)
@@ -182,8 +196,12 @@ module Fatty
         @trail = selected
       end
 
-      def visible_length(text)
-        Fatty::Ansi.visible_length(text)
+      def visible_length(value)
+        if value.is_a?(Hash) && value.key?(:text)
+          Fatty::Ansi.visible_length(value[:text].to_s)
+        else
+          Fatty::Ansi.visible_length(value.to_s)
+        end
       end
 
       def render_bar_text(suffix: nil, mode: :solid)

@@ -14,24 +14,39 @@ module Fatty
       end
 
       def render_status(text, role: :status_info)
-        state = [text.to_s, role]
+        state = [renderable_text(text), role]
         return if state == @last_status_state
 
         @last_status_state = state
 
         win = context.status_win
+        return unless win
+
         cols = win.respond_to?(:maxx) ? win.maxx : screen.cols
-        attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
-        line = status_line(text, width: cols)
-
+        base_attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
+        win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
         win.erase
-        win.attrset(attr)
         win.setpos(0, 0)
-        win.addstr(Fatty::Ansi.strip(line))
-        win.bkgdset(attr) if win.respond_to?(:bkgdset)
 
+        remaining = cols
+        renderable_segments(text, role: role).each do |segment|
+          break if remaining <= 0
+
+          seg_text = Fatty::Ansi.strip(segment[:text].to_s).tr("\r\n", " ")
+          seg_text = Fatty::Ansi.truncate_visible(seg_text, remaining)
+          next if seg_text.empty?
+
+          attr = pair_attr(segment[:role], fallback: base_attr)
+          win.attrset(attr)
+          win.addstr(seg_text)
+
+          remaining -= Fatty::Ansi.visible_length(seg_text)
+        end
+        if remaining.positive?
+          win.attrset(base_attr)
+          win.addstr(" " * remaining)
+        end
         stage_window(win)
-        nil
       end
 
       def render_output(...)

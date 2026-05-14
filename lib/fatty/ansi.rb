@@ -29,11 +29,11 @@ module Fatty
     CSI = "#{ESC}["
     COMBINING_MARK_RE = /\p{M}/
 
-    ANSI_ESCAPE = /
+    ANSI_ESCAPE = %r{
       \e\[ [0-9;?]* [A-Za-z]   | # CSI sequences
       \e\] .*? (?:\a|\e\\)     | # OSC sequences
       \e[@-Z\\-_]                # single-char escapes
-    /x
+    }x
 
     Style = Struct.new(
       :fg,
@@ -332,6 +332,29 @@ module Fatty
         out << "\e[0m" unless out.empty?
       end
 
+      out
+    end
+
+    def self.truncate_visible(text, max_width)
+      max_width = max_width.to_i
+      return "" if max_width <= 0
+
+      out = +""
+      visible = 0
+      scanner = StringScanner.new(text.to_s)
+
+      until scanner.eos? || visible >= max_width
+        if (esc = scanner.scan(ANSI_ESCAPE))
+          out << esc
+        else
+          ch = scanner.getch
+          width = visible_length(ch)
+          break if visible + width > max_width
+
+          out << ch
+          visible += width
+        end
+      end
       out
     end
 
