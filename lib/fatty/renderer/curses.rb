@@ -72,20 +72,36 @@ module Fatty
         nil
       end
 
-      def render_input_field(...)
-        @legacy.render_input_field(...)
-      end
+      def render_input_field(field, role: :input)
+        state = input_field_state(field)
+        return if state == @last_input_state
 
-      def render_pager_field(...)
-        @legacy.render_pager_field(...)
-      end
+        @last_input_state = state
 
-      def render_popup(...)
-        @legacy.render_popup(...)
-      end
+        win = context.input_win
+        return unless win
 
-      def render_prompt_popup(...)
-        @legacy.render_prompt_popup(...)
+        width = win.respond_to?(:maxx) ? win.maxx : screen.cols
+        base_attr = pair_attr(role, fallback: ::Curses::A_NORMAL)
+        region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
+        suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
+
+        win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
+        win.erase
+        win.attrset(base_attr)
+
+        render_field_into(
+          win: win,
+          field: field,
+          row: 0,
+          width: width,
+          base_attr: base_attr,
+          region_attr: region_attr,
+          suggestion_attr: suggestion_attr,
+        )
+        cursor_x = field.cursor_x.to_i.clamp(0, [width - 1, 0].max)
+        win.setpos(0, cursor_x)
+        stage_window(win)
       end
 
       def render_alert(alert)
@@ -351,6 +367,50 @@ module Fatty
       def stage_window(win)
         win.noutrefresh
         @frame_touched = true
+      end
+
+      def render_field_into(win:, field:, row:, width:, base_attr:, region_attr:, suggestion_attr:)
+        buf = field.buffer
+        region =
+          if buf.respond_to?(:region_range)
+            buf.region_range
+          end
+
+        win.attrset(base_attr)
+        win.setpos(row, 0)
+        win.addstr(" " * width)
+        win.setpos(row, 0)
+        win.addstr(field.prompt_text.to_s)
+
+        text = buf.text.to_s
+
+        if region && region.begin < region.end
+          max = text.length
+          s = region.begin.clamp(0, max)
+          e = region.end.clamp(0, max)
+
+          before = text[0...s].to_s
+          mid    = text[s...e].to_s
+          after  = text[e..].to_s
+
+          win.attrset(base_attr)
+          win.addstr(before)
+
+          win.attrset(region_attr)
+          win.addstr(mid)
+
+          win.attrset(base_attr)
+          win.addstr(after)
+        else
+          win.attrset(base_attr)
+          win.addstr(text)
+        end
+
+        suffix = buf.virtual_suffix.to_s
+        unless suffix.empty?
+          win.attrset(base_attr)
+          win.attron(suggestion_attr) { win.addstr(suffix) }
+        end
       end
 
       def draw_popup_frame(win, width:, height:)

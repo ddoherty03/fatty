@@ -329,56 +329,56 @@ module Fatty
       #   nil
       # end
 
-      def render_input_field(field)
-        if context.truecolor
-          render_truecolor_input_field(field)
-        else
-          render_curses_input_field(field)
-        end
-      end
+      # def render_input_field(field)
+      #   if context.truecolor
+      #     render_truecolor_input_field(field)
+      #   else
+      #     render_curses_input_field(field)
+      #   end
+      # end
 
-      def render_truecolor_input_field(field)
-        queue_ansi_segments_line(
-          row: @screen.input_rect.row,
-          col: @screen.input_rect.col,
-          width: @screen.input_rect.cols,
-          segments: field_segments(
-            field,
-            base_role: :input,
-            suggestion_role: :input_suggestion,
-            region_role: :region,
-          ),
-          fill_role: :input,
-        )
-        nil
-      end
+      # def render_truecolor_input_field(field)
+      #   queue_ansi_segments_line(
+      #     row: @screen.input_rect.row,
+      #     col: @screen.input_rect.col,
+      #     width: @screen.input_rect.cols,
+      #     segments: field_segments(
+      #       field,
+      #       base_role: :input,
+      #       suggestion_role: :input_suggestion,
+      #       region_role: :region,
+      #     ),
+      #     fill_role: :input,
+      #   )
+      #   nil
+      # end
 
-      def render_curses_input_field(field)
-        win = context.input_win
-        width = win.respond_to?(:maxx) ? win.maxx : @screen.cols
+      # def render_curses_input_field(field)
+      #   win = context.input_win
+      #   width = win.respond_to?(:maxx) ? win.maxx : @screen.cols
 
-        base_attr = pair_attr(:input, fallback: ::Curses::A_NORMAL)
-        region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
-        suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
+      #   base_attr = pair_attr(:input, fallback: ::Curses::A_NORMAL)
+      #   region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
+      #   suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
 
-        win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
-        win.erase
-        win.attrset(base_attr)
+      #   win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
+      #   win.erase
+      #   win.attrset(base_attr)
 
-        render_field_into(
-          win: win,
-          field: field,
-          row: 0,
-          width: width,
-          base_attr: base_attr,
-          region_attr: region_attr,
-          suggestion_attr: suggestion_attr,
-        )
-        cursor_x = field.cursor_x.to_i.clamp(0, [width - 1, 0].max)
-        win.setpos(0, cursor_x)
-        stage_window(win)
-        nil
-      end
+      #   render_field_into(
+      #     win: win,
+      #     field: field,
+      #     row: 0,
+      #     width: width,
+      #     base_attr: base_attr,
+      #     region_attr: region_attr,
+      #     suggestion_attr: suggestion_attr,
+      #   )
+      #   cursor_x = field.cursor_x.to_i.clamp(0, [width - 1, 0].max)
+      #   win.setpos(0, cursor_x)
+      #   stage_window(win)
+      #   nil
+      # end
 
       # Render an InputField-like status line inside the output window.
       #
@@ -757,49 +757,49 @@ module Fatty
         nil
       end
 
-      def render_field_into(win:, field:, row:, width:, base_attr:, region_attr:, suggestion_attr:)
-        buf = field.buffer
-        region =
-          if buf.respond_to?(:region_range)
-            buf.region_range
-          end
+      # def render_field_into(win:, field:, row:, width:, base_attr:, region_attr:, suggestion_attr:)
+      #   buf = field.buffer
+      #   region =
+      #     if buf.respond_to?(:region_range)
+      #       buf.region_range
+      #     end
 
-        win.attrset(base_attr)
-        win.setpos(row, 0)
-        win.addstr(" " * width)
-        win.setpos(row, 0)
-        win.addstr(field.prompt_text.to_s)
+      #   win.attrset(base_attr)
+      #   win.setpos(row, 0)
+      #   win.addstr(" " * width)
+      #   win.setpos(row, 0)
+      #   win.addstr(field.prompt_text.to_s)
 
-        text = buf.text.to_s
+      #   text = buf.text.to_s
 
-        if region && region.begin < region.end
-          max = text.length
-          s = region.begin.clamp(0, max)
-          e = region.end.clamp(0, max)
+      #   if region && region.begin < region.end
+      #     max = text.length
+      #     s = region.begin.clamp(0, max)
+      #     e = region.end.clamp(0, max)
 
-          before = text[0...s].to_s
-          mid    = text[s...e].to_s
-          after  = text[e..].to_s
+      #     before = text[0...s].to_s
+      #     mid    = text[s...e].to_s
+      #     after  = text[e..].to_s
 
-          win.attrset(base_attr)
-          win.addstr(before)
+      #     win.attrset(base_attr)
+      #     win.addstr(before)
 
-          win.attrset(region_attr)
-          win.addstr(mid)
+      #     win.attrset(region_attr)
+      #     win.addstr(mid)
 
-          win.attrset(base_attr)
-          win.addstr(after)
-        else
-          win.attrset(base_attr)
-          win.addstr(text)
-        end
+      #     win.attrset(base_attr)
+      #     win.addstr(after)
+      #   else
+      #     win.attrset(base_attr)
+      #     win.addstr(text)
+      #   end
 
-        suffix = buf.virtual_suffix.to_s
-        unless suffix.empty?
-          win.attrset(base_attr)
-          win.attron(suggestion_attr) { win.addstr(suffix) }
-        end
-      end
+      #   suffix = buf.virtual_suffix.to_s
+      #   unless suffix.empty?
+      #     win.attrset(base_attr)
+      #     win.attron(suggestion_attr) { win.addstr(suffix) }
+      #   end
+      # end
 
       def apply_theme!(theme)
         @palette = context.apply_theme!(theme)
