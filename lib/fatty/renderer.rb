@@ -50,7 +50,6 @@ module Fatty
 
     def screen=(screen)
       @screen = screen
-      @legacy.screen = screen if defined?(@legacy) && @legacy.respond_to?(:screen=)
     end
 
     def apply_theme!(theme)
@@ -98,7 +97,6 @@ module Fatty
       @last_status_state = nil
       @last_pager_field_state = nil
       @last_popup_state = nil
-      @legacy.invalidate! if defined?(@legacy) && @legacy.respond_to?(:invalidate!)
     end
 
     protected

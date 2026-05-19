@@ -7,10 +7,6 @@ module Fatty
 
       def initialize(...)
         super
-        @legacy = Fatty::Curses::Renderer.new(
-          screen: screen,
-          context: context,
-        )
       end
 
       def render_status(text, role: :status_info)

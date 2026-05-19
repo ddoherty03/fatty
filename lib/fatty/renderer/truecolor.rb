@@ -7,10 +7,6 @@ module Fatty
 
       def initialize(...)
         super
-        @legacy = Fatty::Curses::Renderer.new(
-          screen: @screen,
-          context: @context,
-        )
         @ansi_renderer = Fatty::Ansi::Renderer.new
         @pending_ansi_draws = []
       end
