@@ -84,21 +84,23 @@ module Fatty
     # Manipulating History
     ###################################################################################
 
-    def add(text, kind: :command, ctx: nil, stamp: nil)
+    def add(text, kind: :command, ctx: nil, stamp: nil, persist: true)
       text = text.to_s
       return if text.strip.empty?
 
       kind = kind.to_sym
       ctx = normalize_ctx(ctx)
       entry = Entry.new(text: text, kind: kind, ctx: ctx, stamp: stamp)
-      last = @entries.last
-      if last && last.text == text && last.kind == kind
-        reset_cursor_for(kind, ctx: ctx)
-        return text
+
+      @entries.reject! do |old_entry|
+        old_entry.text == text &&
+        old_entry.kind == kind &&
+          old_entry.ctx == ctx
       end
+
       @entries << entry
       truncate!
-      append_to_file(entry)
+      append_to_file(entry) if persist
       reset_cursor_for(kind, ctx: ctx)
       text
     end
@@ -239,7 +241,15 @@ module Fatty
         next if line.empty?
 
         entry = parse_history_line(line)
-        @entries << entry if entry
+        next unless entry
+
+        add(
+          entry.text,
+          kind: entry.kind,
+          ctx: entry.ctx,
+          stamp: entry.stamp,
+          persist: false,
+        )
       end
       truncate!
     end
