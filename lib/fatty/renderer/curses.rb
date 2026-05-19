@@ -280,9 +280,7 @@ module Fatty
         cursor_x = session.field.cursor_x.to_i.clamp(0, [inner_w - 1, 0].max)
         win.setpos(1 + input_row, 1 + cursor_x)
 
-        stage_window(inner)
         stage_window(win)
-        nil
       rescue RuntimeError => e
         raise unless e.message.include?("closed window") ||
                      e.message.include?("already closed window")
