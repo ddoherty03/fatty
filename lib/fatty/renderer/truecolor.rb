@@ -432,34 +432,6 @@ module Fatty
         end
       end
 
-      def field_segments(field, base_role:, suggestion_role: :input_suggestion, region_role: :region)
-        buf = field.buffer
-        text = buf.text.to_s
-        segments = [{ text: field.prompt_text.to_s, role: base_role }]
-
-        region =
-          if buf.respond_to?(:region_range)
-            buf.region_range
-          end
-
-        if region && region.begin < region.end
-          max = text.length
-          s = region.begin.clamp(0, max)
-          e = region.end.clamp(0, max)
-
-          segments << { text: text[0...s].to_s, role: base_role }
-          segments << { text: text[s...e].to_s, role: region_role }
-          segments << { text: text[e..].to_s, role: base_role }
-        else
-          segments << { text: text, role: base_role }
-        end
-
-        suffix = buf.virtual_suffix.to_s
-        segments << { text: suffix, role: suggestion_role } unless suffix.empty?
-
-        segments.reject { |seg| seg[:text].empty? }
-      end
-
       def output_segments(line, ranges:)
         plain = Fatty::Ansi.plain_text(line.to_s)
         base_segments = []
@@ -471,7 +443,6 @@ module Fatty
             style: style,
           }
         end
-
         apply_highlight_ranges_to_segments(base_segments, plain:, ranges:)
       end
 
@@ -517,6 +488,25 @@ module Fatty
 
         out.reject { |seg| seg[:text].empty? }
       end
+    end
+
+    # Restore cursor into the output window at a specific *output-win* row.
+    # `row:` is 0..(screen.output_rect.rows-1), NOT an absolute screen row.
+    def restore_output_cursor(field, row:)
+      cols = @screen.cols
+
+      x = field.cursor_x.to_i
+      x = x.clamp(0, [cols - 1, 0].max)
+
+      row0 = @screen.output_rect.row
+      col0 = @screen.output_rect.col
+      cols = @screen.output_rect.cols
+
+      @pending_ansi_draws << {
+        type: :cursor,
+        row: row0 + row,
+        col: col0 + x.clamp(0, [cols - 1, 0].max),
+      }
     end
 
     def queue_ansi_popup_line(win:, inner_row:, inner_col: 0, width:, text:, role:)

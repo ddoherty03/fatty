@@ -281,6 +281,34 @@ module Fatty
       ranges
     end
 
+    def field_segments(field, base_role:, suggestion_role: :input_suggestion, region_role: :region)
+      buf = field.buffer
+      text = buf.text.to_s
+      segments = [{ text: field.prompt_text.to_s, role: base_role }]
+
+      region =
+        if buf.respond_to?(:region_range)
+          buf.region_range
+        end
+
+      if region && region.begin < region.end
+        max = text.length
+        s = region.begin.clamp(0, max)
+        e = region.end.clamp(0, max)
+
+        segments << { text: text[0...s].to_s, role: base_role }
+        segments << { text: text[s...e].to_s, role: region_role }
+        segments << { text: text[e..].to_s, role: base_role }
+      else
+        segments << { text: text, role: base_role }
+      end
+
+      suffix = buf.virtual_suffix.to_s
+      segments << { text: suffix, role: suggestion_role } unless suffix.empty?
+
+      segments.reject { |seg| seg[:text].empty? }
+    end
+
     def sync_backgrounds!
       nil
     end

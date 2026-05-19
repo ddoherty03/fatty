@@ -95,6 +95,7 @@ module Fatty
           field: field,
           row: 0,
           width: width,
+          base_role: role,
           base_attr: base_attr,
           region_attr: region_attr,
           suggestion_attr: suggestion_attr,
@@ -128,12 +129,59 @@ module Fatty
         stage_window(win)
       end
 
+      # Render an InputField-like status line.
+      #
+      # Used for pager mode ("--More--" etc.). It intentionally does not move
+      # the cursor; ShellSession decides whether to show a cursor in paging
+      # vs input mode.
+      #
+      # Curses uses a derived one-line window to isolate the pager/search field
+      # from output_win scrolling/background effects.
+      #
+      # Truecolor renders the same field as an ANSI overlay at absolute coordinates,
+      # so no derived window is needed there.
+      def render_pager_field(field, row:, role: :pager_status)
+        win = context.output_win
+        return unless win
+
+        cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
+        attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
+
+        field_win = win.derwin(1, cols, row, 0)
+        field_win.bkgdset(attr) if field_win.respond_to?(:bkgdset)
+        field_win.erase
+        field_win.attrset(attr)
+
+        render_field_into(
+          win: field_win,
+          field: field,
+          row: 0,
+          width: cols,
+          base_attr: attr,
+          region_attr: pair_attr(:region, fallback: ::Curses::A_REVERSE),
+          suggestion_attr: pair_attr(:input_suggestion, fallback: attr),
+          base_role: role,
+        )
+
+        field_win.noutrefresh
+        stage_window(win)
+      ensure
+        field_win&.close if field_win&.respond_to?(:close)
+      end
+
+      def render_popup(...)
+        @legacy.render_popup(...)
+      end
+
+      def render_prompt_popup(...)
+        @legacy.render_prompt_popup(...)
+      end
+
       def begin_frame
-        @legacy.begin_frame
       end
 
       def finish_frame
-        @legacy.finish_frame
+        ::Curses.doupdate
       end
 
       def restore_cursor(...)
@@ -264,14 +312,13 @@ module Fatty
         win.attrset(base_attr)
         curses_ranges =
           Array(semantic_ranges).map do |from, to, role|
-          attr =
-            case role
-            when :secondary then hi2_attr
-            else hi_attr
-            end
-
-          [from.to_i, to.to_i, attr]
-        end
+            attr =
+              case role
+              when :secondary then hi2_attr
+              else hi_attr
+              end
+            [from.to_i, to.to_i, attr]
+          end
         plain = Fatty::Ansi.plain_text(line.to_s)
         slices = build_line_slices(plain, ranges: curses_ranges) do |_style|
           base_attr
@@ -369,50 +416,6 @@ module Fatty
         @frame_touched = true
       end
 
-      def render_field_into(win:, field:, row:, width:, base_attr:, region_attr:, suggestion_attr:)
-        buf = field.buffer
-        region =
-          if buf.respond_to?(:region_range)
-            buf.region_range
-          end
-
-        win.attrset(base_attr)
-        win.setpos(row, 0)
-        win.addstr(" " * width)
-        win.setpos(row, 0)
-        win.addstr(field.prompt_text.to_s)
-
-        text = buf.text.to_s
-
-        if region && region.begin < region.end
-          max = text.length
-          s = region.begin.clamp(0, max)
-          e = region.end.clamp(0, max)
-
-          before = text[0...s].to_s
-          mid    = text[s...e].to_s
-          after  = text[e..].to_s
-
-          win.attrset(base_attr)
-          win.addstr(before)
-
-          win.attrset(region_attr)
-          win.addstr(mid)
-
-          win.attrset(base_attr)
-          win.addstr(after)
-        else
-          win.attrset(base_attr)
-          win.addstr(text)
-        end
-
-        suffix = buf.virtual_suffix.to_s
-        unless suffix.empty?
-          win.attrset(base_attr)
-          win.attron(suggestion_attr) { win.addstr(suffix) }
-        end
-      end
-
       def draw_popup_frame(win, width:, height:)
         b = popup_border
         # top
@@ -430,47 +433,41 @@ module Fatty
         win.addstr(b[:bl] + (b[:h] * (width - 2)) + b[:br])
       end
 
-      def render_field_into(win:, field:, row:, width:, base_attr:, region_attr:, suggestion_attr:)
-        buf = field.buffer
-        region =
-          if buf.respond_to?(:region_range)
-            buf.region_range
-          end
+      def render_field_into(win:, field:, row:, width:, base_attr:, region_attr:, suggestion_attr:, base_role: :input)
+        safe_width = [width - 1, 0].max
+        return if safe_width <= 0
 
         win.attrset(base_attr)
         win.setpos(row, 0)
-        win.addstr(" " * width)
+        win.addstr(" " * safe_width)
         win.setpos(row, 0)
-        win.addstr(field.prompt_text.to_s)
 
-        text = Fatty::Ansi.strip(buf.text.to_s)
-        if region && region.begin < region.end
-          max = text.length
-          s = region.begin.clamp(0, max)
-          e = region.end.clamp(0, max)
+        remaining = safe_width
+        field_segments(
+          field,
+          base_role: base_role,
+          suggestion_role: :input_suggestion,
+          region_role: :region,
+        ).each do |segment|
+          break if remaining <= 0
 
-          before = text[0...s].to_s
-          mid    = text[s...e].to_s
-          after  = text[e..].to_s
+          attr =
+            case segment[:role]
+            when :region then region_attr
+            when :input_suggestion then suggestion_attr
+            else base_attr
+            end
 
-          win.attrset(base_attr)
-          win.addstr(before)
+          text = Fatty::Ansi.strip(segment[:text].to_s).tr("\r\n", " ")
+          text = Fatty::Ansi.truncate_visible(text, remaining)
+          next if text.empty?
 
-          win.attrset(region_attr)
-          win.addstr(mid)
-
-          win.attrset(base_attr)
-          win.addstr(after)
-        else
-          win.attrset(base_attr)
+          win.attrset(attr)
           win.addstr(text)
+          remaining -= Fatty::Ansi.visible_length(text)
         end
 
-        suffix = buf.virtual_suffix.to_s
-        unless suffix.empty?
-          win.attrset(base_attr)
-          win.attron(suggestion_attr) { win.addstr(suffix) }
-        end
+        nil
       end
     end
   end

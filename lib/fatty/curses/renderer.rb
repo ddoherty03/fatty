@@ -385,37 +385,37 @@ module Fatty
       # Used for pager mode ("--More--" etc.). It intentionally does not move
       # the cursor; ShellSession decides whether to show a cursor in paging
       # vs input mode.
-      def render_pager_field(field, row:, role: :info)
-        win = context.output_win
-        cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
+      # def render_pager_field(field, row:, role: :info)
+      #   win = context.output_win
+      #   cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
 
-        prompt = field.prompt_text.to_s
-        buf_text = field.buffer.text.to_s
-        text = (prompt + buf_text).tr("\r\n", "")
-        visible = Fatty::Ansi.plain_text(text)
-        line = visible[0, cols].ljust(cols)
+      #   prompt = field.prompt_text.to_s
+      #   buf_text = field.buffer.text.to_s
+      #   text = (prompt + buf_text).tr("\r\n", "")
+      #   visible = Fatty::Ansi.plain_text(text)
+      #   line = visible[0, cols].ljust(cols)
 
-        if context.truecolor
-          row0 = @screen.output_rect.row
-          col0 = @screen.output_rect.col
-          cols = @screen.output_rect.cols
-          queue_ansi_line(
-            row: row0 + row,
-            col: col0,
-            width: cols,
-            text: line[0, cols].ljust(cols),
-            role: role,
-          )
-          return
-        end
+      #   if context.truecolor
+      #     row0 = @screen.output_rect.row
+      #     col0 = @screen.output_rect.col
+      #     cols = @screen.output_rect.cols
+      #     queue_ansi_line(
+      #       row: row0 + row,
+      #       col: col0,
+      #       width: cols,
+      #       text: line[0, cols].ljust(cols),
+      #       role: role,
+      #     )
+      #     return
+      #   end
 
-        attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
-        win.setpos(row, 0)
-        win.attrset(attr)
-        win.addstr(line)
-        stage_window(win)
-        nil
-      end
+      #   attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
+      #   win.setpos(row, 0)
+      #   win.attrset(attr)
+      #   win.addstr(line)
+      #   stage_window(win)
+      #   nil
+      # end
 
       def render_alert(alert)
         state = alert_state(alert)
