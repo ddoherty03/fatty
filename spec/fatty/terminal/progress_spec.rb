@@ -118,12 +118,16 @@ module Fatty
           style: :trail,
         )
 
+        statuses = []
+        allow(terminal).to receive(:set_status) do |value, role:|
+          statuses << value
+        end
         progress.update(current: 1, indicator: "+", render: false)
         progress.update(current: 2, indicator: "-", render: false)
         progress.update(current: 3, indicator: "^", render: false)
         progress.update(current: 4, indicator: ".", render: false)
 
-        expect(terminal).to have_received(:set_status).with(match(/\+\-\^\./), role: anything)
+        expect(statuses.last.join).to match(/\+\-\^\./)
       end
     end
 

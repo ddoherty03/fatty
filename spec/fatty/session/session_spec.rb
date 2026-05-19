@@ -6,7 +6,7 @@ module Fatty
   RSpec.describe Session do
     let(:terminal)  { instance_double(Terminal) }
     let(:screen)    { instance_double(Screen) }
-    let(:renderer)  { instance_double(Curses::Renderer) }
+    let(:renderer)  { instance_double(Renderer::Curses) }
 
     describe "#init" do
       it "returns [self, []] by default" do

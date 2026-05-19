@@ -184,7 +184,7 @@ module Fatty
 
       expect(Fatty::Ansi.plain_text(text)).to eq("ared")
       expect(Fatty::Ansi.visible_length(text)).to eq(4)
-      expect(text).to end_with("\e[0m")
+      expect(text).not_to end_with("\e[0m")
     end
   end
 end
