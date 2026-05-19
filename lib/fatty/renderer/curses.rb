@@ -177,15 +177,21 @@ module Fatty
         @legacy.render_prompt_popup(...)
       end
 
+      def restore_cursor(field)
+        win = context.input_win
+        return unless win
+
+        cols = win.respond_to?(:maxx) ? win.maxx : @screen.input_rect.cols
+        x = field.cursor_x.to_i.clamp(0, [cols - 1, 0].max)
+        win.setpos(0, x)
+        stage_window(win)
+      end
+
       def begin_frame
       end
 
       def finish_frame
         ::Curses.doupdate
-      end
-
-      def restore_cursor(...)
-        @legacy.restore_cursor(...)
       end
 
       # Restore cursor into the output window at a specific *output-win* row.
