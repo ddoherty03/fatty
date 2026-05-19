@@ -169,12 +169,191 @@ module Fatty
         field_win&.close if field_win&.respond_to?(:close)
       end
 
-      def render_popup(...)
-        @legacy.render_popup(...)
+      def render_popup(session:)
+        state = [
+          popup_state(session),
+          session.title.to_s,
+          session.message.to_s,
+          screen.rows,
+          screen.cols,
+        ]
+        return if state == @last_popup_state
+
+        @last_popup_state = state
+
+        win = session.win
+        return unless win
+
+        width = win.maxx
+        height = win.maxy
+        return if width < 2 || height < 2
+
+        win.erase
+
+        frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
+        popup_attr = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
+        input_attr = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
+        selected_attr = pair_attr(:popup_selection, fallback: ::Curses::A_REVERSE)
+        counts_attr = pair_attr(:popup_counts, fallback: popup_attr)
+
+        win.attrset(frame_attr)
+        draw_popup_frame(win, width: width, height: height)
+
+        if session.title && !session.title.empty?
+          title = Fatty::Ansi.strip(session.title.to_s).tr("\r\n", " ")
+          title = Fatty::Ansi.truncate_visible(" #{title} ", [width - 4, 0].max)
+
+          unless title.empty?
+            win.setpos(0, 2)
+            win.addstr(title)
+          end
+        end
+
+        inner_h = height - 2
+        inner_w = width - 2
+        return if inner_h <= 0 || inner_w <= 0
+
+        inner = win.derwin(inner_h, inner_w, 1, 1)
+        inner.bkgdset(popup_attr) if inner.respond_to?(:bkgdset)
+        inner.erase
+
+        row = 0
+
+        if session.message && !session.message.empty?
+          message = Fatty::Ansi.strip(session.message.to_s).tr("\r\n", " ")
+          message = Fatty::Ansi.truncate_visible(message, inner_w)
+
+          inner.attrset(popup_attr)
+          inner.setpos(row, 0)
+          inner.addstr(message.ljust(inner_w))
+          row += 1
+        end
+
+        counts_present = !!session.counts
+        input_row = inner_h - 1
+        counts_row = counts_present ? input_row - 1 : nil
+
+        list_row = row
+        list_h = input_row - list_row
+        list_h -= 1 if counts_present
+        list_h = [list_h, 0].max
+
+        items = session.displayed
+        selected = session.selected
+        start = session.scroll_start(list_h: list_h)
+
+        (0...list_h).each do |offset|
+          item_index = start + offset
+          item_selected = item_index == selected
+          attr = item_selected ? selected_attr : popup_attr
+
+          line = ""
+          if item_index < items.length
+            item = items[item_index]
+            gutter = session.gutter_for(item: item, selected: item_selected)
+            text = Fatty::Ansi.strip(item.to_s).tr("\r\n", " ")
+            available = [inner_w - Fatty::Ansi.visible_length(gutter), 0].max
+            text = Fatty::Ansi.truncate_visible(text, available)
+            line = Fatty::Ansi.truncate_visible(gutter + text, inner_w)
+          end
+
+          inner.attrset(attr)
+          inner.setpos(list_row + offset, 0)
+          inner.addstr(line.ljust(inner_w))
+        end
+
+        if counts_present && counts_row && counts_row >= 0
+          counts_text = Fatty::Ansi.truncate_visible(popup_counts_text(session), inner_w)
+
+          inner.attrset(counts_attr)
+          inner.setpos(counts_row, 0)
+          inner.addstr(counts_text.ljust(inner_w))
+        end
+
+        render_field_into(
+          win: inner,
+          field: session.field,
+          row: input_row,
+          width: inner_w,
+          base_role: :popup_input,
+          base_attr: input_attr,
+          region_attr: pair_attr(:region, fallback: ::Curses::A_REVERSE),
+          suggestion_attr: pair_attr(:input_suggestion, fallback: input_attr),
+        )
+
+        cursor_x = session.field.cursor_x.to_i.clamp(0, [inner_w - 1, 0].max)
+        win.setpos(1 + input_row, 1 + cursor_x)
+
+        stage_window(inner)
+        stage_window(win)
+        nil
+      rescue RuntimeError => e
+        raise unless e.message.include?("closed window") ||
+                     e.message.include?("already closed window")
+
+        nil
+      ensure
+        inner&.close if inner&.respond_to?(:close)
       end
 
-      def render_prompt_popup(...)
-        @legacy.render_prompt_popup(...)
+      def render_prompt_popup(session:)
+        win = session.win
+        return unless win
+
+        width = win.maxx
+        height = win.maxy
+
+        win.erase
+
+        frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
+        popup_attr = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
+        input_attr = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
+
+        win.attrset(frame_attr)
+        draw_popup_frame(win, width: width, height: height)
+
+        if session.title && !session.title.empty?
+          win.setpos(0, 2)
+          win.addstr(" #{Fatty::Ansi.strip(session.title)} ")
+        end
+
+        inner_h = height - 2
+        inner_w = width - 2
+        return if inner_h <= 0 || inner_w <= 0
+
+        inner = win.derwin(inner_h, inner_w, 1, 1)
+        inner.bkgdset(popup_attr) if inner.respond_to?(:bkgdset)
+        inner.erase
+        inner.attrset(popup_attr)
+
+        input_row = inner_h - 1
+
+        if session.message && !session.message.empty?
+          message = Fatty::Ansi.strip(session.message.to_s).tr("\r\n", " ")
+          message = Fatty::Ansi.truncate_visible(message, inner_w)
+
+          inner.setpos(0, 0)
+          inner.addstr(message.ljust(inner_w))
+        end
+
+        render_field_into(
+          win: inner,
+          field: session.field,
+          row: input_row,
+          width: inner_w,
+          base_role: :popup_input,
+          base_attr: input_attr,
+          region_attr: pair_attr(:region, fallback: ::Curses::A_REVERSE),
+          suggestion_attr: pair_attr(:input_suggestion, fallback: input_attr),
+        )
+
+        cursor_x = session.field.cursor_x.to_i.clamp(0, [inner_w - 1, 0].max)
+        win.setpos(1 + input_row, 1 + cursor_x)
+
+        stage_window(inner)
+        stage_window(win)
+      ensure
+        inner&.close if inner&.respond_to?(:close)
       end
 
       def restore_cursor(field)

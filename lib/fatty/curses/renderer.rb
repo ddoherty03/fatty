@@ -638,124 +638,124 @@ module Fatty
         nil
       end
 
-      def render_prompt_popup(session:)
-        win = session.win
-        return unless win
+      # def render_prompt_popup(session:)
+      #   win = session.win
+      #   return unless win
 
-        begin
-          width = win.maxx
-          height = win.maxy
+      #   begin
+      #     width = win.maxx
+      #     height = win.maxy
 
-          win.erase
+      #     win.erase
 
-          frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
-          win.attron(frame_attr) do
-          draw_popup_frame(win, width: width, height: height)
-        end
+      #     frame_attr = pair_attr(:popup_frame, fallback: ::Curses::A_NORMAL)
+      #     win.attron(frame_attr) do
+      #     draw_popup_frame(win, width: width, height: height)
+      #   end
 
-          inner_h = height - 2
-          inner_w = width - 2
-          return if inner_h <= 0 || inner_w <= 0
+      #     inner_h = height - 2
+      #     inner_w = width - 2
+      #     return if inner_h <= 0 || inner_w <= 0
 
-          inner = win.derwin(inner_h, inner_w, 1, 1)
-          inner.erase
+      #     inner = win.derwin(inner_h, inner_w, 1, 1)
+      #     inner.erase
 
-          if session.title
-            win.setpos(0, 2)
-            win.addstr(" #{session.title} ")
-          end
+      #     if session.title
+      #       win.setpos(0, 2)
+      #       win.addstr(" #{session.title} ")
+      #     end
 
-          text_attr = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
-          input_attr = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
+      #     text_attr = pair_attr(:popup, fallback: ::Curses::A_NORMAL)
+      #     input_attr = pair_attr(:popup_input, fallback: ::Curses::A_REVERSE)
 
-          row = 0
+      #     row = 0
 
-          if session.message && !session.message.empty?
-            message_row = row
+      #     if session.message && !session.message.empty?
+      #       message_row = row
 
-            inner.attron(text_attr) do
-              inner.setpos(message_row, 0)
+      #       inner.attron(text_attr) do
+      #         inner.setpos(message_row, 0)
 
-              line = session.message.to_s[0, inner_w]
-              inner.addstr(line.ljust(inner_w))
+      #         line = session.message.to_s[0, inner_w]
+      #         inner.addstr(line.ljust(inner_w))
 
-              if context.truecolor
-                queue_ansi_popup_line(
-                  win: win,
-                  inner_row: message_row,
-                  width: inner_w,
-                  text: line,
-                  role: :popup,
-                )
-              end
-            end
+      #         if context.truecolor
+      #           queue_ansi_popup_line(
+      #             win: win,
+      #             inner_row: message_row,
+      #             width: inner_w,
+      #             text: line,
+      #             role: :popup,
+      #           )
+      #         end
+      #       end
 
-            row += 1
-          end
+      #       row += 1
+      #     end
 
-          base_attr = pair_attr(:popup_input, fallback: ::Curses::A_NORMAL)
-          region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
-          suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
-          input_row = row
+      #     base_attr = pair_attr(:popup_input, fallback: ::Curses::A_NORMAL)
+      #     region_attr = pair_attr(:region, fallback: ::Curses::A_REVERSE)
+      #     suggestion_attr = pair_attr(:input_suggestion, fallback: base_attr)
+      #     input_row = row
 
-          render_field_into(
-            win: inner,
-            field: session.field,
-            row: input_row,
-            width: inner_w,
-            base_attr: input_attr,
-            region_attr: region_attr,
-            suggestion_attr: suggestion_attr,
-          )
+      #     render_field_into(
+      #       win: inner,
+      #       field: session.field,
+      #       row: input_row,
+      #       width: inner_w,
+      #       base_attr: input_attr,
+      #       region_attr: region_attr,
+      #       suggestion_attr: suggestion_attr,
+      #     )
 
-          if context.truecolor
-            row0, col0 = window_origin(win)
+      #     if context.truecolor
+      #       row0, col0 = window_origin(win)
 
-            if row0 && col0
-              queue_ansi_segments_line(
-                row: row0 + 1 + input_row,
-                col: col0 + 1,
-                width: inner_w,
-                segments: field_segments(
-                  session.field,
-                  base_role: :popup_input,
-                  suggestion_role: :input_suggestion,
-                  region_role: :region,
-                ),
-                fill_role: :popup_input,
-              )
-            end
-          end
+      #       if row0 && col0
+      #         queue_ansi_segments_line(
+      #           row: row0 + 1 + input_row,
+      #           col: col0 + 1,
+      #           width: inner_w,
+      #           segments: field_segments(
+      #             session.field,
+      #             base_role: :popup_input,
+      #             suggestion_role: :input_suggestion,
+      #             region_role: :region,
+      #           ),
+      #           fill_role: :popup_input,
+      #         )
+      #       end
+      #     end
 
-          cursor_in_inner = session.field.cursor_x.clamp(0, [inner_w - 1, 0].max)
+      #     cursor_in_inner = session.field.cursor_x.clamp(0, [inner_w - 1, 0].max)
 
-          queue_ansi_popup_frame(win: win, width: width, height: height)
+      #     queue_ansi_popup_frame(win: win, width: width, height: height)
 
-          if context.truecolor
-            row0, col0 = window_origin(win)
+      #     if context.truecolor
+      #       row0, col0 = window_origin(win)
 
-            if row0 && col0
-              @pending_ansi_draws << {
-                type: :cursor,
-                row: row0 + 1 + input_row,
-                col: col0 + 1 + cursor_in_inner,
-              }
+      #       if row0 && col0
+      #         @pending_ansi_draws << {
+      #           type: :cursor,
+      #           row: row0 + 1 + input_row,
+      #           col: col0 + 1 + cursor_in_inner,
+      #         }
 
-              @frame_touched = true
-            end
-          else
-            win.setpos(1 + input_row, 1 + cursor_in_inner)
-            stage_window(inner)
-            stage_window(win)
-          end
-        rescue RuntimeError => e
-          raise unless e.message.include?("closed window") || e.message.include?("already closed window")
+      #         @frame_touched = true
+      #       end
+      #     else
+      #       win.setpos(1 + input_row, 1 + cursor_in_inner)
+      #       stage_window(inner)
+      #       stage_window(win)
+      #     end
+      #   rescue RuntimeError => e
+      #     raise unless e.message.include?("closed window") || e.message.include?("already closed window")
 
-          nil
-        end
+      #     nil
+      #   end
 
-        nil
-      end
+      #   nil
+      # end
 
       # def render_field_into(win:, field:, row:, width:, base_attr:, region_attr:, suggestion_attr:)
       #   buf = field.buffer
