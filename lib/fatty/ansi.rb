@@ -313,28 +313,6 @@ module Fatty
       !ch.match?(COMBINING_MARK_RE)
     end
 
-    def self.truncate_visible(str, max)
-      remaining = max.to_i
-      out = +""
-
-      if remaining.positive?
-        segment(str).each do |text, style|
-          break unless remaining.positive?
-
-          chunk = text.each_char.take(remaining).join
-          unless chunk.empty?
-            out << sgr_for(style)
-            out << chunk
-            remaining -= chunk.length
-          end
-        end
-
-        out << "\e[0m" unless out.empty?
-      end
-
-      out
-    end
-
     def self.truncate_visible(text, max_width)
       max_width = max_width.to_i
       return "" if max_width <= 0
