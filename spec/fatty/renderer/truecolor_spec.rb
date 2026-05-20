@@ -62,5 +62,25 @@ module Fatty
       ensure
         $stdout = original_stdout
     end
+
+    it "clamps restored input cursor position to the input rect width" do
+      field = instance_double(InputField, cursor_x: 99)
+
+      renderer.begin_frame
+      renderer.restore_cursor(field)
+
+      out = StringIO.new
+      original_stdout = $stdout
+      $stdout = out
+
+      renderer.finish_frame
+
+      row = screen.input_rect.row + 1
+      col = screen.input_rect.col + screen.input_rect.cols
+
+      expect(out.string).to include("\e[#{row};#{col}H")
+      ensure
+        $stdout = original_stdout
+    end
   end
 end

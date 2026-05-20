@@ -186,5 +186,56 @@ module Fatty
       expect(Fatty::Ansi.visible_length(text)).to eq(4)
       expect(text).not_to end_with("\e[0m")
     end
+
+    describe ".strip" do
+      it "removes CSI, OSC, and single-character ANSI escapes" do
+        text = "\e[31mred\e[0m \e]0;title\aX"
+
+        expect(Ansi.strip(text)).to eq("red X")
+      end
+    end
+
+    describe ".plain_text" do
+      it "returns text without SGR styling" do
+        text = "a\e[31mred\e[0m b"
+
+        expect(Ansi.plain_text(text)).to eq("ared b")
+      end
+    end
+
+    describe ".visible_length" do
+      it "does not count ANSI escapes" do
+        expect(Ansi.visible_length("\e[31mred\e[0m")).to eq(3)
+      end
+
+      it "does not count combining marks as extra width" do
+        expect(Ansi.visible_length("e\u0301")).to eq(1)
+      end
+    end
+
+    describe ".truncate_visible" do
+      it "truncates by visible characters while preserving existing ANSI escapes" do
+        text = "a\e[31mred\e[0m-blue"
+
+        expect(Ansi.truncate_visible(text, 4)).to eq("a\e[31mred")
+      end
+
+      it "does not synthesize a trailing reset code" do
+        text = "a\e[31mred\e[0m-blue"
+
+        expect(Ansi.truncate_visible(text, 4)).not_to end_with("\e[0m")
+      end
+
+      it "keeps reset codes that occur before the visible limit" do
+        text = "\e[31mred\e[0m-blue"
+
+        expect(Ansi.truncate_visible(text, 4)).to eq("\e[31mred\e[0m-")
+      end
+
+      it "returns an empty string for zero or negative widths" do
+        expect(Ansi.truncate_visible("\e[31mred\e[0m", 0)).to eq("")
+        expect(Ansi.truncate_visible("\e[31mred\e[0m", -1)).to eq("")
+      end
+    end
   end
 end
