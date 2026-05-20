@@ -229,6 +229,59 @@ module Fatty
         expect(f.buffer.text).to eq("git status")
         expect(f.autosuggestion_visible?).to be(false)
       end
+
+      it "moves an exact duplicate to the newest position" do
+        hist.add("one")
+        hist.add("two")
+        hist.add("one")
+
+        expect(hist.entries.map(&:text)).to eq(["two", "one"])
+      end
+
+      it "dedupes only entries with the same text, kind, and ctx" do
+        hist.add("same", kind: :command, ctx: { pwd: "/a" })
+        hist.add("same", kind: :search_string, ctx: { pwd: "/a" })
+        hist.add("same", kind: :command, ctx: { pwd: "/b" })
+        hist.add("same", kind: :command, ctx: { pwd: "/a" })
+
+        expect(hist.entries.map { |entry| [entry.text, entry.kind, entry.ctx] })
+          .to eq(
+            [
+              ["same", :search_string, { "pwd" => "/a" }],
+              ["same", :command, { "pwd" => "/b" }],
+              ["same", :command, { "pwd" => "/a" }],
+            ],
+          )
+      end
+
+      it "dedupes loaded history while keeping the newest occurrence" do
+        Dir.mktmpdir do |dir|
+          path = File.join(dir, "hist")
+          rows = [
+            Fatty::History::Entry.new(text: "one", kind: :command, ctx: { "pwd" => "/a" }).to_h,
+            Fatty::History::Entry.new(text: "two", kind: :command, ctx: { "pwd" => "/a" }).to_h,
+            Fatty::History::Entry.new(text: "one", kind: :command, ctx: { "pwd" => "/a" }).to_h,
+          ]
+
+          File.write(path, rows.map { |row| JSON.generate(row) }.join("\n") + "\n")
+
+          h = History.new(path: path)
+
+          expect(h.entries.map(&:text)).to eq(["two", "one"])
+        end
+      end
+
+      it "does not append to the history file while loading" do
+        Dir.mktmpdir do |dir|
+          path = File.join(dir, "hist")
+          original = "one\ntwo\n"
+          File.write(path, original)
+
+          History.new(path: path)
+
+          expect(File.read(path)).to eq(original)
+        end
+      end
     end
 
     describe "#entries_for" do
