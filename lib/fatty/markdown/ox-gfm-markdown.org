@@ -1,7 +1,36 @@
 #+TITLE: Markdown Demonstration
 #+OPTIONS: toc:0
 
-* Carnival of Consructs
+* H1 heading should be red on yellow and bold
+
+** H2 heading should be black on pink and bold
+
+*** H3 heading should be magenta on lightyellow and underlined
+
+This paragraph has *strong text*, /emphasized text/, ~inline code~,
+==highlighted text==, and [fatty on github](https://github.com/ddoherty03/fatty).
+
+Autolink: https://github.com/ddoherty03/fat_config
+
+#+begin_quote
+This block quote should have a red quote gutter.
+The quoted text itself can stay normal output for now.
+#+end_quote
+
+#+begin_src ruby
+# This ruby block. Has comments.
+# Two lines, in fact.
+def hello(name)
+  puts "hello #{name}"
+end
+#+end_src
+
+| Feature      | Expected style      |
+|--------------+---------------------|
+| Header cells | black on lightgreen |
+| Body cells   | normal output       |
+
+* Carnival of Constructs
 These are samples of the kinds of constructs the ANSI renderer for =fatty= are
 capable of.
 
@@ -20,6 +49,13 @@ capable of.
    Liberty, and dedicated to the proposition that all men are created equal.
 2. other commands are handled by =/bin/sh=
 3. keybindings are listed below
+
+Some regular text to break things up.
+
+1. Parent ordered item
+   1. Child ordered item
+   2. Another child ordered item
+2. Back to parent ordered item
 
 ** Description Lists
 
@@ -107,8 +143,21 @@ shall not perish from the earth.
 | Feature | Example       |
 |---------+---------------|
 | bold    | *bold cell*   |
-| code    | `code cell`   |
+| code    | ~code cell~   |
 | strike  | +strike cell+ |
+
+** Horizontal Rule
+This should be a horizontal rule, but YMMV.
+
+-----
+
+** Forced Line Break
+
+This line has a forced line break\\
+and this should appear on the next line.
+
+This line has a forced line break <br>
+and this should appear on the next line.
 
 ** Fenced code with various languages
 
@@ -320,4 +369,10 @@ SELECT a
 FROM fib
 ORDER BY n DESC
 LIMIT 1;
+#+end_src
+
+*** Nonsense Language
+
+#+begin_src madeuplang
+this should still render as plain text
 #+end_src
