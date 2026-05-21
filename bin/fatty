@@ -207,7 +207,11 @@ on_accept_proc = lambda do |line, env|
   when "keytest"
     return [[:terminal, :push_modal, Fatty::KeyTestSession.new(owner: session)], [:send, :alert, :clear, {}]]
   when 'markdown'
-    file = args.first || File.expand_path("../lib/fatty/markdown/markdown.md", __dir__)
+    file = args.first || File.expand_path("../lib/fatty/markdown/native-markdown.md", __dir__)
+    text = File.read(File.expand_path(file))
+    env.markdown(text)
+  when 'markdown_org'
+    file = File.expand_path("../lib/fatty/markdown/ox-gfm-markdown.md", __dir__)
     text = File.read(File.expand_path(file))
     env.markdown(text)
   when 'help'
@@ -247,6 +251,7 @@ builtins = %w[
   good
   keytest
   markdown
+  markdown_org
   menu
   oops
   progress
