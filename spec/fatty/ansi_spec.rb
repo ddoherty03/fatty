@@ -46,6 +46,15 @@ module Fatty
       expect(st2.bg).to be_nil
     end
 
+    it "segments truecolor foreground and background SGR" do
+      segments = Ansi.segment("\e[38;2;255;0;0;48;2;255;255;0mhi\e[0m")
+      text, style = segments.first
+
+      expect(text).to eq("hi")
+      expect(style.fg).to eq([255, 0, 0])
+      expect(style.bg).to eq([255, 255, 0])
+    end
+
     it "applies background 16-color" do
       segments = segs("x\e[44mbluebg\e[0my")
       expect(segments.map { |s| text_of(s) }).to eq(["x", "bluebg", "y"])

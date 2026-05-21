@@ -220,6 +220,8 @@ module Fatty
           ::Curses.use_default_colors if ::Curses.respond_to?(:use_default_colors)
 
           palette.each_value do |entry|
+            next unless entry[:pair]
+
             ::Curses.init_pair(entry[:pair], entry[:fg], entry[:bg])
           end
         end

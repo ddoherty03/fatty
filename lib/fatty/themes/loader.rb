@@ -56,7 +56,6 @@ module Fatty
           name: normalize_optional_symbol(data[:name]),
           inherit: normalize_optional_symbol(data[:inherit]),
           roles: {},
-          markdown: normalize_markdown(data[:markdown]),
         }
 
         data.each do |key, value|
@@ -65,6 +64,11 @@ module Fatty
 
           out[:roles][normalize_role_name(k)] = normalize_spec(value)
         end
+
+        normalize_markdown_roles(data[:markdown]).each do |role, spec|
+          out[:roles][role] ||= spec
+        end
+
         out
       end
 
@@ -73,11 +77,12 @@ module Fatty
         ROLE_ALIASES.fetch(sym, sym)
       end
 
-      def self.normalize_markdown(value)
+      def self.normalize_markdown_roles(value)
         return {} unless value.is_a?(Hash)
 
-        value.each_with_object({}) do |(k, v), h|
-          h[k.to_sym] = normalize_spec(v)
+        value.each_with_object({}) do |(key, spec), roles|
+          role = :"markdown_#{normalize_role_name(key)}"
+          roles[role] = normalize_spec(spec)
         end
       end
 

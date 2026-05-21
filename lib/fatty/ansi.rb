@@ -247,11 +247,17 @@ module Fatty
           if params[i + 1].to_i == 5 && params[i + 2]
             style.fg = params[i + 2].to_i
             i += 2
+          elsif params[i + 1].to_i == 2 && params[i + 2] && params[i + 3] && params[i + 4]
+            style.fg = [params[i + 2].to_i, params[i + 3].to_i, params[i + 4].to_i]
+            i += 4
           end
         when 48
           if params[i + 1].to_i == 5 && params[i + 2]
             style.bg = params[i + 2].to_i
             i += 2
+          elsif params[i + 1].to_i == 2 && params[i + 2] && params[i + 3] && params[i + 4]
+            style.bg = [params[i + 2].to_i, params[i + 3].to_i, params[i + 4].to_i]
+            i += 4
           end
         end
         i += 1

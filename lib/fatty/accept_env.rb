@@ -21,7 +21,11 @@ module Fatty
     end
 
     def markdown(text)
-      md = Fatty::Markdown.render(text, width: terminal.screen.cols)
+      md = Fatty::Markdown.render(
+        text,
+        width: terminal.screen.cols,
+        palette: terminal.renderer.palette,
+      )
       session.append_output(md)
     end
   end

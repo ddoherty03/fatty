@@ -43,8 +43,9 @@ module Fatty
       # curses color pairs.
       def self.compile(theme_spec, available_colors:)
         palette = {}
+        roles = (theme_spec.keys + Pairs::ROLE_TO_PAIR.keys).compact.uniq
 
-        Pairs::ROLE_TO_PAIR.each do |role, pair_id|
+        roles.each do |role|
           role_spec = theme_spec.fetch(role, DEFAULT_ROLE)
 
           fg_spec = role_spec[:fg] || DEFAULT_ROLE[:fg]
@@ -61,7 +62,7 @@ module Fatty
             bg: bg,
             fg_rgb: fg_rgb,
             bg_rgb: bg_rgb,
-            pair: pair_id,
+            pair: Pairs::ROLE_TO_PAIR[role],
             attrs: attrs,
           }
         end

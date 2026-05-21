@@ -42,6 +42,9 @@ module Fatty
         match_other: { attrs: [:underline] },
         popup_counts: { attrs: [:bold] },
         alert: { attrs: [:bold] },
+        markdown_table_cell: {},
+        markdown_underline: { attrs: [:underline] },
+        markdown_hrule: { attrs: [:dim] },
       }.freeze
 
       ROLE_PARENTS = {
@@ -70,6 +73,26 @@ module Fatty
         error: :warn,
 
         pager_status: :status,
+
+        markdown_h1: :output,
+        markdown_h2: :markdown_h1,
+        markdown_h3: :markdown_h2,
+
+        markdown_code: :output,
+        markdown_code_gutter: :markdown_code,
+
+        markdown_strong: :output,
+        markdown_emphasis: :output,
+
+        markdown_link: :output,
+        markdown_url: :markdown_link,
+
+        markdown_quote_gutter: :output,
+        markdown_highlight: :output,
+        markdown_table_header: :markdown_strong,
+        markdown_table_cell: :output,
+        markdown_underline: :output,
+        markdown_hrule: :output,
       }.freeze
 
       def self.empty_theme
@@ -77,7 +100,6 @@ module Fatty
           name: nil,
           inherit: nil,
           roles: {},
-          markdown: {},
           source: nil,
         }
       end
@@ -158,10 +180,9 @@ module Fatty
         out = parent.dup
 
         out[:roles] = deep_merge_hash(parent[:roles] || {}, child[:roles] || {})
-        out[:markdown] = deep_merge_hash(parent[:markdown] || {}, child[:markdown] || {})
 
         child.each do |key, value|
-          next if [:roles, :markdown].include?(key)
+          next if key == :roles
 
           out[key] = value
         end

@@ -124,27 +124,8 @@ module Fatty
       end
 
       def sgr_for_style(style, fallback_spec:)
-        fg =
-          if style.fg
-            if style.fg.between?(0, 15)
-              Fatty::Color::ANSI_RGB[style.fg]
-            else
-              Fatty::Color.xterm_rgb_for_index(style.fg)
-            end
-          else
-            fallback_spec[:fg_rgb]
-          end
-
-        bg =
-          if style.bg
-            if style.bg.between?(0, 15)
-              Fatty::Color::ANSI_RGB[style.bg]
-            else
-              Fatty::Color.xterm_rgb_for_index(style.bg)
-            end
-          else
-            fallback_spec[:bg_rgb]
-          end
+        fg = rgb_for_style_color(style.fg, fallback: fallback_spec[:fg_rgb])
+        bg = rgb_for_style_color(style.bg, fallback: fallback_spec[:bg_rgb])
 
         codes = []
         codes << "1" if style.bold
@@ -166,6 +147,21 @@ module Fatty
         parts << "#{CSI}48;2;#{bg[0]};#{bg[1]};#{bg[2]}m" if bg
 
         parts.join
+      end
+
+      def rgb_for_style_color(color, fallback:)
+        case color
+        when Array
+          color
+        when Integer
+          if color.between?(0, 15)
+            Fatty::Color::ANSI_RGB[color]
+          else
+            Fatty::Color.xterm_rgb_for_index(color)
+          end
+        else
+          fallback
+        end
       end
     end
   end
