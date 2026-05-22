@@ -2,7 +2,7 @@
 
 module Fatty
   module Env
-    module_function
+    extend self
 
     def detect
       {

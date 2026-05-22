@@ -262,27 +262,39 @@ module Fatty
     desc "Search pager forward"
     action :pager_search_forward do
       regex = consume_search_regex_flag
-      [[:terminal, :push_modal,
-        Fatty::SearchSession.new(direction: :forward, regex: regex, history: @history)]]
+      [[
+        :terminal,
+        :push_modal,
+        Fatty::SearchSession.new(direction: :forward, regex: regex, history: @history)
+      ]]
     end
 
     desc "Search pager backward"
     action :pager_search_backward do
       regex = consume_search_regex_flag
-      [[:terminal, :push_modal,
-        Fatty::SearchSession.new(direction: :backward, regex: regex, history: @history)]]
+      [[
+        :terminal,
+        :push_modal,
+        Fatty::SearchSession.new(direction: :backward, regex: regex, history: @history)
+      ]]
     end
 
     desc "Start incremental pager search forward"
     action :pager_isearch_forward do
-      [[:terminal, :push_modal,
-        Fatty::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)]]
+      [[
+        :terminal,
+        :push_modal,
+        Fatty::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)
+      ]]
     end
 
     desc "Start incremental pager search backward"
     action :pager_isearch_backward do
-      [[:terminal, :push_modal,
-        Fatty::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)]]
+      [[
+        :terminal,
+        :push_modal,
+        Fatty::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)
+      ]]
     end
 
     desc "Repeat pager search forward"
@@ -499,7 +511,7 @@ module Fatty
       append_output("$ #{line}\n", follow: true)
       out, status = Open3.capture2e(line)
       # optional: include exit status line
-      out << "\n[exit #{status.exitstatus}]\n" if status && status.exitstatus && status.exitstatus != 0
+      out << "\n[exit #{status.exitstatus}]\n" if status&.exitstatus && status.exitstatus != 0
       out
     rescue Errno::ENOENT
       "Command not found: #{line}\n"

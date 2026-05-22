@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Fatty
   module Actionable
     def self.included(base)

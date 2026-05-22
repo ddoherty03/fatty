@@ -42,7 +42,7 @@ module Fatty
 
     def reset_for_command!
       reset_output!
-      mode = @default_output_mode #Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
+      mode = @default_output_mode # Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
       @pager.reset!(mode: mode)
     end
 

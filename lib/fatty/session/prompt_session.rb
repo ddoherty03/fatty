@@ -11,7 +11,7 @@ module Fatty
     def id = :prompt
 
     def initialize(initial: "", prompt: "> ", title: "Prompt", message: nil, kind: nil,
-                   history_ctx: nil, history_path: :default)
+      history_ctx: nil, history_path: :default)
       super(keymap: Keymaps.emacs, views: [])
       @title = title&.to_s
       @message = message&.to_s
@@ -87,8 +87,8 @@ module Fatty
 
       result =
         with_virtual_suffix_sync do
-        @field.act_on(action, *args, env: env)
-      end
+          @field.act_on(action, *args, env: env)
+        end
       result.is_a?(Array) ? result : []
     rescue ActionError => e
       Fatty.error("PromptSession#handle_action: ActionError #{e.message}", tag: :session)

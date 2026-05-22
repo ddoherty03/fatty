@@ -91,18 +91,18 @@ module Fatty
 
         normalized =
           spec_hash.each_with_object({}) do |(k, v), h|
-          key = k.to_sym
-          h[key] =
-            case key
-            when :attr
-              v
-            when :attrs
-              normalize_attrs(v)
-            when :border, :corners
-              normalize_optional_symbol(v)
-            else
-              v
-            end
+            key = k.to_sym
+            h[key] =
+              case key
+              when :attr
+                v
+              when :attrs
+                normalize_attrs(v)
+              when :border, :corners
+                normalize_optional_symbol(v)
+              else
+                v
+              end
           end
 
         if normalized.key?(:attr)
@@ -115,7 +115,7 @@ module Fatty
       end
 
       def self.normalize_attrs(value)
-        Array(value).map { |attr| attr.to_sym }
+        Array(value).map(&:to_sym)
       end
 
       def self.normalize_optional_symbol(value)
@@ -131,7 +131,6 @@ module Fatty
           text.to_sym
         end
       end
-
     end
   end
 end

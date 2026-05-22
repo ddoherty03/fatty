@@ -45,7 +45,7 @@ module Fatty
       private
 
       def normalize_name(name)
-        return nil if name.nil?
+        return if name.nil?
 
         text = name.to_s.strip
         text.empty? ? nil : text.to_sym

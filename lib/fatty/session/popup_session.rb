@@ -21,19 +21,19 @@ module Fatty
     # - order: :as_given (default) or :reverse (presentation order).
     # - selection: :preserve (default), :top, :bottom (how selection behaves after refresh).
     def initialize(
-          source:,
-          title: nil,
-          message: nil,
-          prompt: "> ",
-          keymap: Keymaps.emacs,
-          matcher: nil,
-          order: :as_given,
-          kind: nil,
-          selection: :preserve,
-          initial_query: nil,
-          selection_mode: :single,
-          validate_unique_labels: false
-        )
+      source:,
+      title: nil,
+      message: nil,
+      prompt: "> ",
+      keymap: Keymaps.emacs,
+      matcher: nil,
+      order: :as_given,
+      kind: nil,
+      selection: :preserve,
+      initial_query: nil,
+      selection_mode: :single,
+      validate_unique_labels: false
+    )
       super(keymap: keymap)
       @source = source
       @title = title&.to_s
@@ -197,10 +197,6 @@ module Fatty
     def accept_selection
       if multi_select?
         payload = popup_payload(selected_result_hash)
-        [
-          [:terminal, :send_modal_owner, [:cmd, :popup_result, payload]],
-          [:terminal, :pop_modal]
-        ]
       else
         item = selected_item
         query = @field.buffer.text.to_s
@@ -209,11 +205,11 @@ module Fatty
 
         item = query if item.nil?
         payload = popup_payload(item)
-        [
-          [:terminal, :send_modal_owner, [:cmd, :popup_result, payload]],
-          [:terminal, :pop_modal]
-        ]
       end
+      [
+        [:terminal, :send_modal_owner, [:cmd, :popup_result, payload]],
+        [:terminal, :pop_modal]
+      ]
     end
 
     def selected_item
@@ -245,9 +241,9 @@ module Fatty
       if multi_select?
         selected_missing =
           @items.select do |item|
-          label = item_label(item)
-          selected_label?(label) && !@filtered.include?(item)
-        end
+            label = item_label(item)
+            selected_label?(label) && !@filtered.include?(item)
+          end
 
         @displayed = selected_missing + @filtered
       else
@@ -477,18 +473,17 @@ module Fatty
       prior = @selected
       last_idx = [@displayed.length - 1, 0].max
 
-      if @displayed.empty?
-        @selected = 0
+      @selected = if @displayed.empty?
+        0
       else
-        @selected =
-          case @selection
-          when :top
-            0
-          when :bottom
-            last_idx
-          else
-            @selected.clamp(0, last_idx)
-          end
+        case @selection
+        when :top
+          0
+        when :bottom
+          last_idx
+        else
+          @selected.clamp(0, last_idx)
+        end
       end
 
       if @selection == :top || @selection == :bottom

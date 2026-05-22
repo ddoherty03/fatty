@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "session"
 
 require_relative "session/alert_session"

@@ -489,7 +489,7 @@ module Fatty
 
       ranges.drop(1).each do |from, to, role|
         prev = merged[-1]
-        prev_from, prev_to, prev_role = prev
+        _, prev_to, prev_role = prev
 
         if from <= prev_to
           prev[1] = [prev_to, to].max

@@ -133,10 +133,10 @@ module Fatty
     def bindings_text
       return "(none)" if bindings.empty?
 
-      text = bindings.map do |context, binding|
+      text = bindings.map { |context, binding|
         action, _args = binding_action(binding)
         "    context: #{context}: #{binding_text(binding)}#{action_target_text(action)}"
-      end.join("\n")
+      }.join("\n")
       text
     end
 

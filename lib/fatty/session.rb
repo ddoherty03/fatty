@@ -48,7 +48,10 @@ module Fatty
           ev = message[1]
           action, args = resolve_action(ev)
 
-          Fatty.debug("#{self.class}#update: key ev=#{ev.inspect} action=#{action.inspect} args=#{args.inspect}", tag: :session)
+          Fatty.debug(
+            "#{self.class}#update: key ev=#{ev.inspect} action=#{action.inspect} args=#{args.inspect}",
+            tag: :session,
+          )
 
           if action
             handle_action(action, args, event: ev)
@@ -133,8 +136,6 @@ module Fatty
     def update_cmd(_name, _payload)
       []
     end
-
-    private
 
     def match_all_query_terms?(haystack, query)
       Fatty::Search.match_all_terms?(haystack, query)

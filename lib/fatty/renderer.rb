@@ -48,9 +48,7 @@ module Fatty
       @last_popup_state = nil
     end
 
-    def screen=(screen)
-      @screen = screen
-    end
+    attr_writer :screen
 
     def apply_theme!(theme)
       Fatty::Themes::Manager.set(theme)
@@ -129,13 +127,13 @@ module Fatty
     end
 
     def renderable_text(value)
-      renderable_parts(value).map do |part|
+      renderable_parts(value).map { |part|
         if part.is_a?(Hash) && part.key?(:text)
           part[:text].to_s
         else
           part.to_s
         end
-      end.join
+      }.join
     end
 
     def renderable_segments(value, role:)
@@ -188,9 +186,9 @@ module Fatty
       counts = session.counts
 
       "#{counts[:total]} total · " \
-      "#{counts[:selected]} selected · " \
-      "#{counts[:matching]} matching · " \
-      "#{counts[:showing]} showing"
+        "#{counts[:selected]} selected · " \
+        "#{counts[:matching]} matching · " \
+        "#{counts[:showing]} showing"
     end
 
     def popup_border
@@ -244,12 +242,12 @@ module Fatty
       highlights.each_with_object({}) do |(line_no, ranges), out|
         out[line_no] =
           Array(ranges).map do |r|
-          if r.is_a?(Hash)
-            [r[:from].to_i, r[:to].to_i, (r[:role] || :primary).to_sym]
-          else
-            [r[0].to_i, r[1].to_i, (r[2] || :primary).to_sym]
+            if r.is_a?(Hash)
+              [r[:from].to_i, r[:to].to_i, (r[:role] || :primary).to_sym]
+            else
+              [r[0].to_i, r[1].to_i, (r[2] || :primary).to_sym]
+            end
           end
-        end
       end
     end
 
@@ -265,15 +263,15 @@ module Fatty
       #   [{from:, to:, role:}, ...]
       ranges =
         Array(raw).map do |r|
-        if r.is_a?(Hash)
-          [r[:from].to_i, r[:to].to_i, (r[:role] || :primary).to_sym]
-        else
-          a = r[0].to_i
-          b = r[1].to_i
-          role = (r[2] || :primary).to_sym
-          [a, b, role]
+          if r.is_a?(Hash)
+            [r[:from].to_i, r[:to].to_i, (r[:role] || :primary).to_sym]
+          else
+            a = r[0].to_i
+            b = r[1].to_i
+            role = (r[2] || :primary).to_sym
+            [a, b, role]
+          end
         end
-      end
 
       ranges.sort_by!(&:first)
       ranges

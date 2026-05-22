@@ -27,9 +27,9 @@ module Fatty
       return Regexp.new("", flags) if terms.empty?
 
       lookaheads =
-        terms.map do |term|
+        terms.map { |term|
           "(?=.*#{Regexp.escape(term)})"
-        end.join
+        }.join
 
       Regexp.new("#{lookaheads}.*", flags)
     end

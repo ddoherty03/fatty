@@ -140,8 +140,8 @@ module Fatty
           end
         Fatty.info(
           "truecolor=#{@truecolor} setting=#{setting.inspect} " \
-          "TERM=#{ENV['TERM'].inspect} COLORTERM=#{ENV['COLORTERM'].inspect} " \
-          "TERM_PROGRAM=#{ENV['TERM_PROGRAM'].inspect} TMUX=#{ENV.key?('TMUX')}",
+            "TERM=#{ENV['TERM'].inspect} COLORTERM=#{ENV['COLORTERM'].inspect} " \
+            "TERM_PROGRAM=#{ENV['TERM_PROGRAM'].inspect} TMUX=#{ENV.key?('TMUX')}",
           tag: :themes,
         )
         @truecolor
@@ -153,8 +153,8 @@ module Fatty
         term_program = ENV["TERM_PROGRAM"].to_s
 
         colorterm.match?(/truecolor|24bit/i) ||
-        term.match?(/truecolor|24bit|direct/i) ||
-        term.match?(/kitty|wezterm|alacritty|ghostty|foot/i) ||
+          term.match?(/truecolor|24bit|direct/i) ||
+          term.match?(/kitty|wezterm|alacritty|ghostty|foot/i) ||
           term_program.match?(/kitty|wezterm|alacritty|ghostty|iTerm/i)
       end
 
@@ -229,10 +229,10 @@ module Fatty
 
         @ansi_pairs ||= {}
         @ansi_pair_limit ||= begin
-                               ::Curses.color_pairs
-                             rescue StandardError
-                               256
-                             end
+          ::Curses.color_pairs
+        rescue StandardError
+          256
+        end
 
         key = [fg || -1, bg || -1]
         cached = @ansi_pairs[key]

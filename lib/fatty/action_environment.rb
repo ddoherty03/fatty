@@ -6,14 +6,14 @@ module Fatty
     attr_accessor :session, :event, :counter, :buffer, :field, :pager
 
     def initialize(
-          session: nil,
-          terminal: nil,
-          counter: nil,
-          event: nil,
-          buffer: nil,
-          field: nil,
-          pager: nil
-        )
+      session: nil,
+      terminal: nil,
+      counter: nil,
+      event: nil,
+      buffer: nil,
+      field: nil,
+      pager: nil
+    )
       @session = session
       @terminal = terminal
       @counter = counter

@@ -80,7 +80,7 @@ module Fatty
       raise ActionError, "env.#{defn[:on]} is nil for action #{key}" unless target
 
       # Inject count: from env.counter when the target accepts it.
-      if env.counter && env.counter.active? && !kwargs.key?(:count)
+      if env.counter&.active? && !kwargs.key?(:count)
         meth = target.method(defn[:method])
         params = meth.parameters
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Fatty
   class Alert
     DETAIL_ORDER = %i[terminal key ctrl meta shift].freeze
@@ -63,19 +65,18 @@ module Fatty
       icon =
         case level
         when :warn then "⚠"
-        when :error   then "✖"
-        else               "ℹ"
+        when :error then "✖"
+        else "ℹ"
         end
       msg = message.to_s
       details_str = ""
       if details.respond_to?(:empty?) ? !details.empty? : !!details
-        if details.is_a?(Hash)
-          details_str =
-            " (" +
+        details_str = if details.is_a?(Hash)
+          " (" +
             DETAIL_ORDER.filter_map { |k| "#{k}=#{details[k]}" if details.key?(k) }.join(" ") +
             ")"
         else
-          details_str = " (#{details})"
+          " (#{details})"
         end
       end
       "#{icon} #{msg}#{details_str}"

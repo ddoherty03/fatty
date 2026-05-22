@@ -48,25 +48,25 @@ module Fatty
 
           status_good: { fg: "green", bg: "#2e3440" },
           status_info: { fg: "#d8dee9", bg: "#2e3440" },
-          status_warn:  { fg: "#2e3440", bg: "#ebcb8b" },
+          status_warn: { fg: "#2e3440", bg: "#ebcb8b" },
           status_error: { fg: "#eceff4", bg: "#bf616a" },
 
-          pager_status: {fg: "black", bg: "lightgreen"},
+          pager_status: { fg: "black", bg: "lightgreen" },
 
           search_highlight: { fg: "black", bg: "yellow" },
           search_highlight_secondary: { fg: "black", bg: "lightgray" },
           search: { fg: "black", bg: "cyan" },
 
-          popup:           { fg: "#d8dee9", bg: "#3b4252" },
+          popup: { fg: "#d8dee9", bg: "#3b4252" },
           popup_selection: { fg: "#2e3440", bg: "#88c0d0" },
-          popup_input:     { fg: "#eceff4", bg: "#434c5e" },
-          popup_frame:     { fg: "#81a1c1", bg: "#3b4252" },
-          popup_counts: { fg: "#2e3440",  bg: "white" },
+          popup_input: { fg: "#eceff4", bg: "#434c5e" },
+          popup_frame: { fg: "#81a1c1", bg: "#3b4252" },
+          popup_counts: { fg: "#2e3440", bg: "white" },
         },
 
         solarized_dark: {
           output: { fg: "#839496", bg: "#002b36" },
-          input:  { fg: "#93a1a1", bg: "#073642" },
+          input: { fg: "#93a1a1", bg: "#073642" },
           input_suggestion: { fg: "#657b83", bg: "#073642" },
           cursor: { fg: "#002b36", bg: "#b58900" },
 
@@ -74,20 +74,20 @@ module Fatty
 
           status_good: { fg: "green", bg: "#002b36" },
           status_info: { fg: "#839496", bg: "#002b36" },
-          status_warn:  { fg: "#002b36", bg: "#cb4b16" },
+          status_warn: { fg: "#002b36", bg: "#cb4b16" },
           status_error: { fg: "#fdf6e3", bg: "red" },
 
-          pager_status: {fg: "black", bg: "lightgreen"},
+          pager_status: { fg: "black", bg: "lightgreen" },
 
           search_highlight: { fg: "black", bg: "yellow" },
           search_highlight_secondary: { fg: "black", bg: "lightgray" },
           search: { fg: "black", bg: "cyan" },
 
-          popup:           { fg: "#839496", bg: "#073642" },
+          popup: { fg: "#839496", bg: "#073642" },
           popup_selection: { fg: "#002b36", bg: "#b58900" },
-          popup_input:     { fg: "#93a1a1", bg: "#002b36" },
-          popup_frame:     { fg: "#268bd2", bg: "#073642" },
-          popup_counts: { fg: "#002b36",  bg: "white" },
+          popup_input: { fg: "#93a1a1", bg: "#002b36" },
+          popup_frame: { fg: "#268bd2", bg: "#073642" },
+          popup_counts: { fg: "#002b36", bg: "white" },
         },
 
         mono: {
@@ -102,7 +102,7 @@ module Fatty
           search_highlight_secondary: { fg: "black", bg: "lightgray" },
           search: { fg: "black", bg: "cyan" },
 
-          pager_status: {fg: "black", bg: "white"},
+          pager_status: { fg: "black", bg: "white" },
 
           status_good: { fg: "green", bg: "white" },
           status_info: { fg: "black", bg: "white" },
@@ -113,7 +113,7 @@ module Fatty
           popup_selection: { fg: "white", bg: "black" },
           popup_input: { fg: "white", bg: "black" },
           popup_frame: { fg: "black", bg: "white" },
-          popup_counts: { fg: "white",  bg: "gray" },
+          popup_counts: { fg: "white", bg: "gray" },
         },
       }.freeze
 

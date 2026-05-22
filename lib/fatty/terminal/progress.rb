@@ -5,7 +5,7 @@ module Fatty
     class Progress
       PARTIAL_BLOCKS = ["", "▏", "▎", "▍", "▌", "▋", "▊", "▉"].freeze
       FULL_BLOCK = "█"
-      EMPTY_BAR = ".".freeze
+      EMPTY_BAR = "."
 
       SHADE_EMPTY = "░"
       SHADE_HALF  = "▒"
@@ -108,7 +108,7 @@ module Fatty
           base = total ? "#{label} [#{current}/#{total}]" : "#{label} [#{current}]"
           suffix_text(base, suffix)
         when :simple_percent
-          base = total && total > 0 ? "#{label} #{percent}%" : "#{label}"
+          base = total && total > 0 ? "#{label} #{percent}%" : label.to_s
           suffix_text(base, suffix)
         when :trail
           render_trail_text(suffix: suffix)

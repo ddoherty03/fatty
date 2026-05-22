@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #
 # These are the constants the Curses library defines for keys:
 #
@@ -525,12 +526,12 @@ module Fatty
       escape
       return
       space
-      ].freeze
+    ].freeze
 
     # After this list is read in, return an Array of the known key names.
     def self.valid_keynames
       (
-        CURSES_TO_EVENT.values.map(&:key).compact +
+        CURSES_TO_EVENT.values.filter_map(&:key) +
         COMMON_KEYNAMES
       ).map(&:to_s).uniq.sort
     end

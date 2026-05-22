@@ -94,7 +94,7 @@ module Fatty
 
       @entries.reject! do |old_entry|
         old_entry.text == text &&
-        old_entry.kind == kind &&
+          old_entry.kind == kind &&
           old_entry.ctx == ctx
       end
 
@@ -182,9 +182,9 @@ module Fatty
     def self.normalize_ctx(ctx)
       return {} unless ctx.is_a?(Hash)
 
-      ctx.each_with_object({}) do |(key, value), memo|
+      ctx.each_with_object({}) { |(key, value), memo|
         memo[key.to_s] = value
-      end.sort.to_h
+      }.sort.to_h
     end
 
     private

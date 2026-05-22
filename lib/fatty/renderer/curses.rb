@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # lib/fatty/renderer/curses.rb
 
 module Fatty
@@ -493,13 +495,13 @@ module Fatty
         win.attrset(base_attr)
         curses_ranges =
           Array(semantic_ranges).map do |from, to, role|
-          attr =
-            case role
-            when :secondary then hi2_attr
-            else hi_attr
-            end
-          [from.to_i, to.to_i, attr]
-        end
+            attr =
+              case role
+              when :secondary then hi2_attr
+              else hi_attr
+              end
+            [from.to_i, to.to_i, attr]
+          end
         # plain = Fatty::Ansi.plain_text(line.to_s)
         # slices = build_line_slices(plain, ranges: curses_ranges) do |_style|
         #   base_attr

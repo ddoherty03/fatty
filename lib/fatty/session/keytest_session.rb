@@ -58,7 +58,7 @@ module Fatty
     private
 
     def append(text)
-      return unless @owner && @owner.respond_to?(:append_output)
+      return unless @owner&.respond_to?(:append_output)
 
       force_scrolling_output!
 
@@ -79,7 +79,7 @@ module Fatty
     end
 
     def force_scrolling_output!
-      if @owner && @owner.respond_to?(:pager)
+      if @owner&.respond_to?(:pager)
         @owner.pager.paging_to_scrolling
       end
     end
@@ -189,36 +189,36 @@ module Fatty
       end
 
       out << <<~TEXT
-        If context is omitted, the default is #{Fatty::KeyMap::DEFAULT_CONTEXT}.
+         If context is omitted, the default is #{Fatty::KeyMap::DEFAULT_CONTEXT}.
 
-        MOUSE EVENTS
+         MOUSE EVENTS
 
-        Mouse events may also be bound in keybindings.yml, for example:
+         Mouse events may also be bound in keybindings.yml, for example:
 
-        - mouse: <BUTTONNAME>
-          context: paging
-          action: page_up
+         - mouse: <BUTTONNAME>
+           context: paging
+           action: page_up
 
-       Where <BUTTONNAME> is one of:
-         scroll_up
-         scroll_down
-         left_pressed,
-         left_released,
-         left_clicked,
-         left_double_clicked,
-         left_triple_clicked,
-         middle_pressed,
-         middle_released,
-         middle_clicked,
-         middle_double_clicked,
-         middle_triple_clicked,
-         right_pressed,
-         right_released,
-         right_clicked,
-         right_double_clicked,
-         right_triple_clicked
+        Where <BUTTONNAME> is one of:
+          scroll_up
+          scroll_down
+          left_pressed,
+          left_released,
+          left_clicked,
+          left_double_clicked,
+          left_triple_clicked,
+          middle_pressed,
+          middle_released,
+          middle_clicked,
+          middle_double_clicked,
+          middle_triple_clicked,
+          right_pressed,
+          right_released,
+          right_clicked,
+          right_double_clicked,
+          right_triple_clicked
 
-       All of which may also be combined with modifiers: ctrl, meta, and shift.
+        All of which may also be combined with modifiers: ctrl, meta, and shift.
 
       TEXT
       out << "\n"

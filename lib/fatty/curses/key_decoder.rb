@@ -52,11 +52,11 @@ module Fatty
           # Meta + NUL => Meta-Ctrl-@
           if nxt == 0
             return KeyEvent.new(
-                     key:  :"@",
-                     ctrl: true,
-                     meta: true,
-                     raw:  [esc, nxt],
-                   )
+              key:  :'@',
+              ctrl: true,
+              meta: true,
+              raw:  [esc, nxt],
+            )
           end
 
           if (base = @map[nxt])

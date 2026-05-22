@@ -23,9 +23,9 @@ module Fatty
 
       lines.pop while lines.any? && Fatty::Ansi.plain_text(lines.last).strip.empty?
 
-      body = lines.map do |line|
+      body = lines.map { |line|
         "#{gutter}#{line}"
-      end.join("\n")
+      }.join("\n")
 
       "#{body}\n\n"
     end
@@ -44,7 +44,7 @@ module Fatty
       text.to_s
         .gsub(%r{<br\s*/?>}i, HARD_BREAK)
         .gsub(%r{<span\s+class=["']underline["']>(.*?)</span>}m) do
-        md(Regexp.last_match(1), :markdown_underline)
+          md(Regexp.last_match(1), :markdown_underline)
       end
     end
 
@@ -152,13 +152,13 @@ module Fatty
     end
 
     def indent_block(text, prefix)
-      text.to_s.lines.map do |line|
+      text.to_s.lines.map { |line|
         if line.strip.empty?
           line
         else
           "#{prefix}#{line}"
         end
-      end.join
+      }.join
     end
 
     CELL_SEP = "\u001F"
@@ -272,45 +272,15 @@ module Fatty
     private
 
     def wrap(text, first_prefix: "", rest_prefix: first_prefix)
-      width = @width.to_i.clamp(20, 80)
-
-      words = text.to_s.split(/\s+/)
-      lines = []
-      line = +""
-
-      words.each do |word|
-        prefix = lines.empty? ? first_prefix : rest_prefix
-        available = width - Fatty::Ansi.visible_length(prefix)
-        available = 20 if available < 20
-
-        candidate = line.empty? ? word : "#{line} #{word}"
-
-        if Fatty::Ansi.visible_length(candidate) > available && !line.empty?
-          lines << "#{prefix}#{line}"
-          line = word.dup
-        else
-          line = candidate
-        end
-      end
-
-      unless line.empty?
-        prefix = lines.empty? ? first_prefix : rest_prefix
-        lines << "#{prefix}#{line}"
-      end
-
-      lines.join("\n")
-    end
-
-    def wrap(text, first_prefix: "", rest_prefix: first_prefix)
       hard_lines = text.to_s.split(HARD_BREAK, -1)
 
-      hard_lines.each_with_index.map do |hard_line, index|
+      hard_lines.each_with_index.map { |hard_line, index|
         wrap_soft_line(
           hard_line,
           first_prefix: index.zero? ? first_prefix : rest_prefix,
           rest_prefix: rest_prefix,
         )
-      end.join("\n")
+      }.join("\n")
     end
 
     def wrap_soft_line(text, first_prefix: "", rest_prefix: first_prefix)
@@ -367,13 +337,13 @@ module Fatty
       codes << 7 if attrs.include?(:reverse)
 
       if (fg_rgb = spec[:fg_rgb] || spec["fg_rgb"])
-        codes.concat([38, 2, *fg_rgb])
+        codes.push(38, 2, *fg_rgb)
       elsif (fg = spec[:fg] || spec["fg"])
         codes.concat(color_codes(fg, foreground: true))
       end
 
       if (bg_rgb = spec[:bg_rgb] || spec["bg_rgb"])
-        codes.concat([48, 2, *bg_rgb])
+        codes.push(48, 2, *bg_rgb)
       elsif (bg = spec[:bg] || spec["bg"])
         codes.concat(color_codes(bg, foreground: false))
       end

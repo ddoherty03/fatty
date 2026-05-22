@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Fatty
   # The MouseEvent class is a simple class to store a mouse event with its
   # modifiers.

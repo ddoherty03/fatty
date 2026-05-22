@@ -48,8 +48,8 @@ module Fatty
 
         extras =
           msg.reject do |k, _|
-          k.to_s == "event" || k.to_s == "tag"
-        end
+            k.to_s == "event" || k.to_s == "tag"
+          end
 
         parts = []
         parts << "[#{tag}]" if tag && !tag.to_s.empty?

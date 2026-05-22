@@ -67,8 +67,6 @@ module Fatty
           event.key.inspect
         elsif event&.respond_to?(:mouse)
           event.mouse.inspect
-        else
-          nil
         end
       Fatty.debug("InputSession#handle_action: #{which}", tag: :session)
       env = action_env(event: event)

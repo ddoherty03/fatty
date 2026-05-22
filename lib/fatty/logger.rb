@@ -77,14 +77,14 @@ module Fatty
       end
 
       payload = { event: event, tag: tag }
-      payload.merge!(data.reject { |k,_| k == :event || k == :tag })
+      payload.merge!(data.reject { |k, _| k == :event || k == :tag })
 
       logger.add(severity(level), payload)
     rescue StandardError => ex
       begin
         logger&.add(
           ::Logger::FATAL,
-          { event: "logger_error", err: ex.class.name, msg: ex.message, bt: ex.backtrace&.take(10) }
+          { event: "logger_error", err: ex.class.name, msg: ex.message, bt: ex.backtrace&.take(10) },
         )
       rescue StandardError
         # swallow

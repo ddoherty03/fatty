@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative './terminal/progress'
-require_relative './terminal/popup_owner'
+require_relative 'terminal/progress'
+require_relative 'terminal/popup_owner'
 
 module Fatty
   class Terminal
@@ -179,7 +179,7 @@ module Fatty
       session = top && top[:session]
 
       session.close if session&.respond_to?(:close)
-      @renderer.invalidate! if @renderer
+      @renderer&.invalidate!
       nil
     end
 
@@ -410,8 +410,8 @@ module Fatty
 
         result =
           selected.each_with_object({}) do |(label, _), h|
-          h[label] = label_to_value.fetch(label, quit_value)
-        end
+            h[label] = label_to_value.fetch(label, quit_value)
+          end
 
         done = true
       end
@@ -565,7 +565,7 @@ module Fatty
           action,
           session: menu_session,
           label: label,
-          payload: payload
+          payload: payload,
         )
         done = true
       end
@@ -698,12 +698,11 @@ module Fatty
     def install_default_sessions!
       pin(Fatty::AlertSession.new)
       push(Fatty::ShellSession.new(
-             prompt: @prompt,
-             on_accept: @on_accept,
-             completion_proc: @completion_proc,
-             history_ctx: @history_ctx
-           )
-          )
+        prompt: @prompt,
+        on_accept: @on_accept,
+        completion_proc: @completion_proc,
+        history_ctx: @history_ctx,
+      ))
     end
 
     def scrolling_output?
@@ -880,12 +879,12 @@ module Fatty
       when :cycle_theme
         new_theme = Fatty::Themes::Manager.cycle
         renderer.apply_theme!(new_theme)
-        apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{new_theme}"}])
+        apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{new_theme}" }])
       when :set_theme
         theme = rest.fetch(0)
         Fatty::Themes::Manager.set(theme)
         renderer.apply_theme!(theme)
-        apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{theme}"}])
+        apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{theme}" }])
       when :handle_resize
         handle_resize
       else
@@ -995,7 +994,7 @@ module Fatty
               ::Curses.curs_set(0)
             end
           elsif session.is_a?(Fatty::PromptSession)
-            message_rows = (session.message && !session.message.empty?) ? 1 : 0
+            message_rows = session.message && !session.message.empty? ? 1 : 0
             input_row = 1 + message_rows
             cursor_x = cursor_x.clamp(0, [maxx - 3, 0].max)
             begin

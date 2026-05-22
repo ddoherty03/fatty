@@ -392,6 +392,7 @@ module Fatty
 
           span = word_span_backward(start)
           break if span.begin == span.end
+
           start = span.begin
         end
 
@@ -657,7 +658,7 @@ module Fatty
       at_word =
         from < chars.length && word_char?(chars[from])
 
-      if !prefix.empty?
+      unless prefix.empty?
         if at_word
           return word_at_point_range(from)
         end
@@ -752,7 +753,7 @@ module Fatty
       left, right = transpose_word_ranges
       return false unless left && right
       return false if left.begin == left.end || right.begin == right.end
-      return false unless left.end <= right.begin
+      return false if left.end > right.begin
 
       left_text  = text[left]
       middle     = text[left.end...right.begin].to_s
@@ -979,10 +980,10 @@ module Fatty
       return if s.empty?
 
       if @last_action == :kill && !@kill_ring.empty?
-        if append
-          @kill_ring[0] = @kill_ring[0] + s
+        @kill_ring[0] = if append
+          @kill_ring[0] + s
         else
-          @kill_ring[0] = s + @kill_ring[0]
+          s + @kill_ring[0]
         end
       else
         @kill_ring.unshift(s)

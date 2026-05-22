@@ -4,21 +4,21 @@ module Fatty
   module Curses
     class EventSource
       MOUSE_BSTATE_BUTTON_MAP = {
-        ::Curses::BUTTON1_PRESSED        => :left_pressed,
-        ::Curses::BUTTON1_RELEASED       => :left_released,
-        ::Curses::BUTTON1_CLICKED        => :left_clicked,
+        ::Curses::BUTTON1_PRESSED => :left_pressed,
+        ::Curses::BUTTON1_RELEASED => :left_released,
+        ::Curses::BUTTON1_CLICKED => :left_clicked,
         ::Curses::BUTTON1_DOUBLE_CLICKED => :left_double_clicked,
         ::Curses::BUTTON1_TRIPLE_CLICKED => :left_triple_clicked,
 
-        ::Curses::BUTTON2_PRESSED        => :middle_pressed,
-        ::Curses::BUTTON2_RELEASED       => :middle_released,
-        ::Curses::BUTTON2_CLICKED        => :middle_clicked,
+        ::Curses::BUTTON2_PRESSED => :middle_pressed,
+        ::Curses::BUTTON2_RELEASED => :middle_released,
+        ::Curses::BUTTON2_CLICKED => :middle_clicked,
         ::Curses::BUTTON2_DOUBLE_CLICKED => :middle_double_clicked,
         ::Curses::BUTTON2_TRIPLE_CLICKED => :middle_triple_clicked,
 
-        ::Curses::BUTTON3_PRESSED        => :right_pressed,
-        ::Curses::BUTTON3_RELEASED       => :right_released,
-        ::Curses::BUTTON3_CLICKED        => :right_clicked,
+        ::Curses::BUTTON3_PRESSED => :right_pressed,
+        ::Curses::BUTTON3_RELEASED => :right_released,
+        ::Curses::BUTTON3_CLICKED => :right_clicked,
         ::Curses::BUTTON3_DOUBLE_CLICKED => :right_double_clicked,
         ::Curses::BUTTON3_TRIPLE_CLICKED => :right_triple_clicked
       }.freeze

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "view"
 
 require_relative "view/output_view"

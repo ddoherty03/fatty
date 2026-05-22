@@ -166,7 +166,7 @@ module Fatty
 
         while j < s.bytesize
           b = s.getbyte(j)
-          if (b >= 48 && b <= 57) || b == 59 # 0-9 or ';'
+          if b.between?(48, 57) || b == 59 # 0-9 or ';'
             params << b
             j += 1
           else
@@ -193,7 +193,11 @@ module Fatty
 
       parts.map do |p|
         p = "0" if p.nil? || p.empty?
-        Integer(p, 10) rescue 0
+        begin
+          Integer(p, 10)
+        rescue
+          0
+        end
       end
     end
 
@@ -279,7 +283,7 @@ module Fatty
         elsif style.fg.between?(8, 15)
           codes << 90 + (style.fg - 8)
         else
-          codes.concat([38, 5, style.fg])
+          codes.push(38, 5, style.fg)
         end
       end
 
@@ -289,7 +293,7 @@ module Fatty
         elsif style.bg.between?(8, 15)
           codes << 100 + (style.bg - 8)
         else
-          codes.concat([48, 5, style.bg])
+          codes.push(48, 5, style.bg)
         end
       end
 

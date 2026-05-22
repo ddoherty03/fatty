@@ -22,13 +22,12 @@ module Fatty
       text.to_s.each_line do |line|
         if @lines.length < @max_lines
           # Fast path: buffer not full yet
-          @lines << line.chomp.freeze
         else
           # Buffer full: drop one old line, then append new one
           @lines.shift
           ntrimmed += 1
-          @lines << line.chomp.freeze
         end
+        @lines << line.chomp.freeze
       end
 
       ntrimmed
