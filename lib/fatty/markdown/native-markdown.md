@@ -73,6 +73,8 @@ These are samples of the kinds of constructs the ANSI renderer for `fatty` are c
 -   **strike:** ~~this text is strike-through~~
 -   **underline:** <span class="underline">this text is underlined</span>
 
+## A Code Block
+
 ```ruby
     def wrap(text, first_prefix: "", rest_prefix: first_prefix)
       width = [@width.to_i, 20].max

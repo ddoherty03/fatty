@@ -66,6 +66,7 @@ Some regular text to break things up.
 - strike :: +this text is strike-through+
 - underline :: _this text is underlined_
 
+** A Code Block
 #+begin_src ruby
     def wrap(text, first_prefix: "", rest_prefix: first_prefix)
       width = [@width.to_i, 20].max
