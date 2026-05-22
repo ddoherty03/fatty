@@ -316,7 +316,7 @@ module Fatty
     def wrap_soft_line(text, first_prefix: "", rest_prefix: first_prefix)
       width = @width.to_i.clamp(20, 80)
 
-      words = text.to_s.split(/[ \t]+/)
+      words = text.to_s.split(/\s+/)
       lines = []
       line = +""
 

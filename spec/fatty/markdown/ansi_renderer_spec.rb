@@ -51,11 +51,15 @@ module Fatty
     end
 
     describe "#paragraph" do
-      it "preserves hard break sentinels without preserving ordinary source newlines" do
+      it "preserves hard break sentinels" do
         renderer = AnsiRenderer.new(width: 80)
 
         html_break = renderer.render_inline_html("one<br>two")
         expect(renderer.paragraph(html_break)).to include("one\ntwo")
+      end
+
+      it "wraps  ordinary source newlines" do
+        renderer = AnsiRenderer.new(width: 80)
 
         normal_newline = "one\ntwo"
         expect(renderer.paragraph(normal_newline)).to include("one two")
