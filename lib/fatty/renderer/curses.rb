@@ -400,7 +400,9 @@ module Fatty
       end
 
       def after_apply_theme!
-        context.apply_palette_to_curses!(palette)
+        @ansi_pair_cache = {}
+        @next_ansi_pair_id = nil
+        context.apply_palette(palette)
       end
 
       def can_incrementally_scroll_output?(prev, curr)
@@ -491,16 +493,19 @@ module Fatty
         win.attrset(base_attr)
         curses_ranges =
           Array(semantic_ranges).map do |from, to, role|
-            attr =
-              case role
-              when :secondary then hi2_attr
-              else hi_attr
-              end
-            [from.to_i, to.to_i, attr]
-          end
-        plain = Fatty::Ansi.plain_text(line.to_s)
-        slices = build_line_slices(plain, ranges: curses_ranges) do |_style|
-          base_attr
+          attr =
+            case role
+            when :secondary then hi2_attr
+            else hi_attr
+            end
+          [from.to_i, to.to_i, attr]
+        end
+        # plain = Fatty::Ansi.plain_text(line.to_s)
+        # slices = build_line_slices(plain, ranges: curses_ranges) do |_style|
+        #   base_attr
+        # end
+        slices = build_line_slices(line.to_s, ranges: curses_ranges) do |style|
+          ansi_style_attr(style, fallback: base_attr)
         end
         render_slices(win, slices)
         win.clrtoeol
@@ -645,8 +650,58 @@ module Fatty
           win.addstr(text)
           remaining -= Fatty::Ansi.visible_length(text)
         end
+      end
 
-        nil
+      def ansi_style_attr(style, fallback:)
+        attr = fallback
+        if style.fg || style.bg
+          fg = curses_color_for_style(style.fg)
+          bg = curses_color_for_style(style.bg)
+
+          output_spec = palette[:output] || {}
+          fg = output_spec[:fg] if fg.nil?
+          bg = output_spec[:bg] if bg.nil?
+
+          attr = ::Curses.color_pair(ansi_pair_for(fg, bg))
+        end
+        attr |= ::Curses::A_BOLD if style.bold
+        attr |= ::Curses::A_DIM if style.respond_to?(:dim) && style.dim
+        attr |= ::Curses::A_UNDERLINE if style.underline
+        attr |= ::Curses::A_REVERSE if style.reverse
+        attr
+      end
+
+      def curses_color_for_style(color)
+        case color
+        when nil
+          nil
+        when Integer
+          Fatty::Color.clamp_index(color, available_colors: available_colors)
+        when Array
+          Fatty::Color.resolve(
+            Fatty::Color.xterm_index_for_rgb(color[0], color[1], color[2]),
+            available_colors: available_colors,
+          )
+        end
+      end
+
+      def ansi_pair_for(fg, bg)
+        @ansi_pair_cache ||= {}
+        key = [fg.to_i, bg.to_i]
+
+        @ansi_pair_cache[key] ||=
+          begin
+            pair_id = next_ansi_pair_id
+            ::Curses.init_pair(pair_id, fg.to_i, bg.to_i)
+            pair_id
+          end
+      end
+
+      def next_ansi_pair_id
+        @next_ansi_pair_id ||= Fatty::Colors::Pairs::ROLE_TO_PAIR.values.max + 1
+        id = @next_ansi_pair_id
+        @next_ansi_pair_id += 1
+        id
       end
     end
   end

@@ -170,7 +170,6 @@ module Fatty
         base_attr = ::Curses.color_pair(base_pair_id)
 
         has_explicit = !(style.fg.nil? && style.bg.nil?)
-
         attr =
           if has_explicit
             pair_id = ansi_pair_id(style.fg, style.bg, fallback_pair_id: base_pair_id)
@@ -178,20 +177,29 @@ module Fatty
           else
             base_attr
           end
-
         attr |= ::Curses::A_BOLD if style.bold
         attr |= ::Curses::A_UNDERLINE if style.underline
         attr |= ::Curses::A_REVERSE if style.reverse
-
         if style.italic && defined?(::Curses::A_ITALIC)
           attr |= ::Curses::A_ITALIC
         end
-
         if style.strike && defined?(::Curses::A_HORIZONTAL)
           attr |= ::Curses::A_HORIZONTAL
         end
-
         attr
+      end
+
+      def apply_palette(palette)
+        if ::Curses.has_colors?
+          ::Curses.start_color
+          ::Curses.use_default_colors if ::Curses.respond_to?(:use_default_colors)
+          palette.each_value do |entry|
+            next unless entry[:pair]
+
+            ::Curses.init_pair(entry[:pair], entry[:fg], entry[:bg])
+          end
+        end
+        @palette = palette
       end
 
       private
@@ -212,21 +220,6 @@ module Fatty
         @input_win = nil
         @alert_win = nil
         @status_win = nil
-      end
-
-      def apply_palette(palette)
-        if ::Curses.has_colors?
-          ::Curses.start_color
-          ::Curses.use_default_colors if ::Curses.respond_to?(:use_default_colors)
-
-          palette.each_value do |entry|
-            next unless entry[:pair]
-
-            ::Curses.init_pair(entry[:pair], entry[:fg], entry[:bg])
-          end
-        end
-
-        @palette = palette
       end
 
       # Generate a map from [fg, bg] pairs to Cuses pair ids.
