@@ -48,7 +48,8 @@ module Fatty
   require_relative "fatty/views"
   require_relative "fatty/sessions"
   require_relative "fatty/terminal"
-
   require_relative "fatty/markdown"
+  require_relative "fatty/help"
+
   class Error < StandardError; end
 end
