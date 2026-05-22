@@ -6,14 +6,17 @@ require "cgi"
 module Fatty
   class AnsiRenderer < Redcarpet::Render::Base
     def initialize(width: 80)
+
+    def initialize(width: 80, palette: nil)
       super()
       @width = width.to_i
+      @palette = palette || {}
     end
 
     def block_code(code, language)
       lexer = rouge_lexer(language.to_s, code.to_s)
       formatter = Rouge::Formatters::Terminal256.new
-      gutter = Rainbow("│ ").faint.to_s
+      gutter = md("│ ", :markdown_code_gutter)
 
       highlighted = formatter.format(lexer.lex(code.to_s))
       lines = highlighted.lines.map(&:chomp)
@@ -27,39 +30,21 @@ module Fatty
       "#{body}\n\n"
     end
 
-    def codespan(code)
-      Rainbow(code.to_s).cyan.bright.to_s
-    end
-
-    def normal_text(text)
-      CGI.unescapeHTML(text.to_s)
-    end
-
     def normal_text(text)
       render_inline_html(CGI.unescapeHTML(text.to_s))
     end
 
-    def double_emphasis(text)
-      Rainbow(text).bright.to_s
-    end
-
-    # def underline(text)
-    #   Rainbow(text).underline.to_s
-    # end
-
     def raw_html(html)
-      render_inline_html(CGI.unescapeHTML(html.to_s))
+      text = CGI.unescapeHTML(html.to_s)
+      return "" if text.match?(/\A\s*<br\s*\/?>\s*\z/i)
+
+      render_inline_html(text)
     end
 
     def render_inline_html(text)
       text.to_s.gsub(%r{<span\s+class=["']underline["']>(.*?)</span>}m) do
         Rainbow(Regexp.last_match(1)).underline.to_s
       end
-    end
-
-    # Curses does not reliably render true italics, so we use underline instead.
-    def emphasis(text)
-      Rainbow(text).underline.to_s
     end
 
     # Curses does not support strike-through, but this emulates it with
@@ -71,17 +56,30 @@ module Fatty
       text.to_s.each_char.map { |ch| "#{ch}\u0336" }.join
     end
 
-    def highlight(text)
-      Rainbow(text).background(:yellow).black.to_s
-    end
-
     def link(link, _title, content)
       label = content.to_s.empty? ? link : content
-      "#{Rainbow(label).underline} #{Rainbow("<#{link}>").bright}"
+      "#{md(label, :markdown_link)} #{md("<#{link}>", :markdown_url)}"
+    end
+
+    def codespan(code)
+      md(code.to_s, :markdown_code)
+    end
+
+    def double_emphasis(text)
+      md(text.to_s, :markdown_strong)
+    end
+
+    # Curses does not reliably render true italics, so we use underline instead.
+    def emphasis(text)
+      md(text.to_s, :markdown_emphasis)
+    end
+
+    def highlight(text)
+      md(text.to_s, :markdown_highlight)
     end
 
     def autolink(link, _link_type)
-      Rainbow(link).underline.to_s
+      md(link.to_s, :markdown_link)
     end
 
     def quote(text)
@@ -89,7 +87,7 @@ module Fatty
     end
 
     def block_quote(quote)
-      gutter = Rainbow("│ ").bright.to_s
+      gutter = md("│ ", :markdown_quote_gutter)
       quote = CGI.unescapeHTML(quote.to_s)
       paragraphs = quote.to_s.split(/\n{2,}/).map do |para|
         text = para.lines.map(&:strip).reject(&:empty?).join(" ")
@@ -116,6 +114,14 @@ module Fatty
           Rainbow(text.to_s).bright.to_s
         end
       "#{body}\n\n"
+    end
+
+    def hrule
+      "#{md(TABLE_DASH * @width.to_i.clamp(20, 80), :markdown_hrule)}\n\n"
+    end
+
+    def linebreak
+      "\n"
     end
 
     def paragraph(text)
@@ -204,7 +210,7 @@ module Fatty
     def render_table_row_cells(row, widths, header: false)
       cells = widths.each_with_index.map do |width, index|
         text = row[index].to_s
-        text = th(text) if header
+        text = header ? th(text) : td(text)
         pad_visible(text, width)
       end
 
@@ -229,20 +235,24 @@ module Fatty
       text.to_s
     end
 
-    def th(text)
-      Rainbow(text).green.bold
-    end
-
     def h1(text)
-      Rainbow(text.to_s).cyan.bright
+      md(text.to_s, :markdown_h1)
     end
 
     def h2(text)
-      Rainbow(text.to_s).yellow.bright
+      md(text.to_s, :markdown_h2)
     end
 
     def h3(text)
-      Rainbow(text.to_s).magenta.underline
+      md(text.to_s, :markdown_h3)
+    end
+
+    def th(text)
+      md(text.to_s, :markdown_table_header)
+    end
+
+    def td(text)
+      md(text.to_s, :markdown_table_cell)
     end
 
     def rouge_lexer(language, code)
@@ -257,6 +267,8 @@ module Fatty
     rescue StandardError
       Rouge::Lexers::PlainText.new
     end
+
+    private
 
     def wrap(text, first_prefix: "", rest_prefix: first_prefix)
       width = @width.to_i.clamp(20, 80)
@@ -286,6 +298,61 @@ module Fatty
       end
 
       lines.join("\n")
+    end
+
+    def md(text, role)
+      spec = @palette[role.to_sym] || {}
+      codes = sgr_codes_for(spec)
+
+      if codes.empty?
+        text.to_s
+      else
+        "\e[#{codes.join(';')}m#{text}\e[0m"
+      end
+    end
+
+    def sgr_codes_for(spec)
+      attrs = Array(spec[:attrs] || spec["attrs"]).map(&:to_sym)
+      codes = []
+
+      codes << 1 if attrs.include?(:bold)
+      codes << 2 if attrs.include?(:dim)
+      codes << 3 if attrs.include?(:italic)
+      codes << 4 if attrs.include?(:underline)
+      codes << 7 if attrs.include?(:reverse)
+
+      if (fg_rgb = spec[:fg_rgb] || spec["fg_rgb"])
+        codes.concat([38, 2, *fg_rgb])
+      elsif (fg = spec[:fg] || spec["fg"])
+        codes.concat(color_codes(fg, foreground: true))
+      end
+
+      if (bg_rgb = spec[:bg_rgb] || spec["bg_rgb"])
+        codes.concat([48, 2, *bg_rgb])
+      elsif (bg = spec[:bg] || spec["bg"])
+        codes.concat(color_codes(bg, foreground: false))
+      end
+      codes
+    end
+
+    def color_codes(color, foreground:)
+      color = color.to_i
+
+      if foreground
+        if color.between?(0, 7)
+          [30 + color]
+        elsif color.between?(8, 15)
+          [90 + color - 8]
+        else
+          [38, 5, color]
+        end
+      elsif color.between?(0, 7)
+        [40 + color]
+      elsif color.between?(8, 15)
+        [100 + color - 8]
+      else
+        [48, 5, color]
+      end
     end
   end
 end
