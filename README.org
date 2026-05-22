@@ -26,3 +26,18 @@ Shift/Ctrl/Meta F-keys are normalized when ncurses provides distinct constants.
 * Alerts
 Alerts are short-lived, non-scrolling messages shown below the input line.
 They are intended for user-visible conditions that require attention.
+
+* Markdown
+** Forced line breaks
+Use ~<br>~ to force a line break.
+
+#+begin_example
+This line has a forced line break <br> and this should appear on the next line.
+#+end_example
+
+will render as
+
+#+begin_example
+This line has a forced line break
+and this should appear on the next line.
+#+end_example

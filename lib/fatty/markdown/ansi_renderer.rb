@@ -5,7 +5,7 @@ require "cgi"
 
 module Fatty
   class AnsiRenderer < Redcarpet::Render::Base
-    def initialize(width: 80)
+    HARD_BREAK = "\uE000"
 
     def initialize(width: 80, palette: nil)
       super()
@@ -31,19 +31,20 @@ module Fatty
     end
 
     def normal_text(text)
-      render_inline_html(CGI.unescapeHTML(text.to_s))
+      text = render_inline_html(CGI.unescapeHTML(text.to_s))
+      text
     end
 
     def raw_html(html)
       text = CGI.unescapeHTML(html.to_s)
-      return "" if text.match?(/\A\s*<br\s*\/?>\s*\z/i)
-
       render_inline_html(text)
     end
 
     def render_inline_html(text)
-      text.to_s.gsub(%r{<span\s+class=["']underline["']>(.*?)</span>}m) do
-        Rainbow(Regexp.last_match(1)).underline.to_s
+      text.to_s
+        .gsub(%r{<br\s*/?>}i, HARD_BREAK)
+        .gsub(%r{<span\s+class=["']underline["']>(.*?)</span>}m) do
+        md(Regexp.last_match(1), :markdown_underline)
       end
     end
 
@@ -298,6 +299,50 @@ module Fatty
       end
 
       lines.join("\n")
+    end
+
+    def wrap(text, first_prefix: "", rest_prefix: first_prefix)
+      hard_lines = text.to_s.split(HARD_BREAK, -1)
+
+      hard_lines.each_with_index.map do |hard_line, index|
+        wrap_soft_line(
+          hard_line,
+          first_prefix: index.zero? ? first_prefix : rest_prefix,
+          rest_prefix: rest_prefix,
+        )
+      end.join("\n")
+    end
+
+    def wrap_soft_line(text, first_prefix: "", rest_prefix: first_prefix)
+      width = @width.to_i.clamp(20, 80)
+
+      words = text.to_s.split(/[ \t]+/)
+      lines = []
+      line = +""
+
+      words.each do |word|
+        next if word.empty?
+
+        prefix = lines.empty? ? first_prefix : rest_prefix
+        available = width - Fatty::Ansi.visible_length(prefix)
+        available = 20 if available < 20
+
+        candidate = line.empty? ? word : "#{line} #{word}"
+
+        if Fatty::Ansi.visible_length(candidate) > available && !line.empty?
+          lines << "#{prefix}#{line}"
+          line = word.dup
+        else
+          line = candidate
+        end
+      end
+
+      unless line.empty?
+        prefix = lines.empty? ? first_prefix : rest_prefix
+        lines << "#{prefix}#{line}"
+      end
+
+      lines.empty? ? first_prefix.rstrip : lines.join("\n")
     end
 
     def md(text, role)
