@@ -137,6 +137,11 @@ These are samples of the kinds of constructs the ANSI renderer for `fatty` are c
 | strike  | ~~strike cell~~ |
 
 
+## Forced Line Break
+
+This line has a forced line break<br>
+and this should appear on the next line.
+
 ## Fenced code with various languages
 
 Here is the Fibonacci number computed recursively in various languages.

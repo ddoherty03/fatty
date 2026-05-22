@@ -153,10 +153,7 @@ This should be a horizontal rule, but YMMV.
 
 ** Forced Line Break
 
-This line has a forced line break\\
-and this should appear on the next line.
-
-This line has a forced line break <br>
+This line has a forced line break<br>
 and this should appear on the next line.
 
 ** Fenced code with various languages
