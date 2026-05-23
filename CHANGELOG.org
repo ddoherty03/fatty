@@ -6,6 +6,15 @@
    user would find useful.
 5. Give each heading a version number and an inactive date (C-c ! is useful here).
 
+* Version 0.99.0 [2026-05-23 Sat]
+- Rewrite the rendering to allow Truecolor writing to screen instead of just
+  Curses writing based on config truecolor setting, with auto detection of
+  truecolor terminal capability.
+- Duplicates removed from history popup.
+- Integrate markdown output into the theme system such that markdown elements
+  can be styled within a theme's YAML file.
+- Ready to try to integrate into an actual app before version 1.0.0.
+
 * Version 0.5.0 [2026-05-03 Sun]
 - Implemented YAML-driven theme system with inheritance, both for themes and
   for roles within a theme.
