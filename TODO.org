@@ -1,9 +1,10 @@
-* TODO SIGINT forwarding to child process
+* TODO Horizontal Scrolling
 * TODO Add modes for vi-like keybindings
 - will require changing keybindongs.yml format to include a mode qualifier
 - for advanced two-step actions, e.g. dw, will require an action-pending
   capability
-* TODO Theming
+* DONE Theming
+CLOSED: [2026-05-22 Fri 09:28]
 ** Add attributes (like bold to themes)
 So, in themes, this would be possible:
 #+begin_src ruby
@@ -11,7 +12,8 @@ So, in themes, this would be possible:
 #+end_src
 ** Develop a ruby DSL for defining themes
 ** Develop more builtin themes
-* TODO Truecolor Support
+* DONE Truecolor Support
+CLOSED: [2026-05-22 Fri 09:28]
 Remember this from ChatGPT:
 
 #+begin_quote
@@ -157,3 +159,5 @@ CLOSED: [2026-04-13 Mon 07:48]
 
 * DONE Add Output Search
 CLOSED: [2026-04-13 Mon 07:48]
+* CNCL SIGINT forwarding to child process
+CLOSED: [2026-05-22 Fri 09:28]
