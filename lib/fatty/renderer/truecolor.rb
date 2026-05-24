@@ -180,6 +180,13 @@ module Fatty
         flush_ansi_draws unless @pending_ansi_draws.empty?
       end
 
+      def clear_physical_screen!
+        $stdout.write("\e[2J\e[H")
+        $stdout.flush
+        invalidate!
+        self
+      end
+
       def restore_cursor(field)
         rect = screen.input_rect
         x = field.cursor_x.to_i.clamp(0, [rect.cols - 1, 0].max)
