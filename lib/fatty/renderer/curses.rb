@@ -12,7 +12,7 @@ module Fatty
       end
 
       def render_status(text, role: :status_info)
-        state = [renderable_text(text), role]
+        state = status_state(text, role)
         return if state == @last_status_state
 
         @last_status_state = state
@@ -41,12 +41,11 @@ module Fatty
         lines = viewport.slice(output.lines)
         normalized = normalized_highlights(highlights)
 
-        curr = {
-          top: viewport.top,
-          height: viewport.height,
+        curr = output_state(
+          viewport: viewport.top,
           lines: lines,
           highlights: normalized,
-        }
+        )
 
         prev = @last_output_state
 
@@ -57,7 +56,6 @@ module Fatty
         end
 
         @last_output_state = curr
-        nil
       end
 
       def render_input_field(field, role: :input)
@@ -158,13 +156,7 @@ module Fatty
       end
 
       def render_popup(session:)
-        state = [
-          popup_state(session),
-          session.title.to_s,
-          session.message.to_s,
-          screen.rows,
-          screen.cols,
-        ]
+        state = popup_state(session)
         return if state == @last_popup_state
 
         @last_popup_state = state
@@ -283,6 +275,11 @@ module Fatty
       end
 
       def render_prompt_popup(session:)
+        state = popup_state(session)
+        return if state == @last_prompt_popup_state
+
+        @last_prompt_popup_state = state
+
         win = session.win
         return unless win
 

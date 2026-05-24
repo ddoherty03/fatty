@@ -12,7 +12,7 @@ module Fatty
       end
 
       def render_status(text, role: :status_info)
-        state = [renderable_text(text), role]
+        state = status_state(text, role)
         return if state == @last_status_state
 
         @last_status_state = state
@@ -55,12 +55,13 @@ module Fatty
         lines = viewport.slice(output.lines)
         normalized = normalized_highlights(highlights)
 
-        curr = {
-          top: viewport.top,
-          height: viewport.height,
+        curr = output_state(
+          viewport: viewport,
           lines: lines,
           highlights: normalized,
-        }
+        )
+        return if curr == @last_output_state
+
         draw_output_lines(lines, viewport: viewport, highlights: normalized)
         @last_output_state = curr
       end
@@ -85,6 +86,11 @@ module Fatty
       end
 
       def render_pager_field(field, row:, role: :pager_status)
+        state = pager_field_state(field, row: row, role: role)
+        return if state == @last_pager_field_state
+
+        @last_pager_field_state = state
+
         win = context.output_win
         return unless win
 
@@ -156,6 +162,11 @@ module Fatty
       end
 
       def render_prompt_popup(session:)
+        state = popup_state(session)
+        return if state == @last_prompt_popup_state
+
+        @last_prompt_popup_state = state
+
         win = session.win
         return unless win
 
