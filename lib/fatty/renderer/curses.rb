@@ -20,29 +20,19 @@ module Fatty
         win = context.status_win
         return unless win
 
-        cols = win.respond_to?(:maxx) ? win.maxx : screen.cols
+        rows = screen.status_rect.rows
+        cols = screen.status_rect.cols
         base_attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
+
         win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
         win.erase
-        win.setpos(0, 0)
+        win.attrset(base_attr)
 
-        remaining = cols
-        renderable_segments(text, role: role).each do |segment|
-          break if remaining <= 0
-
-          seg_text = Fatty::Ansi.strip(segment[:text].to_s).tr("\r\n", " ")
-          seg_text = Fatty::Ansi.truncate_visible(seg_text, remaining)
-          next if seg_text.empty?
-
-          attr = pair_attr(segment[:role], fallback: base_attr)
-          win.attrset(attr)
-          win.addstr(seg_text)
-
-          remaining -= Fatty::Ansi.visible_length(seg_text)
-        end
-        if remaining.positive?
-          win.attrset(base_attr)
-          win.addstr(" " * remaining)
+        status_render_lines(text, width: cols, max_rows: rows).each_with_index do |line, row|
+          win.setpos(row, 0)
+          rendered = Fatty::Ansi.truncate_visible(line, cols)
+          padding = [cols - Fatty::Ansi.visible_length(rendered), 0].max
+          win.addstr(rendered + (" " * padding))
         end
         stage_window(win)
       end

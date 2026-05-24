@@ -136,6 +136,38 @@ module Fatty
       }.join
     end
 
+    def status_render_lines(text, width:, max_rows:)
+      width = [width.to_i, 1].max
+      max_rows = [max_rows.to_i, 1].max
+
+      lines =
+        renderable_text(text)
+          .to_s
+          .lines
+          .flat_map do |line|
+        wrap_status_line(line.chomp, width: width)
+      end
+
+      lines = [""] if lines.empty?
+      lines.last(max_rows)
+    end
+
+    def wrap_status_line(line, width:)
+      text = Fatty::Ansi.strip(line.to_s)
+      return [""] if text.empty?
+
+      chunks = []
+      rest = text.dup
+
+      until rest.empty?
+        chunk = Fatty::Ansi.truncate_visible(rest, width)
+        chunks << chunk
+        rest = rest[chunk.length..].to_s
+      end
+
+      chunks
+    end
+
     def renderable_segments(value, role:)
       renderable_parts(value).map do |part|
         if part.is_a?(Hash) && part.key?(:text)

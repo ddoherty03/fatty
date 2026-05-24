@@ -16,13 +16,22 @@ module Fatty
         return if state == @last_status_state
 
         @last_status_state = state
-        queue_ansi_segments_line(
-          row: screen.status_rect.row,
-          col: screen.status_rect.col,
+
+        lines = status_render_lines(
+          text,
           width: screen.status_rect.cols,
-          segments: renderable_segments(text, role: role),
-          fill_role: role,
+          max_rows: screen.status_rect.rows,
         )
+
+        screen.status_rect.rows.times do |idx|
+          queue_ansi_line(
+            row: screen.status_rect.row + idx,
+            col: screen.status_rect.col,
+            width: screen.status_rect.cols,
+            text: lines[idx].to_s,
+            role: role,
+          )
+        end
       end
 
       def render_alert(alert)

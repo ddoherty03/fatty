@@ -6,6 +6,7 @@ require_relative 'terminal/popup_owner'
 module Fatty
   class Terminal
     SCROLL_RENDER_THROTTLE = 0.05
+    DEFAULT_STATUS_MAX_ROWS = 4
 
     # Commands are plain Ruby arrays for now.
     #
@@ -638,10 +639,34 @@ module Fatty
     end
 
     def status_rows
-      status_visible? ? 1 : 0
+      return 0 unless status_visible?
+
+      status_lines.length.clamp(1, status_max_rows)
+    end
+
+    def status_max_rows
+      Fatty::Config.config.dig(:status, :max_rows)&.to_i || DEFAULT_STATUS_MAX_ROWS
+    end
+
+    def status_lines
+      width = screen&.cols || 80
+
+      @status_text.to_s
+        .lines
+        .flat_map { |line| wrap_status_line(line.chomp, width) }
+        .last(status_max_rows)
     end
 
     private
+
+    def wrap_status_line(line, width)
+      text = Fatty::Ansi.strip(line.to_s)
+      return [""] if text.empty?
+
+      # Good enough first pass: no soft wrap within words.
+      # Later this should use visible-width-aware wrapping.
+      text.scan(/.{1,#{[width, 1].max}}/)
+    end
 
     def preflight!
       Fatty::Config.config

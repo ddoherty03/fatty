@@ -132,18 +132,22 @@ on_accept_proc = lambda do |line, env|
     end
   when "info"
     message = args.empty? ? "Information message" : args.join(" ")
+    message = message.gsub(/ ?~~ ?/, "\n")
     terminal.info(message)
     session.append_output("info: #{message}\n")
   when "good"
     message = args.empty? ? "Success message" : args.join(" ")
+    message = message.gsub(/ ?~~ ?/, "\n")
     terminal.good(message)
     session.append_output("good: #{message}\n")
   when "warn"
     message = args.empty? ? "Danger Will Robinson!" : args.join(" ")
+    message = message.gsub(/ ?~~ ?/, "\n")
     terminal.warn(message)
     session.append_output("warn: #{message}\n")
   when "oops"
     message = args.empty? ? "Something went wrong" : args.join(" ")
+    message = message.gsub(/ ?~~ ?/, "\n")
     terminal.oops(message)
     session.append_output("oops: #{message}\n")
   when "prompt"
