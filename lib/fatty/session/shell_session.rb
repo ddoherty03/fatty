@@ -147,13 +147,13 @@ module Fatty
         anchor = output.lines.length
         pager.begin_command!(anchor: anchor)
 
-        result =
+        commands =
           if @on_accept
             @on_accept.call(line, accept_env)
           else
             run_default_command(line)
           end
-        normalize_accept_result(result)
+        normalize_accept_commands(commands)
       end
     rescue Errno::ENOENT
       [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
@@ -403,12 +403,10 @@ module Fatty
       Fatty::AcceptEnv.new(session: self)
     end
 
-    def normalize_accept_result(result)
-      if result.is_a?(Array) && result.first.is_a?(Array) && result.first.first.is_a?(Symbol)
-        result
+    def normalize_accept_commands(commands)
+      if commands.is_a?(Array) && commands.first.is_a?(Array) && commands.first.first.is_a?(Symbol)
+        commands
       else
-        out = result.to_s
-        append_output(out, follow: true) unless out.empty?
         [[:send, :alert, :clear, {}]]
       end
     end
