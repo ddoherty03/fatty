@@ -66,17 +66,20 @@ module Fatty
       buffer.text == ""
     end
 
-    # Visual cursor X position in the window (ASCII for now)
+    # Visual cursor X position in the window
     def cursor_x
-      prompt_width + buffer.cursor
+      before_cursor = buffer.text.to_s[0...buffer.cursor].to_s
+      prompt_width + Fatty::Ansi.visible_length(before_cursor)
     end
 
     def prompt_text
       prompt.text
     end
 
+    # The prompt might use coloring, so we use the visible length stripped of
+    # ANSI controls.
     def prompt_width
-      prompt_text.length
+      Fatty::Ansi.visible_length(prompt_text.to_s.lines.last.to_s)
     end
 
     def snapshot_input_state
