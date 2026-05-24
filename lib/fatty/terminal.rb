@@ -24,10 +24,16 @@ module Fatty
 
     attr_reader :screen, :renderer, :event_source, :status_text, :status_role, :env
 
-    def initialize(prompt: "> ", on_accept: nil, completion_proc: nil, history_ctx: nil, env: nil)
+    def initialize(prompt: "> ",
+                   on_accept: nil,
+                   completion_proc: nil,
+                   history_path: :default,
+                   history_ctx: nil,
+                   env: nil)
       @prompt = Prompt.ensure(prompt)
       @on_accept = on_accept
       @completion_proc = completion_proc
+      @history_path = history_path
       @history_ctx = history_ctx
       @env = env
 
@@ -701,6 +707,7 @@ module Fatty
         prompt: @prompt,
         on_accept: @on_accept,
         completion_proc: @completion_proc,
+        history_path: @history_path,
         history_ctx: @history_ctx,
       ))
     end
