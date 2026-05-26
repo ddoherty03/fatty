@@ -26,7 +26,6 @@ module Fatty
           @viewport.page_bottom(@output.lines)
         end
       end
-
       ntrim
     end
 

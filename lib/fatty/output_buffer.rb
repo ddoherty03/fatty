@@ -11,23 +11,27 @@ module Fatty
       @lines = []
       @scroll = 0
       @max_lines = Integer(max_lines)
+      @line_open = false
     end
 
-    # Append each line of the text, possibly containing multiple lines, to the
-    # buffer up to max_lines. Return the number of lines dropped from the
-    # buffer.  The Terminal can use this to adjust the Viewport.
+    # Append text to the output buffer. Text may contain complete lines,
+    # partial lines, or both. Returns the number of lines trimmed.  The
+    # Terminal can use this to adjust the Viewport.
     def append(text)
       ntrimmed = 0
+      str = text.to_s
+      return ntrimmed if str.empty?
 
-      text.to_s.each_line do |line|
-        if @lines.length < @max_lines
-          # Fast path: buffer not full yet
-        else
-          # Buffer full: drop one old line, then append new one
-          @lines.shift
-          ntrimmed += 1
+      str.split(/(\n)/).each do |part|
+        if part == "\n"
+          if @line_open
+            @line_open = false
+          else
+            ntrimmed += append_new_line("")
+          end
+        elsif !part.empty?
+          ntrimmed += append_fragment(part)
         end
-        @lines << line.chomp.freeze
       end
 
       ntrimmed
@@ -44,6 +48,31 @@ module Fatty
 
     def scroll_down
       @scroll -= 1 if @scroll.positive?
+    end
+
+    private
+
+    def append_fragment(fragment)
+      ntrimmed = 0
+      if @line_open && @lines.any?
+        @lines[-1] = "#{@lines[-1]}#{fragment}".freeze
+      else
+        ntrimmed += append_new_line(fragment)
+        @line_open = true
+      end
+      ntrimmed
+    end
+
+    def append_new_line(line)
+      ntrimmed = 0
+
+      if @lines.length >= @max_lines
+        @lines.shift
+        ntrimmed = 1
+      end
+
+      @lines << line.to_s.dup.freeze
+      ntrimmed
     end
   end
 end
