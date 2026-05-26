@@ -13,18 +13,26 @@ module Fatty
 
       BRAILLE_STEPS = ["⠀", "⣀", "⣄", "⣆", "⣇", "⣧", "⣷", "⣿"].freeze
 
-      attr_reader :terminal, :label, :total, :style, :role
+      attr_reader :terminal, :label, :total, :style, :role, :width
 
-      def initialize(terminal:, label:, total: nil, style: :percent, role: :info, trail_max: nil, bar_width: 40)
+      # The width parameter's purpose varies by style:
+      #
+      # :trail       width = max visible width of the trail portion
+      # :bar         width = max bar width
+      # :unicode_bar width = max bar width
+      # :braille_bar width = max bar width
+      # :spinner     width ignored, unless later used for suffix/trail
+      # :count       width ignored
+      # :percent     width ignored
+      def initialize(terminal:, label:, total: nil, style: :percent, role: :info, width: 40)
         @terminal = terminal
         @label = label.to_s
         @total = total&.to_i
         @style = style.to_sym
         @role = role
-        @trail_max = trail_max&.to_i
+        @width = width.to_i
         @trail = []
         @current = 0
-        @bar_width = bar_width.to_i
         @spinner_index = 0
 
         validate_total_requirement!
@@ -87,7 +95,7 @@ module Fatty
         return if renderable_indicator_text(item).empty?
 
         @trail << item
-        trim_trail if @trail_max && @trail_max > 0
+        trim_trail if @width && @width > 0
       end
 
       def renderable_indicator_text(item)
@@ -187,7 +195,7 @@ module Fatty
 
         @trail.reverse_each do |item|
           width = visible_length(item)
-          break if used + width > @trail_max
+          break if used + width > @width
 
           selected.unshift(item)
           used += width
@@ -268,7 +276,7 @@ module Fatty
         # around the bar
         available = cols - reserved - 4
         available = 0 if available < 0
-        [available, @bar_width].min
+        [available, @width].min
       end
 
       def solid_bar(width)
