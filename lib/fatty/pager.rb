@@ -77,14 +77,15 @@ module Fatty
 
           # While producing the first page, keep the viewport pinned to the anchor.
           @viewport.top = @anchor
-          @viewport.clamp!(lines)
+          clamp_to_page!
           if produced >= page_height
             @paused = true
+            clamp_to_page!
           end
           return
         end
         if @paused
-          @viewport.clamp!(lines)
+          clamp_to_page!
           return
         end
 
@@ -117,8 +118,8 @@ module Fatty
       @paused = true
       @last_nav_dir = :up
       step = page_height
-      count.to_i.times { @viewport.scroll_up(@output.lines, step) }
-      @viewport.clamp!(@output.lines)
+      @viewport.top -= step * count.to_i
+      clamp_to_page!
     end
 
     desc "Page down in output"
@@ -127,8 +128,8 @@ module Fatty
       @paused = true
       @last_nav_dir = :down
       step = page_height
-      count.to_i.times { @viewport.scroll_down(@output.lines, step) }
-      @viewport.clamp!(@output.lines)
+      @viewport.top += step * count.to_i
+      clamp_to_page!
     end
 
     desc "Jump to end and follow output"
@@ -137,6 +138,7 @@ module Fatty
       @paused = false
       @last_nav_dir = :down
       @anchor = nil
+      @autoscroll = false
       @viewport.page_bottom(@output.lines)
     end
 
@@ -145,8 +147,8 @@ module Fatty
       @mode = :paging
       @paused = true
       @last_nav_dir = :up
-      count.to_i.times { @viewport.scroll_up(@output.lines) }
-      @viewport.clamp!(@output.lines)
+      @viewport.top -= count.to_i
+      clamp_to_page!
     end
 
     desc "One line down"
@@ -154,8 +156,8 @@ module Fatty
       @mode = :paging
       @paused = true
       @last_nav_dir = :down
-      count.to_i.times { @viewport.scroll_down(@output.lines) }
-      @viewport.clamp!(@output.lines)
+      @viewport.top += count.to_i
+      clamp_to_page!
     end
 
     desc "Scroll up #{SCROLL_WHEEL_LINES} lines"
@@ -163,8 +165,8 @@ module Fatty
       @mode = :paging
       @paused = true
       @last_nav_dir = :up
-      count.to_i.times { @viewport.scroll_up(@output.lines) }
-      @viewport.clamp!(@output.lines)
+      @viewport.top -= count.to_i
+      clamp_to_page!
     end
 
     desc "Scroll down #{SCROLL_WHEEL_LINES} lines"
@@ -172,8 +174,8 @@ module Fatty
       @mode = :paging
       @paused = true
       @last_nav_dir = :down
-      count.to_i.times { @viewport.scroll_down(@output.lines) }
-      @viewport.clamp!(@output.lines)
+      @viewport.top += count.to_i
+      clamp_to_page!
     end
 
     desc "Page top"
@@ -181,8 +183,7 @@ module Fatty
       @mode = :paging
       @paused = true
       @last_nav_dir = :up
-      @viewport.page_top
-      @viewport.clamp!(@output.lines)
+      page_top!
     end
 
     desc "Page bottom"
@@ -190,7 +191,7 @@ module Fatty
       @mode = :paging
       @paused = true
       @last_nav_dir = :down
-      @viewport.page_bottom(@output.lines)
+      @viewport.top = max_page_top
     end
 
     desc "Switch from paging to scrolling"
@@ -234,7 +235,7 @@ module Fatty
     end
 
     def at_bottom?
-      @viewport.at_bottom?(@output.lines.size)
+      @viewport.top >= max_page_top
     end
 
     def nav_arrow
@@ -249,6 +250,22 @@ module Fatty
       else
         ""
       end
+    end
+
+    def max_page_top
+      [@output.lines.size - page_height, 0].max
+    end
+
+    def clamp!
+      if paused?
+        clamp_to_page!
+      else
+        @viewport.clamp!(@output.lines)
+      end
+    end
+
+    def clamp_to_page!
+      @viewport.top = @viewport.top.clamp(0, max_page_top)
     end
 
     def begin_command!(anchor:)
@@ -609,6 +626,22 @@ module Fatty
       end
       @isearch_snapshot = nil
       result
+    end
+
+    def page_bottom!
+      @viewport.top = max_page_top
+    end
+
+    def page_top!
+      @viewport.top = 0
+    end
+
+    def preserve_after_resize!(was_at_bottom:)
+      if @mode == :paging && @output.lines.any? && was_at_bottom
+        page_bottom!
+      else
+        clamp!
+      end
     end
 
     private

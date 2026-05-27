@@ -753,6 +753,13 @@ module Fatty
       )
       @ctx.apply_layout(screen)
       renderer.screen = screen
+      if (session = focused_session)
+        session.resize_output! if session.respond_to?(:resize_output!)
+      end
+      if (top = @modal_stack.last)
+        session = top[:session]
+        apply_commands(session.handle_resize) if session.respond_to?(:handle_resize)
+      end
       renderer.sync_backgrounds! if renderer.context.truecolor
       renderer.invalidate!
     end

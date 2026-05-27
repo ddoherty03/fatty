@@ -35,8 +35,9 @@ module Fatty
     end
 
     def resize_output!
+      was_at_bottom = pager.at_bottom?
       @viewport.height = terminal.screen.output_rect.rows
-      @viewport.clamp!(@output.lines)
+      pager.preserve_after_resize!(was_at_bottom: was_at_bottom)
     end
 
     def reset_for_command!
@@ -84,6 +85,21 @@ module Fatty
       # Start the next command from the bottom of existing scrollback.
       @viewport.page_bottom(@output.lines)
       @pager.reset!(total_lines: @output.lines.length, mode: @default_output_mode)
+    end
+
+    def follow_output!
+      pager.end_of_output
+      []
+    end
+
+    def page_output_from_top!
+      pager.page_top
+      []
+    end
+
+    def page_output_from_bottom!
+      pager.page_bottom
+      []
     end
   end
 end
