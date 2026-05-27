@@ -42,7 +42,7 @@ module Fatty
         normalized = normalized_highlights(highlights)
 
         curr = output_state(
-          viewport: viewport.top,
+          viewport: viewport,
           lines: lines,
           highlights: normalized,
         )
