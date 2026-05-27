@@ -52,7 +52,7 @@ module Fatty
     # --- Status line management ------------------------------------------------
 
     def set_status(text, role: :info, transient: false)
-      was_visible = status_visible?
+      old_rows = status_rows
       str =
         if text.is_a?(Array)
           text.map { |part| part.is_a?(Hash) && part.key?(:text) ? part[:text] : part }.join
@@ -69,17 +69,15 @@ module Fatty
         @status_role = role
         @status_transient = transient
       end
-
-      now_visible = status_visible?
-      refresh_layout! if was_visible != now_visible
+      refresh_layout! if @screen && old_rows != status_rows
     end
 
     def clear_status
-      was_visible = status_visible?
+      old_rows = status_rows
       @status_text = nil
       @status_role = :info
       @status_transient = false
-      refresh_layout! if was_visible
+      refresh_layout! if @screen && old_rows != status_rows
     end
 
     def transient_status?
