@@ -45,13 +45,25 @@ end
 
 module Fatty
   RSpec.describe Renderer::Curses do
+    let(:status_rect) do
+      instance_double(
+        Screen::Rect,
+        row: 20,
+        col: 0,
+        rows: 1,
+        cols: 20,
+      )
+    end
+
     let(:screen) do
       instance_double(
         Screen,
         rows: 24,
         cols: 80,
+        status_rect: status_rect,
       )
     end
+
     let(:palette) { {} }
     let(:input_win) { CursesRendererSpecWindow.new(maxx: 5) }
     let(:curses_context) do
