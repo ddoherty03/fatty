@@ -162,7 +162,7 @@ module Fatty
       end
 
       def render_prompt_popup(session:)
-        state = popup_state(session)
+        state = prompt_popup_state(session)
         return if state == @last_prompt_popup_state
 
         @last_prompt_popup_state = state
@@ -238,22 +238,6 @@ module Fatty
         win.bkgdset(attr) if win.respond_to?(:bkgdset)
         win.erase
         win.noutrefresh if win.respond_to?(:noutrefresh)
-      end
-
-      def popup_state(session)
-        [
-          popup_border,
-          session.message.to_s,
-          session.displayed.map(&:to_s),
-          session.selected,
-          session.field.prompt_text.to_s,
-          session.field.buffer.text.to_s,
-          session.field.cursor_x,
-          session.selected_labels.sort,
-          session.counts,
-          screen.rows,
-          screen.cols,
-        ]
       end
 
       def render_popup_title(session:)

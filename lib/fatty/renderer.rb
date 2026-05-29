@@ -153,6 +153,20 @@ module Fatty
       ]
     end
 
+    def prompt_popup_state(session)
+      [
+        popup_border,
+        session.title.to_s.dup.freeze,
+        session.message.to_s.dup.freeze,
+        session.field.prompt_text.to_s.dup.freeze,
+        session.field.buffer.text.to_s.dup.freeze,
+        session.field.buffer.cursor,
+        session.field.buffer.virtual_suffix.to_s.dup.freeze,
+        screen.rows,
+        screen.cols,
+      ]
+    end
+
     def output_state(viewport:, lines:, highlights:)
       {
         top: viewport.top,
@@ -250,18 +264,6 @@ module Fatty
         field.buffer.region_range,
         screen.input_rect.row,
         screen.input_rect.cols,
-      ]
-    end
-
-    def popup_state(session)
-      [
-        popup_border,
-        session.displayed.map(&:to_s),
-        session.selected,
-        session.field.buffer.text.to_s.dup.freeze,
-        session.field.cursor_x,
-        session.selected_labels.sort,
-        session.counts,
       ]
     end
 

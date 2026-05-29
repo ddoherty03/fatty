@@ -275,7 +275,7 @@ module Fatty
       end
 
       def render_prompt_popup(session:)
-        state = popup_state(session)
+        state = prompt_popup_state(session)
         return if state == @last_prompt_popup_state
 
         @last_prompt_popup_state = state
