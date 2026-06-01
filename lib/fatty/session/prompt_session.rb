@@ -25,6 +25,7 @@ module Fatty
         history_ctx: history_ctx,
       )
       @field.buffer.replace(initial.to_s)
+      @field.buffer.bol
 
       @win = nil
     end
