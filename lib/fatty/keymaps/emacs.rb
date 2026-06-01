@@ -100,10 +100,16 @@ module Fatty
       # Prompt
       map.bind(context: :prompt, key: :c, ctrl: true, action: :prompt_cancel)
       map.bind(context: :prompt, key: :g, ctrl: true, action: :prompt_cancel)
+      map.bind(context: :prompt, key: :escape, action: :prompt_cancel)
       map.bind(context: :prompt, key: :enter, action: :prompt_accept)
       map.bind(context: :prompt, key: :return, action: :prompt_accept)
       map.bind(context: :prompt, key: :j, ctrl: true, action: :prompt_accept)
 
+      # Prompt history
+      map.bind(context: :prompt, key: :p, ctrl: true, action: :history_prev)
+      map.bind(context: :prompt, key: :n, ctrl: true, action: :history_next)
+      map.bind(context: :prompt, key: :up, action: :history_prev)
+      map.bind(context: :prompt, key: :down, action: :history_next)
       #
       # Themes
       map.bind(context: :terminal, key: :t, meta: true, ctrl: true, action: :cycle_theme)
