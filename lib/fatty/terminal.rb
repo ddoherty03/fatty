@@ -460,8 +460,10 @@ module Fatty
 
     # Create a popup to ask the user to enter an arbitrary string.  These
     # prompts will keep their own history based on the history_key, or if not
-    # history_key is given, the prompt text.
-    def prompt(prompt, initial: "", quit_value: nil, history_key: nil)
+    # history_key is given, the prompt text.  If save_history is set to false, no
+    # history will be recorded, which can suppress writing sensitive values
+    # such as passwords to the history file.
+    def prompt(prompt, initial: "", quit_value: nil, history_key: nil, save_history: true)
       history_ctx = { prompt: (history_key || prompt).to_s }
 
       popup = Fatty::PromptSession.new(
@@ -470,6 +472,7 @@ module Fatty
         prompt: "> ",
         initial: initial,
         kind: :terminal_prompt,
+        save_history: save_history,
         history_ctx: history_ctx,
       )
       done = false

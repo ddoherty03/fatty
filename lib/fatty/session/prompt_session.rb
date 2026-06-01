@@ -11,11 +11,12 @@ module Fatty
     def id = :prompt
 
     def initialize(initial: "", prompt: "> ", title: "Prompt", message: nil, kind: nil,
-      history_ctx: nil, history_path: :default)
+      history_ctx: nil, history_path: :default, save_history: true)
       super(keymap: Keymaps.emacs, views: [])
       @title = title&.to_s
       @message = message&.to_s
       @kind = kind&.to_sym
+      @save_history = !!save_history
 
       @history = Fatty::History.for_path(history_path)
       @field = Fatty::InputField.new(
@@ -58,7 +59,7 @@ module Fatty
 
     desc "Accept prompt input"
     action :prompt_accept do
-      text = @field.accept_line.to_s
+      text = @field.accept_line(save_history: @save_history).to_s
       [
         [:terminal, :send_modal_owner, [:cmd, :prompt_result, { kind: @kind, text: text }]],
         [:terminal, :pop_modal],

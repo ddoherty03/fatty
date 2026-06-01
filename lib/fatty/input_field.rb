@@ -101,17 +101,17 @@ module Fatty
     # :category: Actions
 
     desc "Accept the current line, add to history, and clear the buffer"
-    action :accept_line do
+    action :accept_line do |save_history: true|
       line = buffer.text.dup
-      if history
+      if save_history && history && !line.empty?
         history.add(
           line,
           kind: resolve_history_kind,
           ctx: resolve_history_ctx,
         )
-        buffer.clear
-        line
       end
+      buffer.clear
+      line
     end
 
     desc "Replace buffer with the previous history entry"
