@@ -299,10 +299,18 @@ module Fatty
     end
 
     def completion_replace_range
-      prefix = buffer.completion_prefix.to_s
-      finish = buffer.cursor
-      start = finish - prefix.length
-      start...finish
+      text = buffer.text.to_s
+      cur = buffer.cursor.to_i
+      before = text[0...cur].to_s
+
+      token = before[/\S+\z/].to_s
+      start = cur - token.length
+
+      start...cur
+    end
+
+    def completion_prefix
+      text[0...cursor].to_s[/\S+\z/].to_s
     end
 
     def history_autosuggestion
@@ -456,9 +464,18 @@ module Fatty
     def build_line_with_completion(candidate, range:)
       text = buffer.text.to_s
       before = text[0...range.begin].to_s
+      current = text[range].to_s
       after = text[range.end..].to_s
+      candidate = candidate.to_s
 
-      "#{before}#{candidate}#{after}"
+      replacement =
+        if !current.empty? && candidate.downcase.start_with?(current.downcase)
+          "#{current}#{candidate[current.length..]}"
+        else
+          candidate
+        end
+
+      "#{before}#{replacement}#{after}"
     end
 
     def autosuggestion_visible?
