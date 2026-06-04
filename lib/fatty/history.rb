@@ -25,10 +25,10 @@ module Fatty
       @cursors = {}
 
       if @path
-        Fatty.info("History loaded from #{@path}")
+        Fatty.info("History loaded from #{@path}", tag: :config)
         load
       else
-        Fatty.info("In-memory History only: no path")
+        Fatty.info("In-memory History only: no path", tag: :config)
       end
     end
 

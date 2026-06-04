@@ -76,7 +76,7 @@ module Fatty
         return unless tags.include?(tag.to_sym)
       end
 
-      payload = { event: event, tag: tag }
+      payload = { tag: tag, event: event }
       payload.merge!(data.reject { |k, _| k == :event || k == :tag })
 
       logger.add(severity(level), payload)

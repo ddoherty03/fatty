@@ -695,7 +695,8 @@ module Fatty
       Fatty::Config.config
       Fatty::Logger.configure
       if Fatty::Logger.logger
-        Fatty.info("Logger configured to log to #{Logger.path}")
+        Fatty.info("Fatty #{Fatty::VERSION} loaded from #{__dir__}", tag: :config)
+        Fatty.info("Logger configured to log to #{Logger.path}", tag: :config)
         Fatty.info("Read config from #{Config.user_config_path}", tag: :config)
         Fatty.info("Config", config: Config.config, tag: :config)
       end
