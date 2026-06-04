@@ -464,7 +464,18 @@ module Fatty
     # history will be recorded, which can suppress writing sensitive values
     # such as passwords to the history file.
     def prompt(prompt, initial: "", quit_value: nil, history_key: nil, save_history: true)
-      history_ctx = { prompt: (history_key || prompt).to_s }
+      history_ctx = lambda do
+        base =
+          if @history_ctx.respond_to?(:call)
+            @history_ctx.call
+          elsif @history_ctx.is_a?(Hash)
+            @history_ctx
+          else
+            {}
+          end
+
+        base.merge(prompt: (history_key || prompt).to_s)
+      end
 
       popup = Fatty::PromptSession.new(
         title: "Prompt",
@@ -656,6 +667,17 @@ module Fatty
         .lines
         .flat_map { |line| wrap_status_line(line.chomp, width) }
         .last(status_max_rows)
+    end
+
+    # Suspend fatty and run the block in the normal terminal, then restore
+    # fatty's terminal on exit.
+    def suspend
+      stop_curses!
+      yield
+    ensure
+      start_curses!
+      refresh_layout!
+      render_now
     end
 
     private
