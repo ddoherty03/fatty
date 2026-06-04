@@ -39,9 +39,7 @@ module Fatty
       @history_kind = history_kind
       @history_ctx = history_ctx
       @completion_proc = completion_proc
-      @completion_cycle_base = nil
-      @completion_cycle_candidates = []
-      @completion_cycle_index = nil
+      @completion_state = nil
 
       @buffer =
         if buffer
@@ -167,92 +165,144 @@ module Fatty
     # :category: Completion
 
     def autosuggestion
+      active = active_completion_autosuggestion
+      return active if active
+
       return if buffer.text.empty?
 
-      active_completion_autosuggestion || default_completion_autosuggestion || history_autosuggestion
+      default_completion_autosuggestion || history_autosuggestion
     end
 
     def completion_candidates
       return [] unless @completion_proc
 
-      prefix = buffer.completion_prefix.to_s
-      return [] if prefix.empty?
-
       Array(@completion_proc.call(buffer))
         .compact
         .map(&:to_s)
         .reject(&:empty?)
-        .select { |s| s.start_with?(prefix) }
-        .reject { |s| s == prefix }
         .uniq
     end
 
     def completion_suggestions
-      raw =
-        if path_completion_candidates.any?
-          path_completion_candidates
-        else
-          completion_candidates
-        end
-
-      raw
-        .map { |candidate| build_line_with_completion(candidate) }
-        .reject { |line| line == buffer.text.to_s }
-        .uniq
+      if path_completion_candidates.any?
+        path_completion_candidates
+          .map { |candidate| build_line_with_completion(candidate, range: path_completion_range) }
+          .reject { |line| line == buffer.text.to_s }
+          .uniq
+      else
+        completion_candidates
+          .map { |candidate| build_line_with_completion(candidate, range: completion_replace_range) }
+          .reject { |line| line == buffer.text.to_s }
+          .uniq
+      end
     end
 
     def default_completion_autosuggestion
-      suggestions = completion_suggestions
-      result = suggestions.first
-      result
+      completion_suggestions.first
     end
 
+    # def active_completion_autosuggestion
+    #   text = buffer.text.to_s
+    #   result = nil
+
+    #   if @completion_cycle_base == text &&
+    #      @completion_cycle_index &&
+    #      !@completion_cycle_candidates.empty?
+    #     result = @completion_cycle_candidates[@completion_cycle_index]
+    #   end
+
+    #   result
+    # end
+
+    # def cycle_completion!
+    #   text = buffer.text.to_s
+    #   suggestions = completion_suggestions
+    #   result = nil
+
+    #   if suggestions.empty?
+    #     reset_completion_cycle!
+    #   elsif @completion_cycle_base == text &&
+    #         @completion_cycle_candidates == suggestions &&
+    #         @completion_cycle_index
+    #     @completion_cycle_index = (@completion_cycle_index + 1) % @completion_cycle_candidates.length
+    #     result = @completion_cycle_candidates[@completion_cycle_index]
+    #   else
+    #     @completion_cycle_base = text
+    #     @completion_cycle_candidates = suggestions
+    #     @completion_cycle_index =
+    #       if suggestions.length > 1
+    #         1
+    #       else
+    #         0
+    #       end
+    #     result = @completion_cycle_candidates[@completion_cycle_index]
+    #   end
+
+    #   sync_virtual_suffix!
+    #   result
+    # end
+
+    # def reset_completion_cycle!
+    #   @completion_cycle_base = nil
+    #   @completion_cycle_candidates = []
+    #   @completion_cycle_index = nil
+    #   nil
+    # end
+
     def active_completion_autosuggestion
+      return unless @completion_state
+
       text = buffer.text.to_s
-      result = nil
-
-      if @completion_cycle_base == text &&
-         @completion_cycle_index &&
-         !@completion_cycle_candidates.empty?
-        result = @completion_cycle_candidates[@completion_cycle_index]
+      if @completion_state[:base] == text &&
+         @completion_state[:index] &&
+         !@completion_state[:candidates].empty?
+        @completion_state[:candidates][@completion_state[:index]]
       end
-
-      result
     end
 
     def cycle_completion!
       text = buffer.text.to_s
-      suggestions = completion_suggestions
+      candidates = completion_suggestions
       result = nil
 
-      if suggestions.empty?
-        reset_completion_cycle!
-      elsif @completion_cycle_base == text &&
-            @completion_cycle_candidates == suggestions &&
-            @completion_cycle_index
-        @completion_cycle_index = (@completion_cycle_index + 1) % @completion_cycle_candidates.length
-        result = @completion_cycle_candidates[@completion_cycle_index]
+      if candidates.empty?
+        reset_completion_state!
+      elsif same_completion_state?(base: text, candidates: candidates)
+        @completion_state[:index] =
+          (@completion_state[:index] + 1) % @completion_state[:candidates].length
+        result = @completion_state[:candidates][@completion_state[:index]]
       else
-        @completion_cycle_base = text
-        @completion_cycle_candidates = suggestions
-        @completion_cycle_index =
-          if suggestions.length > 1
-            1
-          else
-            0
-          end
-        result = @completion_cycle_candidates[@completion_cycle_index]
+        @completion_state = {
+          base: text,
+          candidates: candidates,
+          index: initial_completion_index(text, candidates),
+        }
+        result = @completion_state[:candidates][@completion_state[:index]]
       end
 
       sync_virtual_suffix!
       result
     end
 
-    def reset_completion_cycle!
-      @completion_cycle_base = nil
-      @completion_cycle_candidates = []
-      @completion_cycle_index = nil
-      nil
+    def reset_completion_state!
+      @completion_state = nil
+    end
+
+    def initial_completion_index(text, candidates)
+      if text.empty?
+        0
+      elsif candidates.length > 1
+        1
+      else
+        0
+      end
+    end
+
+    def completion_replace_range
+      prefix = buffer.completion_prefix.to_s
+      finish = buffer.cursor
+      start = finish - prefix.length
+      start...finish
     end
 
     def history_autosuggestion
@@ -403,16 +453,12 @@ module Fatty
       end
     end
 
-    def build_line_with_completion(completion)
-      current = buffer.text.to_s
-      target = path_completion_range || buffer.completion_replace_range
-      start_i = target.begin
-      end_i   = target.end
+    def build_line_with_completion(candidate, range:)
+      text = buffer.text.to_s
+      before = text[0...range.begin].to_s
+      after = text[range.end..].to_s
 
-      before = current[0...start_i].to_s
-      after  = current[end_i..].to_s
-
-      "#{before}#{completion}#{after}"
+      "#{before}#{candidate}#{after}"
     end
 
     def autosuggestion_visible?
@@ -468,10 +514,6 @@ module Fatty
       end
     end
 
-    def popup_completion_query
-      popup_path_completion_prefix || path_completion_prefix || buffer.completion_prefix
-    end
-
     def popup_completion_range
       path_completion_range || buffer.completion_replace_range
     end
@@ -485,6 +527,13 @@ module Fatty
     end
 
     private
+
+    def same_completion_state?(base:, candidates:)
+      @completion_state &&
+        @completion_state[:base] == base &&
+        @completion_state[:candidates] == candidates &&
+        @completion_state[:index]
+    end
 
     def reset_history_cursor_for(action)
       return if action.to_s.start_with?("history_")

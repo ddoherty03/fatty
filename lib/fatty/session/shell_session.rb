@@ -494,7 +494,7 @@ module Fatty
     # Centralized dispatch: actions declare their target (:buffer/:field/:pager)
     # and Fatty::Actions routes through ActionEnvironment.
     def apply_action(action, args, ev, env:)
-      @field.reset_completion_cycle!
+      @field.reset_completion_state! unless action.to_sym == :complete
       defn = Fatty::Actions.lookup(action)
       result = Fatty::Actions.call(action, env, *args)
       if defn && [:field, :buffer].include?(defn[:on])

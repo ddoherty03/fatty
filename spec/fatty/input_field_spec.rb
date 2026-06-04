@@ -308,7 +308,7 @@ module Fatty
         expect(field.autosuggestion).to eq("cat ~/Downloads/00_WireInfo.pdf")
       end
 
-      it "resets the completion cycle when reset_completion_cycle! is called" do
+      it "resets the completion cycle when reset_completion_state! is called" do
         field = build_field(
           "cat ~/Downloads/",
           completion_proc: ->(_buffer) { [] },
@@ -324,7 +324,7 @@ module Fatty
         field.cycle_completion!
         expect(field.autosuggestion).to eq("cat ~/Downloads/01_Notes.txt")
 
-        field.reset_completion_cycle!
+        field.reset_completion_state!
         expect(field.autosuggestion).to eq("cat ~/Downloads/00_WireInfo.pdf")
       end
 
