@@ -201,54 +201,6 @@ module Fatty
       completion_suggestions.first
     end
 
-    # def active_completion_autosuggestion
-    #   text = buffer.text.to_s
-    #   result = nil
-
-    #   if @completion_cycle_base == text &&
-    #      @completion_cycle_index &&
-    #      !@completion_cycle_candidates.empty?
-    #     result = @completion_cycle_candidates[@completion_cycle_index]
-    #   end
-
-    #   result
-    # end
-
-    # def cycle_completion!
-    #   text = buffer.text.to_s
-    #   suggestions = completion_suggestions
-    #   result = nil
-
-    #   if suggestions.empty?
-    #     reset_completion_cycle!
-    #   elsif @completion_cycle_base == text &&
-    #         @completion_cycle_candidates == suggestions &&
-    #         @completion_cycle_index
-    #     @completion_cycle_index = (@completion_cycle_index + 1) % @completion_cycle_candidates.length
-    #     result = @completion_cycle_candidates[@completion_cycle_index]
-    #   else
-    #     @completion_cycle_base = text
-    #     @completion_cycle_candidates = suggestions
-    #     @completion_cycle_index =
-    #       if suggestions.length > 1
-    #         1
-    #       else
-    #         0
-    #       end
-    #     result = @completion_cycle_candidates[@completion_cycle_index]
-    #   end
-
-    #   sync_virtual_suffix!
-    #   result
-    # end
-
-    # def reset_completion_cycle!
-    #   @completion_cycle_base = nil
-    #   @completion_cycle_candidates = []
-    #   @completion_cycle_index = nil
-    #   nil
-    # end
-
     def active_completion_autosuggestion
       return unless @completion_state
 
