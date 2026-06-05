@@ -75,7 +75,8 @@ module Fatty
         @owner.viewport.page_bottom(@owner.output.lines)
       end
 
-      terminal.renderer.reset_frame_cache if terminal.respond_to?(:renderer)
+      renderer = terminal.renderer if terminal.respond_to?(:renderer)
+      renderer.invalidate! if renderer&.respond_to?(:invalidate!)
     end
 
     def force_scrolling_output!
