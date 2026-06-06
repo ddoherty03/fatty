@@ -52,11 +52,11 @@ module Fatty
         end
 
         refresh
-        terminal.render_now if render
+        terminal.render_frame if render
         self
       end
 
-      def finish(message = nil, clear: false, role: @role, render: false, transient: true)
+      def finish(message = nil, clear: false, role: @role, render: false)
         if clear
           terminal.clear_status
         else
@@ -66,10 +66,9 @@ module Fatty
             else
               render_text
             end
-          terminal.set_status(text, role: role, transient: transient)
+          terminal.status(text, role: role)
         end
-
-        terminal.render_now if render
+        terminal.render_frame if render
         self
       end
 
@@ -107,7 +106,7 @@ module Fatty
       end
 
       def refresh
-        terminal.set_status(render_text, role: role)
+        terminal.status(render_text, role: role)
       end
 
       def render_text(suffix: nil)

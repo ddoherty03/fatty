@@ -2,12 +2,12 @@
 
 module Fatty
   class StatusView < View
-    def render(screen:, renderer:, terminal:)
-      return unless terminal.status_text
+    def draw(screen:, renderer:, terminal:, session:)
+      return unless session.visible?
 
       renderer.render_status(
-        terminal.status_text,
-        role: terminal.status_role || :info,
+        session.text,
+        role: session.role || :info,
       )
     end
   end

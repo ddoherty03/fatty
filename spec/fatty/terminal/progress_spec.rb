@@ -8,7 +8,7 @@ module Fatty
       instance_double(
         Fatty::Terminal,
         set_status: nil,
-        render_now: nil,
+        render_frame: nil,
         screen: nil,
       )
     end
@@ -105,7 +105,7 @@ module Fatty
 
         progress.finish("Complete", render: true)
 
-        expect(terminal).to have_received(:render_now)
+        expect(terminal).to have_received(:render_frame)
       end
     end
 

@@ -20,6 +20,10 @@ module Fatty
       :alert
     end
 
+    def visible?
+      !!current
+    end
+
     private
 
     def update_cmd(name, payload)

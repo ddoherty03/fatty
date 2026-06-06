@@ -22,15 +22,6 @@ module Fatty
       @counter = Counter.new
     end
 
-    def inspect
-      "#{self.class.name}:#{object_id}"
-    end
-
-    def add_view(view)
-      @views << view
-      view
-    end
-
     # Called once when the session becomes active (e.g. pushed).
     # Subclasses may override to kick off timers/async work, etc.
     def init(terminal:)
@@ -66,6 +57,25 @@ module Fatty
           []
         end
       commands
+    end
+
+    # Render the session.
+    #
+    # By default, renders all views belonging to the session, ordered by z-index.
+    # Subclasses can override, but should not mutate state here.
+    def view(screen:, renderer:)
+      views.sort_by(&:z).each do |v|
+        v.render(screen:, renderer:, terminal:, session: self)
+      end
+    end
+
+    def inspect
+      "#{self.class.name}:#{object_id}"
+    end
+
+    def add_view(view)
+      @views << view
+      view
     end
 
     # Save any state we want saved on quit, error, etc.
@@ -107,16 +117,6 @@ module Fatty
     desc "Universal argument (C-u)"
     action :universal_argument, on: :session do
       counter.universal_argument!
-    end
-
-    # Render the session.
-    #
-    # By default, renders all views belonging to the session, ordered by z-index.
-    # Subclasses can override, but should not mutate state here.
-    def view(screen:, renderer:)
-      views.sort_by(&:z).each do |v|
-        v.render(screen:, renderer:, terminal:, session: self)
-      end
     end
 
     def close
@@ -173,6 +173,7 @@ module Fatty
 end
 
 require_relative "session/alert_session"
+require_relative "session/status_session"
 require_relative "session/modal_session"
 require_relative "session/popup_session"
 require_relative "session/search_session"

@@ -47,6 +47,7 @@ module Fatty
   require_relative "fatty/viewport"
   require_relative "fatty/views"
   require_relative "fatty/session"
+  require_relative "fatty/apis"
   require_relative "fatty/terminal"
   require_relative "fatty/markdown"
   require_relative "fatty/help"
