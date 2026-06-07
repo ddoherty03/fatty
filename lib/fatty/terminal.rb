@@ -4,26 +4,64 @@ require_relative 'terminal/progress'
 require_relative 'terminal/popup_owner'
 
 module Fatty
+  # Fatty aims at providing a full-featured, curses-based platform for
+  # REPL-style interaction with
+  #  - command-line editing (by default using Emacs-like keybindings),
+  #  - an output pane for normal output, a status pane for out-of-band
+  #    messages to the user, and an alert pane for library-related error or
+  #    information messages,
+  #  - history traversal and context-aware history,
+  #  - command completions based on input-so-far,
+  #  - popup facilities for things such as prompting the user for a string,
+  #    selecting one or more values from a list, selecting user-defined
+  #    actions from a menu, and more,
+  #  - a variety of progress indicators to keep the user informed about what's
+  #    happening in a long-running process.
+  #  - scrolling and searching long output to the output pane,
+  #  - rendering markdown text in the output pane,
+  #  - a theming system with several pre-defined color themes and facilities
+  #    for the user to add their own,
+  #  - a way to define keys that curses does not recognize and assign actions
+  #    to them, including actions the user defines
+  #  - rendering ANSI colored text to the output pane and the status pane,
+  #  - a way to suspend Fatty and exit to your real terminal and come back to
+  #    where you left off when you exit that terminal session.
+  #
+  # In other words, Fatty does much of the heavy lifting needed for a
+  # comfortable, full-featured interactive application.
+  #
+  # Fatty does not purport to be a "terminal" program but sits on top of them
+  # using curses and truecolor rendering into your normal terminal.
+  #
+  # Terminal is the main entry point. A library user normally creates a
+  # Terminal, configures the prompt, completion, history, and accept callback,
+  # then calls #go.
+  #
+  # Initialization options:
+  #
+  # - prompt :: either a fixed string or a proc that, when called, returns a
+  #   string to be used as the command-line prompt;
+  # - on_accept :: a proc that takes the edited line and performs some action
+  #   on it; the proc will have available to it a variable, `env`, that
+  #   contains an AcceptEnv object containing a reference to the ShellSession
+  #   and Terminal so that it can call actions on them, most commonly
+  #   `env.session.append_output(text)` to write output to the output pane;
+  # - completion_proc :: a proc that returns an Array of strings based on the
+  #   input-so-far to suggest completions that can be inserted at that point;
+  # - history_path :: a path or sentinel describing input history is loaded
+  #   from and persisted;
+  # - history_ctx :: a proc that provides a "context" for history so that it
+  #   can be "favored" by history requests in the same context later;
+  # - env :: an optional Fatty::Env describing the runtime environment; when
+  #   omitted, Fatty will detect it with `Fatty::Env.detect`.
+  #
   class Terminal
     SCROLL_RENDER_THROTTLE = 0.05
-    DEFAULT_STATUS_MAX_ROWS = 4
 
-    # Commands are plain Ruby arrays for now.
-    #
-    # Suggested shapes:
-    #
-    # Terminal/runtime commands:
-    #   [:terminal, :quit]
-    #   [:terminal, :push, session]
-    #   [:terminal, :pop]
-    #
-    # Session-targeted commands (no special casing):
-    #   [:send, :alert, :show, { level: :warn, message: "No matches" }]
-    #   [:send, :alert, :clear, {}]
-    #
-    # You can add more later; Terminal only needs a small dispatcher.
+    attr_reader :screen, :focused_session, :renderer, :event_source, :env
+    attr_reader :status_session, :alert_session
 
-    attr_reader :screen, :renderer, :event_source, :status_text, :status_role, :env
+    include StatusApi
 
     def initialize(prompt: "> ",
                    on_accept: nil,
@@ -39,163 +77,39 @@ module Fatty
       @env = env
 
       @running = false
-      @stack = []
       @pinned = []
       @sessions = []
       @sessions_by_id = {}
       @modal_stack = []
-      @status_text = nil
-      @status_role = :info
-      @status_transient = false
-    end
-
-    # --- Status line management ------------------------------------------------
-
-    def set_status(text, role: :info, transient: false)
-      old_rows = status_rows
-      str =
-        if text.is_a?(Array)
-          text.map { |part| part.is_a?(Hash) && part.key?(:text) ? part[:text] : part }.join
-        else
-          text.to_s
-        end
-
-      if str.empty?
-        @status_text = nil
-        @status_role = :info
-        @status_transient = false
-      else
-        @status_text = text
-        @status_role = role
-        @status_transient = transient
-      end
-      refresh_layout! if @screen && old_rows != status_rows
-    end
-
-    def clear_status
-      old_rows = status_rows
-      @status_text = nil
-      @status_role = :info
-      @status_transient = false
-      refresh_layout! if @screen && old_rows != status_rows
-    end
-
-    def transient_status?
-      !!@status_transient
-    end
-
-    # Display a message to the user in the status line, colored according to
-    # the Config for "info".
-    def info(text)
-      return $stderr.puts(text) unless @ctx
-
-      set_status(text.to_s, role: :info, transient: true)
-    end
-
-    # Display a message to the user in the status line, colored according to
-    # the Config for "good," i.e., success.
-    def good(text)
-      return $stderr.puts(text) unless @ctx
-
-      set_status(text.to_s, role: :good, transient: true)
-    end
-
-    # Display a message to the user in the status line, colored according to
-    # the Config for "warn," i.e., short of an error but not complete
-    # success either.
-    def warn(text)
-      return $stderr.puts(text) unless @ctx
-
-      set_status(text.to_s, role: :warn, transient: true)
-    end
-
-    # Display a message to the user in the status line, colored according to
-    # the Config for "oops," i.e., a soft failure.
-    def oops(text)
-      return $stderr.puts(text) unless @ctx
-
-      set_status(text.to_s, role: :error, transient: true)
-    end
-
-    # --- Session management ------------------------------------------------
-
-    def push(session)
-      Fatty.debug("Terminal#push(#{session})", tag: :session)
-      @stack << session
-      register(session)
-      commands = session.init(terminal: self)
-      apply_commands(commands)
-      session
-    end
-
-    def pop
-      Fatty.debug("Terminal#pop -> #{@stack.last}", tag: :session)
-      @stack.pop
-    end
-
-    def pin(session)
-      Fatty.debug("Terminal#pin(#{session})", tag: :session)
-      @pinned << session
-      register(session)
-      commands = session.init(terminal: self)
-      apply_commands(commands)
-      session
-    end
-
-    def active_session
-      top = @modal_stack.last
-      return top[:session] if top
-
-      focused_session
-    end
-
-    def focused_session
-      top = @stack.last
-      return top[:session] if top.is_a?(Hash)
-
-      top
-    end
-
-    def register(session)
-      return unless session.respond_to?(:id)
-      return if session.id.nil?
-
-      @sessions_by_id[session.id] = session
-    end
-
-    def find_session(id)
-      @sessions_by_id[id]
-    end
-
-    def push_modal(session, owner:)
-      @modal_stack << { session: session, owner: owner }
-      msg = "Terminal#push_modal: size=#{@modal_stack.length} session=#{session.class} object_id=#{session.object_id}"
-      Fatty.debug(msg, tag: :session)
-      register(session)
-      @renderer.invalidate! if defined?(@renderer) && @renderer
-      commands = session.init(terminal: self)
-      apply_commands(commands)
-    end
-
-    def pop_modal
-      top = @modal_stack.pop
-      msg = "Terminal#pop_modal: size=#{@modal_stack.length} popped=#{top && top[:session].class}"
-      Fatty.debug(msg, tag: :session)
-      session = top && top[:session]
-
-      session.close if session&.respond_to?(:close)
-      @renderer&.invalidate!
-      nil
-    end
-
-    # Return the owner of the top modal session without modifying the stack.
-    def modal_owner
-      top = @modal_stack.last
-      top && top[:owner]
     end
 
     # --- Runtime -----------------------------------------------------------
-
+    # Run the terminal.
+    #
+    # This method owns Fatty's main lifecycle:
+    #
+    # - load configuration and logging;
+    # - start curses and build the screen, renderer, and event source;
+    # - install the default permanent sessions;
+    # - enter the event loop;
+    # - restore the real terminal and persist session state on exit.
+    #
+    # The event loop has two sources of work. First, it polls the EventSource
+    # for user input, resize events, and other terminal events. Any event is
+    # routed to the active session, whose #update method may mutate session
+    # state and return commands for Terminal to process. Second, the active
+    # session is ticked once per loop so it can animate, poll, or otherwise
+    # mark itself dirty without receiving a key event.
+    #
+    # Whenever an event or tick changes state, Terminal schedules a render. Most
+    # renders happen immediately. The exception is fast scrolling in the normal
+    # curses renderer, where repeated output updates may be throttled to avoid
+    # excessive redraws. Truecolor rendering and direct user input are rendered
+    # immediately.
+    #
+    # Fatal errors are logged and re-raised, but cleanup still runs: curses is
+    # stopped so the real terminal is restored, and persistent sessions are given
+    # a chance to save their state.
     def go
       preflight!
       start_curses!
@@ -278,9 +192,9 @@ module Fatty
           # Performance logging
           Fatty.debug(
             "perf loops=#{loop_count} events=#{event_count} " \
-              "tick_dirty=#{tick_dirty_count} renders=#{render_count} " \
-              "deferred=#{deferred_count} avg_frame_ms=#{avg_frame_ms} " \
-              "scrolling=#{scrolling_output?}",
+            "tick_dirty=#{tick_dirty_count} renders=#{render_count} " \
+            "deferred=#{deferred_count} avg_frame_ms=#{avg_frame_ms} " \
+            "scrolling=#{scrolling_output?}",
             tag: :perf,
           )
           perf_started_at = now
@@ -311,6 +225,133 @@ module Fatty
         Fatty.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
       end
     end
+
+    # --- Suspension  ------------------------------------------------
+
+    # Suspend fatty and run the block in the normal terminal, then restore
+    # fatty's terminal on exit.
+    def suspend
+      stop_curses!
+      yield
+    ensure
+      start_curses!
+      refresh_layout!
+      render_frame
+    end
+
+    private
+
+    # * Session management
+    #
+    # Terminal coordinates a small set of Session objects. A session is a UI
+    # component with three standard phases:
+    #
+    # - init :: receive the terminal and initialize session state;
+    # - update :: receive events or commands, mutate session state accordingly,
+    #   and, optionally, return commands requesting that Terminal perform
+    #   additional actions or route commands to other sessions;
+    # - view :: render the session's current state.
+    #
+    # Terminal is not itself a Session subclass, but it acts as the coordinator
+    # for all sessions. It routes input events to the active session, routes
+    # explicit commands either to itself or to a named session, and renders the
+    # sessions in a fixed order.
+    #
+    # Terminal keeps sessions in two groups:
+    #
+    # - permanent sessions :: a collection of always-present sessions. One
+    #   permanent session is designated the focused session and receives
+    #   keyboard input whenever no modal session is active. In the standard
+    #   configuration this is a ShellSession. Other permanent sessions, such
+    #   as StatusSession and AlertSession, are output-only sessions that do
+    #   not receive input focus.
+    # - modal sessions :: temporary sessions displayed above the permanent
+    #   sessions, usually as popups. While a modal session is present, it
+    #   becomes the active session and receives input first. The modal stack
+    #   also records an owner so that modal results can be sent back to the
+    #   session or helper that opened the modal.
+    #
+    # Rendering follows the same layering: permanent sessions are rendered
+    # first, followed by the top modal session.
+    #
+    # Commands are plain Ruby arrays for now.
+    #
+    # Suggested shapes:
+    #
+    # Terminal/runtime commands:
+    #   [:terminal, :quit]
+    #   [:terminal, :push, session]
+    #   [:terminal, :pop]
+    #
+    # Session-targeted commands (no special casing):
+    #   [:send, :alert, :show, { level: :warn, message: "No matches" }]
+    #   [:send, :alert, :clear, {}]
+
+    def install_session(session, focus: false)
+      @sessions << session
+      register(session)
+      @focused_session = session if focus
+
+      commands = session.init(terminal: self)
+      apply_commands(commands)
+      session
+    end
+
+    def register(session)
+      return unless session.respond_to?(:id)
+      return if session.id.nil?
+
+      @sessions_by_id[session.id] = session
+    end
+
+    def install_default_sessions!
+      install_session(Fatty::ShellSession.new(
+                        prompt: @prompt,
+                        on_accept: @on_accept,
+                        completion_proc: @completion_proc,
+                        history_path: @history_path,
+                        history_ctx: @history_ctx,
+                      ),
+                      focus: true)
+      @status_session = install_session(Fatty::StatusSession.new)
+      @alert_session = install_session(Fatty::AlertSession.new)
+    end
+
+    def push_modal(session, owner:)
+      @modal_stack << { session: session, owner: owner }
+      msg = "Terminal#push_modal: size=#{@modal_stack.length} session=#{session.class} object_id=#{session.object_id}"
+      Fatty.debug(msg, tag: :session)
+
+      @renderer.invalidate! if defined?(@renderer) && @renderer
+      commands = session.init(terminal: self)
+      apply_commands(commands)
+    end
+
+    def pop_modal
+      top = @modal_stack.pop
+      msg = "Terminal#pop_modal: size=#{@modal_stack.length} popped=#{top && top[:session].class}"
+      Fatty.debug(msg, tag: :session)
+      session = top && top[:session]
+
+      session.close if session&.respond_to?(:close)
+      @renderer&.invalidate!
+      nil
+    end
+
+    # If we have modal sessions, the most recent one is active; otherwise, the
+    # focused_session, i.e., the ShellSession.
+    def active_session
+      top = @modal_stack.last
+      top ? top[:session] : focused_session
+    end
+
+    # Return the owner of the top modal session without modifying the stack.
+    def modal_owner
+      top = @modal_stack.last
+      top && top[:owner]
+    end
+
+    # --- UI Tools  ------------------------------------------------
 
     # The consumer can call #choose to cause an interactive popup session to
     # present the user with a series of choices to select from.
@@ -624,6 +665,23 @@ module Fatty
       result
     end
 
+    # --- Rendering ---------------------------------------------------------
+
+    def render_frame
+      renderer.begin_frame
+
+      @sessions.each do |session|
+        session.view(renderer: renderer)
+      end
+      if (top = @modal_stack.last)
+        top[:session].view(renderer: renderer)
+      end
+      restore_active_cursor
+      renderer.finish_frame
+    end
+
+    private
+
     def call_menu_action(action, session:, label:, payload:)
       if action.respond_to?(:call)
         env = MenuEnv.new(
@@ -642,53 +700,12 @@ module Fatty
       end
     end
 
-    def render_now
-      render_frame
+    def find_session(id)
+      @sessions_by_id[id]
     end
 
-    def status_visible?
-      @status_text && !@status_text.empty?
-    end
-
-    def status_rows
-      return 0 unless status_visible?
-
-      status_lines.length.clamp(1, status_max_rows)
-    end
-
-    def status_max_rows
-      Fatty::Config.config.dig(:status, :max_rows)&.to_i || DEFAULT_STATUS_MAX_ROWS
-    end
-
-    def status_lines
-      width = screen&.cols || 80
-
-      @status_text.to_s
-        .lines
-        .flat_map { |line| wrap_status_line(line.chomp, width) }
-        .last(status_max_rows)
-    end
-
-    # Suspend fatty and run the block in the normal terminal, then restore
-    # fatty's terminal on exit.
-    def suspend
-      stop_curses!
-      yield
-    ensure
-      start_curses!
-      refresh_layout!
-      render_now
-    end
-
-    private
-
-    def wrap_status_line(line, width)
-      text = Fatty::Ansi.strip(line.to_s)
-      return [""] if text.empty?
-
-      # Good enough first pass: no soft wrap within words.
-      # Later this should use visible-width-aware wrapping.
-      text.scan(/.{1,#{[width, 1].max}}/)
+    def alert_session
+      find_session(:alert)
     end
 
     def preflight!
@@ -720,7 +737,7 @@ module Fatty
       @ctx = Fatty::Curses::Context.new
       @ctx.start
 
-      @screen = Fatty::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols, status_rows: status_rows)
+      @screen = Fatty::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols, status_rows: 0)
       @ctx.apply_layout(@screen)
 
       @renderer =
@@ -750,17 +767,6 @@ module Fatty
       end
     end
 
-    def install_default_sessions!
-      pin(Fatty::AlertSession.new)
-      push(Fatty::ShellSession.new(
-        prompt: @prompt,
-        on_accept: @on_accept,
-        completion_proc: @completion_proc,
-        history_path: @history_path,
-        history_ctx: @history_ctx,
-      ))
-    end
-
     def scrolling_output?
       session = active_session
       pager =
@@ -775,7 +781,7 @@ module Fatty
       screen.resize(
         rows: @ctx.rows,
         cols: @ctx.cols,
-        status_rows: status_rows,
+        status_rows: status_session.rows,
       )
       @ctx.apply_layout(screen)
       renderer.screen = screen
@@ -863,14 +869,9 @@ module Fatty
       s = active_session
       return [] unless s
 
-      # Clear transient alerts on the next user keypress.
-      if key_event_message?(message) && !resize_message?(message) && find_session(:alert)
-        apply_command([:send, :alert, :clear, {}])
-      end
-
-      # Clear transient status line on the next user keypress.
-      if key_event_message?(message) && transient_status?
-        clear_status
+      if user_interaction_message?(message)
+        apply_command(Command.session(:status, :clear)) if status_session&.visible?
+        apply_command(Command.session(:alert, :clear)) if alert_session&.visible?
       end
 
       Fatty.debug("Terminal#dispatch_message: #{message.inspect}", tag: :session)
@@ -878,6 +879,10 @@ module Fatty
       Fatty.debug("Terminal#dispatch_message: session=#{s.class} -> cmds=#{commands.inspect}", tag: :session)
 
       apply_commands(commands)
+    end
+
+    def user_interaction_message?(message)
+      key_event_message?(message) && !resize_message?(message)
     end
 
     # Return whether message is a key message
@@ -891,39 +896,28 @@ module Fatty
       end
     end
 
-    # A command is either bound for this Terminal (first element :terminal) or
-    # it's meant to be forwarded to a Session (first element :send).  This
-    # method routes the command to its proper destination.
-    def apply_command(cmd)
-      Fatty.debug("Terminal#apply_command(#{cmd})", tag: :session)
-      return if cmd.nil?
+    # A command is either bound for this Terminal or it's meant to be
+    # forwarded to a Session.  This method routes the command to its proper
+    # destination.
+    def apply_command(command)
+      command = Fatty::Command.coerce(command)
+      Fatty.debug("Terminal#apply_command(#{command})", tag: :session)
 
-      unless cmd.is_a?(Array) && cmd.first.is_a?(Symbol)
-        raise ArgumentError, "command must be an Array starting with a Symbol, got: #{cmd.inspect}"
-      end
-
-      case cmd[0]
-      when :terminal
-        apply_terminal_command(cmd)
-      when :send
-        apply_send_command(cmd)
+      if command.terminal?
+        apply_terminal_command(command)
       else
-        raise ArgumentError, "unknown command domain #{cmd[0].inspect} (cmd=#{cmd.inspect})"
+        apply_session_command(command)
       end
     end
 
     # Apply a command meant to be applied by this Terminal
-    def apply_terminal_command(cmd)
-      _, name, *rest = cmd
-      case name
+    def apply_terminal_command(command)
+      case command.action
       when :quit
         persist_sessions!
         quit
-      when :push
-        session = rest.fetch(0)
-        push(session)
-      when :pop
-        pop
+      when :refresh_layout
+        refresh_layout!
       when :push_modal
         session = rest.fetch(0)
         Fatty.debug("Terminal#apply_terminal_command(:push_modal) before size=#{@modal_stack.length}", tag: :session)
@@ -936,7 +930,6 @@ module Fatty
       when :send_modal_owner
         msg = rest.fetch(0)
         owner = modal_owner
-        # cmds = owner ? owner.update(msg, terminal: self) : []
         cmds = owner ? owner.update(msg) : []
         apply_commands(cmds)
       when :cycle_theme
@@ -951,27 +944,24 @@ module Fatty
       when :handle_resize
         handle_resize
       else
-        raise ArgumentError, "unknown terminal command #{name.inspect} (cmd=#{cmd.inspect})"
+        raise ArgumentError, "unknown terminal command #{command.action.inspect} (cmd=#{command.inspect})"
       end
     end
 
-    # Forward a command meant to be applied by a
-    # [:send, recipient, message_name, payload_hash]
-    def apply_send_command(cmd)
-      _, recipient, message_name, payload = cmd
+    # Forward a command meant to be applied by a session.
+    def apply_session_command(command)
+      session = find_session(command.id)
+      raise ArgumentError, "no session registered with id=#{command.id.inspect}" unless session
 
-      session = find_session(recipient)
-      raise ArgumentError, "no session registered with id=#{recipient.inspect}" unless session
-
-      payload ||= {}
-      unless payload.is_a?(Hash)
-        raise ArgumentError, "send payload must be a Hash, got: #{payload.inspect}"
+      unless command.payload.is_a?(Hash)
+        raise ArgumentError, "session command payload must be a Hash, got: #{command.payload.inspect}"
       end
 
-      # Deliver as a uniform "command message" array for now.
-      # Sessions can pattern-match it in #update.
-      message = [:cmd, message_name, payload]
-
+      # Command is Terminal's routing object. Session#update, however, still
+      # speaks in event/message arrays so that command messages and key/mouse
+      # events travel through the same update path. The :cmd envelope tells
+      # Session#update to dispatch to #update_cmd.
+      message = [:cmd, command.action, command.payload]
       commands = session.update(message)
       apply_commands(commands)
     end
@@ -990,27 +980,6 @@ module Fatty
           [choice.to_s, choice]
         end
       end
-    end
-
-    # --- Rendering ---------------------------------------------------------
-
-    def render_frame
-      renderer.begin_frame
-      sessions = @pinned + @stack
-      sessions.each do |s|
-        s.view(screen: screen, renderer: renderer)
-      end
-      Fatty::StatusView.new.render(
-        screen: screen,
-        renderer: renderer,
-        terminal: self,
-      )
-      if (top = @modal_stack.last)
-        top[:session].view(screen: screen, renderer: renderer)
-      end
-
-      restore_active_cursor
-      renderer.finish_frame
     end
 
     def restore_active_cursor

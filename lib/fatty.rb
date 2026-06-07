@@ -26,6 +26,7 @@ module Fatty
   require_relative "fatty/accept_env"
   require_relative "fatty/action"
   require_relative "fatty/actionable"
+  require_relative "fatty/command"
   require_relative "fatty/history"
   require_relative "fatty/search"
   require_relative "fatty/input_buffer"
