@@ -241,6 +241,21 @@ module Fatty
       render_frame
     end
 
+    # --- Rendering ---------------------------------------------------------
+
+    def render_frame
+      renderer.begin_frame
+
+      @sessions.each do |session|
+        session.view(renderer: renderer)
+      end
+      if (top = @modal_stack.last)
+        top[:session].view(renderer: renderer)
+      end
+      restore_active_cursor
+      renderer.finish_frame
+    end
+
     private
 
     # * Session management
@@ -438,7 +453,7 @@ module Fatty
       screen.resize(
         rows: @ctx.rows,
         cols: @ctx.cols,
-        status_rows: status_session.rows,
+        status_rows: status_session&.rows,
       )
       @ctx.apply_layout(screen)
       renderer.screen = screen
@@ -484,7 +499,7 @@ module Fatty
 
       renderer.clear_physical_screen! if renderer.context.truecolor
 
-      screen.resize(rows: rows, cols: cols, status_rows: status_rows)
+      screen.resize(rows: rows, cols: cols, status_rows: status_session&.rows)
       renderer.context.apply_layout(screen)
       renderer.screen = screen
       renderer.sync_backgrounds! if renderer.context.truecolor
@@ -548,6 +563,7 @@ module Fatty
     end
 
     def apply_commands(commands)
+      commands = [commands] if commands.is_a?(Fatty::Command)
       Array(commands).each do |cmd|
         apply_command(cmd)
       end
@@ -567,7 +583,7 @@ module Fatty
       end
     end
 
-    # Apply a command meant to be applied by this Terminal
+    # Apply a command meant to be applied by this Terminal.
     def apply_terminal_command(command)
       case command.action
       when :quit
@@ -576,28 +592,30 @@ module Fatty
       when :refresh_layout
         refresh_layout!
       when :push_modal
-        session = rest.fetch(0)
+        session = command.payload.fetch(:session)
         Fatty.debug("Terminal#apply_terminal_command(:push_modal) before size=#{@modal_stack.length}", tag: :session)
         push_modal(session, owner: focused_session)
         Fatty.debug("Terminal#apply_terminal_command(:push_modal) after size=#{@modal_stack.length}", tag: :session)
       when :pop_modal
         Fatty.debug("Terminal#apply_terminal_command(:pop_modal) before size=#{@modal_stack.length}", tag: :session)
         pop_modal
-        Fatty.debug("Terminal#apply_terminal_command(:pop_modal) aftersize=#{@modal_stack.length}", tag: :session)
+        Fatty.debug("Terminal#apply_terminal_command(:pop_modal) after size=#{@modal_stack.length}", tag: :session)
       when :send_modal_owner
-        msg = rest.fetch(0)
+        message = command.payload.fetch(:message)
         owner = modal_owner
-        cmds = owner ? owner.update(msg) : []
-        apply_commands(cmds)
+        commands = owner ? owner.update(message) : []
+        apply_commands(commands)
+      when :choose_theme
+        choose_theme
       when :cycle_theme
         new_theme = Fatty::Themes::Manager.cycle
         renderer.apply_theme!(new_theme)
-        apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{new_theme}" }])
+        apply_command(Fatty::Command.session(:alert, :show, level: :info, message: "Theme: #{new_theme}"))
       when :set_theme
-        theme = rest.fetch(0)
+        theme = command.payload.fetch(:theme)
         Fatty::Themes::Manager.set(theme)
         renderer.apply_theme!(theme)
-        apply_command([:send, :alert, :show, { level: :info, message: "Theme: #{theme}" }])
+        apply_command(Fatty::Command.session(:alert, :show, level: :info, message: "Theme: #{theme}"))
       when :handle_resize
         handle_resize
       else
@@ -702,6 +720,30 @@ module Fatty
 
       ::Curses.curs_set(1)
       renderer.restore_cursor(session.field)
+    end
+
+    def choose_theme
+      current = Fatty::Themes::Manager.current
+      names = Fatty::Themes::Manager.theme_names
+      ordered = [current] + (names - [current])
+
+      chooser = Fatty::PopUpSession.new(
+        source: ordered,
+        kind: :theme_chooser,
+        title: "Themes",
+        prompt: "Theme: ",
+        selection: :top,
+      )
+      owner = PopupOwner.new(
+        on_result: ->(payload) do
+          theme = payload[:item]
+          Fatty::Command.terminal(:set_theme, theme: theme)
+        end,
+        on_cancel: -> do
+          Fatty::Command.terminal(:set_theme, theme: current)
+        end,
+      )
+      push_modal(chooser, owner: owner)
     end
   end
 end

@@ -23,7 +23,7 @@ module Fatty
       end
       new_rows = rows
       if old_rows != new_rows
-        [Fatty::Command.terminal(:refresh_layout)]
+        [Command.terminal(:refresh_layout)]
       else
         []
       end

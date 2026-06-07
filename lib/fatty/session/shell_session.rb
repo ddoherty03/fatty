@@ -40,10 +40,6 @@ module Fatty
       []
     end
 
-    def keymap_contexts
-      pager_active? ? [:paging, :terminal] : [:input, :text, :terminal]
-    end
-
     def update_key(ev)
       return [] unless ev.is_a?(Fatty::KeyEvent)
 
@@ -51,12 +47,12 @@ module Fatty
       Fatty.debug("ShellSession.update_key: #{key_str}", tag: :session)
       case ev.key
       when :resize
-        [[:terminal, :handle_resize]]
+        Command.terminal(:handle_resize)
       when :enter, :return
         # safety: if somehow not bound, still accept
-        submit_line
+        handle_action(:submit_line, event: ev)
       else
-        [alert_cmd(:warn, "Unbound key: #{ev} (edit config in 'keybindings.yml' to bind)", ev: ev)]
+        alert_cmd(:warn, "Unbound key: #{ev} (edit config in 'keybindings.yml' to bind)", ev: ev)
       end
     end
 
@@ -78,6 +74,10 @@ module Fatty
         renderer.render_input_field(field)
         renderer.restore_cursor(field)
       end
+    end
+
+    def keymap_contexts
+      pager_active? ? [:paging, :terminal] : [:input, :text, :terminal]
     end
 
     def pager_status_viewport(screen)
@@ -125,38 +125,39 @@ module Fatty
 
     desc "Pass the current shell input line to the proc"
     action :submit_line do
-      submit_line
-    end
-
-    # Perform the on_accept action if defined, but catch a few special
-    # commands for quiting and clearing.
-    def submit_line
       line = @field.accept_line.to_s.strip
       return [] if line.empty?
 
       Fatty.info("ShellSession: accept_line: #{line}")
-
       case line
       when "exit", "quit"
-        [[:terminal, :quit]]
+        Command.terminal(:quit)
       when "clear"
         reset_output!
-        [[:send, :alert, :clear, {}]]
+        Command.session(:alert, :clear)
       else
+        # Here is where command lines are handled.  The @on_accept proc can
+        # return a String or an Array of Strings, and they are forwarded to
+        # the OutputSession to be rendered in the output pane.
         reset_for_command!
         anchor = output.lines.length
         pager.begin_command!(anchor: anchor)
 
-        commands =
+        commands = [Command.session(:output, :append, text: "$ #{line}\n", follow: true)]
+        result =
           if @on_accept
             @on_accept.call(line, accept_env)
           else
             run_default_command(line)
           end
-        normalize_accept_commands(commands)
+        if result
+          text = Array(result).compact.join
+          commands << Command.session(:output, :append, text: text, follow: true) unless text.empty?
+        else
+          commands << alert_cmd(:error, "Command not found: #{line}")
+        end
+        commands
       end
-    rescue Errno::ENOENT
-      [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
     end
 
     desc "Accept the current shell input line and switch output to scrolling"
@@ -173,7 +174,7 @@ module Fatty
         pager.quit_paging
         []
       else
-        [[:terminal, :quit]]
+        Command.terminal(:quit)
       end
     end
 
@@ -183,7 +184,7 @@ module Fatty
         pager.quit_paging
         []
       elsif @field.empty?
-        [[:terminal, :quit]]
+        Command.terminal(:quit)
       else
         @field.act_on(:delete_char_forward, env: action_env(event: nil))
         []
@@ -198,25 +199,12 @@ module Fatty
 
     desc "Cycle to the next theme"
     action :cycle_theme do
-      [[:terminal, :cycle_theme]]
+      Command.terminal(:cycle_theme)
     end
 
     desc "Choose a theme from a popup"
     action :choose_theme do
-      current = Fatty::Themes::Manager.current
-      names = Fatty::Themes::Manager.theme_names
-      ordered = [current] + (names - [current])
-      @theme_popup_restore = current
-
-      popup = Fatty::PopUpSession.new(
-        source: ordered,
-        kind: :theme_chooser,
-        title: "Themes",
-        prompt: "Theme: ",
-        selection: :top,
-      )
-
-      [[:terminal, :push_modal, popup]]
+      Command.terminal(:choose_theme)
     end
 
     desc "Add a digit to the current numeric prefix"
@@ -255,6 +243,7 @@ module Fatty
             initial_query: @field.popup_completion_query.to_s,
           )
           [[:terminal, :push_modal, popup]]
+          Command.terminal(:push_modal, session: popup)
         end
       end
     end
@@ -262,39 +251,27 @@ module Fatty
     desc "Search pager forward"
     action :pager_search_forward do
       regex = consume_search_regex_flag
-      [[
-        :terminal,
-        :push_modal,
-        Fatty::SearchSession.new(direction: :forward, regex: regex, history: @history)
-      ]]
+      searcher = Fatty::SearchSession.new(direction: :forward, regex: regex, history: @history)
+      Command.terminal(:push_modal, session: searcher)
     end
 
     desc "Search pager backward"
     action :pager_search_backward do
       regex = consume_search_regex_flag
-      [[
-        :terminal,
-        :push_modal,
-        Fatty::SearchSession.new(direction: :backward, regex: regex, history: @history)
-      ]]
+      searcher = Fatty::SearchSession.new(direction: :backward, regex: regex, history: @history)
+      Command.terminal(:push_modal, session: searcher)
     end
 
     desc "Start incremental pager search forward"
     action :pager_isearch_forward do
-      [[
-        :terminal,
-        :push_modal,
-        Fatty::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)
-      ]]
+      isearcher = Fatty::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)
+      Command.terminal(:push_modal, session: isearcher)
     end
 
     desc "Start incremental pager search backward"
     action :pager_isearch_backward do
-      [[
-        :terminal,
-        :push_modal,
-        Fatty::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)
-      ]]
+      isearcher = Fatty::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)
+      Command.terminal(:push_modal, session: isearcher)
     end
 
     desc "Repeat pager search forward"
@@ -310,18 +287,17 @@ module Fatty
     desc "Open command history search"
     action :history_search do
       src = ->(_q = nil) { @history.entries.select(&:command?).last(500).map(&:text) }
-
-      popup = Fatty::PopUpSession.new(
-        source: src,
-        kind: :history_search,
-        title: "History",
-        prompt: "I-search: ",
-        order: :as_given,
-        selection: :bottom,
-        initial_query: @field.buffer.text,
-      )
-
-      [[:terminal, :push_modal, popup]]
+      hist_searcher =
+        Fatty::PopUpSession.new(
+          source: src,
+          kind: :history_search,
+          title: "History",
+          prompt: "I-search: ",
+          order: :as_given,
+          selection: :bottom,
+          initial_query: @field.buffer.text,
+        )
+      Command.terminal(:push_modal, session: hist_searcher)
     end
 
     #########################################################################################
@@ -403,80 +379,30 @@ module Fatty
       Fatty::AcceptEnv.new(session: self)
     end
 
-    def normalize_accept_commands(commands)
-      if commands.is_a?(Array) && commands.first.is_a?(Array) && commands.first.first.is_a?(Symbol)
-        commands
-      else
-        [[:send, :alert, :clear, {}]]
-      end
-    end
-
     def update_cmd(name, payload)
-      cmds = []
+      commands = []
       case name
       when :popup_result
-        case payload[:kind]&.to_sym
-        when :history_search
-          item = payload.fetch(:item, "").to_s
-          env = action_env(event: nil)
-          with_virtual_suffix_sync do
-            Fatty::Actions.call(:replace, env, item)
-          end
-        when :theme_chooser
-          theme = payload.fetch(:item).to_sym
-          @theme_popup_restore = nil
-          cmds << [:terminal, :set_theme, theme]
-          cmds << [:send, :alert, :show, { level: :info, message: "Theme: #{theme}" }]
-        when :completion
-          apply_completion(payload.fetch(:item, "").to_s, range: @completion_range)
-          @completion_range = nil
-        end
-      when :popup_changed
-        if payload[:kind]&.to_sym == :theme_chooser
-          theme = payload.fetch(:item).to_sym
-          cmds << [:terminal, :set_theme, theme]
-        end
-      when :popup_cancelled
-        if payload[:kind]&.to_sym == :theme_chooser && @theme_popup_restore
-          cmds << [:terminal, :set_theme, @theme_popup_restore]
-          @theme_popup_restore = nil
-        end
+        commands.concat(update_popup_result(payload))
       when :pager_search_set
-        pattern = payload.fetch(:pattern, "").to_s
-        regex = !!payload[:regex]
-        direction = (payload[:direction] || :forward).to_sym
-        result = pager.search_set!(pattern: pattern, regex: regex, direction: direction)
-        cmds.concat(handle_search_result(result))
+        commands.concat(update_pager_search_set(payload))
       when :pager_search_step
-        direction = (payload[:direction] || :forward).to_sym
-        result = pager.search_step!(direction: direction)
-        cmds.concat(handle_search_result(result))
+        commands.concat(update_pager_search_step(payload))
       when :pager_isearch_update
-        pattern = payload.fetch(:pattern, "").to_s
-        direction = (payload[:direction] || :forward).to_sym
-        result = pager.isearch_update!(pattern: pattern, direction: direction)
-        cmds.concat(handle_search_result(result))
-        cmds << [:send, :isearch, :isearch_set_failed, { failed: result[:status] != :moved }]
+        commands.concat(update_pager_isearch_update(payload))
       when :pager_isearch_step
-        direction = (payload[:direction] || :forward).to_sym
-        result = pager.isearch_step!(direction: direction)
-        cmds.concat(handle_search_result(result))
-        cmds << [:send, :isearch, :isearch_set_failed, { failed: result[:status] != :moved }]
+        commands.concat(update_pager_isearch_step(payload))
       when :pager_isearch_cancel
         pager.isearch_cancel!
-        cmds << [:send, :isearch, :isearch_set_failed, { failed: false }]
+        commands << Command.session(:isearch, :isearch_set_failed, failed: false)
       when :pager_isearch_commit
-        pattern = payload.fetch(:pattern, "").to_s
-        direction = (payload[:direction] || :forward).to_sym
-        result = pager.isearch_commit!(pattern: pattern, direction: direction)
-        cmds.concat(handle_search_result(result))
-        cmds << [:send, :isearch, :isearch_set_failed, { failed: false }]
+        commands.concat(update_pager_isearch_commit(payload))
       when :paste
         text = payload.fetch(:text, "").to_s
         env = action_env(event: nil)
         field.act_on(:paste, text, env: env)
       end
-      cmds
+      commands
     end
 
     def handle_action(action, args, event:)
@@ -506,13 +432,12 @@ module Fatty
     end
 
     def run_default_command(line)
-      append_output("$ #{line}\n", follow: true)
+      Command.session(:output, :append, text: "$ #{line}\n", follow: true)
       out, status = Open3.capture2e(line)
-      # optional: include exit status line
       out << "\n[exit #{status.exitstatus}]\n" if status&.exitstatus && status.exitstatus != 0
       out
     rescue Errno::ENOENT
-      "Command not found: #{line}\n"
+      nil
     end
 
     def consume_search_regex_flag
@@ -522,21 +447,6 @@ module Fatty
         counter.clear!
       end
       regex
-    end
-
-    def handle_search_result(result)
-      return unless result.is_a?(Hash)
-
-      case result[:status]
-      when :boundary
-        msg = result[:message].to_s
-        msg = "Search reached boundary" if msg.empty?
-        [[:send, :alert, :show, { level: :info, message: msg }]]
-      when :not_found
-        [[:send, :alert, :show, { level: :info, message: "No matches" }]]
-      else
-        []
-      end
     end
 
     def with_virtual_suffix_sync
@@ -559,8 +469,83 @@ module Fatty
         else
           {}
         end
+      Command.session(:alert, :show, level: level, message: message, details: details)
+    end
 
-      [:send, :alert, :show, { level: level, message: message, details: details }]
+    def update_popup_result(payload)
+      commands = []
+
+      case payload[:kind]&.to_sym
+      when :history_search
+        item = payload.fetch(:item, "").to_s
+        env = action_env(event: nil)
+
+        with_virtual_suffix_sync do
+          Fatty::Actions.call(:replace, env, item)
+        end
+      when :completion
+        apply_completion(payload.fetch(:item, "").to_s, range: @completion_range)
+        @completion_range = nil
+      end
+
+      commands
+    end
+
+    def update_pager_search_set(payload)
+      pattern = payload.fetch(:pattern, "").to_s
+      regex = !!payload[:regex]
+      direction = (payload[:direction] || :forward).to_sym
+      result = pager.search_set!(pattern: pattern, regex: regex, direction: direction)
+
+      handle_search_result(result)
+    end
+
+    def update_pager_search_step(payload)
+      direction = (payload[:direction] || :forward).to_sym
+      result = pager.search_step!(direction: direction)
+
+      handle_search_result(result)
+    end
+
+    def update_pager_isearch_update(payload)
+      pattern = payload.fetch(:pattern, "").to_s
+      direction = (payload[:direction] || :forward).to_sym
+      result = pager.isearch_update!(pattern: pattern, direction: direction)
+
+      handle_search_result(result) +
+        [Command.session(:isearch, :isearch_set_failed, failed: result[:status] != :moved)]
+    end
+
+    def update_pager_isearch_step(payload)
+      direction = (payload[:direction] || :forward).to_sym
+      result = pager.isearch_step!(direction: direction)
+
+      handle_search_result(result) +
+        [Command.session(:isearch, :isearch_set_failed, failed: result[:status] != :moved)]
+    end
+
+    def update_pager_isearch_commit(payload)
+      pattern = payload.fetch(:pattern, "").to_s
+      direction = (payload[:direction] || :forward).to_sym
+      result = pager.isearch_commit!(pattern: pattern, direction: direction)
+
+      handle_search_result(result) +
+        [Command.session(:isearch, :isearch_set_failed, failed: false)]
+    end
+
+    def handle_search_result(result)
+      return [] unless result.is_a?(Hash)
+
+      case result[:status]
+      when :boundary
+        msg = result[:message].to_s
+        msg = "Search reached boundary" if msg.empty?
+        alert_cmd(:info, msg)
+      when :not_found
+        alert_cmd(:info, "No matches")
+      else
+        []
+      end
     end
   end
 end
