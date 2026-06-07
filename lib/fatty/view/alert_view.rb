@@ -6,7 +6,7 @@ module Fatty
       super(id: id, z: z, log: log)
     end
 
-    def draw(screen:, renderer:, terminal:, session:)
+    def draw(renderer:, terminal:, session:)
       # session is AlertSession; it owns `current`
       renderer.render_alert(session.current)
     end

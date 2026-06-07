@@ -2,7 +2,7 @@
 
 module Fatty
   class CursorView < Fatty::View
-    def draw(screen:, renderer:, terminal:, session:)
+    def draw(renderer:, terminal:, session:)
       # When paging is active, the output pane owns the screen and the shell
       # input cursor should be turned off. This also prevents the underlying
       # ShellSession from overriding the cursor while a modal (e.g. SearchSession)

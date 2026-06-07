@@ -2,7 +2,7 @@
 
 module Fatty
   class StatusView < View
-    def draw(screen:, renderer:, terminal:, session:)
+    def draw(renderer:, terminal:, session:)
       return unless session.visible?
 
       renderer.render_status(

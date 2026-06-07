@@ -60,16 +60,16 @@ module Fatty
       end
     end
 
-    def view(screen:, renderer:)
+    def view(renderer:)
       if pager_active?
         ::Curses.curs_set(0)
-        viewport = pager_status_viewport(screen)
+        viewport = pager_status_viewport(renderer.screen)
         highlights = pager.search_visible_highlights(viewport: viewport)
 
         renderer.render_output(output, viewport: viewport, highlights: highlights)
         renderer.render_pager_field(
           pager_field,
-          row: screen.output_rect.rows - 1,
+          row: renderer.screen.output_rect.rows - 1,
           role: :pager_status,
         )
       else

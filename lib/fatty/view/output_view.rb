@@ -2,7 +2,7 @@
 
 module Fatty
   class OutputView < View
-    def draw(screen:, renderer:, terminal:, session:)
+    def draw(renderer:, terminal:, session:)
       renderer.render_output(session.output, viewport: session.viewport)
     end
   end

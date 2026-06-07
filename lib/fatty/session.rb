@@ -63,9 +63,9 @@ module Fatty
     #
     # By default, renders all views belonging to the session, ordered by z-index.
     # Subclasses can override, but should not mutate state here.
-    def view(screen:, renderer:)
+    def view(renderer:)
       views.sort_by(&:z).each do |v|
-        v.render(screen:, renderer:, terminal:, session: self)
+        v.render(renderer:, terminal:, session: self)
       end
     end
 

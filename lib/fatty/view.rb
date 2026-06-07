@@ -12,7 +12,7 @@ module Fatty
 
     # Render wrapper: logs once, then delegates to #draw.
     # Subclasses implement #draw.
-    def render(screen:, renderer:, terminal:, session:)
+    def render(renderer:, terminal:, session:)
       if @log
         Fatty.debug(
           "View#render",
@@ -22,11 +22,10 @@ module Fatty
           session: session.respond_to?(:id) ? session.id : session.class.name,
         )
       end
-
-      draw(screen:, renderer:, terminal:, session:)
+      draw(renderer:, terminal:, session:)
     end
 
-    def draw(screen:, renderer:, terminal:, session:)
+    def draw(renderer:, terminal:, session:)
       raise NotImplementedError, "#{self.class} must implement #draw"
     end
   end
