@@ -40,6 +40,22 @@ module Fatty
       []
     end
 
+    def view(renderer:)
+      output_session.view(renderer: renderer)
+      # When paging is active, the output pane owns the screen and the shell
+      # input cursor should be turned off. This also prevents the underlying
+      # ShellSession from overriding the cursor while a modal
+      # (e.g. SearchSession) is displayed over the pager/status line.
+      if output_session.pager_active?
+        ::Curses.curs_set(0)
+        return
+      end
+
+      ::Curses.curs_set(1)
+      renderer.render_input_field(field)
+      renderer.restore_cursor(field)
+    end
+
     def update_key(ev)
       return [] unless ev.is_a?(Fatty::KeyEvent)
 

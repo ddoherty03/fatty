@@ -14,6 +14,24 @@ module Fatty
       @pager_field = Fatty::InputField.new(prompt: -> { pager_status_prompt })
     end
 
+    def view(renderer:)
+      if pager_active?
+        ::Curses.curs_set(0)
+
+        viewport = pager_status_viewport(renderer.screen)
+        highlights = pager.search_visible_highlights(viewport: viewport)
+
+        renderer.render_output(output, viewport: viewport, highlights: highlights)
+        renderer.render_pager_field(
+          pager_field,
+          row: renderer.screen.output_rect.rows - 1,
+          role: :pager_status,
+        )
+      else
+        renderer.render_output(output, viewport: pager_viewport, highlights: nil)
+      end
+    end
+
     def append_output(text, follow: true)
       ntrim = @output.append(text.to_s)
       @pager.on_append(ntrim: ntrim)

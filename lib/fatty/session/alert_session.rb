@@ -12,19 +12,21 @@ module Fatty
     attr_reader :current
 
     def initialize
-      super(views: [Fatty::AlertView.new(z: 1_000)])
+      super(id: :alert, views: [Fatty::AlertView.new(z: 1_000)])
       @current = nil
     end
 
-    def id
-      :alert
+    def view(renderer:)
+      return unless visible?
+
+      renderer.render_alert(current)
     end
+
+    private
 
     def visible?
       !!current
     end
-
-    private
 
     def update_cmd(name, payload)
       payload ||= {}

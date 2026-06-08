@@ -9,7 +9,7 @@ module Fatty
     def id = :status
 
     def initialize
-      super(views: [Fatty::StatusView.new])
+      super(id: :status, views: [Fatty::StatusView.new])
       clear
     end
 
@@ -32,11 +32,10 @@ module Fatty
     def view(renderer:)
       return unless visible?
 
-      renderer.render_status(
-        text,
-        role: role || :info,
-      )
+      renderer.render_status(text, role: role || :info)
     end
+
+    private
 
     def rows
       return 0 unless visible?
@@ -58,8 +57,6 @@ module Fatty
     def visible?
       @text && !@text.empty?
     end
-
-    private
 
     def set(payload)
       @text = payload[:text]

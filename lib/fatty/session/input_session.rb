@@ -11,6 +11,10 @@ module Fatty
       @on_accept = on_accept
     end
 
+    def view(renderer:)
+      renderer.render_input_field(field)
+    end
+
     #########################################################################################
     # Framework and Session Hooks
     #########################################################################################
