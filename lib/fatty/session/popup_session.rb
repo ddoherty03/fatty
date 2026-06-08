@@ -494,7 +494,7 @@ module Fatty
     end
 
     def default_matcher(item, query)
-      match_all_query_terms?(item, query)
+      Fatty::Search.match_all_terms?(item, query)
     end
 
     def action_env(event:)

@@ -13,6 +13,8 @@ module Fatty
       nil
     end
 
+    private
+
     def handle_resize
       rebuild_windows!
       []
@@ -56,6 +58,34 @@ module Fatty
 
     def clamp_height(height, max_height:, min_height:)
       height.clamp(min_height, max_height)
+    end
+
+    def safely_close_window(win)
+      return unless win
+
+      begin
+        win.erase
+      rescue RuntimeError => e
+        raise unless closed_window_error?(e)
+      end
+
+      begin
+        win.noutrefresh if win.respond_to?(:noutrefresh)
+      rescue RuntimeError => e
+        raise unless closed_window_error?(e)
+      end
+
+      begin
+        win.close
+      rescue RuntimeError => e
+        raise unless closed_window_error?(e)
+      end
+      nil
+    end
+
+    def closed_window_error?(error)
+      message = error.message
+      message.include?("closed window") || message.include?("already closed window")
     end
   end
 end
