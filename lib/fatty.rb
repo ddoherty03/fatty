@@ -22,8 +22,6 @@ module Fatty
   require_relative "fatty/config"
   require_relative "fatty/logger"
   require_relative "fatty/counter"
-  require_relative "fatty/action_environment"
-  require_relative "fatty/accept_env"
   require_relative "fatty/action"
   require_relative "fatty/actionable"
   require_relative "fatty/command"
@@ -51,6 +49,8 @@ module Fatty
   require_relative "fatty/terminal"
   require_relative "fatty/markdown"
   require_relative "fatty/help"
+  require_relative "fatty/action_environment"
+  require_relative "fatty/callback_environment"
 
   class Error < StandardError; end
 end
