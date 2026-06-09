@@ -42,17 +42,15 @@ module Fatty
         return unless raw
 
         if raw.is_a?(Fatty::MouseEvent)
-          return [:key, raw]
+          Command.session(:focused, :key, event: raw)
+        elsif raw.is_a?(Array) && raw.first == :paste
+          Command.session(:focused, :paste, text: raw.last)
+        elsif (ev = @key_decoder.decode(raw))
+          Command.session(:focused, :key, event: ev)
+        else
+          Fatty.warn("undecoded input: #{raw.inspect}", tag: :input)
+          nil
         end
-
-        if raw.is_a?(Array) && raw.first == :paste
-          return [:cmd, :paste, { text: raw.last }]
-        end
-
-        ev = @key_decoder.decode(raw)
-        return unless ev
-
-        [:key, ev]
       end
 
       private
