@@ -10,6 +10,10 @@ module Fatty
       @payload = payload || {}
     end
 
+    def inspect
+      "Command: @target=#{@target}, @action=#{@action} @payload keys=#{@payload.keys}"
+    end
+
     def self.terminal(action, **payload)
       new(target: :terminal, action: action, payload: payload)
     end
