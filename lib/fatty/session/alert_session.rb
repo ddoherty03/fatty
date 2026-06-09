@@ -47,12 +47,11 @@ module Fatty
         return
       end
 
-      level   = (payload[:level] || :info).to_sym
-      message = (payload[:message] || payload[:text]).to_s
+      level = (payload[:level] || :info).to_sym
+      text = payload[:text].to_s
       details = payload[:details]
       sticky  = !!payload[:sticky]
-
-      @current = Fatty::Alert.new(level: level, message: message, details: details, sticky: sticky)
+      @current = Fatty::Alert.new(level: level, text: text, details: details, sticky: sticky)
     end
   end
 end

@@ -610,12 +610,24 @@ module Fatty
       when :cycle_theme
         new_theme = Fatty::Themes::Manager.cycle
         renderer.apply_theme!(new_theme)
-        apply_command(Fatty::Command.session(:alert, :show, level: :info, message: "Theme: #{new_theme}"))
+        apply_command(
+          Command.session(
+            :alert,
+            :show,
+            level: :info,
+            text: "Theme: #{new_theme}",
+          ))
       when :set_theme
         theme = command.payload.fetch(:theme)
         Fatty::Themes::Manager.set(theme)
         renderer.apply_theme!(theme)
-        apply_command(Fatty::Command.session(:alert, :show, level: :info, message: "Theme: #{theme}"))
+        apply_command(
+          Command.session(
+            :alert,
+            :show,
+            level: :info,
+            text: "Theme: #{new_theme}",
+          ))
       when :handle_resize
         handle_resize
       else

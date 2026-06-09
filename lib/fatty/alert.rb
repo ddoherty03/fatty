@@ -4,7 +4,7 @@ module Fatty
   class Alert
     DETAIL_ORDER = %i[terminal key ctrl meta shift].freeze
 
-    attr_reader :level, :message, :details
+    attr_reader :level, :text, :details
 
     # Return a new Alert object
     #
@@ -13,8 +13,8 @@ module Fatty
     # @param details [Hash|String]
     # @param sticky [Boolean]
     # @return [Alert]
-    def initialize(message:, level: :info, details: nil, sticky: false)
-      @message = message
+    def initialize(text:, level: :info, details: nil, sticky: false)
+      @text = text
       @level = level.to_sym
       @details = details
       @sticky  = !!sticky
@@ -25,7 +25,7 @@ module Fatty
     # @param msg [String]
     # @return [Alert] with level info
     def self.info(msg)
-      new(message: msg, level: :info)
+      new(text: msg, level: :info)
     end
 
     # Return a new Alert object at level warn
@@ -33,7 +33,7 @@ module Fatty
     # @param msg [String]
     # @return [Alert] with level warn
     def self.warn(msg)
-      new(message: msg, level: :warn)
+      new(text: msg, level: :warn)
     end
 
     # Return a new Alert object at level error
@@ -41,7 +41,7 @@ module Fatty
     # @param msg [String]
     # @return [Alert] with level error
     def self.error(msg)
-      new(message: msg, level: :error)
+      new(text: msg, level: :error)
     end
 
     # Translate the "level" to a "role" used by the renderers. The returned
@@ -68,7 +68,6 @@ module Fatty
         when :error then "✖"
         else "ℹ"
         end
-      msg = message.to_s
       details_str = ""
       if details.respond_to?(:empty?) ? !details.empty? : !!details
         details_str = if details.is_a?(Hash)
@@ -79,7 +78,7 @@ module Fatty
           " (#{details})"
         end
       end
-      "#{icon} #{msg}#{details_str}"
+      "#{icon} #{text}#{details_str}"
     end
 
     # Return whether this Alert is sticky, meaning that it should not be
