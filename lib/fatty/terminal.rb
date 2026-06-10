@@ -61,9 +61,6 @@ module Fatty
     attr_reader :screen, :focused_session, :renderer, :event_source, :env
     attr_reader :status_session, :alert_session
 
-    include StatusApi
-    include PromptApi
-    include MenuApi
 
     def initialize(prompt: "> ",
                    on_accept: nil,

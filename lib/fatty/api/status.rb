@@ -8,8 +8,9 @@ module Fatty
     # Display text in the status area with the given "role", which determines
     # the coloring of the displayed text via themeing.
     def status(text, role: :info)
-      cmd = Fatty::Command.session(:status, :show, text: text.to_s, role: role)
-      apply_command(cmd)
+      apply_command(
+        Command.session(:status, :show, text: text, role: role)
+      )
     end
 
     # Display a message to the user in the status line, colored according to
