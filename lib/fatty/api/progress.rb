@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Fatty
   module ProgressApi
     # Create a transient status-line progress indicator.
