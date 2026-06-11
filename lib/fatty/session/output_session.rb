@@ -95,6 +95,22 @@ module Fatty
       end
     end
 
+    def view
+      if pager_active?
+        ::Curses.curs_set(0)
+
+        viewport = pager_status_viewport(renderer.screen)
+        renderer.render_output(self)
+        renderer.render_pager_field(
+          pager_field,
+          row: renderer.screen.output_rect.rows - 1,
+          role: :pager_status,
+        )
+      else
+        renderer.render_output(self)
+      end
+    end
+
     def tick
       dirty = false
       if pager.autoscroll?
