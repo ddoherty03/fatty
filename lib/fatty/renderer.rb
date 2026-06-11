@@ -37,7 +37,7 @@ module Fatty
     POPUP_SELECTED_GUTTER = "▶ "
     POPUP_UNSELECTED_GUTTER = "  "
 
-    attr_reader :screen, :palette, :context
+    attr_reader :screen, :palette, :context, :theme_version
 
     def initialize(screen:, palette:, context:)
       @screen = screen
@@ -49,12 +49,14 @@ module Fatty
       @last_popup_state = nil
       @last_prompt_popup_state = nil
       @last_pager_field_state = nil
+      @theme_version = 0
     end
 
     attr_writer :screen
 
     def apply_theme!(theme)
       Fatty::Themes::Manager.set(theme)
+      @theme_version += 1
       theme_spec = Fatty::Themes::Manager.roles(Fatty::Themes::Manager.current) || {}
       @palette = Fatty::Colors::Palette.compile(theme_spec, available_colors: available_colors)
 
