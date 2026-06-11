@@ -64,9 +64,9 @@ module Fatty
     def format
       icon =
         case level
-        when :warn then "⚠"
-        when :error then "✖"
-        else "ℹ"
+        when :warn then " ⚠ "
+        when :error then " ✖ "
+        else " ℹ "
         end
       details_str = ""
       if details.respond_to?(:empty?) ? !details.empty? : !!details
