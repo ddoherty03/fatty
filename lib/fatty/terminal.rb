@@ -40,26 +40,31 @@ module Fatty
   #
   # - prompt :: either a fixed string or a proc that, when called, returns a
   #   string to be used as the command-line prompt;
+  #
   # - on_accept :: a proc that takes the edited line and performs some action
   #   on it; the proc will have available to it a variable, `env`, that
-  #   contains an AcceptEnv object containing a reference to the ShellSession
-  #   and Terminal so that it can call actions on them, most commonly
-  #   `env.session.append_output(text)` to write output to the output pane;
+  #   contains an CallbackEnvironment object containing a reference to the
+  #   ShellSession and Terminal so that it can call actions on them, most
+  #   commonly `env.session.append_output(text)` to write output to the output
+  #   pane;
+  #
   # - completion_proc :: a proc that returns an Array of strings based on the
   #   input-so-far to suggest completions that can be inserted at that point;
+  #
   # - history_path :: a path or sentinel describing input history is loaded
   #   from and persisted;
+  #
   # - history_ctx :: a proc that provides a "context" for history so that it
   #   can be "favored" by history requests in the same context later;
+  #
   # - env :: an optional Fatty::Env describing the runtime environment; when
   #   omitted, Fatty will detect it with `Fatty::Env.detect`.
   #
   class Terminal
     SCROLL_RENDER_THROTTLE = 0.05
 
-    attr_reader :screen, :focused_session, :renderer, :event_source, :env
-    attr_reader :status_session, :alert_session
-
+    attr_reader :screen, :renderer, :event_source, :env
+    attr_reader :shell_session, :status_session, :alert_session, :focused_session
 
     def initialize(prompt: "> ",
                    on_accept: nil,
@@ -73,12 +78,21 @@ module Fatty
       @history_path = history_path
       @history_ctx = history_ctx
       @env = env
+      @renderer = nil
 
       @running = false
-      @pinned = []
       @sessions = []
       @sessions_by_id = {}
       @modal_stack = []
+      @status_rows = 0
+    end
+
+    def inspect
+      "Terminal: prompt: #{@prompt}; history: #{@history_path}; sessions size: #{@sessions.size} active: #{active_session.id}"
+    end
+
+    def to_s
+      inspect
     end
 
     # --- Runtime -----------------------------------------------------------
@@ -112,6 +126,7 @@ module Fatty
       preflight!
       start_curses!
       install_default_sessions!
+      Fatty.debug("@sessions: #{@sessions.map(&:id).join('==')}")
 
       @running = true
       last_render = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -147,10 +162,8 @@ module Fatty
           dirty = true
           immediate = true
         end
-
         if dirty
           now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
           if immediate || renderer.context.truecolor || !scrolling_output?
             render_frame
             last_render = now
@@ -240,10 +253,10 @@ module Fatty
       renderer.begin_frame
 
       @sessions.each do |session|
-        session.view(renderer: renderer)
+        session.view
       end
       if (top = @modal_stack.last)
-        top[:session].view(renderer: renderer)
+        top[:session].view
       end
       restore_active_cursor
       renderer.finish_frame
@@ -328,32 +341,38 @@ module Fatty
     end
 
     def register(session)
-      return unless session.respond_to?(:id)
-      return if session.id.nil?
-
       @sessions_by_id[session.id] = session
     end
 
-    def install_default_sessions!
-      install_session(Fatty::ShellSession.new(
-                        prompt: @prompt,
-                        on_accept: @on_accept,
-                        completion_proc: @completion_proc,
-                        history_path: @history_path,
-                        history_ctx: @history_ctx,
-                      ),
-                      focus: true)
-      @status_session = install_session(Fatty::StatusSession.new)
-      @alert_session = install_session(Fatty::AlertSession.new)
+    def deregister(session)
+      @sessions_by_id.delete(session.id)
     end
 
-    def push_modal(session, owner:)
+    def install_default_sessions!
+      @alert_session = Fatty::AlertSession.new(id: :alert)
+      install_session(@alert_session)
+      @status_session = Fatty::StatusSession.new(id: :status)
+      install_session(@status_session)
+      @shell_session = ShellSession.new(
+          id: :shell,
+          prompt: @prompt,
+          on_accept: @on_accept,
+          completion_proc: @completion_proc,
+          history_path: @history_path,
+          history_ctx: @history_ctx,
+        )
+      install_session(@shell_session, focus: true)
+    end
+
+    def push_modal(session, owner: focused_session)
+      commands = session.init(terminal: self)
+      register(session)
       @modal_stack << { session: session, owner: owner }
+
       msg = "Terminal#push_modal: size=#{@modal_stack.length} session=#{session.class} object_id=#{session.object_id}"
       Fatty.debug(msg, tag: :session)
 
-      @renderer.invalidate! if defined?(@renderer) && @renderer
-      commands = session.init(terminal: self)
+      @renderer&.invalidate!
       apply_commands(commands)
     end
 
@@ -361,9 +380,12 @@ module Fatty
       top = @modal_stack.pop
       msg = "Terminal#pop_modal: size=#{@modal_stack.length} popped=#{top && top[:session].class}"
       Fatty.debug(msg, tag: :session)
-      session = top && top[:session]
 
-      session.close if session&.respond_to?(:close)
+      session = top && top[:session]
+      if session
+        session.close
+        deregister(session)
+      end
       @renderer&.invalidate!
       nil
     end
@@ -384,7 +406,11 @@ module Fatty
     # Return the Session object associated with `id`, which will be a symbol
     # like :status or :alert.
     def find_session(id)
-      @sessions_by_id[id]
+      if id == :focused
+        active_session
+      else
+        @sessions_by_id[id]
+      end
     end
 
     # * Initialization
@@ -466,7 +492,7 @@ module Fatty
       screen.resize(
         rows: @ctx.rows,
         cols: @ctx.cols,
-        status_rows: status_session&.rows,
+        status_rows: @status_rows,
       )
       @ctx.apply_layout(screen)
       renderer.screen = screen
@@ -511,7 +537,7 @@ module Fatty
 
       renderer.clear_physical_screen! if renderer.context.truecolor
 
-      screen.resize(rows: rows, cols: cols, status_rows: status_session&.rows)
+      screen.resize(rows: rows, cols: cols, status_rows: @status_rows)
       renderer.context.apply_layout(screen)
       renderer.screen = screen
       renderer.sync_backgrounds! if renderer.context.truecolor
@@ -571,21 +597,21 @@ module Fatty
       when :quit
         persist_sessions!
         quit
+      when :register_session
+        register(command.payload.fetch(:session))
+      when :set_status_rows
+        @status_rows = command.payload.fetch(:rows)
       when :refresh_layout
         refresh_layout!
       when :push_modal
         session = command.payload.fetch(:session)
-        Fatty.debug("Terminal#apply_terminal_command(:push_modal) before size=#{@modal_stack.length}", tag: :session)
-        push_modal(session, owner: focused_session)
-        Fatty.debug("Terminal#apply_terminal_command(:push_modal) after size=#{@modal_stack.length}", tag: :session)
+        push_modal(session, owner: command.payload[:owner] || focused_session)
       when :pop_modal
-        Fatty.debug("Terminal#apply_terminal_command(:pop_modal) before size=#{@modal_stack.length}", tag: :session)
         pop_modal
-        Fatty.debug("Terminal#apply_terminal_command(:pop_modal) after size=#{@modal_stack.length}", tag: :session)
       when :send_modal_owner
-        message = command.payload.fetch(:message)
+        command = command.payload.fetch(:command)
         owner = modal_owner
-        commands = owner ? owner.update(message) : []
+        commands = owner ? owner.update(command) : []
         apply_commands(commands)
       when :choose_theme
         choose_theme
@@ -608,9 +634,9 @@ module Fatty
             :alert,
             :show,
             level: :info,
-            text: "Theme: #{new_theme}",
+            text: "Theme: #{theme}",
           ))
-      when :handle_resize
+      when :resize
         handle_resize
       else
         raise ArgumentError, "unknown terminal command #{command.action.inspect} (cmd=#{command.inspect})"
