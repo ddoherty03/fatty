@@ -30,11 +30,25 @@ module Fatty
     # Framework and Session Hooks
     #########################################################################################
 
-    def keymap_contexts
-      [:search, :text, :terminal]
+    def update(command)
+      commands =
+        case command.action
+        when :key
+          ev = command.payload.fetch(:event)
+          action, args = resolve_action(ev)
+          if action
+            normalize_action_result(apply_action(action, args, event: ev))
+          else
+            []
+          end
+        else
+          []
+        end
+
+      Array(commands)
     end
 
-    def view(screen:, renderer:)
+    def view
       row = screen.output_rect.rows - 1
 
       ::Curses.curs_set(1)
@@ -46,6 +60,11 @@ module Fatty
       renderer.restore_output_cursor(@field, row: row)
     end
 
+    private
+
+    def keymap_contexts
+      [:search, :text, :terminal]
+    end
 
     def apply_action(action, args, event:)
       env = ActionEnvironment.new(
@@ -100,10 +119,6 @@ module Fatty
       []
     end
 
-    def cancel!
-      [[:terminal, :pop_modal]]
-    end
-
     def search_prompt(direction:, regex:)
       label =
         if regex
@@ -117,21 +132,35 @@ module Fatty
       dir + label
     end
 
+    def cancel!
+      [Command.terminal(:pop_modal)]
+    end
+
     def search_accept
       pattern = @field.accept_line.to_s
 
-      cmds = []
-      cmds << [
-        :terminal,
-        :send_modal_owner,
-        [:cmd, :pager_search_set, { pattern: pattern, direction: direction, regex: regex }]
+      [
+        Command.terminal(
+          :send_modal_owner,
+          command: Command.session(
+            id,
+            :pager_search_set,
+            pattern: pattern,
+            direction: direction,
+            regex: regex,
+          ),
+        ),
+        Command.terminal(:pop_modal),
       ]
-      cmds << [:terminal, :pop_modal]
-      cmds
     end
 
     def step_search(dir)
-      [[:terminal, :send_modal_owner, [:cmd, :pager_search_step, { direction: dir }]]]
+      [
+        Command.terminal(
+          :send_modal_owner,
+          command: Command.session(id, :pager_search_step, direction: dir),
+        ),
+      ]
     end
   end
 end

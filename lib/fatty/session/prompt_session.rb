@@ -41,14 +41,38 @@ module Fatty
       []
     end
 
-    def keymap_contexts
-      [:prompt, :text, :terminal]
+    def update(command)
+      commands =
+        case command.action
+        when :key
+          ev = command.payload.fetch(:event)
+          action, args = resolve_action(ev)
+          if action
+            normalize_action_result(apply_action(action, args, event: ev))
+          else
+            []
+          end
+        when :paste
+          text = command.payload.fetch(:text, "").to_s
+          env = action_env(event: nil)
+          @field.act_on(:paste, text, env: env)
+          []
+        else
+          []
+        end
+      Array(commands)
     end
 
-    def view(screen:, renderer:)
+    def view
       return unless @win
 
       renderer.render_prompt_popup(session: self)
+    end
+
+    private
+
+    def keymap_contexts
+      [:prompt, :text, :terminal]
     end
 
     ############################################################################################
@@ -57,20 +81,26 @@ module Fatty
 
     action_on :session
 
-    desc "Accept prompt input"
     action :prompt_accept do
       text = @field.accept_line(save_history: @save_history).to_s
+
       [
-        [:terminal, :send_modal_owner, [:cmd, :prompt_result, { kind: @kind, text: text }]],
-        [:terminal, :pop_modal],
+        Command.terminal(
+          :send_modal_owner,
+          command: Command.session(:self, :prompt_result, kind: @kind, text: text),
+        ),
+        Command.terminal(:pop_modal),
       ]
     end
 
     desc "Cancel prompt input"
     action :prompt_cancel do
       [
-        [:terminal, :send_modal_owner, [:cmd, :prompt_cancelled, prompt_payload]],
-        [:terminal, :pop_modal],
+        Command.terminal(
+          :send_modal_owner,
+          command: Command.session(:self, :prompt_cancelled, **prompt_payload),
+        ),
+        Command.terminal(:pop_modal),
       ]
     end
 
@@ -84,16 +114,13 @@ module Fatty
       end
     end
 
-    def handle_action(action, args, event:)
+    def apply_action(action, args, event:)
       env = action_env(event: event)
-
-      result =
-        with_virtual_suffix_sync do
-          @field.act_on(action, *args, env: env)
-        end
-      result.is_a?(Array) ? result : []
+      with_virtual_suffix_sync do
+        @field.act_on(action, *args, env: env)
+      end
     rescue ActionError => e
-      Fatty.error("PromptSession#handle_action: ActionError #{e.message}", tag: :session)
+      Fatty.error("PromptSession#apply_action: ActionError #{e.message}", tag: :session)
       []
     end
 
@@ -136,8 +163,6 @@ module Fatty
       @field.sync_virtual_suffix!
       result
     end
-
-    private
 
     def prompt_payload
       {

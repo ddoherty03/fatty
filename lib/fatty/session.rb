@@ -14,11 +14,11 @@ module Fatty
   class Session
     include Actionable
 
-    attr_reader :terminal, :views, :keymap, :counter
+    attr_reader :id, :terminal, :keymap, :counter
 
-    def initialize(keymap: nil, views: [])
+    def initialize(id: nil, keymap: nil)
+      @id = id || default_id
       @keymap = keymap
-      @views = Array(views)
       @counter = Counter.new
     end
 
@@ -29,53 +29,19 @@ module Fatty
       []
     end
 
-    # Handle a message and return commands.
-    def update(message)
-      Fatty.debug("#{self.class}#update(message -> #{message})", tag: :session)
-
-      commands =
-        case message[0]
-        when :key
-          ev = message[1]
-          action, args = resolve_action(ev)
-
-          Fatty.debug(
-            "#{self.class}#update: key ev=#{ev.inspect} action=#{action.inspect} args=#{args.inspect}",
-            tag: :session,
-          )
-
-          if action
-            handle_action(action, args, event: ev)
-          else
-            update_key(ev)
-          end
-        when :cmd
-          Fatty.debug("#{self.class}#update: cmd message=#{message.inspect}", tag: :session)
-          update_cmd(message[1], message[2])
-        else
-          Fatty.warn("#{self.class}#update: unknown message[0]=#{message[0].inspect}", tag: :session)
-          []
-        end
-      commands
+    # Handle an incoming Command, which can carry an action or a KeyEvent.  On
+    # execution, those can return one or more Commands, which update returns
+    # to its caller for further dispatch.
+    def update(command)
+      # raise NotImplementedError, "#{self.class} must implement \#update"
     end
 
-    # Render the session.
-    #
-    # By default, renders all views belonging to the session, ordered by z-index.
-    # Subclasses can override, but should not mutate state here.
-    def view(renderer:)
-      views.sort_by(&:z).each do |v|
-        v.render(renderer:, terminal:, session: self)
-      end
+    # By default, does nothing.  Subclasses can override, but should not
+    # mutate state here.
+    def view
     end
 
-    def inspect
-      "#{self.class.name}:#{object_id}"
-    end
-
-    def add_view(view)
-      @views << view
-      view
+    def close
     end
 
     # Save any state we want saved on quit, error, etc.
@@ -84,6 +50,72 @@ module Fatty
 
     def tick
       false
+    end
+
+    private
+
+    def log_update(command)
+      payload = command.payload
+      msg =
+        case command.action
+        when :key
+          "#{self.class}#update(command -> #{command.inspect}) key: #{payload[:event]}"
+        else
+          sess_str =
+            if command.target == :focused_session
+              Terminal.find(:focused_session).to_s
+            else
+              command.target.to_s
+            end
+          "#{self.class}#update(command -> #{command.inspect}) session: #{sess_str}"
+        end
+      Fatty.debug(msg, tag: :session)
+    end
+
+    def normalize_action_result(result)
+      case result
+      when nil
+        []
+      when Command
+        [result]
+      when Array
+        result.grep(Command)
+      else
+        []
+      end
+    end
+
+    def alert_cmd(level, text, ev: nil)
+      details =
+        if ev
+          {
+            key: ev.key,
+            ctrl: ev.respond_to?(:ctrl?) ? ev.ctrl? : ev.ctrl,
+            meta: ev.respond_to?(:meta?) ? ev.meta? : ev.meta,
+            shift: ev.respond_to?(:shift?) ? ev.shift? : ev.shift,
+            text: ev.text
+          }
+        else
+          {}
+        end
+      alert = Alert.new(text: text, level: level, details: details)
+      Command.session(:alert, :show, alert: alert)
+    end
+
+    def default_id
+      self.class.name
+        .delete_prefix("Fatty::")
+        .gsub(/([a-z])([A-Z])/, '\1_\2')
+        .downcase
+        .then { |name| :"#{name}_#{object_id}" }
+    end
+
+    def renderer
+      terminal.renderer
+    end
+
+    def screen
+      terminal.screen
     end
 
     def resolve_action(ev)
@@ -117,24 +149,6 @@ module Fatty
     desc "Universal argument (C-u)"
     action :universal_argument, on: :session do
       counter.universal_argument!
-    end
-
-    def close
-      nil
-    end
-
-    def handle_resize
-      []
-    end
-
-    private
-
-    def update_key(_ev)
-      []
-    end
-
-    def update_cmd(_name, _payload)
-      []
     end
   end
 end

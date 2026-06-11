@@ -11,12 +11,23 @@ module Fatty
   class AlertSession < Session
     attr_reader :current
 
-    def initialize
-      super(id: :alert, views: [Fatty::AlertView.new(z: 1_000)])
+    def initialize(id: nil)
+      super
       @current = nil
     end
 
-    def view(renderer:)
+    def update(command)
+      log_update(command)
+      case command.action
+      when :show
+        show_from_payload(command.payload[:alert] || command.payload)
+      when :clear
+        @current = nil unless @current&.sticky?
+      end
+      []
+    end
+
+    def view
       return unless visible?
 
       renderer.render_alert(current)
@@ -24,19 +35,12 @@ module Fatty
 
     private
 
-    def visible?
-      !!current
+    def clear
+      @current = nil
     end
 
-    def update_cmd(name, payload)
-      payload ||= {}
-      case name
-      when :show
-        show_from_payload(payload)
-      when :clear
-        @current = nil unless @current&.sticky?
-      end
-      []
+    def visible?
+      !!current
     end
 
     def show_from_payload(payload)

@@ -4,7 +4,7 @@ module Fatty
   class PopUpSession < ModalSession
     action_on :session
 
-    attr_reader :field, :filtered, :displayed, :selected, :title, :message
+    attr_reader :prompt, :field, :filtered, :displayed, :selected, :title, :message
 
     MAX_WIDTH      = 120
     DEFAULT_HEIGHT = 12
@@ -65,22 +65,114 @@ module Fatty
     #########################################################################################
 
     def init(terminal:)
+      commands = super
       refresh_items
       rebuild_windows!
-      notify_owner(:popup_changed)
+      commands.concat(notify_owner(:popup_changed))
+    end
+
+    def update(command)
+      commands =
+        case command.action
+        when :key
+          ev = command.payload.fetch(:event)
+          action, args = resolve_action(ev)
+
+          if action
+            normalize_action_result(apply_action(action, args, event: ev))
+          else
+            []
+          end
+        when :paste
+          text = command.payload.fetch(:text, "").to_s
+          env = action_env(event: nil)
+          @field.act_on(:paste, text, env: env)
+          []
+        else
+          []
+        end
+      Array(commands)
+    end
+
+    def view
+      Fatty.debug("PopupSession#view: object_id=#{object_id} win_nil=#{@win.nil?}", tag: :session)
+      return unless @win
+
+      renderer.render_popup(session: self)
+    end
+
+    def state
+      {
+        win: win,
+        title: title,
+        message: message,
+        prompt: prompt,
+        items: displayed_items.map(&:to_s),
+        selected_labels: selected_labels.map(&:to_s).sort,
+        counts: counts&.dup,
+        query: @field.buffer.text.to_s,
+        cursor: @field.cursor,
+      }.freeze
+    end
+
+    def state
+      [
+        # popup_border,
+        title.to_s.dup.freeze,
+        message.to_s.dup.freeze,
+        displayed.map { |item| item.to_s.dup.freeze }.freeze,
+        selected,
+        field.buffer.text.to_s.dup.freeze,
+        field.buffer.cursor,
+        field.buffer.virtual_suffix.to_s.dup.freeze,
+        selected_labels.map { |label| label.to_s.dup.freeze }.sort.freeze,
+        counts&.dup&.freeze,
+        # screen.rows,
+        # screen.cols,
+      ]
+    end
+
+    def counts_present?
+      !!counts
+    end
+
+    # Renderer calls this to determine which slice of items to display.
+    def scroll_start(list_h:)
+      max_start = @displayed.length - list_h
+      max_start = 0 if max_start < 0
+
+      @scroll_start = 0 if @scroll_start < 0
+      @scroll_start = max_start if @scroll_start > max_start
+      @scroll_start
+    end
+
+    def gutter_for(item:, selected:)
+      if multi_select?
+        selected_item_label?(item) ? SELECTED_GUTTER : UNSELECTED_GUTTER
+      else
+        ' '
+      end
+    end
+
+    def counts
+      {
+        total: total_count,
+        selected: selected_count,
+        matching: matching_count,
+        showing: showing_count
+      }
+    end
+
+    private
+
+    def selected_labels
+      @selected_labels.keys
     end
 
     def keymap_contexts
       contexts = [:popup, :text]
       contexts.unshift(:popup_multi) if multi_select?
       contexts
-    end
-
-    def view(screen:, renderer:)
-      Fatty.debug("PopupSession#view: object_id=#{object_id} win_nil=#{@win.nil?}", tag: :session)
-      return unless @win
-
-      renderer.render_popup(session: self)
     end
 
     # Return the outer width and height of the window for this modal,
@@ -107,7 +199,7 @@ module Fatty
     ############################################################################################
 
     action :popup_cancel do
-      notify_owner(:popup_cancelled) + [[:terminal, :pop_modal]]
+      notify_owner(:popup_cancelled) + [Command.terminal(:pop_modal)]
     end
 
     action :popup_accept do
@@ -169,7 +261,7 @@ module Fatty
       end
     end
 
-    def handle_action(action, args, event:)
+    def apply_action(action, args, event:)
       env = action_env(event: event)
 
       if Fatty::Actions.lookup(action)&.fetch(:on) == :session
@@ -181,7 +273,7 @@ module Fatty
         notify_owner(:popup_changed)
       end
     rescue ActionError => e
-      Fatty.error("PopUpSession#handle_action: ActionError #{e.message}", tag: :session)
+      Fatty.error("PopUpSession#apply_action: ActionError #{e.message}", tag: :session)
       []
     end
 
@@ -207,8 +299,11 @@ module Fatty
         payload = popup_payload(item)
       end
       [
-        [:terminal, :send_modal_owner, [:cmd, :popup_result, payload]],
-        [:terminal, :pop_modal]
+        Command.terminal(
+          :send_modal_owner,
+          command: Command.session(:self, :popup_result, **payload),
+        ),
+        Command.terminal(:pop_modal),
       ]
     end
 
@@ -218,14 +313,6 @@ module Fatty
 
     def selected_item_label?(item)
       selected_label?(item_label(item))
-    end
-
-    def gutter_for(item:, selected:)
-      if multi_select?
-        selected_item_label?(item) ? SELECTED_GUTTER : UNSELECTED_GUTTER
-      else
-        ' '
-      end
     end
 
     def refresh_items_if_query_changed
@@ -270,16 +357,6 @@ module Fatty
       apply_selection_policy!
     end
 
-    # Renderer calls this to determine which slice of items to display.
-    def scroll_start(list_h:)
-      max_start = @displayed.length - list_h
-      max_start = 0 if max_start < 0
-
-      @scroll_start = 0 if @scroll_start < 0
-      @scroll_start = max_start if @scroll_start > max_start
-      @scroll_start
-    end
-
     def toggle_selected_current!
       item = selected_item
       return unless item
@@ -322,21 +399,6 @@ module Fatty
       [@displayed.length - scroll_start(list_h: popup_list_height), popup_list_height].min
     end
 
-    def counts
-      {
-        total: total_count,
-        selected: selected_count,
-        matching: matching_count,
-        showing: showing_count
-      }
-    end
-
-    def selected_labels
-      @selected_labels.keys
-    end
-
-    private
-
     def validate_unique_labels!(items)
       counts = Hash.new(0)
       items.each do |item|
@@ -348,15 +410,6 @@ module Fatty
 
       shown = dupes.first(5).join(", ")
       raise ArgumentError, "duplicate chooser labels: #{shown}"
-    end
-
-    def popup_payload(item = selected_item)
-      {
-        kind: @kind,
-        item: item,
-        query: @field.buffer.text.to_s,
-        index: @selected
-      }
     end
 
     def popup_payload(item = selected_item)
@@ -388,9 +441,12 @@ module Fatty
     end
 
     def notify_owner(name)
-      return [] unless @kind
-
-      [[:terminal, :send_modal_owner, [:cmd, name, popup_payload]]]
+      [
+        Command.terminal(
+          :send_modal_owner,
+          command: Command.session(:self, name, **popup_payload),
+        ),
+      ]
     end
 
     def popup_list_height

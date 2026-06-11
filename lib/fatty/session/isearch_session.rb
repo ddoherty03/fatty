@@ -12,18 +12,15 @@ module Fatty
     DEFAULT_ISEARCH_HISTORY_MAX  = 200
 
     def initialize(direction: :forward, last_pattern: nil, history: nil)
-      super(keymap: Keymaps.emacs, views: [])
-
+      super(keymap: Keymaps.emacs)
       @direction = direction.to_sym
       @failed = false
       @last_text = nil
       @last_pattern = last_pattern.to_s
-
       @field = Fatty::InputField.new(
         prompt: Prompt.new { isearch_prompt },
         history: history,
         history_kind: :search_string,
-        # ? history_ctx: -> { { session: "pager_isearch" } },
       )
     end
 
@@ -31,16 +28,40 @@ module Fatty
     # Framework and Session Hooks
     #########################################################################################
 
-    def keymap_contexts
-      [:isearch, :text, :terminal]
+    def update(command)
+      log_update(command)
+      commands =
+        case command.action
+        when :key
+          ev = command.payload.fetch(:event)
+          action, args = resolve_action(ev)
+          if action
+            apply_action(action, args, event: ev)
+          else
+            []
+          end
+        when :isearch_set_failed
+          @failed = !!command.payload[:failed]
+          @field.prompt = isearch_prompt
+          []
+        else
+          []
+        end
+      Array(commands)
     end
 
-    def view(screen:, renderer:)
+    def view
       row = screen.output_rect.rows - 1
 
       ::Curses.curs_set(1)
       renderer.render_pager_field(@field, row: row, role: :search_input)
       renderer.restore_output_cursor(@field, row: row)
+    end
+
+    private
+
+    def keymap_contexts
+      [:isearch, :text, :terminal]
     end
 
     ############################################################################################
@@ -65,18 +86,6 @@ module Fatty
     desc "Move to the prior matching text"
     action :isearch_prev do
       step_prev!
-    end
-
-    private
-
-    def update_cmd(name, payload)
-      cmds = []
-      case name
-      when :isearch_set_failed
-        @failed = !!payload[:failed]
-        @field.prompt = isearch_prompt
-      end
-      cmds
     end
 
     def action_env(event:)
@@ -110,30 +119,58 @@ module Fatty
 
     def accept!
       pattern = @field.accept_line.to_s
-      cmds = []
-      cmds << [:terminal, :send_modal_owner, [:cmd, :pager_isearch_commit, { pattern: pattern, direction: @direction }]]
-      cmds << [:terminal, :pop_modal]
-      cmds
+      [
+        Command.terminal(
+          :send_modal_owner,
+          command: Command.session(
+            :focused,
+            :pager_isearch_commit,
+            pattern: pattern,
+            direction: @direction,
+          ),
+        ),
+        Command.terminal(:pop_modal),
+      ]
     end
 
     def cancel!
-      [[:terminal, :send_modal_owner, [:cmd, :pager_isearch_cancel, {}]], [:terminal, :pop_modal]]
+      [
+        Command.terminal(
+          :send_modal_owner,
+          command: Command.session(:focused, :pager_isearch_cancel),
+        ),
+        Command.terminal(:pop_modal),
+      ]
     end
 
     def step_next!
       @direction = :forward
-      cmds = []
-      cmds.concat(prefill_last_pattern_if_empty!)
-      cmds << [:terminal, :send_modal_owner, [:cmd, :pager_isearch_step, { direction: @direction }]]
-      cmds
+
+      prefill_last_pattern_if_empty! + [
+        Command.terminal(
+          :send_modal_owner,
+          command: Command.session(
+            :focused,
+            :pager_isearch_step,
+            direction: @direction,
+          ),
+        ),
+      ]
     end
 
     def step_prev!
       @direction = :backward
-      cmds = []
-      cmds.concat(prefill_last_pattern_if_empty!)
-      cmds << [:terminal, :send_modal_owner, [:cmd, :pager_isearch_step, { direction: @direction }]]
-      cmds
+
+      prefill_last_pattern_if_empty! + [
+        Command.terminal(
+          :send_modal_owner,
+          command: Command.session(
+            :focused,
+            :pager_isearch_step,
+            direction: @direction,
+          ),
+        ),
+      ]
     end
 
     def prefill_last_pattern_if_empty!
@@ -161,11 +198,15 @@ module Fatty
 
       @last_text = text.dup
       [
-        [
-          :terminal,
+        Command.terminal(
           :send_modal_owner,
-          [:cmd, :pager_isearch_update, { pattern: text, direction: @direction }],
-        ]
+          command: Command.session(
+            :focused,
+            :pager_isearch_update,
+            pattern: text,
+            direction: @direction,
+          ),
+        ),
       ]
     end
   end

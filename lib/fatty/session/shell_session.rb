@@ -130,6 +130,22 @@ module Fatty
       [alert_cmd(:error, e.message, ev: event)]
     end
 
+    def apply_popup_result(payload)
+      commands = []
+      case payload[:kind]&.to_sym
+      when :history_search
+        item = payload.fetch(:item, "").to_s
+        env = action_env(event: nil)
+        with_virtual_suffix_sync do
+          Fatty::Actions.call(:replace, env, item)
+        end
+      when :completion
+        apply_completion(payload.fetch(:item, "").to_s, range: @completion_range)
+        @completion_range = nil
+      end
+      commands
+    end
+
     def action_env(event:)
       Fatty::ActionEnvironment.new(
         session: self,
@@ -141,40 +157,41 @@ module Fatty
       )
     end
 
-    desc "Pass the current shell input line to the proc"
+    desc "Pass the current input line to the on_accept proc or a shell"
     action :submit_line do
       line = @field.accept_line.to_s.strip
-      return [] if line.empty?
-
-      Fatty.info("ShellSession: accept_line: #{line}")
-      case line
-      when "exit", "quit"
-        Command.terminal(:quit)
-      when "clear"
-        reset_output!
-        Command.session(:alert, :clear)
+      if line.empty?
+        []
       else
-        # Here is where command lines are handled.  The @on_accept proc can
-        # return a String or an Array of Strings, and they are forwarded to
-        # the OutputSession to be rendered in the output pane.
-        reset_for_command!
-        anchor = output.lines.length
-        pager.begin_command!(anchor: anchor)
-
-        commands = [Command.session(:output, :append, text: "$ #{line}\n", follow: true)]
-        result =
-          if @on_accept
-            @on_accept.call(line, accept_env)
-          else
-            run_default_command(line)
-          end
-        if result
-          text = Array(result).compact.join
-          commands << Command.session(:output, :append, text: text, follow: true) unless text.empty?
+        Fatty.info("ShellSession: accept_line: #{line}")
+        case line
+        when "exit", "quit"
+          Command.terminal(:quit)
+        when "clear"
+          [
+            Command.session(output_session.id, :clear),
+            Command.session(:alert, :clear),
+          ]
         else
-          commands << alert_cmd(:error, "Command not found: #{line}")
+          commands = [
+            Command.session(output_session.id, :begin_command),
+            Command.session(output_session.id, :append, text: "$ #{line}\n", follow: true),
+          ]
+          # Within the accept_proc, the text from `env.append` and
+          # `env.markdown` is rendered to output first, then whatever string
+          # is returned by the proc is rendered.  If you want to control order
+          # precisesly use `env.append` in the on_accept proc and return nil.
+          env = accept_env
+          result =
+            if @on_accept
+              @on_accept.call(line, env)
+            else
+              run_default_command(line)
+            end
+          commands.concat(env.commands)
+          commands.concat(normalize_action_result(result))
+          commands
         end
-        commands
       end
     end
 
@@ -289,6 +306,15 @@ module Fatty
 
     def accept_env
       CallbackEnvironment.new(terminal: terminal, output_id: output_session.id)
+    end
+
+    def run_default_command(line)
+      Command.session(output_session.id, :append, text: "$ #{line}\n", follow: true)
+      out, status = Open3.capture2e(line)
+      out << "\n[exit #{status.exitstatus}]\n" if status&.exitstatus && status.exitstatus != 0
+      out
+    rescue Errno::ENOENT
+      nil
     end
 
     #########################################################################################

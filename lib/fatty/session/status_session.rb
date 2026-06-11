@@ -6,30 +6,30 @@ module Fatty
 
     attr_reader :text, :role
 
-    def id = :status
-
-    def initialize
-      super(id: :status, views: [Fatty::StatusView.new])
+    def initialize(id: nil)
+      super
       clear
     end
 
-    def update_cmd(name, payload)
+    def update(command)
+      log_update(command)
       old_rows = rows
-      case name
+      case command.action
       when :show
-        set(payload)
+        set(command.payload)
       when :clear
         clear
       end
       new_rows = rows
+      commands = []
       if old_rows != new_rows
-        [Command.terminal(:refresh_layout)]
-      else
-        []
+        commands << Command.terminal(:set_status_rows, rows: new_rows)
+        commands << Command.terminal(:refresh_layout)
       end
+      commands.compact
     end
 
-    def view(renderer:)
+    def view
       return unless visible?
 
       renderer.render_status(text, role: role || :info)
@@ -64,6 +64,8 @@ module Fatty
     end
 
     def clear
+      return unless visible?
+
       @text = nil
       @role = :info
     end

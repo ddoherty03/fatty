@@ -4,86 +4,108 @@ require "tmpdir"
 
 module Fatty
   class KeyTestSession < Session
-    def id = :keytest
+    attr_reader :output_session
 
-    def initialize(owner: nil)
-      super(keymap: nil, views: [])
-      @owner = owner
+    def initialize
+      super(id: :keytest, keymap: nil)
+      @output_session = OutputSession.new
+      @suggestions = []
     end
 
     def init(terminal:)
-      super
+      commands = super
       @suggestions = []
-      @owner ||= terminal.focused_session
-      show_quit_status
-      force_scrolling_output!
-      append <<~TEXT
-        Key test mode
 
-        Press keys to inspect Fatty's decoding and binding resolution.
-        Press q, ESC, or C-g to leave key test mode.
+      commands.concat(output_session.init(terminal: terminal))
+      commands << Command.terminal(:register_session, session: output_session)
+      commands << Command.session(output_session.id, :resize)
+      commands << Command.session(output_session.id, :begin_command)
+      commands << Command.session(
+        output_session.id,
+        :append,
+        text: <<~TEXT,
+          Key test mode
 
-      TEXT
-      []
+          Press keys to inspect Fatty's decoding and binding resolution.
+          Press q, ESC, or C-g to leave key test mode.
+
+        TEXT
+        follow: true,
+      )
+      commands << show_quit_status_command
+      commands
     end
 
-    def update_key(ev)
-      if quit_key?(ev)
-        append "Leaving key test mode.\n\n"
-        return [[:terminal, :pop_modal]]
-      end
-
-      # append "  TERM:      #{terminal_name}\n"
-      append ev.report
-      snippet = ev.suggested_snippet(terminal_name)
-      append snippet + "\n"
-      @suggestions << snippet unless snippet.empty?
-      show_quit_status
-      []
+    def update(command)
+      log_update(command)
+      commands =
+        case command.action
+        when :key
+          ev = command.payload.fetch(:event)
+          if quit_key?(ev)
+            write_suggestions_commands + [
+              Command.session(output_session.id, :append, text: "Leaving key test mode.\n\n", follow: true),
+              Command.session(:status, :clear),
+              Command.terminal(:pop_modal),
+            ]
+          else
+            snippet = ev.suggested_snippet(terminal_name)
+            @suggestions << snippet unless snippet.empty?
+            text = [
+              ev.report,
+              "\nSuggested keybindings:\n",
+              @suggestions.uniq.join("\n"),
+              "\n",
+            ].join
+            [
+              Command.session(output_session.id, :append, text: text, follow: false, mode: :scrolling),
+              show_quit_status_command,
+            ]
+          end
+        else
+          []
+        end
+      Array(commands)
     end
 
-    def view(screen:, renderer:)
-      # Intentionally blank. The underlying shell session renders the output
-      # pane; this modal only captures keys and appends diagnostic text.
-      nil
+    def view
+      output_session.view
     end
 
     def close
-      write_suggestions!
-      restore_owner_pager!
-      terminal.clear_status if terminal.respond_to?(:clear_status)
+      output_session.close
       nil
     end
 
     private
 
-    def append(text)
-      return unless @owner&.respond_to?(:append_output)
+    # def append(text)
+    #   return unless @owner&.respond_to?(:append_output)
 
-      force_scrolling_output!
+    #   force_scrolling_output!
 
-      before = @owner.output.lines.length
-      @owner.append_output(text.to_s, follow: false)
+    #   before = @owner.output.lines.length
+    #   @owner.append_output(text.to_s, follow: false)
 
-      height = @owner.viewport.height.to_i
-      added = @owner.output.lines.length - before
+    #   height = @owner.viewport.height.to_i
+    #   added = @owner.output.lines.length - before
 
-      if added >= height
-        @owner.viewport.top = before
-        @owner.viewport.clamp!(@owner.output.lines)
-      else
-        @owner.viewport.page_bottom(@owner.output.lines)
-      end
+    #   if added >= height
+    #     @owner.viewport.top = before
+    #     @owner.viewport.clamp!(@owner.output.lines)
+    #   else
+    #     @owner.viewport.page_bottom(@owner.output.lines)
+    #   end
 
-      renderer = terminal.renderer if terminal.respond_to?(:renderer)
-      renderer.invalidate! if renderer&.respond_to?(:invalidate!)
-    end
+    #   renderer = terminal.renderer if terminal.respond_to?(:renderer)
+    #   renderer.invalidate! if renderer&.respond_to?(:invalidate!)
+    # end
 
-    def force_scrolling_output!
-      if @owner&.respond_to?(:pager)
-        @owner.pager.paging_to_scrolling
-      end
-    end
+    # def force_scrolling_output!
+    #   if @owner&.respond_to?(:pager)
+    #     @owner.pager.paging_to_scrolling
+    #   end
+    # end
 
     def quit_key?(ev)
       ev.key == :q ||
@@ -102,26 +124,44 @@ module Fatty
       env && env[:terminal] || ENV.fetch("TERM", "unknown")
     end
 
-    def show_quit_status
-      terminal.warn("KeyTest — press q, ESC, or C-g to quit  (TERM: #{terminal_name})")
+    def show_quit_status_command
+      Command.session(
+        :status,
+        :show,
+        text: "KeyTest — press q, ESC, or C-g to quit  (TERM: #{terminal_name})",
+        role: :warn,
+      )
     end
 
-    def write_suggestions!
+    def write_suggestions_commands
       suggestions = @suggestions.uniq
-      return if suggestions.empty?
+      return [] if suggestions.empty?
 
-      path = File.join(Dir.tmpdir, "fatty-keytest-#{Time.now.strftime('%Y%m%d-%H%M%S')}.yml")
-
+      path = File.join(
+        Dir.tmpdir,
+        "fatty-keytest-#{Time.now.strftime('%Y%m%d-%H%M%S')}.yml",
+      )
       File.write(path, suggestion_file_text(suggestions))
+      [
+        Command.session(
+          output_session.id,
+          :append,
+          text: <<~TEXT,
+            =======================================================
+            KeyTest suggestions written to:
+            #{path}
 
-      append <<~TEXT
-        =======================================================
-        KeyTest suggestions written to:
-        #{path}
-
-      TEXT
-
-      terminal.good("KeyTest suggestions written to #{path}")
+          TEXT
+          follow: true,
+          mode: :scrolling,
+        ),
+        Command.session(
+          :status,
+          :show,
+          text: "KeyTest suggestions written to #{path}",
+          role: :good,
+        ),
+      ]
     end
 
     def suggestion_file_text(suggestions)
@@ -226,12 +266,6 @@ module Fatty
       out << suggestions.join("\n\n")
       out << "\n"
       out
-    end
-
-    def restore_owner_pager!
-      if @owner&.respond_to?(:pager)
-        @owner.pager.quit_paging
-      end
     end
   end
 end
