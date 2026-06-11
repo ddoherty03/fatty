@@ -18,7 +18,7 @@ module Fatty
       s.update([:cmd, :show, { level: :warn, message: "hi" }])
       s.view(screen: screen, renderer: renderer)
 
-      expect(renderer).to have_received(:render_alert).with(instance_of(Fatty::Alert))
+      expect(renderer).to have_received(:render_alert).with(instance_of(Fatty::AlertSession))
       expect(s.current.level).to eq(:warn)
       expect(s.current.message).to eq("hi")
     end

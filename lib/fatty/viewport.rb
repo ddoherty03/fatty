@@ -10,6 +10,13 @@ module Fatty
       @height = height
     end
 
+    def state
+      [
+        top,
+        height,
+      ]
+    end
+
     def adjust_for_trim(n)
       @top = [@top - n, 0].max
     end

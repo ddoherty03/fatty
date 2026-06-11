@@ -11,14 +11,14 @@ module Fatty
         @pending_ansi_draws = []
       end
 
-      def render_status(text, role: :status_info)
-        state = status_state(text, role)
+      def render_status(status_session)
+        state = status_state(status_session)
         return if state == @last_status_state
 
         @last_status_state = state
 
         lines = status_render_lines(
-          text,
+          status_session.text,
           width: screen.status_rect.cols,
           max_rows: screen.status_rect.rows,
         )
@@ -29,15 +29,16 @@ module Fatty
             col: screen.status_rect.col,
             width: screen.status_rect.cols,
             text: lines[idx].to_s,
-            role: role,
+            role: status_session.role,
           )
         end
       end
 
-      def render_alert(alert)
-        state = alert_state(alert)
+      def render_alert(alert_session)
+        state = alert_state(alert_session)
         return if state == @last_alert_state
 
+        alert = alert_session.current
         @last_alert_state = state
         text = alert ? alert.format : ""
         role = alert ? alert.role : :alert_info
@@ -51,15 +52,13 @@ module Fatty
         )
       end
 
-      def render_output(output, viewport:, highlights: nil)
-        lines = viewport.slice(output.lines)
-        normalized = normalized_highlights(highlights)
+      def render_output(output_session)
+        out_buffer = output_session.output
+        viewport = output_session.viewport
+        lines = viewport.slice(out_buffer.lines)
+        normalized = normalized_highlights(output_session.highlights)
 
-        curr = output_state(
-          viewport: viewport,
-          lines: lines,
-          highlights: normalized,
-        )
+        curr = output_state(output_session)
         return if curr == @last_output_state
 
         draw_output_lines(lines, viewport: viewport, highlights: normalized)
@@ -140,20 +139,19 @@ module Fatty
         layout = PopupLayout.new(row: 0, width: inner_w)
         row = render_popup_message(session: session, layout: layout)
 
-        counts_present = !!session.counts
         input_row = inner_h - 1
-        counts_row = counts_present ? input_row - 1 : nil
+        counts_row = session.counts_present? ? input_row - 1 : nil
 
         # Draw the displayed items inside the window with a gutter to have an
         # indicator of what is selected, if any.
-        list_h = [inner_h - row - 1 - (counts_present ? 1 : 0), 0].max
+        list_h = [inner_h - row - 1 - (session.counts_present? ? 1 : 0), 0].max
         layout = PopupLayout.new(row: row, width: inner_w, height: list_h)
         render_popup_items(session: session, layout: layout)
 
         # Draw the "counts" line to indicate the total number of items, items
         # selected, and items displayed.
         layout = PopupLayout.new(row: counts_row, width: inner_w)
-        render_popup_counts(session: session, layout: layout) if counts_present
+        render_popup_counts(session: session, layout: layout) if session.counts_present?
 
         # Draw the input field for the user to type narrowing selection
         # queries.

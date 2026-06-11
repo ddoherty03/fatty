@@ -69,6 +69,19 @@ module Fatty
       renderer.render_prompt_popup(session: self)
     end
 
+    def state
+      [
+        title.to_s.dup.freeze,
+        message.to_s.dup.freeze,
+        field.prompt_text.to_s.dup.freeze,
+        field.buffer.text.to_s.dup.freeze,
+        field.buffer.cursor,
+        field.buffer.virtual_suffix.to_s.dup.freeze,
+        renderer.screen.rows,
+        renderer.screen.cols,
+      ]
+    end
+
     private
 
     def keymap_contexts

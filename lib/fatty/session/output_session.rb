@@ -84,8 +84,6 @@ module Fatty
         ::Curses.curs_set(0)
 
         viewport = pager_status_viewport(renderer.screen)
-        highlights = pager.search_visible_highlights(viewport: viewport)
-
         renderer.render_output(output, viewport: viewport, highlights: highlights)
         renderer.render_pager_field(
           pager_field,
@@ -106,10 +104,25 @@ module Fatty
       dirty
     end
 
+    def state
+      [
+        viewport.state,
+        viewport.slice(output.lines),
+        screen.output_rect.rows,
+        renderer.screen.output_rect.cols,
+        pager.search_visible_highlights(viewport: viewport),
+        renderer.theme_version,
+      ]
+    end
+
     # True when the pager is currently holding the screen (i.e., paging mode is
     # active and the output is paused).
     def pager_active?
       @pager.active?
+    end
+
+    def highlights
+      pager.search_visible_highlights(viewport: viewport)
     end
 
     private

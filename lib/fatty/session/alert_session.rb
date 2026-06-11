@@ -30,7 +30,18 @@ module Fatty
     def view
       return unless visible?
 
-      renderer.render_alert(current)
+      renderer.render_alert(self)
+    end
+
+    def state
+      [
+        current&.text.dup.freeze,
+        current&.level,
+        current&.details,
+        renderer.screen.alert_rect.row,
+        renderer.screen.alert_rect.cols,
+        renderer.theme_version
+      ]
     end
 
     private

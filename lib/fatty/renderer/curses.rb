@@ -11,8 +11,8 @@ module Fatty
         super
       end
 
-      def render_status(text, role: :status_info)
-        state = status_state(text, role)
+      def render_status(status_session)
+        state = status_state(session)
         return if state == @last_status_state
 
         @last_status_state = state
@@ -22,13 +22,13 @@ module Fatty
 
         rows = screen.status_rect.rows
         cols = screen.status_rect.cols
-        base_attr = pair_attr(role, fallback: ::Curses::A_REVERSE)
+        base_attr = pair_attr(status_session.role, fallback: ::Curses::A_REVERSE)
 
         win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
         win.erase
         win.attrset(base_attr)
 
-        status_render_lines(text, width: cols, max_rows: rows).each_with_index do |line, row|
+        status_render_lines(status_session.text, width: cols, max_rows: rows).each_with_index do |line, row|
           win.setpos(row, 0)
           rendered = Fatty::Ansi.truncate_visible(line, cols)
           padding = [cols - Fatty::Ansi.visible_length(rendered), 0].max
@@ -37,16 +37,13 @@ module Fatty
         stage_window(win)
       end
 
-      def render_output(output, viewport:, highlights: nil)
-        lines = viewport.slice(output.lines)
-        normalized = normalized_highlights(highlights)
+      def render_output(output_session)
+        viewport = output_session.viewport
+        outbuf = output_session.output
+        lines = viewport.slice(outbuf.lines)
+        normalized = normalized_highlights(output_session.highlights)
 
-        curr = output_state(
-          viewport: viewport,
-          lines: lines,
-          highlights: normalized,
-        )
-
+        curr = output_state(output_session)
         prev = @last_output_state
 
         if prev && can_incrementally_scroll_output?(prev, curr)
@@ -54,7 +51,6 @@ module Fatty
         else
           draw_output_lines(lines, viewport: viewport, highlights: normalized)
         end
-
         @last_output_state = curr
       end
 
@@ -91,8 +87,8 @@ module Fatty
         stage_window(win)
       end
 
-      def render_alert(alert)
-        state = alert_state(alert)
+      def render_alert(alert_session)
+        state = alert_state(alert_session)
         return if state == @last_alert_state
 
         @last_alert_state = state
@@ -100,6 +96,7 @@ module Fatty
         win = context.alert_win
         return unless win
 
+        alert = session.current
         text = alert ? alert.format : ""
         text = Fatty::Ansi.strip(text)
         role = alert ? alert.role : :alert

@@ -8,7 +8,8 @@ module Fatty
 
     def initialize(id: nil)
       super
-      clear
+      @text = nil
+      @role = :info
     end
 
     def update(command)
@@ -32,7 +33,19 @@ module Fatty
     def view
       return unless visible?
 
-      renderer.render_status(text, role: role || :info)
+      # renderer.render_status(text, role: role || :info)
+      renderer.render_status(self)
+    end
+
+    def state
+      [
+        text.dup.freeze,
+        role.dup,
+        renderer.screen.status_rect.row.dup,
+        renderer.screen.status_rect.rows.dup,
+        renderer.screen.status_rect.cols.dup,
+        renderer.theme_version
+      ]
     end
 
     private

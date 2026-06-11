@@ -64,6 +64,17 @@ module Fatty
       buffer.text == ""
     end
 
+    def state
+      [
+        prompt_text.to_s.dup.freeze,
+        buffer.text.to_s.dup.freeze,
+        buffer.cursor,
+        buffer.virtual_suffix.to_s.dup.freeze,
+        buffer.region_active?,
+        buffer.region_range,
+      ]
+    end
+
     # Visual cursor X position in the window
     def cursor_x
       before_cursor = buffer.text.to_s[0...buffer.cursor].to_s

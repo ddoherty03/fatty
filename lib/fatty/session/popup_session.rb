@@ -102,22 +102,7 @@ module Fatty
     end
 
     def state
-      {
-        win: win,
-        title: title,
-        message: message,
-        prompt: prompt,
-        items: displayed_items.map(&:to_s),
-        selected_labels: selected_labels.map(&:to_s).sort,
-        counts: counts&.dup,
-        query: @field.buffer.text.to_s,
-        cursor: @field.cursor,
-      }.freeze
-    end
-
-    def state
       [
-        # popup_border,
         title.to_s.dup.freeze,
         message.to_s.dup.freeze,
         displayed.map { |item| item.to_s.dup.freeze }.freeze,
@@ -127,8 +112,8 @@ module Fatty
         field.buffer.virtual_suffix.to_s.dup.freeze,
         selected_labels.map { |label| label.to_s.dup.freeze }.sort.freeze,
         counts&.dup&.freeze,
-        # screen.rows,
-        # screen.cols,
+        renderer.screen.rows,
+        renderer.screen.cols,
       ]
     end
 

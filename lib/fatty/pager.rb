@@ -443,6 +443,7 @@ module Fatty
     # the renderer’s slice planner / highlighting behavior.
     def search_visible_highlights(viewport:)
       return unless @search[:re]
+      return unless active?
 
       lines = @output.lines
       total = lines.length

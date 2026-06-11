@@ -112,74 +112,37 @@ module Fatty
       nil
     end
 
-    def alert_state(alert)
-      [
-        alert&.message.dup.freeze,
-        alert&.role,
-        alert&.details,
-        screen.alert_rect.row,
-        screen.alert_rect.cols,
-      ]
+    def alert_state(session)
+      session.state
     end
 
-    def status_state(text, role)
-      [
-        renderable_segments(text, role: role).map { |segment|
-          [
-            segment[:text].to_s.dup.freeze,
-            segment[:role],
-            segment[:style],
-          ].freeze
-        }.freeze,
-        role,
-        screen.status_rect.row,
-        screen.status_rect.rows,
-        screen.status_rect.cols,
-      ]
+    def status_state(session)
+      session.state
     end
 
     def popup_state(session)
       [
         popup_border,
-        session.title.to_s.dup.freeze,
-        session.message.to_s.dup.freeze,
-        session.displayed.map { |item| item.to_s.dup.freeze }.freeze,
-        session.selected,
-        session.field.buffer.text.to_s.dup.freeze,
-        session.field.buffer.cursor,
-        session.field.buffer.virtual_suffix.to_s.dup.freeze,
-        session.selected_labels.map { |label| label.to_s.dup.freeze }.sort.freeze,
-        session.counts&.dup&.freeze,
-        screen.rows,
-        screen.cols,
+        session.state
       ]
     end
 
     def prompt_popup_state(session)
       [
         popup_border,
-        session.title.to_s.dup.freeze,
-        session.message.to_s.dup.freeze,
-        session.field.prompt_text.to_s.dup.freeze,
-        session.field.buffer.text.to_s.dup.freeze,
-        session.field.buffer.cursor,
-        session.field.buffer.virtual_suffix.to_s.dup.freeze,
-        screen.rows,
-        screen.cols,
+        session.state
       ]
     end
 
-    def output_state(viewport:, lines:, highlights:)
-      {
-        top: viewport.top,
-        height: viewport.height,
-        width: viewport.respond_to?(:width) ? viewport.width : screen.output_rect.cols,
-        col: viewport.respond_to?(:col) ? viewport.col : 0,
-        lines: lines.map { |line| line.to_s.dup.freeze }.freeze,
-        highlights: normalized_highlights_state(highlights),
-        output_rows: screen.output_rect.rows,
-        output_cols: screen.output_rect.cols,
-      }.freeze
+    def output_state(session)
+      session.state
+    end
+
+    def input_field_state(input_field)
+      [
+        input_field.state,
+        theme_version
+      ]
     end
 
     def pager_field_state(field, row:, role:)
@@ -254,19 +217,6 @@ module Fatty
 
     def renderable_parts(value)
       value.is_a?(Array) ? value : [value]
-    end
-
-    def input_field_state(field)
-      [
-        field.prompt_text.to_s.dup.freeze,
-        field.buffer.text.to_s.dup.freeze,
-        field.buffer.cursor,
-        field.buffer.virtual_suffix.to_s.dup.freeze,
-        field.buffer.region_active?,
-        field.buffer.region_range,
-        screen.input_rect.row,
-        screen.input_rect.cols,
-      ]
     end
 
     def popup_counts_text(session)
