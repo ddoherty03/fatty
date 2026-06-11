@@ -18,7 +18,7 @@ module Fatty
         )
 
         commands = session.send(
-          :handle_action,
+          :apply_action,
           :accept_line,
           [],
           terminal: instance_double(Fatty::Terminal),
@@ -47,7 +47,7 @@ module Fatty
         )
 
         session.send(
-          :handle_action,
+          :apply_action,
           :accept_line,
           [],
           terminal: instance_double(Fatty::Terminal),

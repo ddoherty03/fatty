@@ -46,6 +46,25 @@ module Fatty
       renderer.restore_output_cursor(@field, row: row)
     end
 
+
+    def apply_action(action, args, event:)
+      env = ActionEnvironment.new(
+        session: self,
+        counter: counter,
+        event: event,
+        buffer: @field.buffer,
+        field: @field,
+      )
+
+      if Fatty::Actions.lookup(action)&.fetch(:on) == :session
+        Fatty::Actions.call(action, env, *args)
+      else
+        @field.act_on(action, *args, env: env)
+      end
+    rescue Fatty::ActionError
+      []
+    end
+
     ############################################################################################
     # Actions
     ############################################################################################
@@ -73,24 +92,6 @@ module Fatty
     desc "Move to the prior search match"
     action :search_step_backward do
       step_search(:backward)
-    end
-
-    def handle_action(action, args, event:)
-      env = ActionEnvironment.new(
-        session: self,
-        counter: counter,
-        event: event,
-        buffer: @field.buffer,
-        field: @field,
-      )
-
-      if Fatty::Actions.lookup(action)&.fetch(:on) == :session
-        Fatty::Actions.call(action, env, *args)
-      else
-        @field.act_on(action, *args, env: env)
-      end
-    rescue Fatty::ActionError
-      []
     end
 
     def toggle_regex

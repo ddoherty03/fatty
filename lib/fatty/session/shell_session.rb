@@ -128,6 +128,25 @@ module Fatty
     # Actions
     ############################################################################################
 
+    def apply_action(action, args, event:)
+      which =
+        if event&.respond_to?(:key)
+          event.key.inspect
+        elsif event&.respond_to?(:mouse)
+          event.mouse.inspect
+        end
+      Fatty.debug("ShellSession#apply_action: #{which}", tag: :keymap)
+      @field.reset_completion_state! unless action.to_sym == :complete
+      env = action_env(event: event)
+      defn = Fatty::Actions.lookup(action)
+      result = Fatty::Actions.call(action, env, *args)
+
+      @field.sync_virtual_suffix! if defn && [:field, :buffer].include?(defn[:on])
+      normalize_action_result(result)
+    rescue Fatty::ActionError => e
+      [alert_cmd(:error, e.message, ev: event)]
+    end
+
     def action_env(event:)
       Fatty::ActionEnvironment.new(
         session: self,
@@ -420,33 +439,6 @@ module Fatty
       end
       commands
     end
-
-    def handle_action(action, args, event:)
-      which =
-        if event&.respond_to?(:key)
-          event.key.inspect
-        elsif event&.respond_to?(:mouse)
-          event.mouse.inspect
-        end
-      Fatty.debug("ShellSession#handle_action: #{which}", tag: :keymap)
-      env = action_env(event: event)
-      apply_action(action, args, event, env: env)
-    end
-
-    # Centralized dispatch: actions declare their target (:buffer/:field/:pager)
-    # and Fatty::Actions routes through ActionEnvironment.
-    def apply_action(action, args, ev, env:)
-      @field.reset_completion_state! unless action.to_sym == :complete
-      defn = Fatty::Actions.lookup(action)
-      result = Fatty::Actions.call(action, env, *args)
-      if defn && [:field, :buffer].include?(defn[:on])
-        @field.sync_virtual_suffix!
-      end
-      result.is_a?(Array) ? result : []
-    rescue Fatty::ActionError => e
-      [alert_cmd(:error, e.message, ev: ev)]
-    end
-
     def run_default_command(line)
       Command.session(:output, :append, text: "$ #{line}\n", follow: true)
       out, status = Open3.capture2e(line)

@@ -6,7 +6,7 @@ require "fileutils"
 require "spec_helper"
 
 RSpec.describe Fatty::ShellSession do
-  describe "#handle_action" do
+  describe "#apply_action" do
     it "builds a history popup with a callable source for :history_search" do
       Dir.mktmpdir do |dir|
         history_path = File.join(dir, "history.jsonl")
@@ -18,7 +18,7 @@ RSpec.describe Fatty::ShellSession do
         history.add("pwd", kind: :command)
 
         commands = session.send(
-          :handle_action,
+          :apply_action,
           :history_search,
           [],
           event: nil,
@@ -45,7 +45,7 @@ RSpec.describe Fatty::ShellSession do
         buffer.replace("ls -l ~/src")
 
         commands = session.send(
-          :handle_action,
+          :apply_action,
           :completion_popup,
           [],
           event: nil,
@@ -66,7 +66,7 @@ RSpec.describe Fatty::ShellSession do
     end
   end
 
-  describe "#update_cmd" do
+  describe "#update_command" do
     it "handles :paste by inserting normalized text into the field" do
       session = Fatty::ShellSession.new
 
@@ -108,7 +108,7 @@ RSpec.describe Fatty::ShellSession do
       buffer.cursor = 0
 
       commands = session.send(
-        :handle_action,
+        :apply_action,
         :completion_popup,
         [],
         event: nil,
@@ -135,7 +135,7 @@ RSpec.describe Fatty::ShellSession do
       buffer.cursor = 1
 
       commands = session.send(
-        :handle_action,
+        :apply_action,
         :completion_popup,
         [],
         event: nil,

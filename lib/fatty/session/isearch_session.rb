@@ -89,7 +89,7 @@ module Fatty
       )
     end
 
-    def handle_action(action, args, event:)
+    def apply_action(action, args, event:)
       env = action_env(event: event)
 
       if Fatty::Actions.lookup(action)&.fetch(:on) == :session

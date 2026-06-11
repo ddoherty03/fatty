@@ -100,7 +100,7 @@ module Fatty
     end
 
     # Subclasses override this to react to resolved actions.
-    def handle_action(_action, _args, event:)
+    def apply_action(_action, _args, event:)
       []
     end
 
