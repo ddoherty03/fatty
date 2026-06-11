@@ -254,16 +254,16 @@ module Fatty
       direction = (payload[:direction] || :forward).to_sym
       result = pager.isearch_update!(pattern: pattern, direction: direction)
 
-      handle_search_result(result) +
-        [Command.session(:isearch, :isearch_set_failed, failed: result[:status] != :moved)]
+      handle_search_result(result) <<
+        Command.session(:isearch, :isearch_set_failed, failed: result[:status] != :moved)
     end
 
     def update_pager_isearch_step(payload)
       direction = (payload[:direction] || :forward).to_sym
       result = pager.isearch_step!(direction: direction)
 
-      handle_search_result(result) +
-        [Command.session(:isearch, :isearch_set_failed, failed: result[:status] != :moved)]
+      handle_search_result(result) <<
+        Command.session(:isearch, :isearch_set_failed, failed: result[:status] != :moved)
     end
 
     def update_pager_isearch_commit(payload)
@@ -271,8 +271,8 @@ module Fatty
       direction = (payload[:direction] || :forward).to_sym
       result = pager.isearch_commit!(pattern: pattern, direction: direction)
 
-      handle_search_result(result) +
-        [Command.session(:isearch, :isearch_set_failed, failed: false)]
+      handle_search_result(result) <<
+        Command.session(:isearch, :isearch_set_failed, failed: false)
     end
 
     def handle_search_result(result)
@@ -282,9 +282,9 @@ module Fatty
       when :boundary
         msg = result[:message].to_s
         msg = "Search reached boundary" if msg.empty?
-        alert_cmd(:info, msg)
+        [alert_cmd(:info, msg)]
       when :not_found
-        alert_cmd(:info, "No matches")
+        [alert_cmd(:info, "No matches")]
       else
         []
       end
