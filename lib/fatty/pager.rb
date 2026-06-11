@@ -33,8 +33,23 @@ module Fatty
       }
     end
 
+    def quit
+      @paused = false
+      @mode = :paging
+      @anchor = nil
+      @autoscroll = false
+    end
+
     def paused?
       @mode == :paging && @paused
+    end
+
+    def scrolling?
+      @mode == :scrolling
+    end
+
+    def active?
+      paused? || scrolling?
     end
 
     def reserve_prompt_row?
@@ -59,7 +74,6 @@ module Fatty
       @viewport.adjust_for_trim(ntrim)
       lines = @output.lines
       total = lines.size
-
       case @mode
       when :scrolling
         # In scrolling mode, the viewport is allowed to move continuously.
@@ -70,10 +84,7 @@ module Fatty
       when :paging
         if @anchor
           produced = total - @anchor
-
-          if produced <= 0
-            return
-          end
+          return if produced <= 0
 
           # While producing the first page, keep the viewport pinned to the anchor.
           @viewport.top = @anchor
@@ -224,10 +235,7 @@ module Fatty
 
     desc "Exit paging and return control to normal input."
     action :quit_paging do
-      @paused = false
-      @mode = :paging
-      @anchor = nil
-      @autoscroll = false
+      quit
     end
 
     def at_top?

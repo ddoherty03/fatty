@@ -3,21 +3,19 @@
 require "open3"
 
 module Fatty
-  class ShellSession < OutputSession
+  class ShellSession < Session
     action_on :session
 
-    attr_reader :field, :history
+    attr_reader :field, :history, :output_session
 
-    def initialize(prompt: "sh> ", on_accept: nil, completion_proc: nil, history_ctx: nil, history_path: :default)
+    def initialize(id: nil, prompt: "sh> ", on_accept: nil, completion_proc: nil, history_ctx: nil, history_path: :default)
+      keymap = Keymaps.emacs
       super(
-        keymap: Keymaps.emacs,
-        views: [
-          Fatty::OutputView.new(z: 0),
-          Fatty::InputView.new(z: 10),
-          Fatty::CursorView.new(z: 100),
-        ]
+        id: :shell,
+        keymap: keymap,
       )
       @history = Fatty::History.for_path(history_path)
+      @output_session = OutputSession.new(keymap: keymap)
       @field = Fatty::InputField.new(
         prompt: prompt,
         history: @history,
@@ -25,7 +23,6 @@ module Fatty
         history_kind: :command,
         history_ctx: history_ctx,
       )
-
       @on_accept = on_accept
       @completion_proc = completion_proc
     end
@@ -36,70 +33,56 @@ module Fatty
 
     def init(terminal:)
       super
-      resize_output!
-      []
+      output_session.init(terminal: terminal)
+      [
+        Command.terminal(:register_session, session: output_session),
+        Command.session(output_session.id, :resize),
+      ]
     end
 
-    def view(renderer:)
-      output_session.view(renderer: renderer)
-      # When paging is active, the output pane owns the screen and the shell
-      # input cursor should be turned off. This also prevents the underlying
-      # ShellSession from overriding the cursor while a modal
-      # (e.g. SearchSession) is displayed over the pager/status line.
-      if output_session.pager_active?
-        ::Curses.curs_set(0)
-        return
-      end
+    def update(command)
+      log_update(command)
+      commands =
+        case command.action
+        when :popup_result
+          apply_popup_result(command.payload)
+        when :paste
+          text = command.payload.fetch(:text, "").to_s
+          env = action_env(event: nil)
+          field.act_on(:paste, text, env: env)
+          []
+        when :key
+          ev = command.payload.fetch(:event)
+          if output_session.pager_active?
+            Command.session(output_session.id, :key, event: ev)
+          elsif ev.is_a?(Fatty::KeyEvent)
+            action, args = resolve_action(ev)
+            if action
+              apply_action(action, args, event: ev)
+            else
+              case ev.key
+              when :resize
+                Command.terminal(:resize)
+              when :enter, :return
+                apply_action(:submit_line, [], event: ev)
+              else
+                alert_cmd(:warn, "Unbound key: #{ev} (edit config in 'keybindings.yml' to bind)", ev: ev)
+              end
+            end
+          else
+            []
+          end
+        else
+          []
+        end
+      Array(commands)
+    end
 
+    def view
+      output_session.view
       ::Curses.curs_set(1)
       renderer.render_input_field(field)
       renderer.restore_cursor(field)
-    end
-
-    def update_key(ev)
-      return [] unless ev.is_a?(Fatty::KeyEvent)
-
-      key_str = "key=#{ev} raw=#{ev.raw}"
-      Fatty.debug("ShellSession.update_key: #{key_str}", tag: :session)
-      case ev.key
-      when :resize
-        Command.terminal(:handle_resize)
-      when :enter, :return
-        # safety: if somehow not bound, still accept
-        handle_action(:submit_line, event: ev)
-      else
-        alert_cmd(:warn, "Unbound key: #{ev} (edit config in 'keybindings.yml' to bind)", ev: ev)
-      end
-    end
-
-    def view(renderer:)
-      if pager_active?
-        ::Curses.curs_set(0)
-        viewport = pager_status_viewport(renderer.screen)
-        highlights = pager.search_visible_highlights(viewport: viewport)
-
-        renderer.render_output(output, viewport: viewport, highlights: highlights)
-        renderer.render_pager_field(
-          pager_field,
-          row: renderer.screen.output_rect.rows - 1,
-          role: :pager_status,
-        )
-      else
-        ::Curses.curs_set(1)
-        renderer.render_output(output, viewport: pager_viewport, highlights: nil)
-        renderer.render_input_field(field)
-        renderer.restore_cursor(field)
-      end
-    end
-
-    def keymap_contexts
-      pager_active? ? [:paging, :terminal] : [:input, :text, :terminal]
-    end
-
-    def pager_status_viewport(screen)
-      vp = pager_viewport.dup
-      vp.height = [screen.output_rect.rows - 1, 1].max
-      vp
     end
 
     # Save any state we want saved on quit, error, etc.
@@ -112,16 +95,16 @@ module Fatty
       Fatty.error("ShellSession#persist!: failed to save history: #{e.class}: #{e.message}", tag: :history)
     end
 
-    # Called by Terminal#go on every loop iteration.
-    # Returns true if any visible state changed (dirty).
+    # Called by Terminal#go on every loop iteration.  Returns true if any
+    # visible state changed (dirty).
     def tick
-      dirty = false
-      # Animated autoscroll (e.g. after M-s in paging mode).
-      if pager.autoscroll?
-        step = [(viewport.height * 3) / 4, 1].max
-        dirty ||= pager.autoscroll_step?(max_lines: step)
-      end
-      dirty
+      output_session.tick
+    end
+
+    private
+
+    def keymap_contexts
+      [:input, :text, :terminal]
     end
 
     ############################################################################################
@@ -199,15 +182,14 @@ module Fatty
     action :submit_and_scroll do
       before = output.lines.length
       cmds = submit_line
-      pager.paging_to_scrolling if output.lines.length > before
+      cmds << Command.session(output_session.id, :paging_to_scrolling) if output.lines.length > before
       cmds
     end
 
     desc "Interrupt scrolling, otherwise quit Fatty"
     action :interrupt do
-      if pager.mode == :scrolling
-        pager.quit_paging
-        []
+      if output_session.pager_active?
+        Command.session(output_session.id, :quit_paging)
       else
         Command.terminal(:quit)
       end
@@ -215,9 +197,8 @@ module Fatty
 
     desc "Quit if input is empty, otherwise delete forward"
     action :interrupt_if_empty do
-      if pager.mode == :scrolling
-        pager.quit_paging
-        []
+      if output_session.pager_active?
+        Command.session(output_session.id, :quit_paging)
       elsif @field.empty?
         Command.terminal(:quit)
       else
@@ -228,8 +209,7 @@ module Fatty
 
     desc "Clear shell output"
     action :clear_output do
-      reset_output!
-      []
+      Command.session(output_session.id, :clear)
     end
 
     desc "Cycle to the next theme"
@@ -283,42 +263,6 @@ module Fatty
       end
     end
 
-    desc "Search pager forward"
-    action :pager_search_forward do
-      regex = consume_search_regex_flag
-      searcher = Fatty::SearchSession.new(direction: :forward, regex: regex, history: @history)
-      Command.terminal(:push_modal, session: searcher)
-    end
-
-    desc "Search pager backward"
-    action :pager_search_backward do
-      regex = consume_search_regex_flag
-      searcher = Fatty::SearchSession.new(direction: :backward, regex: regex, history: @history)
-      Command.terminal(:push_modal, session: searcher)
-    end
-
-    desc "Start incremental pager search forward"
-    action :pager_isearch_forward do
-      isearcher = Fatty::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)
-      Command.terminal(:push_modal, session: isearcher)
-    end
-
-    desc "Start incremental pager search backward"
-    action :pager_isearch_backward do
-      isearcher = Fatty::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)
-      Command.terminal(:push_modal, session: isearcher)
-    end
-
-    desc "Repeat pager search forward"
-    action :pager_search_next do
-      handle_search_result(pager.search_repeat_next!)
-    end
-
-    desc "Repeat pager search backward"
-    action :pager_search_prev do
-      handle_search_result(pager.search_repeat_prev!)
-    end
-
     desc "Open command history search"
     action :history_search do
       src = ->(_q = nil) { @history.entries.select(&:command?).last(500).map(&:text) }
@@ -333,6 +277,18 @@ module Fatty
           initial_query: @field.buffer.text,
         )
       Command.terminal(:push_modal, session: hist_searcher)
+    end
+
+    #########################################################################################
+    # Utilities
+    #########################################################################################
+
+    def pager
+      output_session.pager
+    end
+
+    def accept_env
+      CallbackEnvironment.new(terminal: terminal, output_id: output_session.id)
     end
 
     #########################################################################################
@@ -408,152 +364,11 @@ module Fatty
       []
     end
 
-    private
-
-    def accept_env
-      Fatty::AcceptEnv.new(session: self)
-    end
-
-    def update_cmd(name, payload)
-      commands = []
-      case name
-      when :popup_result
-        commands.concat(update_popup_result(payload))
-      when :pager_search_set
-        commands.concat(update_pager_search_set(payload))
-      when :pager_search_step
-        commands.concat(update_pager_search_step(payload))
-      when :pager_isearch_update
-        commands.concat(update_pager_isearch_update(payload))
-      when :pager_isearch_step
-        commands.concat(update_pager_isearch_step(payload))
-      when :pager_isearch_cancel
-        pager.isearch_cancel!
-        commands << Command.session(:isearch, :isearch_set_failed, failed: false)
-      when :pager_isearch_commit
-        commands.concat(update_pager_isearch_commit(payload))
-      when :paste
-        text = payload.fetch(:text, "").to_s
-        env = action_env(event: nil)
-        field.act_on(:paste, text, env: env)
-      end
-      commands
-    end
-    def run_default_command(line)
-      Command.session(:output, :append, text: "$ #{line}\n", follow: true)
-      out, status = Open3.capture2e(line)
-      out << "\n[exit #{status.exitstatus}]\n" if status&.exitstatus && status.exitstatus != 0
-      out
-    rescue Errno::ENOENT
-      nil
-    end
-
-    def consume_search_regex_flag
-      regex = false
-      if counter.digits.to_s == "4"
-        regex = true
-        counter.clear!
-      end
-      regex
-    end
-
     def with_virtual_suffix_sync
       @field.sync_virtual_suffix!
       result = yield
       @field.sync_virtual_suffix!
       result
-    end
-
-    def alert_cmd(level, message, ev: nil)
-      details =
-        if ev
-          {
-            key: ev.key,
-            ctrl: ev.respond_to?(:ctrl?) ? ev.ctrl? : ev.ctrl,
-            meta: ev.respond_to?(:meta?) ? ev.meta? : ev.meta,
-            shift: ev.respond_to?(:shift?) ? ev.shift? : ev.shift,
-            text: ev.text
-          }
-        else
-          {}
-        end
-      Command.session(:alert, :show, level: level, message: message, details: details)
-    end
-
-    def update_popup_result(payload)
-      commands = []
-
-      case payload[:kind]&.to_sym
-      when :history_search
-        item = payload.fetch(:item, "").to_s
-        env = action_env(event: nil)
-
-        with_virtual_suffix_sync do
-          Fatty::Actions.call(:replace, env, item)
-        end
-      when :completion
-        apply_completion(payload.fetch(:item, "").to_s, range: @completion_range)
-        @completion_range = nil
-      end
-
-      commands
-    end
-
-    def update_pager_search_set(payload)
-      pattern = payload.fetch(:pattern, "").to_s
-      regex = !!payload[:regex]
-      direction = (payload[:direction] || :forward).to_sym
-      result = pager.search_set!(pattern: pattern, regex: regex, direction: direction)
-
-      handle_search_result(result)
-    end
-
-    def update_pager_search_step(payload)
-      direction = (payload[:direction] || :forward).to_sym
-      result = pager.search_step!(direction: direction)
-
-      handle_search_result(result)
-    end
-
-    def update_pager_isearch_update(payload)
-      pattern = payload.fetch(:pattern, "").to_s
-      direction = (payload[:direction] || :forward).to_sym
-      result = pager.isearch_update!(pattern: pattern, direction: direction)
-
-      handle_search_result(result) +
-        [Command.session(:isearch, :isearch_set_failed, failed: result[:status] != :moved)]
-    end
-
-    def update_pager_isearch_step(payload)
-      direction = (payload[:direction] || :forward).to_sym
-      result = pager.isearch_step!(direction: direction)
-
-      handle_search_result(result) +
-        [Command.session(:isearch, :isearch_set_failed, failed: result[:status] != :moved)]
-    end
-
-    def update_pager_isearch_commit(payload)
-      pattern = payload.fetch(:pattern, "").to_s
-      direction = (payload[:direction] || :forward).to_sym
-      result = pager.isearch_commit!(pattern: pattern, direction: direction)
-
-      handle_search_result(result) +
-        [Command.session(:isearch, :isearch_set_failed, failed: false)]
-    end
-
-    def handle_search_result(result)
-      return [] unless result.is_a?(Hash)
-
-      case result[:status]
-      when :boundary
-        msg = result[:message].to_s
-        msg = "Search reached boundary" if msg.empty?
-        alert_cmd(:info, msg)
-      when :not_found
-        alert_cmd(:info, "No matches")
-      else
-        []
-      end
     end
   end
 end

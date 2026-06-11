@@ -24,6 +24,7 @@ module Fatty
     include PromptApi
     include StatusApi
     include AlertApi
+    include KeytestApi
 
     attr_reader :progress, :commands
 
