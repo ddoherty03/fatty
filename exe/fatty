@@ -12,11 +12,7 @@ prompt = Fatty::Prompt.new { "#{Dir.pwd}> " }
 history_ctx_proc = -> { { pwd: Dir.pwd } }
 
 on_accept_proc = lambda do |line, env|
-  session = env.session
-  terminal = env.terminal
-
   cmd, *args = Shellwords.split(line)
-
   case cmd
   when "cd"
     dir = args.first || ENV["HOME"]
@@ -29,18 +25,16 @@ on_accept_proc = lambda do |line, env|
       else
         args
       end
-
-    choice = terminal.choose(
+    choice = env.choose(
       "Select one",
       choices: choices,
       initial_choice_idx: 0,
       quit_value: nil,
     )
-
     if choice.nil?
-      session.append_output("choose: cancelled\n")
+      env.append("choose: cancelled\n")
     else
-      session.append_output("choose: selected #{choice.inspect}\n")
+      env.append("choose: selected #{choice.inspect}\n")
     end
   when "choosevals"
     pairs =
@@ -52,18 +46,16 @@ on_accept_proc = lambda do |line, env|
       else
         args.each_slice(2).map { |label, value| [label, value] }
       end
-
-    choice = terminal.choose(
+    choice = env.choose(
       "Select one",
       choices: pairs,
       initial_choice_idx: 1,
       quit_value: nil,
     )
-
     if choice.nil?
-      session.append_output("choosevals: cancelled\n")
+      env.append("choosevals: cancelled\n")
     else
-      session.append_output("choosevals: selected #{choice.inspect}\n")
+      env.append("choosevals: selected #{choice.inspect}\n")
     end
   when "choose_multi"
     choices =
@@ -72,88 +64,82 @@ on_accept_proc = lambda do |line, env|
       else
         args
       end
-
-    choices = terminal.choose_multi(
+    choices = env.choose_multi(
       "Select one or more",
       choices: choices,
       quit_value: nil,
     )
-
     if choices.nil?
-      session.append_output("choose_multi: cancelled\n")
+      env.append("choose_multi: cancelled\n")
     else
-      session.append_output("choose_multi: selected #{choices.inspect}\n")
+      env.append("choose_multi: selected #{choices.inspect}\n")
     end
   when "choosevals_multi"
     pairs =
       if args.empty?
-        pairs = [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", :done]]
+        [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", :done]]
       elsif args.length.odd?
         session.append_output("choosevals_multi: needs even number of args\n")
         next
       else
-        pairs = args.each_slice(2).map { |label, value| [label, value] }
+        args.each_slice(2).map { |label, value| [label, value] }
       end
-
-    choices = terminal.choose_multi(
+    choices = env.choose_multi(
       "Select one or more",
       choices: pairs,
       quit_value: nil,
     )
-
     if choices.nil?
-      session.append_output("choosevals_multi: cancelled\n")
+      env.append("choosevals_multi: cancelled\n")
     else
-      session.append_output("choosevals_multi: selected #{choices.inspect}\n")
+      env.append("choosevals_multi: selected #{choices.inspect}\n")
     end
   when "menu"
-    result = terminal.menu(
+    result = env.menu(
       "Demo menu",
       choices: {
         "Write to output pane" => proc { |env|
       env.output("menu: wrote this from MenuEnv#output\n")
       :output_written
     },
-
         "Show status message" => proc { |env|
       env.status("menu: status set from MenuEnv#status")
       :status_written
     },
-
         "Return plain value" => :plain_value,
       },
       initial_choice_idx: 0,
       quit_value: nil,
     )
     if result.nil?
-      session.append_output("menu: cancelled\n")
+      env.append("menu: cancelled\n")
     else
-      session.append_output("menu: result #{result.inspect}\n")
+      env.append("menu: result #{result.inspect}\n")
     end
   when "info"
     message = args.empty? ? "Information message" : args.join(" ")
     message = message.gsub(/ ?~~ ?/, "\n")
-    terminal.info(message)
-    session.append_output("info: #{message}\n")
+    env.info(message)
+    env.append("info: #{message}\n")
   when "good"
     message = args.empty? ? "Success message" : args.join(" ")
     message = message.gsub(/ ?~~ ?/, "\n")
-    terminal.good(message)
-    session.append_output("good: #{message}\n")
+    env.good(message)
+    env.append("good: #{message}\n")
   when "warn"
     message = args.empty? ? "Danger Will Robinson!" : args.join(" ")
     message = message.gsub(/ ?~~ ?/, "\n")
-    terminal.warn(message)
-    session.append_output("warn: #{message}\n")
+    env.warn(message)
+    env.append("warn: #{message}\n")
   when "oops"
     message = args.empty? ? "Something went wrong" : args.join(" ")
     message = message.gsub(/ ?~~ ?/, "\n")
-    terminal.oops(message)
-    session.append_output("oops: #{message}\n")
+    env.oops(message)
+    env.append("oops: #{message}\n")
   when "prompt"
     question = args.empty? ? "Enter value:" : args.join(" ")
     value = terminal.prompt(question, initial: "demo")
-    session.append_output("prompt: #{value.inspect}\n")
+    env.append("prompt: #{value.inspect}\n")
   when "progress"
     styles = %w[count percent simple_percent trail bar unicode_bar braille_bar spinner]
     style_name = args.first
@@ -163,35 +149,30 @@ on_accept_proc = lambda do |line, env|
       else
         :trail
       end
-
     total =
       begin
         args.first ? Integer(args.first) : nil
       rescue StandardError
         nil
       end
-
     if style != :spinner
       total ||= 40
       total = 1 if total < 1
     elsif total && total < 1
       total = 1
     end
-
-    prog = env.progress(
+    prog = env.add_progress(
       label: "Demo progress",
       total: total,
       style: style,
     )
-
     if style == :spinner && total.nil?
       40.times do
         prog.update(render: true)
         sleep 0.1
       end
-
       prog.finish("Demo progress complete.", render: true)
-      session.append_output("progress: style=#{style} completed indeterminate demo\n")
+      env.append("progress: style=#{style} completed indeterminate demo\n")
     else
       total.times do |i|
         indicator =
@@ -201,15 +182,14 @@ on_accept_proc = lambda do |line, env|
           when 2 then "^".fatty_warn
           else "."
           end
-
         prog.update(current: i + 1, indicator: indicator, render: true)
         sleep 0.1
       end
       prog.finish("Demo progress complete.".green, render: true)
-      session.append_output("progress: style=#{style} completed #{total} steps\n")
+      env.append("progress: style=#{style} completed #{total} steps\n")
     end
   when "keytest"
-    return [[:terminal, :push_modal, Fatty::KeyTestSession.new(owner: session)], [:send, :alert, :clear, {}]]
+    env.keytest
   when 'markdown'
     file = args.first || File.expand_path("../examples/markdown/native-markdown.md", __dir__)
     text = File.read(File.expand_path(file))
@@ -222,13 +202,14 @@ on_accept_proc = lambda do |line, env|
     env.markdown(Fatty::Help.text)
   else
     out, _ = Open3.capture2e(line)
-    session.append_output(out)
+    env.append(out)
   end
-  [[:send, :alert, :clear, {}]]
-rescue Errno::ENOENT
-  [[:send, :alert, :show, { level: :error, message: "Command not found (#{line})" }]]
-rescue SystemCallError => ex
-  [[:send, :alert, :show, { level: :error, message: ex.message }]]
+  rescue Errno::ENOENT
+    env.alert("Command not found (#{line})", level: :error)
+    nil
+  rescue SystemCallError => ex
+    env.alert(ex.message, level: :error)
+    nil
 end
 
 cutes = []
