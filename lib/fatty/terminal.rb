@@ -129,17 +129,14 @@ module Fatty
 
       while @running
         loop_count += 1
-
         dirty = false
         immediate = false
-
-        msg = event_source.next_event
-        if msg
-          dispatch_message(msg)
+        cmd = event_source.next_event
+        if cmd
+          apply_command(cmd)
           dirty = true
           immediate = true
         end
-
         s = active_session
         begin
           tick_dirty = !!s&.tick
@@ -250,6 +247,26 @@ module Fatty
       end
       restore_active_cursor
       renderer.finish_frame
+    end
+
+    # A command is either bound for this Terminal or it's meant to be
+    # forwarded to a Session.  This method routes the command to its proper
+    # destination.
+    def apply_command(command)
+      command = Fatty::Command.coerce(command)
+      return unless command
+
+      Fatty.debug("Terminal#apply_command: active_session: #{active_session.id}", tag: :session)
+      Fatty.debug("Terminal#apply_command(#{command.inspect})", tag: :session)
+      if user_interaction_command?(command)
+        apply_command(Command.session(:status, :clear))
+        apply_command(Command.session(:alert, :clear))
+      end
+      if command.terminal?
+        apply_terminal_command(command)
+      else
+        apply_session_command(command)
+      end
     end
 
     private
@@ -453,20 +470,19 @@ module Fatty
       )
       @ctx.apply_layout(screen)
       renderer.screen = screen
-      if (session = focused_session)
-        session.resize_output! if session.respond_to?(:resize_output!)
-      end
+      apply_command(Command.session(:status, :resize))
+      apply_command(Command.session(:focused, :resize))
       if (top = @modal_stack.last)
-        session = top[:session]
-        apply_commands(session.handle_resize) if session.respond_to?(:handle_resize)
+        apply_command(Command.session(top[:session].id, :resize))
       end
       renderer.sync_backgrounds! if renderer.context.truecolor
       renderer.invalidate!
     end
 
-    def resize_message?(message)
-      kind, event = message
-      kind == :key && event.respond_to?(:key) && event.key == :resize
+    def resize_command?(command)
+      # kind, event = message
+      # kind == :key && event.respond_to?(:key) && event.key == :resize
+      command.action == :resize
     end
 
     def handle_resize
@@ -533,49 +549,19 @@ module Fatty
 
     # --- Dispatch ----------------------------------------------------------
 
-    def dispatch_message(message)
-      s = active_session
-      return [] unless s
-
-      if user_interaction_message?(message)
-        apply_command(Command.session(:status, :clear)) if status_session&.visible?
-        apply_command(Command.session(:alert, :clear)) if alert_session&.visible?
-      end
-
-      Fatty.debug("Terminal#dispatch_message: #{message.inspect}", tag: :session)
-      commands = s.update(message)
-      Fatty.debug("Terminal#dispatch_message: session=#{s.class} -> cmds=#{commands.inspect}", tag: :session)
-
-      apply_commands(commands)
+    def user_interaction_command?(command)
+      key_event_command?(command) && !resize_command?(command)
     end
 
-    def user_interaction_message?(message)
-      key_event_message?(message) && !resize_message?(message)
-    end
-
-    # Return whether message is a key message
-    def key_event_message?(message)
-      message.is_a?(Array) && message[0] == :key
+    # Return whether command is a key event
+    def key_event_command?(command)
+      command.action == :key
     end
 
     def apply_commands(commands)
       commands = [commands] if commands.is_a?(Fatty::Command)
       Array(commands).each do |cmd|
         apply_command(cmd)
-      end
-    end
-
-    # A command is either bound for this Terminal or it's meant to be
-    # forwarded to a Session.  This method routes the command to its proper
-    # destination.
-    def apply_command(command)
-      command = Fatty::Command.coerce(command)
-      Fatty.debug("Terminal#apply_command(#{command})", tag: :session)
-
-      if command.terminal?
-        apply_terminal_command(command)
-      else
-        apply_session_command(command)
       end
     end
 
@@ -631,7 +617,7 @@ module Fatty
       end
     end
 
-    # Forward a command meant to be applied by a session.
+    # Forward a command to the target session.
     def apply_session_command(command)
       session = find_session(command.id)
       raise ArgumentError, "no session registered with id=#{command.id.inspect}" unless session
@@ -640,12 +626,7 @@ module Fatty
         raise ArgumentError, "session command payload must be a Hash, got: #{command.payload.inspect}"
       end
 
-      # Command is Terminal's routing object. Session#update, however, still
-      # speaks in event/message arrays so that command messages and key/mouse
-      # events travel through the same update path. The :cmd envelope tells
-      # Session#update to dispatch to #update_cmd.
-      message = [:cmd, command.action, command.payload]
-      commands = session.update(message)
+      commands = session.update(command)
       apply_commands(commands)
     end
 
