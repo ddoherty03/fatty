@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative 'terminal/progress'
 require_relative 'terminal/popup_owner'
 
 module Fatty
