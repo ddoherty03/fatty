@@ -71,7 +71,7 @@ module Fatty
     end
 
     def self.call(name, env, *args, **kwargs)
-      arg_str = "name: #{name}, env: #{env}, args: #{args}, kwargs: #{kwargs}"
+      arg_str = "name: #{name}, session: #{env.session.id}, #{env}, args: #{args}, kwargs: #{kwargs}"
       Fatty.debug("Action.call(#{arg_str})", tag: :action)
       key = name.to_sym
       defn = @defs[key] or raise ActionError, "Unknown action: #{key}"
@@ -92,7 +92,6 @@ module Fatty
           kwargs = kwargs.merge(count: env.counter.consume(default: 1))
         end
       end
-
       target.public_send(defn[:method], *args, **kwargs)
     end
 

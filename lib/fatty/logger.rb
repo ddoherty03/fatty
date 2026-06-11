@@ -66,12 +66,17 @@ module Fatty
     #     - command:: Terminal.apply_command / :send dispatches
     #     - session:: session update calls, mode/context stack changes
     #     - render:: viewports, layout sizes, redraw triggers
-    #     - perf:: timings, frame time, slow paths
     #     - all:: All of the above
+    #     - perf:: timings, frame time, slow paths
     def self.log(event = nil, level: :debug, tag: nil, **data)
       return unless logger
 
       tags = active_tags
+
+      # The :perf tag has to be requested explicitly: it is not implied by
+      # :all.
+      return if tag == :perf && !tags.include(:perf)
+
       if tag && !tags.include?(:all)
         return unless tags.include?(tag.to_sym)
       end

@@ -196,7 +196,6 @@ module Fatty
             else
               (frame_ms / render_count).round(2)
             end
-
           # Performance logging
           Fatty.debug(
             "perf loops=#{loop_count} events=#{event_count} " \
