@@ -21,6 +21,7 @@ module Fatty
     include OutputApi
     include MenuApi
     include ProgressApi
+    include ChooseApi
     include PromptApi
     include StatusApi
     include AlertApi

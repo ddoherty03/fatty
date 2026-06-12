@@ -1,6 +1,7 @@
 require_relative './api/output.rb'
 require_relative './api/status.rb'
 require_relative './api/alert.rb'
+require_relative './api/choose.rb'
 require_relative './api/prompt.rb'
 require_relative './api/progress.rb'
 require_relative './api/menu.rb'
