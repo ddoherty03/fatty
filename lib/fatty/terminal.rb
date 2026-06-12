@@ -403,10 +403,16 @@ module Fatty
     end
 
     # Return the Session object associated with `id`, which will be a symbol
-    # like :status or :alert.
+    # like :status or :alert.  Special id's :active and :focused resolve to
+    # the focused session (the one currently taking in key events) and the
+    # active session, the top modal session or, if there is none, the focused
+    # session.
     def find_session(id)
-      if id == :focused
+      case id
+      when :active
         active_session
+      when :focused
+        focused_session
       else
         @sessions_by_id[id]
       end
