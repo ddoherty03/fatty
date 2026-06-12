@@ -285,6 +285,14 @@ module Fatty
       @modal_stack.any?
     end
 
+    def running?
+      @running
+    end
+
+    def tick_active_session
+      active_session&.tick
+    end
+
     private
 
     # * Session management

@@ -10,12 +10,10 @@ module Fatty
         @on_cancel = on_cancel
       end
 
-      def update(msg)
-        _cmd, name, payload = msg
-
-        case name
+      def update(command)
+        case command.action
         when :popup_result, :prompt_result
-          on_result&.call(payload)
+          on_result&.call(command.payload)
         when :popup_cancelled, :prompt_cancelled
           on_cancel&.call
         end
