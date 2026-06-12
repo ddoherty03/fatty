@@ -281,6 +281,10 @@ module Fatty
       end
     end
 
+    def modal_active?
+      @modal_stack.any?
+    end
+
     private
 
     # * Session management

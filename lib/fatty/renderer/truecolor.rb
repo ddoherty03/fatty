@@ -84,6 +84,17 @@ module Fatty
         )
       end
 
+      def clear_input_field
+        @last_input_state = nil
+        queue_ansi_line(
+          row: screen.input_rect.row,
+          col: screen.input_rect.col,
+          width: screen.input_rect.cols,
+          text: "",
+          role: :input,
+        )
+      end
+
       def render_pager_field(field, row:, role: :pager_status)
         state = pager_field_state(field, row: row, role: role)
         return if state == @last_pager_field_state

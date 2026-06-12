@@ -80,9 +80,14 @@ module Fatty
 
     def view
       output_session.view
-      ::Curses.curs_set(1)
-      renderer.render_input_field(field)
-      renderer.restore_cursor(field)
+      if input_suppressed?
+        ::Curses.curs_set(0)
+        renderer.clear_input_field
+      else
+        ::Curses.curs_set(1)
+        renderer.render_input_field(field)
+        renderer.restore_cursor(field)
+      end
     end
 
     # Save any state we want saved on quit, error, etc.
@@ -101,7 +106,15 @@ module Fatty
       output_session.tick
     end
 
+    def pager_active?
+      output_session.pager_active?
+    end
+
     private
+
+    def input_suppressed?
+      terminal.modal_active? || output_session.pager_active?
+    end
 
     def keymap_contexts
       [:input, :text, :terminal]

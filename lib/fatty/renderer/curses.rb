@@ -87,6 +87,19 @@ module Fatty
         stage_window(win)
       end
 
+      def clear_input_field
+        @last_input_state = nil
+
+        win = context.input_win
+        return unless win
+
+        attr = pair_attr(:input, fallback: ::Curses::A_NORMAL)
+        win.bkgdset(attr) if win.respond_to?(:bkgdset)
+        win.erase
+        win.attrset(attr)
+        stage_window(win)
+      end
+
       def render_alert(alert_session)
         state = alert_state(alert_session)
         return if state == @last_alert_state
