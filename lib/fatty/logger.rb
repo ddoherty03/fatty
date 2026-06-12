@@ -75,7 +75,7 @@ module Fatty
 
       # The :perf tag has to be requested explicitly: it is not implied by
       # :all.
-      return if tag == :perf && !tags.include(:perf)
+      return if tag == :perf && !tags.include?(:perf)
 
       if tag && !tags.include?(:all)
         return unless tags.include?(tag.to_sym)
