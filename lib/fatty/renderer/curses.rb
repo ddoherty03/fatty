@@ -96,7 +96,7 @@ module Fatty
         win = context.alert_win
         return unless win
 
-        alert = session.current
+        alert = alert_session.current
         text = alert ? alert.format : ""
         text = Fatty::Ansi.strip(text)
         role = alert ? alert.role : :alert
