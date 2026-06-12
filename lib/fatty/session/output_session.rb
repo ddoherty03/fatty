@@ -6,10 +6,11 @@ module Fatty
 
     attr_reader :output, :viewport, :pager, :pager_field
 
-    def initialize(id: nil, keymap: nil, views: [])
+    def initialize(id: nil, keymap: nil, history: nil)
       super(keymap: keymap)
       @output   = Fatty::OutputBuffer.new(max_lines: 500_000)
       @viewport = Fatty::Viewport.new(height: 10)
+      @history = history || Fatty::History.for_path(:default)
       mode = Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
       @default_output_mode = mode
       @pager = Fatty::Pager.new(output: @output, viewport: @viewport, mode: mode)

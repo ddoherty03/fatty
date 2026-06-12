@@ -15,7 +15,7 @@ module Fatty
         keymap: keymap,
       )
       @history = Fatty::History.for_path(history_path)
-      @output_session = OutputSession.new(keymap: keymap)
+      @output_session = OutputSession.new(keymap: keymap, history: @history)
       @field = Fatty::InputField.new(
         prompt: prompt,
         history: @history,
