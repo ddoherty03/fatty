@@ -134,20 +134,7 @@ module Fatty
       ensure
         terminal.render_frame
       end
-
       result
-    end
-
-    private
-
-    def normalize_choices(choices)
-      Array(choices).map do |choice|
-        if choice.is_a?(Array) && choice.length == 2
-          [choice[0].to_s, choice[1]]
-        else
-          [choice.to_s, choice]
-        end
-      end
     end
   end
 end
