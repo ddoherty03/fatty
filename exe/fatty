@@ -202,7 +202,7 @@ on_accept_proc = lambda do |line, env|
     env.markdown(Fatty::Help.text)
   else
     out, _ = Open3.capture2e(line)
-    env.append(out)
+    out
   end
   rescue Errno::ENOENT
     env.alert("Command not found (#{line})", level: :error)
