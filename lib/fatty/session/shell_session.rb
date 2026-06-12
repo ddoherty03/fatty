@@ -201,10 +201,14 @@ module Fatty
             else
               run_default_command(line)
             end
-          commands.concat(env.commands)
 
-          if result.is_a?(Fatty::Command) || result.is_a?(Array)
-            commands.concat(normalize_action_result(result))
+          commands.concat(env.commands)
+          if result.is_a?(String)
+            commands << Command.session(output_session.id, :append, text: result, follow: true)
+          elsif result.is_a?(Fatty::Command)
+            commands << result
+          elsif result.is_a?(Array)
+            commands.concat(result.grep(Fatty::Command))
           elsif result
             commands << Command.session(output_session.id, :append, text: result.to_s, follow: true)
           end

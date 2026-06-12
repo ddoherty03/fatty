@@ -9,6 +9,7 @@ module Fatty
     # the coloring of the displayed text via themeing.
     def status(text, role: :info)
       terminal.apply_command(Command.session(:status, :show, text: text, role: role))
+      nil
     end
 
     # Display a message to the user in the status line, colored according to

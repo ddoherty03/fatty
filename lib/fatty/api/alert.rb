@@ -11,6 +11,7 @@ module Fatty
       terminal.apply_command(
         Command.session(:alert, :show, text: text, level: level)
       )
+      nil
     end
   end
 end
