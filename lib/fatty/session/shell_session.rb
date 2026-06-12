@@ -258,6 +258,14 @@ module Fatty
       end
     end
 
+    desc "Complete the previous input prefix"
+    action :complete_previous do
+      with_virtual_suffix_sync do
+        @field.cycle_completion!(direction: -1)
+        []
+      end
+    end
+
     desc "Open completion popup"
     action :completion_popup do
       with_virtual_suffix_sync do

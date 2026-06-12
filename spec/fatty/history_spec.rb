@@ -299,21 +299,21 @@ module Fatty
       end
     end
 
-    describe "#suggest_for" do
+    describe "#suggestions_for" do
       let(:history) { Fatty::History.new(path: nil) }
 
       it "prefers ctx-local matches over global matches" do
         history.add("status old", kind: :command, ctx: { pwd: "/other" })
         history.add("status here", kind: :command, ctx: { pwd: "/here" })
 
-        expect(history.suggest_for(:command, prefix: "sta", ctx: { pwd: "/here" }))
+        expect(history.suggestions_for(:command, prefix: "sta", ctx: { pwd: "/here" }))
           .to eq("status here")
       end
 
       it "falls back to global matches when no ctx-local match exists" do
         history.add("status old", kind: :command, ctx: { pwd: "/other" })
 
-        expect(history.suggest_for(:command, prefix: "sta", ctx: { pwd: "/here" }))
+        expect(history.suggestions_for(:command, prefix: "sta", ctx: { pwd: "/here" }))
           .to eq("status old")
       end
     end

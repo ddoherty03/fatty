@@ -164,19 +164,24 @@ module Fatty
       cursor[:scratch] = nil
     end
 
-    def suggest_for(*kinds, prefix:, ctx: nil)
+    def suggestions_for(*kinds, prefix:, ctx: nil, limit: nil)
       text = prefix.to_s
-      return if text.empty?
+      return [] if text.empty?
 
       wanted_ctx = normalize_ctx(ctx)
 
-      unless wanted_ctx.empty?
-        local = entries_for(*kinds, ctx: wanted_ctx, prefix: text)
-        return local.last.text unless local.empty?
-      end
+      rows =
+        if wanted_ctx.empty?
+          entries_for(*kinds, prefix: text)
+        else
+          local = entries_for(*kinds, ctx: wanted_ctx, prefix: text)
+          global = entries_for(*kinds, prefix: text)
+          local + global
+        end
 
-      global = entries_for(*kinds, prefix: text)
-      global.last&.text
+      rows = rows.reverse.map(&:text).uniq
+      rows = rows.first(limit) if limit
+      rows
     end
 
     def self.normalize_ctx(ctx)

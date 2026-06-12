@@ -184,6 +184,16 @@ module Fatty
       default_completion_autosuggestion || history_autosuggestion
     end
 
+    def autosuggestion
+      active = active_completion_autosuggestion
+      return active if active
+
+      text = buffer.text.to_s
+      return if text.empty?
+
+      autosuggestion_candidates.first
+    end
+
     def completion_candidates
       return [] unless @completion_proc
 
@@ -208,6 +218,17 @@ module Fatty
       end
     end
 
+    def autosuggestion_candidates
+      text = buffer.text.to_s
+
+      (history_autosuggestions + completion_suggestions)
+        .compact
+        .map(&:to_s)
+        .select { |candidate| candidate.start_with?(text) }
+        .reject { |candidate| candidate == text }
+        .uniq
+    end
+
     def default_completion_autosuggestion
       completion_suggestions.first
     end
@@ -223,24 +244,24 @@ module Fatty
       end
     end
 
-    def cycle_completion!
+    def cycle_completion!(direction: 1)
       text = buffer.text.to_s
-      candidates = completion_suggestions
+      candidates = autosuggestion_candidates
       result = nil
 
       if candidates.empty?
         reset_completion_state!
       elsif same_completion_state?(base: text, candidates: candidates)
         @completion_state[:index] =
-          (@completion_state[:index] + 1) % @completion_state[:candidates].length
+          (@completion_state[:index] + direction) % @completion_state[:candidates].length
         result = @completion_state[:candidates][@completion_state[:index]]
       else
         @completion_state = {
           base: text,
           candidates: candidates,
-          index: initial_completion_index(text, candidates),
+          index: 0,
         }
-        result = @completion_state[:candidates][@completion_state[:index]]
+        result = @completion_state[:candidates].first
       end
 
       sync_virtual_suffix!
@@ -249,16 +270,6 @@ module Fatty
 
     def reset_completion_state!
       @completion_state = nil
-    end
-
-    def initial_completion_index(text, candidates)
-      if text.empty?
-        0
-      elsif candidates.length > 1
-        1
-      else
-        0
-      end
     end
 
     def completion_replace_range
@@ -276,10 +287,10 @@ module Fatty
       text[0...cursor].to_s[/\S+\z/].to_s
     end
 
-    def history_autosuggestion
-      return if history.nil?
+    def history_autosuggestions
+      return [] if history.nil?
 
-      history.suggest_for(
+      history.suggestions_for(
         resolve_history_kind,
         prefix: buffer.text,
         ctx: resolve_history_ctx,

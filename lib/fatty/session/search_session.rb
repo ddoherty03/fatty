@@ -79,6 +79,7 @@ module Fatty
         Fatty::Actions.call(action, env, *args)
       else
         @field.act_on(action, *args, env: env)
+        @field.sync_virtual_suffix!
       end
     rescue Fatty::ActionError
       []

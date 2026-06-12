@@ -70,6 +70,7 @@ module Fatty
 
       # Completion on input
       map.bind(context: :input, key: :tab, action: :complete)
+      map.bind(context: :input, key: :tab, shift: true, action: :complete_previous)
       map.bind(context: :input, key: :tab, meta: true, action: :completion_popup)
 
       # Popup
