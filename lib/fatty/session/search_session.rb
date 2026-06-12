@@ -10,7 +10,7 @@ module Fatty
     DEFAULT_SEARCH_HISTORY_MAX  = 200
 
     def initialize(direction: :backward, regex: false, history: nil, prefix: nil)
-      super(keymap: Keymaps.emacs, views: [])
+      super(keymap: Keymaps.emacs)
 
       @direction = direction.to_sym
       @regex = !!regex
@@ -138,7 +138,6 @@ module Fatty
 
     def search_accept
       pattern = @field.accept_line.to_s
-
       [
         Command.terminal(
           :send_modal_owner,
