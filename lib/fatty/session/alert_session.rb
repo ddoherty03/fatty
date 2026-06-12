@@ -28,8 +28,6 @@ module Fatty
     end
 
     def view
-      return unless visible?
-
       renderer.render_alert(self)
     end
 
