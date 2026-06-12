@@ -79,7 +79,6 @@ module Fatty
       target = env.public_send(defn[:on])
       raise ActionError, "env.#{defn[:on]} is nil for action #{key}" unless target
 
-      # Inject count: from env.counter when the target accepts it.
       if env.counter&.active? && !kwargs.key?(:count)
         meth = target.method(defn[:method])
         params = meth.parameters
@@ -88,11 +87,9 @@ module Fatty
           params.any? { |(kind, pname)| kind == :key && pname == :count } ||
           params.any? { |(kind, _pname)| kind == :keyrest }
 
-        if accepts_count
-          kwargs = kwargs.merge(count: env.counter.consume(default: 1))
-        end
+        kwargs = kwargs.merge(count: env.counter.consume(default: 1)) if accepts_count
       end
-      target.public_send(defn[:method], *args, **kwargs)
+      target.__send__(defn[:method], *args, **kwargs)
     end
 
     def self.registered?(name)
