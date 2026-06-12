@@ -27,12 +27,13 @@ module Fatty
     include AlertApi
     include KeytestApi
 
-    attr_reader :progress, :commands
+    attr_reader :label, :payload, :commands, :terminal
 
-    def initialize(terminal:, output_id: nil)
+    def initialize(terminal:, output_id:, label: nil, payload: nil)
       @terminal = terminal
       @output_id = output_id
-      @progress = nil
+      @label = label
+      @payload = payload
       @commands = []
     end
 
@@ -43,6 +44,6 @@ module Fatty
 
     private
 
-    attr_reader :terminal, :output_id
+    attr_reader :output_id
   end
 end

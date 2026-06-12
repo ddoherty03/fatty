@@ -42,7 +42,6 @@ module Fatty
   require_relative "fatty/renderer"
   require_relative "fatty/prompt"
   require_relative "fatty/progress"
-  require_relative "fatty/menu_env"
   require_relative "fatty/screen"
   require_relative "fatty/viewport"
   require_relative "fatty/session"
