@@ -48,6 +48,14 @@ module Fatty
           )
           reveal_appended_block(before) if payload[:scroll]
           []
+        when :set_mode
+          case payload.fetch(:mode).to_sym
+          when :scrolling
+            pager.paging_to_scrolling
+          when :paging
+            pager.scrolling_to_paging
+          end
+          []
         when :clear
           reset_output!
           []
@@ -316,17 +324,22 @@ module Fatty
       total = @output.lines.length
       visible_h = pager_active? ? pager.page_height : @viewport.height
       bottom = [@viewport.top + visible_h, total].min
-      pct =
-        if total.positive?
-          ((bottom * 100.0) / total).round
-        end
 
-      search = pager.search_label
-      search = "  [#{search}]" if search && !search.empty?
-      if pct
-        "  #{pager.nav_arrow} --More--  #{bottom}/#{total} (#{pct}%)#{search} "
+      # if pager.scrolling? && pager.autoscroll?
+      #   "--Follow--"
+      if pager.scrolling?
+        "--Scrolling--"
       else
-        "  #{pager.nav_arrow} --More--  #{bottom}#{search} "
+        search = pager.search_label
+        pct =
+          if total.positive?
+            ((bottom * 100.0) / total).round
+          end
+        if pct
+          "  #{pager.nav_arrow} --More--  #{bottom}/#{total} (#{pct}%)#{search} "
+        else
+          "  #{pager.nav_arrow} --More--  #{bottom}#{search} "
+        end
       end
     end
 

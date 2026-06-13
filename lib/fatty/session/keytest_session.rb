@@ -9,6 +9,7 @@ module Fatty
     def initialize
       super(id: :keytest, keymap: nil)
       @output_session = OutputSession.new
+      @path = nil
       @suggestions = []
     end
 
@@ -19,6 +20,7 @@ module Fatty
       commands.concat(output_session.init(terminal: terminal))
       commands << Command.terminal(:register_session, session: output_session)
       commands << Command.session(output_session.id, :resize)
+      commands << Command.session(output_session.id, :set_mode, mode: :scrolling)
       commands << Command.session(output_session.id, :begin_command)
       commands << Command.session(
         output_session.id,
@@ -47,6 +49,12 @@ module Fatty
               Command.session(output_session.id, :append, text: "Leaving key test mode.\n\n", follow: true),
               Command.session(:status, :clear),
               Command.terminal(:pop_modal),
+              Command.session(
+                :status,
+                :show,
+                text: "KeyTest suggestions written to #{@path}",
+                role: :good,
+              ),
             ]
           else
             snippet = ev.suggested_snippet(terminal_name)
@@ -54,11 +62,16 @@ module Fatty
             text = [
               ev.report,
               "\nSuggested keybindings:\n",
-              @suggestions.uniq.join("\n"),
+              snippet,
               "\n",
             ].join
             [
-              Command.session(output_session.id, :append, text: text, follow: false, mode: :scrolling),
+              Command.session(
+                output_session.id,
+                :append,
+                text: text,
+                follow: true,
+                mode: :scrolling),
               show_quit_status_command,
             ]
           end
@@ -78,34 +91,6 @@ module Fatty
     end
 
     private
-
-    # def append(text)
-    #   return unless @owner&.respond_to?(:append_output)
-
-    #   force_scrolling_output!
-
-    #   before = @owner.output.lines.length
-    #   @owner.append_output(text.to_s, follow: false)
-
-    #   height = @owner.viewport.height.to_i
-    #   added = @owner.output.lines.length - before
-
-    #   if added >= height
-    #     @owner.viewport.top = before
-    #     @owner.viewport.clamp!(@owner.output.lines)
-    #   else
-    #     @owner.viewport.page_bottom(@owner.output.lines)
-    #   end
-
-    #   renderer = terminal.renderer if terminal.respond_to?(:renderer)
-    #   renderer.invalidate! if renderer&.respond_to?(:invalidate!)
-    # end
-
-    # def force_scrolling_output!
-    #   if @owner&.respond_to?(:pager)
-    #     @owner.pager.paging_to_scrolling
-    #   end
-    # end
 
     def quit_key?(ev)
       ev.key == :q ||
@@ -137,11 +122,11 @@ module Fatty
       suggestions = @suggestions.uniq
       return [] if suggestions.empty?
 
-      path = File.join(
+      @path = File.join(
         Dir.tmpdir,
         "fatty-keytest-#{Time.now.strftime('%Y%m%d-%H%M%S')}.yml",
       )
-      File.write(path, suggestion_file_text(suggestions))
+      File.write(@path, suggestion_file_text(suggestions))
       [
         Command.session(
           output_session.id,
@@ -149,17 +134,11 @@ module Fatty
           text: <<~TEXT,
             =======================================================
             KeyTest suggestions written to:
-            #{path}
+            #{@path}
 
           TEXT
           follow: true,
           mode: :scrolling,
-        ),
-        Command.session(
-          :status,
-          :show,
-          text: "KeyTest suggestions written to #{path}",
-          role: :good,
         ),
       ]
     end
