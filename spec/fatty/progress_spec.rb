@@ -3,7 +3,7 @@
 require "spec_helper"
 
 module Fatty
-  RSpec.describe Terminal::Progress do
+  RSpec.describe Progress do
     let(:terminal) do
       instance_double(
         Fatty::Terminal,
@@ -16,7 +16,7 @@ module Fatty
     describe "#initialize" do
       it "requires total for non-spinner styles" do
         expect {
-          Fatty::Terminal::Progress.new(
+          Progress.new(
             terminal: terminal,
             label: "Importing",
             style: :bar,
@@ -26,7 +26,7 @@ module Fatty
 
       it "allows spinner without total" do
         expect {
-          Fatty::Terminal::Progress.new(
+          Progress.new(
             terminal: terminal,
             label: "Waiting",
             style: :spinner,
@@ -37,7 +37,7 @@ module Fatty
 
     describe "#update" do
       it "renders spinner without percent when total is unknown" do
-        progress = Fatty::Terminal::Progress.new(
+        progress = Progress.new(
           terminal: terminal,
           label: "Waiting",
           style: :spinner,
@@ -53,7 +53,7 @@ module Fatty
       end
 
       it "renders percent for spinner when total is known" do
-        progress = Fatty::Terminal::Progress.new(
+        progress = Progress.new(
           terminal: terminal,
           label: "Importing",
           total: 100,
@@ -66,7 +66,7 @@ module Fatty
       end
 
       it "advances spinner when updated without current" do
-        progress = Fatty::Terminal::Progress.new(
+        progress = Progress.new(
           terminal: terminal,
           label: "Waiting",
           style: :spinner,
@@ -81,7 +81,7 @@ module Fatty
 
     describe "#finish" do
       it "renders the finish message" do
-        progress = Fatty::Terminal::Progress.new(
+        progress = Progress.new(
           terminal: terminal,
           label: "Importing",
           total: 10,
@@ -96,7 +96,7 @@ module Fatty
       end
 
       it "forces a redraw when render is true" do
-        progress = Fatty::Terminal::Progress.new(
+        progress = Progress.new(
           terminal: terminal,
           label: "Importing",
           total: 10,
@@ -111,7 +111,7 @@ module Fatty
 
     describe "#update with trail style" do
       it "appends indicators across updates" do
-        progress = Fatty::Terminal::Progress.new(
+        progress = Progress.new(
           terminal: terminal,
           label: "Importing",
           total: 4,
@@ -133,7 +133,7 @@ module Fatty
 
     describe "#update with bar style" do
       it "renders percent for bar progress" do
-        progress = Fatty::Terminal::Progress.new(
+        progress = Progress.new(
           terminal: terminal,
           label: "Importing",
           total: 100,
