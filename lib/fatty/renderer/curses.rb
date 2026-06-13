@@ -27,12 +27,16 @@ module Fatty
         curr = output_state(output_session, viewport: viewport)
         prev = @last_output_state
 
-        if prev && can_incrementally_scroll_output?(prev, curr)
-          scroll_output_window_delta!(prev: prev, curr: curr)
+        if prev && output_session.incrementally_scrollable_from?(prev, curr)
+          scroll_output_window_delta!(
+            delta: output_session.scroll_delta_from(prev, curr),
+            lines: lines,
+            viewport: viewport,
+            highlights: normalized,
+          )
         else
           draw_output_lines(lines, viewport: viewport, highlights: normalized)
         end
-
         @last_output_state = curr
       end
 
@@ -401,42 +405,39 @@ module Fatty
           delta != 0 && delta.abs < curr[:height]
       end
 
-      def scroll_output_window_delta!(prev:, curr:)
+      def scroll_output_window_delta!(delta:, lines:, viewport:, highlights:)
         Fatty.debug("calling scroll_output_window_delta!", tag: :scrolling)
         win = context.output_win
-        delta = curr[:top] - prev[:top]
-        base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
+        return unless win
 
+        height = viewport.height
+        base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
         win.attrset(base_attr)
         win.scrl(delta)
-
-        if delta > 0
-          start_y = curr[:height] - delta
+        if delta.positive?
+          start_y = height - delta
           start_y = 0 if start_y < 0
 
-          (start_y...curr[:height]).each do |y|
-            line = curr[:lines][y]
-            abs_line = curr[:top] + y
+          (start_y...height).each do |y|
             draw_output_row(
               win,
-              line: line,
+              line: lines[y],
               y: y,
-              abs_line: abs_line,
-              highlights: curr[:highlights],
+              abs_line: viewport.top + y,
+              highlights: highlights,
             )
           end
         else
           count = -delta
-          count = curr[:height] if count > curr[:height]
+          count = height if count > height
+
           (0...count).each do |y|
-            line = curr[:lines][y]
-            abs_line = curr[:top] + y
             draw_output_row(
               win,
-              line: line,
+              line: lines[y],
               y: y,
-              abs_line: abs_line,
-              highlights: curr[:highlights],
+              abs_line: viewport.top + y,
+              highlights: highlights,
             )
           end
         end

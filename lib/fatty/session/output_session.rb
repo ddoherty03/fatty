@@ -130,6 +130,9 @@ module Fatty
       dirty
     end
 
+    STATE_VIEWPORT = 0
+    STATE_LINES = 1
+
     def state(viewport: @viewport)
       [
         viewport.state,
@@ -140,6 +143,29 @@ module Fatty
         renderer.theme_version,
       ]
     end
+
+    def incrementally_scrollable_from?(prev_state, curr_state)
+      prev_viewport = prev_state[STATE_VIEWPORT]
+      curr_viewport = curr_state[STATE_VIEWPORT]
+      prev_lines = prev_state[STATE_LINES]
+      curr_lines = curr_state[STATE_LINES]
+
+      delta = curr_viewport[0] - prev_viewport[0]
+      overlap = prev_lines.length - delta
+
+      delta.positive? &&
+      delta < curr_viewport[1] &&
+      overlap.positive? &&
+        prev_lines.drop(delta) == curr_lines.take(overlap)
+    end
+
+    def scroll_delta_from(prev_state, curr_state)
+      prev_viewport = prev_state[STATE_VIEWPORT]
+      curr_viewport = curr_state[STATE_VIEWPORT]
+
+      curr_viewport[0] - prev_viewport[0]
+    end
+
 
     # True when the pager is currently holding the screen (i.e., paging mode is
     # active and the output is paused).
