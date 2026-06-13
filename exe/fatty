@@ -31,15 +31,11 @@ on_accept_proc = lambda do |line, env|
       initial_choice_idx: 0,
       quit_value: nil,
     )
-    if choice.nil?
-      env.append("choose: cancelled\n")
-    else
-      env.append("choose: selected #{choice.inspect}\n")
-    end
+    choice ? "choose: #{choice}\n" : "choose: cancelled\n"
   when "choosevals"
     pairs =
       if args.empty?
-        [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", :done]]
+        [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", 2.7181828]]
       elsif args.length.odd?
         session.append_output("choosevals: needs even number of args\n")
         next
@@ -52,11 +48,7 @@ on_accept_proc = lambda do |line, env|
       initial_choice_idx: 1,
       quit_value: nil,
     )
-    if choice.nil?
-      env.append("choosevals: cancelled\n")
-    else
-      env.append("choosevals: selected #{choice.inspect}\n")
-    end
+    choice ? "choosevals: #{choice}\n" : "choosevals: cancelled\n"
   when "choose_multi"
     choices =
       if args.empty?
@@ -69,15 +61,11 @@ on_accept_proc = lambda do |line, env|
       choices: choices,
       quit_value: nil,
     )
-    if choices.nil?
-      env.append("choose_multi: cancelled\n")
-    else
-      env.append("choose_multi: selected #{choices.inspect}\n")
-    end
+    choices ? "choose_multi: #{choices}\n" : "choose_multi: cancelled\n"
   when "choosevals_multi"
     pairs =
       if args.empty?
-        [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", :done]]
+        [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", 2.7181828]]
       elsif args.length.odd?
         session.append_output("choosevals_multi: needs even number of args\n")
         next
@@ -89,23 +77,32 @@ on_accept_proc = lambda do |line, env|
       choices: pairs,
       quit_value: nil,
     )
-    if choices.nil?
-      env.append("choosevals_multi: cancelled\n")
-    else
-      env.append("choosevals_multi: selected #{choices.inspect}\n")
-    end
+    choices ? "choosevals_multi: #{choices}\n" : "choosevals_multi: cancelled\n"
+  when "confirm"
+    prompt =
+      if args.empty?
+        "Do you like fatty?"
+      else
+        args
+      end
+    reply = env.confirm(prompt)
+    reply ? "confirm: True\n" : "confirm: False\n"
   when "menu"
     result = env.menu(
       "Demo menu",
       choices: {
         "Write to output pane" => proc { |env|
-      env.output("menu: wrote this from MenuEnv#output\n")
-      :output_written
-    },
+          env.append("menu: wrote this from MenuEnv#output\n")
+          :output_written
+         },
         "Show status message" => proc { |env|
-      env.status("menu: status set from MenuEnv#status")
-      :status_written
-    },
+          env.status("menu: status set from MenuEnv#status")
+          :status_written
+         },
+        "Show markdown" => proc { |env|
+          env.markdown("\# Your Choices\n\n- one\n- two\n- three\n")
+          :markdown_written
+         },
         "Return plain value" => :plain_value,
       },
       initial_choice_idx: 0,
@@ -138,7 +135,7 @@ on_accept_proc = lambda do |line, env|
     env.append("oops: #{message}\n")
   when "prompt"
     question = args.empty? ? "Enter value:" : args.join(" ")
-    value = terminal.prompt(question, initial: "demo")
+    value = env.prompt(question, initial: "demo")
     env.append("prompt: #{value.inspect}\n")
   when "progress"
     styles = %w[count percent simple_percent trail bar unicode_bar braille_bar spinner]
