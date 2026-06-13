@@ -16,26 +16,6 @@ module Fatty
         return if state == @last_status_state
 
         @last_status_state = state
-        segments = renderable_segments(
-          status_session.text,
-          role: status_session.role,
-        )
-        screen.status_rect.rows.times do |idx|
-          queue_ansi_segments_line(
-            row: screen.status_rect.row + idx,
-            col: screen.status_rect.col,
-            width: screen.status_rect.cols,
-            segments: idx.zero? ? segments : [],
-            fill_role: status_session.role,
-          )
-        end
-      end
-
-      def render_status(status_session)
-        state = status_state(status_session)
-        return if state == @last_status_state
-
-        @last_status_state = state
 
         draw_status_lines(status_session)
       end

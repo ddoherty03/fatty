@@ -19,7 +19,7 @@ module Fatty
     # Those responsibilities belong to EventSource and Renderer.
     #
     # Context exists so that all curses state is centralized and never leaks
-    # into Sessions, Views, or Terminal.
+    # into Sessions or Terminal.
     class Context
       DEFAULT_ESC_DELAY = 25
 
