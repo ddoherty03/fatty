@@ -48,6 +48,29 @@ module Fatty
       @mode == :scrolling
     end
 
+    def toggle_paging_mode
+      @last_nav_dir = :down
+      if @mode == :paging
+        set_to_scrolling
+      else
+        set_to_paging
+      end
+    end
+
+    def set_to_scrolling
+      @mode = :scrolling
+      @paused = false
+      @autoscroll = true
+    end
+
+    def set_to_paging
+        @mode = :paging
+        @paused = true
+        @autoscroll = false
+        @anchor = nil
+        @viewport.clamp!(@output.lines)
+    end
+
     def active?
       paused? || scrolling?
     end
@@ -219,18 +242,7 @@ module Fatty
 
     desc "Toggle between paging and scrolling"
     action :toggle_paging do
-      @last_nav_dir = :down
-      if @mode == :paging
-        @mode = :scrolling
-        @paused = false
-        @autoscroll = true   # keep if you like the animated “catch up”
-      else
-        @mode = :paging
-        @paused = true
-        @autoscroll = false
-        @anchor = nil        # ensure no command-anchored paging behavior kicks in
-        @viewport.clamp!(@output.lines)
-      end
+      toggle_paging_mode
     end
 
     desc "Exit paging and return control to normal input."

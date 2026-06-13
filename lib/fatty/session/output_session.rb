@@ -37,9 +37,9 @@ module Fatty
         when :append
           case payload[:mode]
           when :scrolling
-            pager.paging_to_scrolling
+            pager.toggle_paging_mode if pager.mode == :paging
           when :paging
-            pager.scrolling_to_paging
+            pager.toggle_paging_mode if pager.mode == :scrolling
           end
           before = output.lines.length
           append_output(
@@ -51,9 +51,9 @@ module Fatty
         when :set_mode
           case payload.fetch(:mode).to_sym
           when :scrolling
-            pager.paging_to_scrolling
+            pager.set_to_scrolling
           when :paging
-            pager.scrolling_to_paging
+            pager.set_to_paging
           end
           []
         when :clear
@@ -68,10 +68,7 @@ module Fatty
           []
         when :quit_paging
           pager.quit
-          [
-            Command.terminal(:refresh_layout),
-            Command.terminal(:clear_pager_status_prompt),
-          ]
+          [Command.terminal(:refresh_layout)]
         when :pager_search_set
           update_pager_search_set(payload)
         when :pager_search_step
@@ -89,21 +86,6 @@ module Fatty
           []
         end
       Array(commands)
-    end
-
-    def view
-      if pager_active?
-        ::Curses.curs_set(0)
-
-        renderer.render_output(self)
-        renderer.render_pager_field(
-          pager_field,
-          row: renderer.screen.output_rect.rows - 1,
-          role: :pager_status,
-        )
-      else
-        renderer.render_output(self)
-      end
     end
 
     def view

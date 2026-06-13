@@ -4,7 +4,7 @@ module Fatty
   class ISearchSession < Session
     action_on :session
 
-    attr_reader :field, :direction
+    attr_reader :field, :direction, :last_pattern
 
     def id = :isearch
 
