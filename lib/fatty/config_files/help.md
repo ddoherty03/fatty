@@ -1,120 +1,237 @@
+- [Fatty Help](#org61dbde2)
+  - [The `fatty` demo command](#org3da98f4)
+  - [Builtin commands](#orgfecabab)
+  - [Keybindings](#org625d983)
+    - [Input Context](#orgec03410)
+    - [Popup Context](#orga6b4058)
+    - [Paging Context](#org9a14b7d)
+    - [Prompt Context](#org0d2e624)
+  - [fatty on the Web](#orgbe7acfc)
+
+
+<a id="org61dbde2"></a>
+
 # Fatty Help
+
+
+<a id="org3da98f4"></a>
 
 ## The `fatty` demo command
 
-When you run `fatty`, it operates as a simple demo of the `fatty` gem by
-presenting an editable command-line using emacs key bindings. It has several
-builtin commands to demonstrate `fatty` features, and any command it does not
-recognized is handed off to the shell.
+When you `fatty`, it operates as a simple demo of the `fatty` gem by presenting an editable command-line using emacs key bindings. It has several builtin commands to demonstrate `fatty` features, and any command it does not recognized is handed off to the shell.
+
+
+<a id="orgfecabab"></a>
 
 ## Builtin commands
 
 Here are the commands builtin to `fatty`
 
-| Command                      | Description                                                             |
-|:-----------------------------|:------------------------------------------------------------------------|
-| help                         | Display this file on the output pane                                    |
-| cd                           | Change the current directory used by the shell                          |
-| choose                       | Present a series of choices in a popup window                           |
-| choosevals                   | Also present choices in a popup window but return an associated value   |
-| choose\_multi                | Present choices with a "checkbox" for selecting multiple values         |
-| choosevals\_multi            | Also present a checkbox but return associated values                    |
-| menu                         | Present a menu of labeled routines to run                               |
-| info                         | Display an "info" message on the status line                            |
-| good                         | Display a "good" message colored to indicate success                    |
-| warn                         | Display a "warn" message colored to indicate caution                    |
-| oops                         | Display an "oops" message colored to indicate failure                   |
-| prompt                       | Popup a text box for entering a value in response to a prompt           |
-| progress count <N>           | Display an animated progress indicator counting up to 40 or the given N |
-| progress percent <N>         | Same but also show the percent complete                                 |
-| progress simple\_percent <N> | Same but show only the percent complete                                 |
-| progress trail               | Show progress by displaying an "indicator" character for each step      |
-| progress bar                 | Show progress by a filling bar using ASCII characters                   |
-| progress unicode\_bar        | Same, but using unicode characters                                      |
-| progress braille\_bar        | Same, but using braille characters                                      |
-| progress spinner             | Animate a "spinner" showing a busy state                                |
+| Command                      | Description                                                                |
+|---------------------------- |-------------------------------------------------------------------------- |
+| help                         | Display this file on the output pane                                       |
+| cd                           | Change the current directory used by the shell                             |
+| choose                       | Present a series of choices in a popup window                              |
+| choosevals                   | Also present choices in a popup window but return an associated value      |
+| choose\_multi                | Present choices with a "checkbox" for selecting multiple values            |
+| choosevals\_multi            | Also present a checkbox but return associated values                       |
+| menu                         | Present a menu of labeled routines to run                                  |
+| info                         | Display an "info" message on the status line                               |
+| good                         | Display a "good" message colored to indicate success                       |
+| warn                         | Display a "warn" message colored to indicate caution                       |
+| oops                         | Display an "oops" message colored to indicate failure                      |
+| prompt                       | Popup a text box for entering a value in response to a prompt              |
+| progress count <N>           | Display an animated progress indicator counting up to 40 or the given N    |
+| progress percent <N>         | Same but also show the percent complete                                    |
+| progress simple\_percent <N> | Same but show only the percent complete                                    |
+| progress trail               | Show progress by displaying an "indicator" character for each step         |
+| progress bar                 | Show progress by a filling bar using ASCII characters                      |
+| progress unicode\_bar        | Same, but using unicode characters                                         |
+| progress braille\_bar        | Same, but using braille characters                                         |
+| progress spinner             | Animate a "spinner" showing a busy state                                   |
+| keytest                      | Enter key diagnostic mode report keycodes, key names, and bindings         |
+| markdown <file.md>           | Render the markdown file to the output pane; defaults to a demo file       |
+| markdown\_org                | Render the markdown file exported from org mode with ofx-gfm package       |
+| <shell\_command>             | Anything else is treated as a shell command, run, and its output displayed |
 
+
+<a id="org625d983"></a>
 
 ## Keybindings
 
-The following tables explain the keybindings available in `fatty` in different
-contexts.  Named keys are indicated by `:name` and key categories, such as
-`<digits>` are indicated with brackets.
+The following tables explain the keybindings available in \`fatty\` in different contexts. Named keys are indicated by \`:name\` and key categories, such as \`<digits>\` are indicated with brackets.
+
+
+<a id="orgec03410"></a>
 
 ### Input Context
 
-When editing the input line or text input for widgets like the `prompt`,
-`fatty` provides emacs-like editing keybindings by default.  Many of these
-commands can take a count prefix argument to repeat the command count times.
-For example, `M-8 M-0 #` will insert 80 '#' characters at the cursor.
+When editing the input line or text input for widgets like the \`prompt\`, \`fatty\` provides emacs-like editing keybindings by default. Many of these commands can take a count prefix argument to repeat the command count times. For example, \`M-8 M-0 #\` will insert 80 '#' characters at the cursor.
 
-| Key        | Description                                           |
-|:-----------|:------------------------------------------------------|
-| C-a        | move to the beginning of the line                     |
-| :home      | move to the beginning of the line                     |
-| C-e        | move to the end of the line                           |
-| :end       | move to the end of the line                           |
-| C-f        | move cursor right one character                       |
-| :right     | move cursor right one character                       |
-| C-b        | move cursor left one character                        |
-| :left      | move cursor left one character                        |
-| M-f        | move cursor right one word                            |
-| M-:right   | move cursor right one word                            |
-| C-:right   | move cursor right one word                            |
-| M-b        | move cursor left one word                             |
-| M-:left    | move cursor left one word                             |
-| C-:left    | move cursor left one word                             |
-| C-t        | transpose characters                                  |
-| M-t        | transpose words                                       |
-|            |                                                       |
-| C-d        | delete character at cursor                            |
-| :delete    | delete character at cursor                            |
-| :backspace | delete character before cursor                        |
-| M-d        | kill word at cursor                                   |
-| C-w        | kill word before cursor                               |
-| C-k        | kill to end of line                                   |
-|            |                                                       |
-| C-/        | undo                                                  |
-| C-_        | undo                                                  |
-| C-M-/      | redo                                                  |
-| M-/        | redo                                                  |
-|            |                                                       |
-| C-:space   | set the mark at the current cursor position           |
-| C-@        | set the mark at the current cursor position           |
-| C-g        | clear the mark                                        |
-| C-w        | kill the region                                       |
-| M-w        | copy the region                                       |
-|            |                                                       |
-| C-y        | yank last kill at cursor                              |
-| M-y        | replace last yank with next in kill ring              |
-|            |                                                       |
-| C-u        | universal count argument (time 4 each press)          |
-| M-<digit>  | accumulate count argument                             |
-|            |                                                       |
-| C-p        | replace the line with the prior history item          |
-| :up        | replace the line with the prior history item          |
-| C-n        | replace the line with the next history item           |
-| :down      | replace the line with the prior history item          |
-| C-r        | search the history in a popup                         |
-|            |                                                       |
-| :enter     | feed the line to the on_accept proc and page output   |
-| M-:enter   | feed the line to the on_accept proc and scroll output |
-| C-c        | quit `fatty`                                          |
-| C-d        | quit `fatty` only if the input line is empty          |
-| C-l        | clear the output pane                                 |
-|            |                                                       |
+| Key        | Description                                            |
+|---------- |------------------------------------------------------ |
+| C-a        | move to the beginning of the line                      |
+| :home      | move to the beginning of the line                      |
+| C-e        | move to the end of the line                            |
+| :end       | move to the end of the line                            |
+| C-f        | move cursor right one character                        |
+| :right     | move cursor right one character                        |
+| C-b        | move cursor left one character                         |
+| :left      | move cursor left one character                         |
+| M-f        | move cursor right one word                             |
+| M-:right   | move cursor right one word                             |
+| C-:right   | move cursor right one word                             |
+| M-b        | move cursor left one word                              |
+| M-:left    | move cursor left one word                              |
+| C-:left    | move cursor left one word                              |
+| C-t        | transpose characters                                   |
+| M-t        | transpose words                                        |
+|            |                                                        |
+| C-d        | delete character at cursor                             |
+| :delete    | delete character at cursor                             |
+| :backspace | delete character before cursor                         |
+| M-d        | kill word at cursor                                    |
+| C-w        | kill word before cursor                                |
+| C-k        | kill to end of line                                    |
+|            |                                                        |
+| C-/        | undo                                                   |
+| C-\_       | undo                                                   |
+| C-M-/      | redo                                                   |
+| M-/        | redo                                                   |
+|            |                                                        |
+| C-:space   | set the mark at the current cursor position            |
+| C-@        | set the mark at the current cursor position            |
+| C-g        | clear the mark                                         |
+| C-w        | kill the region                                        |
+| M-w        | copy the region                                        |
+|            |                                                        |
+| C-y        | yank last kill at cursor                               |
+| M-y        | replace last yank with next in kill ring               |
+|            |                                                        |
+| C-u        | universal count argument (time 4 each press)           |
+| M-<digit>  | accumulate count argument                              |
+|            |                                                        |
+| C-p        | replace the line with the prior history item           |
+| :up        | replace the line with the prior history item           |
+| C-n        | replace the line with the next history item            |
+| :down      | replace the line with the prior history item           |
+| C-r        | search the history in a popup                          |
+|            |                                                        |
+| :enter     | feed the line to the on\_accept proc and page output   |
+| M-:enter   | feed the line to the on\_accept proc and scroll output |
+| C-c        | quit \`fatty\`                                         |
+| C-d        | quit \`fatty\` only if the input line is empty         |
+| C-l        | clear the output pane                                  |
+|            |                                                        |
+| :tab       | Suggest the next completion                            |
+| S-:tab     | Suggest the prior completion                           |
+| M-:tab     | Popup all completions based on input-so-far            |
+|            |                                                        |
 
 
-## Paging Context
+<a id="orga6b4058"></a>
 
-By default, `fatty` sends output to the large output pane, and if the output
-is more than one screen long presents a paging environment for viewing and
-searching the environment.
+### Popup Context
 
-| Key   | Description               |
-|:------|:--------------------------|
-| :up   | move output one line up   |
-| k     | move output one line up   |
-| :down | move output one line down |
-| j     | move output one line down |
-|       |                           |
+Certain keys cause a popup, such as C-r to bring up history items and M-:tab to bring up completions.
+
+| Key            | Description                                                           |
+|-------------- |--------------------------------------------------------------------- |
+| <search terms> | typing text narrows to those items matching all space-separated words |
+| C-c            | cancel the popup with no return                                       |
+| C-g            | cancel the popup with no return                                       |
+| :escape        | cancel the popup with no return                                       |
+|                |                                                                       |
+| :enter         | select the current item                                               |
+| :return        | select the current item                                               |
+|                |                                                                       |
+| :up            | select the prior item                                                 |
+| C-p            | select the prior item                                                 |
+| :down          | select the next item                                                  |
+| C-n            | select the next item                                                  |
+|                |                                                                       |
+| :page\_up      | display prior page of items                                           |
+| M-v            | display prior page of items                                           |
+| :page\_down    | display next page of items                                            |
+| C-v            | display next page of items                                            |
+|                |                                                                       |
+| :home          | display first page of items                                           |
+| M-<            | display first page of items                                           |
+| :end           | display last page of items                                            |
+| M->            | display last page of items                                            |
+|                |                                                                       |
+| C-l            | re-center display on current item                                     |
+|                |                                                                       |
+| :space         | if popup allows multiple selections, add current item to selections   |
+|                |                                                                       |
+
+
+<a id="org9a14b7d"></a>
+
+### Paging Context
+
+By default, \`fatty\` sends output to the large output pane, and if the output is more than one screen long presents a paging environment for viewing and searching the environment.
+
+| Key         | Description                            |
+|----------- |-------------------------------------- |
+| :up         | move output one line up                |
+| k           | move output one line up                |
+| :down       | move output one line down              |
+| j           | move output one line down              |
+|             |                                        |
+| :space      | move to next page                      |
+| :page\_down | move to next page                      |
+| C-v         | move to next page                      |
+| d           | move to next page                      |
+| :backspace  | move to prior page                     |
+| :page\_up   | move to prior page                     |
+| M-v         | move to prior page                     |
+| u           | move to prior page                     |
+|             |                                        |
+| `/`         | initiate a forward string search       |
+| ?           | initiate a backward string search      |
+|             |                                        |
+| C-/         | initiate a forward regex search        |
+| C-M-S       | initiate a forward regex search        |
+|             |                                        |
+| C-s         | initiate a forward incremental search  |
+| C-r         | initiate a backward incremental search |
+|             |                                        |
+| C-c         | cancel the search                      |
+| C-g         | cancel the search                      |
+|             |                                        |
+| :return     | use the typed string for the search    |
+| :enter      | use the typed string for the search    |
+|             |                                        |
+| n           | find the next match                    |
+| N           | find the prior match                   |
+|             |                                        |
+
+
+<a id="org0d2e624"></a>
+
+### Prompt Context
+
+Fatty can popup a prompt for getting text from the user by presenting a prompt together with an input field. The input field has all the line-editing capabilities of the primary input context.
+
+| Key     | Description                       |
+|------- |--------------------------------- |
+| C-c     | cancel with no input              |
+| C-g     | cancel with no input              |
+| :escape | cancel with no input              |
+|         |                                   |
+| :return | return with current input         |
+| :enter  | return with current input         |
+| C-j     | return with current input         |
+|         |                                   |
+| C-p     | display prior prompt history item |
+| :up     | display prior prompt history item |
+| C-n     | display next prompt history item  |
+| :down   | display next prompt history item  |
+|         |                                   |
+|         |                                   |
+
+
+<a id="orgbe7acfc"></a>
+
+## fatty on the Web

@@ -10,31 +10,32 @@ recognized is handed off to the shell.
 
 Here are the commands builtin to =fatty=
 
-| Command                     | Description                                                             |
-|-----------------------------+-------------------------------------------------------------------------|
-| help                        | Display this file on the output pane                                    |
-| cd                          | Change the current directory used by the shell                          |
-| choose                      | Present a series of choices in a popup window                           |
-| choosevals                  | Also present choices in a popup window but return an associated value   |
-| choose_multi                | Present choices with a "checkbox" for selecting multiple values         |
-| choosevals_multi            | Also present a checkbox but return associated values                    |
-| menu                        | Present a menu of labeled routines to run                               |
-| info                        | Display an "info" message on the status line                            |
-| good                        | Display a "good" message colored to indicate success                    |
-| warn                        | Display a "warn" message colored to indicate caution                    |
-| oops                        | Display an "oops" message colored to indicate failure                   |
-| prompt                      | Popup a text box for entering a value in response to a prompt           |
-| progress count <N>          | Display an animated progress indicator counting up to 40 or the given N |
-| progress percent <N>        | Same but also show the percent complete                                 |
-| progress simple_percent <N> | Same but show only the percent complete                                 |
-| progress trail              | Show progress by displaying an "indicator" character for each step      |
-| progress bar                | Show progress by a filling bar using ASCII characters                   |
-| progress unicode_bar        | Same, but using unicode characters                                      |
-| progress braille_bar        | Same, but using braille characters                                      |
-| progress spinner            | Animate a "spinner" showing a busy state                                |
-| markdown <file.md>          | Render the markdown file to the output pane; defaults to a demo file    |
-| keytest                     | Enter key diagnostic mode report keycodes, key names, and bindings      |
-
+| Command                     | Description                                                                |
+|-----------------------------+----------------------------------------------------------------------------|
+| help                        | Display this file on the output pane                                       |
+| cd                          | Change the current directory used by the shell                             |
+| choose                      | Present a series of choices in a popup window                              |
+| choosevals                  | Also present choices in a popup window but return an associated value      |
+| choose_multi                | Present choices with a "checkbox" for selecting multiple values            |
+| choosevals_multi            | Also present a checkbox but return associated values                       |
+| menu                        | Present a menu of labeled routines to run                                  |
+| info                        | Display an "info" message on the status line                               |
+| good                        | Display a "good" message colored to indicate success                       |
+| warn                        | Display a "warn" message colored to indicate caution                       |
+| oops                        | Display an "oops" message colored to indicate failure                      |
+| prompt                      | Popup a text box for entering a value in response to a prompt              |
+| progress count <N>          | Display an animated progress indicator counting up to 40 or the given N    |
+| progress percent <N>        | Same but also show the percent complete                                    |
+| progress simple_percent <N> | Same but show only the percent complete                                    |
+| progress trail              | Show progress by displaying an "indicator" character for each step         |
+| progress bar                | Show progress by a filling bar using ASCII characters                      |
+| progress unicode_bar        | Same, but using unicode characters                                         |
+| progress braille_bar        | Same, but using braille characters                                         |
+| progress spinner            | Animate a "spinner" showing a busy state                                   |
+| keytest                     | Enter key diagnostic mode report keycodes, key names, and bindings         |
+| markdown <file.md>          | Render the markdown file to the output pane; defaults to a demo file       |
+| markdown_org                | Render the markdown file exported from org mode with ofx-gfm package       |
+| <shell_command>             | Anything else is treated as a shell command, run, and its output displayed |
 
 ** Keybindings
 
@@ -104,7 +105,44 @@ For example, `M-8 M-0 #` will insert 80 '#' characters at the cursor.
 | C-d        | quit `fatty` only if the input line is empty          |
 | C-l        | clear the output pane                                 |
 |            |                                                       |
+| :tab       | Suggest the next completion                           |
+| S-:tab     | Suggest the prior completion                          |
+| M-:tab     | Popup all completions based on input-so-far           |
+|            |                                                       |
 
+*** Popup Context
+Certain keys cause a popup, such as C-r to bring up history items and M-:tab
+to bring up completions.
+
+| Key            | Description                                                           |
+|----------------+-----------------------------------------------------------------------|
+| <search terms> | typing text narrows to those items matching all space-separated words |
+| C-c            | cancel the popup with no return                                       |
+| C-g            | cancel the popup with no return                                       |
+| :escape        | cancel the popup with no return                                       |
+|                |                                                                       |
+| :enter         | select the current item                                               |
+| :return        | select the current item                                               |
+|                |                                                                       |
+| :up            | select the prior item                                                 |
+| C-p            | select the prior item                                                 |
+| :down          | select the next item                                                  |
+| C-n            | select the next item                                                  |
+|                |                                                                       |
+| :page_up       | display prior page of items                                           |
+| M-v            | display prior page of items                                           |
+| :page_down     | display next page of items                                            |
+| C-v            | display next page of items                                            |
+|                |                                                                       |
+| :home          | display first page of items                                           |
+| M-<            | display first page of items                                           |
+| :end           | display last page of items                                            |
+| M->            | display last page of items                                            |
+|                |                                                                       |
+| C-l            | re-center display on current item                                     |
+|                |                                                                       |
+| :space         | if popup allows multiple selections, add current item to selections   |
+|                |                                                                       |
 
 *** Paging Context
 
@@ -112,13 +150,61 @@ By default, `fatty` sends output to the large output pane, and if the output
 is more than one screen long presents a paging environment for viewing and
 searching the environment.
 
-| Key   | Description               |
-|-------+---------------------------|
-| :up   | move output one line up   |
-| k     | move output one line up   |
-| :down | move output one line down |
-| j     | move output one line down |
-|       |                           |
+| Key        | Description                            |
+|------------+----------------------------------------|
+| :up        | move output one line up                |
+| k          | move output one line up                |
+| :down      | move output one line down              |
+| j          | move output one line down              |
+|            |                                        |
+| :space     | move to next page                      |
+| :page_down | move to next page                      |
+| C-v        | move to next page                      |
+| d          | move to next page                      |
+| :backspace | move to prior page                     |
+| :page_up   | move to prior page                     |
+| M-v        | move to prior page                     |
+| u          | move to prior page                     |
+|            |                                        |
+| ~/~        | initiate a forward string search       |
+| ?          | initiate a backward string search      |
+|            |                                        |
+| C-/        | initiate a forward regex search        |
+| C-M-S      | initiate a forward regex search        |
+|            |                                        |
+| C-s        | initiate a forward incremental search  |
+| C-r        | initiate a backward incremental search |
+|            |                                        |
+| C-c        | cancel the search                      |
+| C-g        | cancel the search                      |
+|            |                                        |
+| :return    | use the typed string for the search    |
+| :enter     | use the typed string for the search    |
+|            |                                        |
+| n          | find the next match                    |
+| N          | find the prior match                   |
+|            |                                        |
 
+*** Prompt Context
+Fatty can popup a prompt for getting text from the user by presenting a prompt
+together with an input field.  The input field has all the line-editing
+capabilities of the primary input context.
+
+| Key     | Description                       |
+|---------+-----------------------------------|
+| C-c     | cancel with no input              |
+| C-g     | cancel with no input              |
+| :escape | cancel with no input              |
+|         |                                   |
+| :return | return with current input         |
+| :enter  | return with current input         |
+| C-j     | return with current input         |
+|         |                                   |
+| C-p     | display prior prompt history item |
+| :up     | display prior prompt history item |
+| C-n     | display next prompt history item  |
+| :down   | display next prompt history item  |
+|         |                                   |
+|         |                                   |
 
 ** fatty on the Web

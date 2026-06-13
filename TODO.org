@@ -3,6 +3,12 @@
 - will require changing keybindongs.yml format to include a mode qualifier
 - for advanced two-step actions, e.g. dw, will require an action-pending
   capability
+* TODO Add Dynamic help
+One of these days I would like to add a HelpApi so that env.help prints a
+dynamically-generated help text to output in markdown. It would know about the
+user's keybindings, keydefs, and actions. It would get key descriptions from
+the action desc line.
+
 * DONE Theming
 CLOSED: [2026-05-22 Fri 09:28]
 ** Add attributes (like bold to themes)
