@@ -200,6 +200,18 @@ module Fatty
       Command.terminal(:push_modal, session: searcher, owner: self)
     end
 
+    desc "Search pager forward with regex"
+    action :pager_regex_search_forward do
+      searcher = Fatty::SearchSession.new(direction: :forward, regex: true, history: @history)
+      Command.terminal(:push_modal, session: searcher, owner: self)
+    end
+
+    desc "Search pager backward with regex"
+    action :pager_regex_search_backward do
+      searcher = Fatty::SearchSession.new(direction: :backward, regex: true, history: @history)
+      Command.terminal(:push_modal, session: searcher, owner: self)
+    end
+
     desc "Start incremental pager search forward"
     action :pager_isearch_forward do
       isearcher = Fatty::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)

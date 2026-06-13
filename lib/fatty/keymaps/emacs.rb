@@ -155,10 +155,14 @@ module Fatty
       # Paging search (opens SearchSession via ShellSession actions)
       map.bind(context: :paging, key: :/, action: :pager_search_forward)
       map.bind(context: :paging, key: :'?', action: :pager_search_backward)
+      map.bind(context: :paging, key: :/, ctrl: true, action: :pager_regex_search_forward)
+      map.bind(context: :paging, key: :'?', ctrl: true, action: :pager_regex_search_backward)
       # Incremental (string-only) search like Emacs isearch.
       # Regex is intentionally non-incremental (use C-u / or / then toggle).
       map.bind(context: :paging, key: :s, ctrl: true, action: :pager_isearch_forward)
       map.bind(context: :paging, key: :r, ctrl: true, action: :pager_isearch_backward)
+      map.bind(context: :paging, key: :s, meta: true, ctrl: true, action: :pager_regex_search_forward)
+      map.bind(context: :paging, key: :r, meta: true, ctrl: true, action: :pager_regex_search_backward)
 
       # I-search controls (within ISearchSession)
       map.bind(context: :isearch, key: :enter, action: :isearch_accept)
