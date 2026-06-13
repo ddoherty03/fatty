@@ -38,13 +38,12 @@ module Fatty
         )
       end
 
-      def render_output(output_session)
+      def render_output(output_session, viewport: output_session.viewport)
         out_buffer = output_session.output
-        viewport = output_session.viewport
         lines = viewport.slice(out_buffer.lines)
         normalized = normalized_highlights(output_session.highlights)
 
-        curr = output_state(output_session)
+        curr = output_state(output_session, viewport: viewport)
         return if curr == @last_output_state
 
         draw_output_lines(lines, viewport: viewport, highlights: normalized)
@@ -86,7 +85,6 @@ module Fatty
         return if state == @last_pager_field_state
 
         @last_pager_field_state = state
-
         win = context.output_win
         return unless win
 
@@ -94,7 +92,6 @@ module Fatty
         return unless row0 && col0
 
         cols = win.respond_to?(:maxx) ? win.maxx : @screen.cols
-
         queue_ansi_segments_line(
           row: row0 + row,
           col: col0,

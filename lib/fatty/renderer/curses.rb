@@ -19,13 +19,12 @@ module Fatty
         draw_status_lines(status_session)
       end
 
-      def render_output(output_session)
-        viewport = output_session.viewport
+      def render_output(output_session, viewport: output_session.viewport)
         outbuf = output_session.output
         lines = viewport.slice(outbuf.lines)
         normalized = normalized_highlights(output_session.highlights)
 
-        curr = output_state(output_session)
+        curr = output_state(output_session, viewport: viewport)
         prev = @last_output_state
 
         if prev && can_incrementally_scroll_output?(prev, curr)
@@ -33,6 +32,7 @@ module Fatty
         else
           draw_output_lines(lines, viewport: viewport, highlights: normalized)
         end
+
         @last_output_state = curr
       end
 

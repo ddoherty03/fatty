@@ -134,8 +134,8 @@ module Fatty
       ]
     end
 
-    def output_state(session)
-      session.state
+    def output_state(session, viewport: session.viewport)
+      session.state(viewport: viewport)
     end
 
     def input_field_state(input_field)
@@ -302,12 +302,12 @@ module Fatty
       highlights.each_with_object({}) do |(line_no, ranges), out|
         out[line_no] =
           Array(ranges).map do |r|
-          if r.is_a?(Hash)
-            [r[:from].to_i, r[:to].to_i, (r[:role] || :primary).to_sym]
-          else
-            [r[0].to_i, r[1].to_i, (r[2] || :primary).to_sym]
+            if r.is_a?(Hash)
+              [r[:from].to_i, r[:to].to_i, (r[:role] || :primary).to_sym]
+            else
+              [r[0].to_i, r[1].to_i, (r[2] || :primary).to_sym]
+            end
           end
-        end
       end
     end
 
@@ -318,9 +318,7 @@ module Fatty
     def deep_state(value)
       case value
       when Hash
-        value.to_h do |key, val|
-          [deep_state(key), deep_state(val)]
-        end.freeze
+        value.to_h { |key, val| [deep_state(key), deep_state(val)] }.freeze
       when Array
         value.map { |item| deep_state(item) }.freeze
       when String

@@ -68,7 +68,10 @@ module Fatty
           []
         when :quit_paging
           pager.quit
-          []
+          [
+            Command.terminal(:refresh_layout),
+            Command.terminal(:clear_pager_status_prompt),
+          ]
         when :pager_search_set
           update_pager_search_set(payload)
         when :pager_search_step
@@ -92,8 +95,22 @@ module Fatty
       if pager_active?
         ::Curses.curs_set(0)
 
-        viewport = pager_status_viewport(renderer.screen)
         renderer.render_output(self)
+        renderer.render_pager_field(
+          pager_field,
+          row: renderer.screen.output_rect.rows - 1,
+          role: :pager_status,
+        )
+      else
+        renderer.render_output(self)
+      end
+    end
+
+    def view
+      if pager_active?
+        ::Curses.curs_set(0)
+
+        renderer.render_output(self, viewport: pager_status_viewport(renderer.screen))
         renderer.render_pager_field(
           pager_field,
           row: renderer.screen.output_rect.rows - 1,
@@ -113,13 +130,13 @@ module Fatty
       dirty
     end
 
-    def state
+    def state(viewport: @viewport)
       [
         viewport.state,
         viewport.slice(output.lines),
-        screen.output_rect.rows,
+        renderer.screen.output_rect.rows,
         renderer.screen.output_rect.cols,
-        pager.search_visible_highlights(viewport: viewport),
+        highlights,
         renderer.theme_version,
       ]
     end
