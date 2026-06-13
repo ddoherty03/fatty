@@ -67,6 +67,25 @@ module Fatty
         .last(max_rows)
     end
 
+    def lines
+      renderable_text(@text)
+        .lines
+        .flat_map { |line| wrap_line(line.chomp, width) }
+        .last(max_rows)
+    end
+
+    def renderable_text(value)
+      parts = value.is_a?(Array) ? value : [value]
+
+      parts.map do |part|
+        if part.is_a?(Hash) && part.key?(:text)
+          part[:text].to_s
+        else
+          part.to_s
+        end
+      end.join
+    end
+
     def visible?
       @text && !@text.empty?
     end

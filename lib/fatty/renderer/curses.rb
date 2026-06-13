@@ -12,29 +12,11 @@ module Fatty
       end
 
       def render_status(status_session)
-        state = status_state(session)
+        state = status_state(status_session)
         return if state == @last_status_state
 
         @last_status_state = state
-
-        win = context.status_win
-        return unless win
-
-        rows = screen.status_rect.rows
-        cols = screen.status_rect.cols
-        base_attr = pair_attr(status_session.role, fallback: ::Curses::A_REVERSE)
-
-        win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
-        win.erase
-        win.attrset(base_attr)
-
-        status_render_lines(status_session.text, width: cols, max_rows: rows).each_with_index do |line, row|
-          win.setpos(row, 0)
-          rendered = Fatty::Ansi.truncate_visible(line, cols)
-          padding = [cols - Fatty::Ansi.visible_length(rendered), 0].max
-          win.addstr(rendered + (" " * padding))
-        end
-        stage_window(win)
+        draw_status_lines(status_session)
       end
 
       def render_output(output_session)
@@ -459,6 +441,48 @@ module Fatty
           end
         end
         stage_window(win)
+      end
+
+      def draw_status_lines(status_session)
+        win = context.status_win
+        return unless win
+
+        rect = screen.status_rect
+        base_attr = pair_attr(status_session.role, fallback: ::Curses::A_REVERSE)
+        lines = status_segment_lines(status_session)
+        win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
+        win.erase
+        rect.rows.times do |row|
+          draw_status_row(
+            win,
+            row: row,
+            cols: rect.cols,
+            segments: lines[row] || [],
+            base_attr: base_attr,
+          )
+        end
+        stage_window(win)
+      end
+
+      def draw_status_row(win, row:, cols:, segments:, base_attr:)
+        win.setpos(row, 0)
+        remaining = cols
+        segments.each do |segment|
+          break if remaining <= 0
+
+          text = Fatty::Ansi.strip(segment[:text].to_s).tr("\r\n", " ")
+          text = Fatty::Ansi.truncate_visible(text, remaining)
+          next if text.empty?
+
+          attr = pair_attr(segment[:role], fallback: base_attr)
+          win.attrset(attr)
+          win.addstr(text)
+          remaining -= Fatty::Ansi.visible_length(text)
+        end
+        if remaining.positive?
+          win.attrset(base_attr)
+          win.addstr(" " * remaining)
+        end
       end
 
       def draw_output_lines(lines, viewport:, highlights: nil)

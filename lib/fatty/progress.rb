@@ -57,7 +57,7 @@ module Fatty
 
     def finish(message = nil, clear: false, role: @role, render: false)
       if clear
-        terminal.clear_status
+        clear_status
       else
         text =
           if message && !message.empty?
@@ -65,14 +65,14 @@ module Fatty
           else
             render_text
           end
-        terminal.status(text, role: role)
+        show_status(text, role: role)
       end
       terminal.render_frame if render
       self
     end
 
     def clear
-      terminal.clear_status
+      clear_status
       self
     end
 
@@ -80,16 +80,24 @@ module Fatty
 
     attr_reader :current
 
+    def show_status(text, role:)
+      terminal.apply_command(
+        Command.session(:status, :show, text: text, role: role)
+      )
+      nil
+    end
+
+    def clear_status
+      terminal.apply_command(
+        Command.session(:status, :clear)
+      )
+      nil
+    end
+
     def append_indicator(indicator)
       return if indicator.nil?
 
-      item =
-        if indicator.is_a?(Hash) && indicator.key?(:text)
-          indicator
-        else
-          indicator.to_s
-        end
-
+      item = normalize_indicator(indicator)
       return if renderable_indicator_text(item).empty?
 
       @trail << item
@@ -105,7 +113,9 @@ module Fatty
     end
 
     def refresh
-      terminal.status(render_text, role: role)
+      terminal.apply_command(
+        Fatty::Command.session(:status, :show, text: render_text, role: role)
+      )
     end
 
     def render_text(suffix: nil)
@@ -208,6 +218,24 @@ module Fatty
       else
         Fatty::Ansi.visible_length(value.to_s)
       end
+    end
+
+    def normalize_indicator(indicator)
+      if indicator.is_a?(Hash) && indicator.key?(:text)
+        indicator.merge(text: renderable_indicator_text(indicator))
+      else
+        renderable_indicator_text(indicator)
+      end
+    end
+
+    def renderable_indicator_text(item)
+      text =
+        if item.is_a?(Hash) && item.key?(:text)
+          item[:text].to_s
+        else
+          item.to_s
+        end
+      text.gsub(/\s+/, " ").strip
     end
 
     def render_bar_text(suffix: nil, mode: :solid)

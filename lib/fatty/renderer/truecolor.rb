@@ -16,22 +16,28 @@ module Fatty
         return if state == @last_status_state
 
         @last_status_state = state
-
-        lines = status_render_lines(
+        segments = renderable_segments(
           status_session.text,
-          width: screen.status_rect.cols,
-          max_rows: screen.status_rect.rows,
+          role: status_session.role,
         )
-
         screen.status_rect.rows.times do |idx|
-          queue_ansi_line(
+          queue_ansi_segments_line(
             row: screen.status_rect.row + idx,
             col: screen.status_rect.col,
             width: screen.status_rect.cols,
-            text: lines[idx].to_s,
-            role: status_session.role,
+            segments: idx.zero? ? segments : [],
+            fill_role: status_session.role,
           )
         end
+      end
+
+      def render_status(status_session)
+        state = status_state(status_session)
+        return if state == @last_status_state
+
+        @last_status_state = state
+
+        draw_status_lines(status_session)
       end
 
       def render_alert(alert_session)
@@ -444,6 +450,21 @@ module Fatty
             width: rect.cols,
             segments: output_segments(line, ranges: ranges),
             fill_role: :output,
+          )
+        end
+      end
+
+      def draw_status_lines(status_session)
+        rect = screen.status_rect
+        lines = status_segment_lines(status_session)
+
+        rect.rows.times do |y|
+          queue_ansi_segments_line(
+            row: rect.row + y,
+            col: rect.col,
+            width: rect.cols,
+            segments: lines[y] || [],
+            fill_role: status_session.role,
           )
         end
       end

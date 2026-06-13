@@ -166,20 +166,43 @@ module Fatty
       }.join
     end
 
-    def status_render_lines(text, width:, max_rows:)
-      width = [width.to_i, 1].max
-      max_rows = [max_rows.to_i, 1].max
+    def status_segment_lines(status_session)
+      segments = renderable_segments(
+        status_session.text,
+        role: status_session.role,
+      )
+      segment_lines(segments, width: screen.status_rect.cols)
+        .last(screen.status_rect.rows)
+    end
 
-      lines =
-        renderable_text(text)
-          .to_s
-          .lines
-          .flat_map do |line|
-        wrap_status_line(line.chomp, width: width)
+    def segment_lines(segments, width:)
+      lines = [[]]
+      col = 0
+      segments.each do |segment|
+        text = segment[:text].to_s
+        text.each_line do |raw|
+          rest = raw.chomp
+          until rest.empty?
+            remaining = width - col
+            if remaining <= 0
+              lines << []
+              col = 0
+              remaining = width
+            end
+            piece = Fatty::Ansi.truncate_visible(rest, remaining)
+            break if piece.empty?
+
+            lines.last << segment.merge(text: piece)
+            col += Fatty::Ansi.visible_length(piece)
+            rest = rest[piece.length..].to_s
+          end
+          if raw.end_with?("\n")
+            lines << []
+            col = 0
+          end
+        end
       end
-
-      lines = [""] if lines.empty?
-      lines.last(max_rows)
+      lines
     end
 
     def wrap_status_line(line, width:)

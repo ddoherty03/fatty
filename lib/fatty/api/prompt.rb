@@ -46,30 +46,30 @@ module Fatty
       owner = Terminal::PopupOwner.new(on_result: acc_proc, on_cancel: cancel_proc)
 
       begin
-        push_modal(popup, owner: owner)
-        render_frame
+        terminal.apply_command(
+          Fatty::Command.terminal(:push_modal, session: popup, owner: owner)
+        )
+        terminal.render_frame
 
-        while !done && @running
+        while !done && terminal.running?
           dirty = false
-          cmd = event_source.next_event
-          if cmd
-            apply_command(cmd)
+          command = terminal.event_source.next_event
+
+          if command
+            terminal.apply_command(command)
             dirty = true
           end
 
-          s = active_session
           begin
-            tick_dirty = !!s&.tick
-            dirty ||= tick_dirty
+            dirty ||= !!terminal.tick_active_session
           rescue StandardError => e
-            Fatty.error("Terminal#prompt tick failed: #{e.class}: #{e.message}", tag: :terminal)
+            Fatty.error("PromptApi#prompt tick failed: #{e.class}: #{e.message}", tag: :terminal)
             dirty = true
           end
-
-          render_frame if dirty
+          terminal.render_frame if dirty
         end
       ensure
-        render_frame
+        terminal.render_frame
       end
       result
     end
