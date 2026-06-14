@@ -37,3 +37,18 @@ def without_registered_actions
 ensure
   Fatty::Actions.restore(snapshot)
 end
+
+def stub_curses_window(rows: 24, cols: 80)
+  win = instance_double(
+    ::Curses::Window,
+    erase: nil,
+    noutrefresh: nil,
+    close: nil,
+  )
+
+  allow(::Curses).to receive(:lines).and_return(rows)
+  allow(::Curses).to receive(:cols).and_return(cols)
+  allow(::Curses::Window).to receive(:new).and_return(win)
+
+  win
+end
