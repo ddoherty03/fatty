@@ -11,23 +11,21 @@ module Fatty
     def id = :prompt
 
     def initialize(initial: "", prompt: "> ", title: "Prompt", message: nil, kind: nil,
-      history_ctx: nil, history_path: :default, save_history: true)
+                   history_ctx: nil, history_path: :default, history: nil, save_history: true)
       super(keymap: Keymaps.emacs)
       @title = title&.to_s
       @message = message&.to_s
       @kind = kind&.to_sym
       @save_history = !!save_history
-
-      @history = Fatty::History.for_path(history_path)
+      @history = history || Fatty::History.for_path(history_path)
       @field = Fatty::InputField.new(
         prompt: prompt,
-        history: @history,
         history_kind: :prompt,
+        history: @history,
         history_ctx: history_ctx,
       )
       @field.buffer.replace(initial.to_s)
       @field.buffer.bol
-
       @win = nil
     end
 
