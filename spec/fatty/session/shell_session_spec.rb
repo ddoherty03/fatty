@@ -23,18 +23,6 @@ module Fatty
       session
     end
 
-    def update(session, action, **payload)
-      session.update(Fatty::Command.session(session.id, action, **payload))
-    end
-
-    def key(key, text: nil, ctrl: false, meta: false, shift: false)
-      Fatty::KeyEvent.new(key: key, text: text, ctrl: ctrl, meta: meta, shift: shift)
-    end
-
-    def apply_action(session, action, *args)
-      session.send(:apply_action, action, args, event: nil)
-    end
-
     describe "#init" do
       it "initializes and registers its output session" do
         session = Fatty::ShellSession.new

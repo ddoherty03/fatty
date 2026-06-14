@@ -4,14 +4,6 @@ require "ostruct"
 require "spec_helper"
 
 RSpec.describe Fatty::OutputSession do
-  def update(session, action, **payload)
-    session.update(Fatty::Command.session(session.id, action, **payload))
-  end
-
-  def apply_action(session, action, *args)
-    session.send(:apply_action, action, args, event: nil)
-  end
-
   def init_output_session(session, rows: 5, cols: 80, theme_version: 0)
     output_rect = OpenStruct.new(row: 0, rows: rows, cols: cols)
     screen = instance_double(Fatty::Screen, output_rect: output_rect)

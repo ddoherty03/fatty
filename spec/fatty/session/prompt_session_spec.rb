@@ -10,14 +10,6 @@ module Fatty
       allow(::Curses).to receive(:curs_set)
     end
 
-    def key(key, text: nil, ctrl: false, meta: false, shift: false)
-      Fatty::KeyEvent.new(key: key, text: text, ctrl: ctrl, meta: meta, shift: shift)
-    end
-
-    def update(session, action, **payload)
-      session.update(Fatty::Command.session(session.id, action, **payload))
-    end
-
     def init_prompt_session(session, rows: 24, cols: 80)
       screen = instance_double(Fatty::Screen, rows: rows, cols: cols)
       renderer = instance_double(Fatty::Renderer, screen: screen)

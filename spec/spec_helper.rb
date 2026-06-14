@@ -38,6 +38,18 @@ ensure
   Fatty::Actions.restore(snapshot)
 end
 
+def key(key, text: nil, ctrl: false, meta: false, shift: false)
+  Fatty::KeyEvent.new(key: key, text: text, ctrl: ctrl, meta: meta, shift: shift)
+end
+
+def update(session, action, **payload)
+  session.update(Fatty::Command.session(session.id, action, **payload))
+end
+
+def apply_action(session, action, *args)
+  session.send(:apply_action, action, args, event: nil)
+end
+
 def stub_curses_window(rows: 24, cols: 80)
   win = instance_double(
     ::Curses::Window,
