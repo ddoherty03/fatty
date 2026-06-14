@@ -44,7 +44,10 @@ module Fatty
         if raw.is_a?(Fatty::MouseEvent)
           Command.session(:active, :key, event: raw)
         elsif raw.is_a?(Array) && raw.first == :paste
-          Command.session(:active, :paste, text: raw.last)
+          # This :terminal_paste is a terminal bracketed-paste event, not an
+          # editor paste action. Treat the pasted bytes as one insert
+          # operation instead of decoding them as individual key events.
+          Command.session(:active, :terminal_paste, text: raw.last)
         elsif (ev = @key_decoder.decode(raw))
           Command.session(:active, :key, event: ev)
         else

@@ -43,6 +43,15 @@ module Fatty
         expect(owner_command.payload).to include(pattern: "foo.*bar", direction: :forward, regex: true)
       end
 
+      it "handles terminal_paste" do
+        session = Fatty::SearchSession.new
+
+        commands = update(session, :terminal_paste, text: "hello\nworld\n")
+
+        expect(commands).to eq([])
+        expect(session.field.buffer.text).to eq("hello world ")
+      end
+
       it "cancels the search" do
         session = Fatty::SearchSession.new
 

@@ -44,6 +44,9 @@ module Fatty
       log_update(command)
       commands =
         case command.action
+        when :terminal_paste
+          field.act_on(:paste, command.payload.fetch(:text, ""), env: action_env(event: nil))
+          []
         when :popup_result
           apply_popup_result(command.payload)
         when :paste

@@ -40,6 +40,15 @@ module Fatty
           else
             []
           end
+        when :terminal_paste
+          env = action_env(event: nil)
+          @field.act_on(
+            :paste,
+            command.payload.fetch(:text, ""),
+            env: env,
+          )
+          @field.sync_virtual_suffix!
+          maybe_preview!
         when :isearch_set_failed
           @failed = !!command.payload[:failed]
           @field.prompt = isearch_prompt

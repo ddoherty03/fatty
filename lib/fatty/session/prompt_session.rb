@@ -50,10 +50,8 @@ module Fatty
           else
             []
           end
-        when :paste
-          text = command.payload.fetch(:text, "").to_s
-          env = action_env(event: nil)
-          @field.act_on(:paste, text, env: env)
+        when :terminal_paste
+          field.act_on(:paste, command.payload.fetch(:text, ""), env: action_env(event: nil))
           []
         else
           []

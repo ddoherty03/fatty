@@ -38,11 +38,11 @@ module Fatty
     end
 
     describe "#update" do
-      it "handles :paste by inserting normalized text into the field" do
+      it "handles :terminal_paste by inserting normalized text into the field" do
         session = Fatty::ShellSession.new
         init_shell_session(session)
 
-        commands = update(session, :paste, text: "hello\nworld\n")
+        commands = update(session, :terminal_paste, text: "hello\nworld\n")
 
         expect(commands).to eq([])
         expect(session.field.buffer.text).to eq("hello world ")

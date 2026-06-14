@@ -73,6 +73,25 @@ module Fatty
         )
       end
 
+      it "handles terminal_paste by previewing the pasted pattern" do
+        session = Fatty::ISearchSession.new(direction: :forward)
+
+        commands = update(session, :terminal_paste, text: "hello\nworld\n")
+
+        expect(session.field.buffer.text).to eq("hello world ")
+        expect(commands.length).to eq(1)
+        expect(commands.first.action).to eq(:send_modal_owner)
+
+        owner_command = commands.first.payload.fetch(:command)
+
+        expect(owner_command.target).to eq(:focused)
+        expect(owner_command.action).to eq(:pager_isearch_update)
+        expect(owner_command.payload).to include(
+                                           pattern: "hello world ",
+                                           direction: :forward,
+                                         )
+      end
+
       it "cancels the incremental search" do
         session = Fatty::ISearchSession.new
 

@@ -83,10 +83,12 @@ module Fatty
           else
             []
           end
-        when :paste
+        when :terminal_paste
           text = command.payload.fetch(:text, "").to_s
           env = action_env(event: nil)
           @field.act_on(:paste, text, env: env)
+          refresh_items
+          ensure_scroll_visible
           []
         else
           []

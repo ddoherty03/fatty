@@ -102,11 +102,11 @@ module Fatty
         expect(session.field.buffer.text).to eq("ac")
       end
 
-      it "handles paste" do
+      it "handles terminal_paste" do
         session = Fatty::PromptSession.new
         init_prompt_session(session)
 
-        commands = update(session, :paste, text: "hello\nworld\n")
+        commands = update(session, :terminal_paste, text: "hello\nworld\n")
 
         expect(commands).to eq([])
         expect(session.field.buffer.text).to eq("hello world ")

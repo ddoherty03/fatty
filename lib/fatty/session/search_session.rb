@@ -33,6 +33,9 @@ module Fatty
     def update(command)
       commands =
         case command.action
+        when :terminal_paste
+          field.act_on(:paste, command.payload.fetch(:text, ""), env: action_env(event: nil))
+          []
         when :key
           ev = command.payload.fetch(:event)
           action, args = resolve_action(ev)
@@ -44,7 +47,6 @@ module Fatty
         else
           []
         end
-
       Array(commands)
     end
 
@@ -67,14 +69,7 @@ module Fatty
     end
 
     def apply_action(action, args, event:)
-      env = ActionEnvironment.new(
-        session: self,
-        counter: counter,
-        event: event,
-        buffer: @field.buffer,
-        field: @field,
-      )
-
+      env = action_env(event)
       if Fatty::Actions.lookup(action)&.fetch(:on) == :session
         Fatty::Actions.call(action, env, *args)
       else
@@ -83,6 +78,16 @@ module Fatty
       end
     rescue Fatty::ActionError
       []
+    end
+
+    def action_env(event)
+      ActionEnvironment.new(
+        session: self,
+        counter: counter,
+        event: event,
+        buffer: @field.buffer,
+        field: @field,
+      )
     end
 
     ############################################################################################
