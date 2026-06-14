@@ -219,10 +219,7 @@ module Fatty
 
     desc "Accept the current shell input line and switch output to scrolling"
     action :submit_and_scroll do
-      before = output.lines.length
-      cmds = submit_line
-      cmds << Command.session(output_session.id, :paging_to_scrolling) if output.lines.length > before
-      cmds
+      submit_line << Command.session(output_session.id, :paging_to_scrolling)
     end
 
     desc "Interrupt scrolling, otherwise quit Fatty"

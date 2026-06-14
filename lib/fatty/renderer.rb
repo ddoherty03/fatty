@@ -77,6 +77,14 @@ module Fatty
       raise NotImplementedError, "#{self.class} must implement #render_input_field"
     end
 
+    def clear_input_field(...)
+      raise NotImplementedError, "#{self.class} must implement #clear_input_field"
+    end
+
+    def restore_cursor(...)
+      raise NotImplementedError, "#{self.class} must implement #restore_cursor"
+    end
+
     def render_pager_field(...)
       raise NotImplementedError, "#{self.class} must implement #render_pager_field"
     end

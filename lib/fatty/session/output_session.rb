@@ -148,7 +148,6 @@ module Fatty
       curr_viewport[0] - prev_viewport[0]
     end
 
-
     # True when the pager is currently holding the screen (i.e., paging mode is
     # active and the output is paused).
     def pager_active?

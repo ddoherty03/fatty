@@ -52,6 +52,14 @@ module Fatty
       false
     end
 
+    def renderer
+      terminal.renderer
+    end
+
+    def screen
+      terminal.screen
+    end
+
     private
 
     def log_update(command)
@@ -108,14 +116,6 @@ module Fatty
         .gsub(/([a-z])([A-Z])/, '\1_\2')
         .downcase
         .then { |name| :"#{name}_#{object_id}" }
-    end
-
-    def renderer
-      terminal.renderer
-    end
-
-    def screen
-      terminal.screen
     end
 
     def resolve_action(ev)
