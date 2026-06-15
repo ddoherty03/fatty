@@ -184,7 +184,6 @@ module Fatty
             win.addstr(title)
           end
         end
-
         inner_h = height - 2
         inner_w = width - 2
         return if inner_h <= 0 || inner_w <= 0
@@ -215,7 +214,7 @@ module Fatty
         list_h = [list_h, 0].max
 
         items = session.displayed
-        selected = session.selected
+        selected = session.current
         start = session.scroll_start(list_h: list_h)
 
         (0...list_h).each do |offset|

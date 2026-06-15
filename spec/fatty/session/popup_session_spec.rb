@@ -2,61 +2,162 @@
 
 require "spec_helper"
 
-RSpec.describe Fatty::PopUpSession do
-  describe "#move_selected_by" do
-    def build_popup(items)
-      Fatty::PopUpSession.new(
-        source: items,
-        kind: :completion,
-        title: "Completions",
-        prompt: "Complete: ",
-        order: :as_given,
-        selection: :top,
-      )
+module Fatty
+  RSpec.describe PopUpSession do
+    def init_popup_session(session, rows: 24, cols: 80)
+      screen = instance_double(Fatty::Screen, rows: rows, cols: cols)
+      renderer = instance_double(Fatty::Renderer, screen: screen)
+      terminal = instance_double(Fatty::Terminal, screen: screen, renderer: renderer)
+
+      stub_curses_window(rows: rows, cols: cols)
+
+      session.init(terminal: terminal)
+      session
     end
 
-    it "wraps backward from the first item to the last" do
-      popup = build_popup(%w[alpha beta gamma])
+    describe 'initialization' do
+      it "initializes from a static source" do
+        session = PopUpSession.new(
+          title: "Pick one",
+          source: %w[alpha beta gamma]
+        )
 
-      popup.instance_variable_set(:@displayed, %w[alpha beta gamma])
-      popup.instance_variable_set(:@selected, 0)
+        expect(session.title).to eq("Pick one")
+        expect(session.items).to eq(%w[alpha beta gamma])
+      end
 
-      popup.send(:move_selected_by, -1)
+      it "initializes from a callable source" do
+        session = PopUpSession.new(
+          source: ->(_filter) { %w[alpha beta] }
+        )
 
-      expect(popup.instance_variable_get(:@selected)).to eq(2)
+        expect(session.items).to eq(%w[alpha beta])
+      end
     end
 
-    it "wraps forward from the last item to the first" do
-      popup = build_popup(%w[alpha beta gamma])
+    describe "#update" do
+      it "handles terminal_paste by updating the filter and refreshing items" do
+        popup = Fatty::PopUpSession.new(source: %w[alpha beta gamma])
+        init_popup_session(popup)
 
-      popup.instance_variable_set(:@displayed, %w[alpha beta gamma])
-      popup.instance_variable_set(:@selected, 2)
+        commands = update(popup, :terminal_paste, text: "alp")
 
-      popup.send(:move_selected_by, 1)
+        expect(commands).to eq([])
+        expect(popup.field.buffer.text).to eq("alp")
+        expect(popup.filtered).to eq(%w[alpha])
+        expect(popup.displayed).to eq(%w[alpha])
+      end
 
-      expect(popup.instance_variable_get(:@selected)).to eq(0)
+      it "handles key actions" do
+        popup = Fatty::PopUpSession.new(source: %w[alpha beta gamma])
+        init_popup_session(popup)
+
+        commands = update(popup, :key, event: key(:down))
+
+        expect(commands.length).to eq(1)
+        expect(commands.first.action).to eq(:send_modal_owner)
+        expect(popup.state[3]).to eq(1) # selected
+      end
+
+      it "edits the filter for text keys" do
+        popup = Fatty::PopUpSession.new(source: %w[alpha beta gamma])
+        init_popup_session(popup)
+
+        commands = update(popup, :key, event: key(:a, text: "a"))
+
+        expect(commands.length).to eq(1)
+        expect(commands.first.action).to eq(:send_modal_owner)
+        expect(popup.field.buffer.text).to eq("a")
+        expect(popup.filtered).to eq(%w[alpha beta gamma])
+      end
+
+      it "ignores unknown commands" do
+        popup = Fatty::PopUpSession.new(source: %w[alpha beta gamma])
+        init_popup_session(popup)
+
+        expect(update(popup, :bogus)).to eq([])
+      end
     end
-  end
 
-  describe "#call_source" do
-    it "returns literal array sources unchanged as an array" do
-      popup = Fatty::PopUpSession.new(source: %w[alpha beta gamma])
+    describe "#move_current_by" do
+      def build_popup(items)
+        PopUpSession.new(
+          source: items,
+          kind: :completion,
+          title: "Completions",
+          prompt: "Complete: ",
+          order: :as_given,
+          current: :top,
+        )
+      end
 
-      expect(popup.send(:call_source, "alp")).to eq(%w[alpha beta gamma])
+      it "wraps backward from the first item to the last" do
+        popup = build_popup(%w[alpha beta gamma])
+
+        popup.instance_variable_set(:@displayed, %w[alpha beta gamma])
+        popup.instance_variable_set(:@current, 0)
+
+        popup.send(:move_current_by, -1)
+
+        expect(popup.instance_variable_get(:@current)).to eq(2)
+      end
+
+      it "wraps forward from the last item to the first" do
+        popup = build_popup(%w[alpha beta gamma])
+
+        popup.instance_variable_set(:@displayed, %w[alpha beta gamma])
+        popup.instance_variable_set(:@current, 2)
+
+        popup.send(:move_current_by, 1)
+
+        expect(popup.instance_variable_get(:@current)).to eq(0)
+      end
     end
 
-    it "calls arity-0 sources with no argument" do
-      popup = Fatty::PopUpSession.new(source: -> { %w[alpha beta] })
+    describe "renderer-facing public helpers" do
+      it "reports whether counts are present" do
+        popup = Fatty::PopUpSession.new(source: %w[alpha beta])
+        expect(popup.counts_present?).to be(true)
+      end
 
-      expect(popup.send(:call_source, "ignored")).to eq(%w[alpha beta])
+      it "clamps scroll_start for the visible list height" do
+        popup = Fatty::PopUpSession.new(source: %w[a b c d e])
+        popup.instance_variable_set(:@scroll_start, 99)
+        expect(popup.scroll_start(list_h: 3)).to eq(2)
+      end
+
+      it "returns a blank gutter for single-select popups" do
+        popup = Fatty::PopUpSession.new(source: %w[alpha])
+        expect(popup.gutter_for(item: "alpha", selected: true)).to eq(" ")
+      end
+
+      it "returns counts" do
+        popup = Fatty::PopUpSession.new(source: %w[alpha beta gamma])
+        expect(popup.counts)
+          .to eq(
+            total: 3,
+            selected: 1,
+            matching: 3,
+            showing: 3,
+          )
+      end
     end
 
-    it "calls arity-1 sources with the query" do
-      popup = Fatty::PopUpSession.new(
-        source: ->(q) { [q, q.upcase] }
-      )
+    describe "#call_source" do
+      it "returns literal array sources unchanged as an array" do
+        popup = PopUpSession.new(source: %w[alpha beta gamma])
+        expect(popup.send(:call_source, "alp")).to eq(%w[alpha beta gamma])
+      end
 
-      expect(popup.send(:call_source, "alp")).to eq(%w[alp ALP])
+      it "calls arity-0 sources with no argument" do
+        popup = PopUpSession.new(source: -> { %w[alpha beta] })
+        expect(popup.send(:call_source, "ignored")).to eq(%w[alpha beta])
+      end
+
+      it "calls arity-1 sources with the query" do
+        popup = PopUpSession.new(source: ->(q) { [q, q.upcase] })
+        expect(popup.send(:call_source, "alp")).to eq(%w[alp ALP])
+      end
     end
   end
 end

@@ -759,20 +759,22 @@ module Fatty
       names = Fatty::Themes::Manager.theme_names
       ordered = [current] + (names - [current])
 
-      chooser = Fatty::PopUpSession.new(
+      chooser = PopUpSession.new(
         source: ordered,
         kind: :theme_chooser,
         title: "Themes",
         prompt: "Theme: ",
-        selection: :top,
+        current: :top,
       )
       owner = PopupOwner.new(
         on_result: ->(payload) do
-          theme = payload[:item]
-          Fatty::Command.terminal(:set_theme, theme: theme)
+          Fatty::Command.terminal(:set_theme, theme: payload[:item])
         end,
         on_cancel: -> do
           Fatty::Command.terminal(:set_theme, theme: current)
+        end,
+        on_change: ->(payload) do
+          Fatty::Command.terminal(:set_theme, theme: payload[:item])
         end,
       )
       push_modal(chooser, owner: owner)

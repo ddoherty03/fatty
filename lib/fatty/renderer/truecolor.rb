@@ -324,7 +324,7 @@ module Fatty
         return unless win
 
         items = session.displayed
-        sel = session.selected
+        sel = session.current
         start = session.scroll_start(list_h: layout.height)
         row = layout.row
 

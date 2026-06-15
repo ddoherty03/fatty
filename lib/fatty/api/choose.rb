@@ -15,10 +15,10 @@ module Fatty
         title: "Choose",
         message: prompt,
         prompt: "> ",
-        selection: :top,
+        current: :top,
         validate_unique_labels: true,
       )
-      popup.instance_variable_set(:@selected, initial_choice_idx.to_i.clamp(0, labels.length - 1))
+      popup.instance_variable_set(:@current, initial_choice_idx.to_i.clamp(0, labels.length - 1))
 
       done = false
       result = nil
@@ -81,13 +81,13 @@ module Fatty
       raise ArgumentError, "choices must not be empty" if items.empty?
 
       labels = items.map(&:first)
-      popup = Fatty::PopUpSession.new(
+      popup = PopUpSession.new(
         source: labels,
         kind: :terminal_choose_multi,
         title: "Choose Many",
         message: prompt,
         prompt: "> ",
-        selection: :top,
+        current: :top,
         selection_mode: :multiple,
         validate_unique_labels: true,
       )

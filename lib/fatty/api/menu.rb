@@ -25,12 +25,12 @@ module Fatty
         title: "Menu",
         message: prompt,
         prompt: "> ",
-        selection: :top,
+        current: :top,
         validate_unique_labels: true,
       )
 
       popup.instance_variable_set(
-        :@selected,
+        :@current,
         initial_choice_idx.to_i.clamp(0, labels.length - 1),
       )
 

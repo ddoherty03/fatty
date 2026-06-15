@@ -295,13 +295,13 @@ module Fatty
         else
           @completion_range = @field.popup_completion_range
           # NOTE: we don't pass a matcher so that the default_matcher is used.
-          popup = Fatty::PopUpSession.new(
+          popup = PopUpSession.new(
             source: candidates,
             kind: :completion,
             title: "Completions",
             prompt: "Complete: ",
             order: :as_given,
-            selection: :top,
+            current: :top,
             initial_query: @field.popup_completion_query.to_s,
           )
           [[:terminal, :push_modal, popup]]
@@ -320,7 +320,7 @@ module Fatty
           title: "History",
           prompt: "I-search: ",
           order: :as_given,
-          selection: :bottom,
+          current: :bottom,
           initial_query: @field.buffer.text,
         )
       Command.terminal(:push_modal, session: hist_searcher)

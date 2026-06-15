@@ -4,7 +4,7 @@ module Fatty
   class PopUpSession < ModalSession
     action_on :session
 
-    attr_reader :prompt, :field, :filtered, :displayed, :selected, :title, :message
+    attr_reader :prompt, :items, :field, :filtered, :displayed, :title, :message
 
     MAX_WIDTH      = 120
     DEFAULT_HEIGHT = 12
@@ -19,7 +19,7 @@ module Fatty
     # - source: Proc that returns the candidate list. May accept (query) or be arity 0.
     # - matcher: Proc (item, query) -> truthy. Defaults to substring match.
     # - order: :as_given (default) or :reverse (presentation order).
-    # - selection: :preserve (default), :top, :bottom (how selection behaves after refresh).
+    # - current: :preserve (default), :top, :bottom (how the current behaves after refresh).
     def initialize(
       source:,
       title: nil,
@@ -29,7 +29,7 @@ module Fatty
       matcher: nil,
       order: :as_given,
       kind: nil,
-      selection: :preserve,
+      current: :preserve,
       initial_query: nil,
       selection_mode: :single,
       validate_unique_labels: false
@@ -42,7 +42,8 @@ module Fatty
       @matcher = matcher || method(:default_matcher)
       @order = order.to_sym
       @kind = kind&.to_sym
-      @selection = selection.to_sym
+      @current_policy = current.to_sym
+      @current = nil
       @selection_mode = selection_mode.to_sym
       @validate_unique_labels = !!validate_unique_labels
 
@@ -53,11 +54,11 @@ module Fatty
       @items = []
       @filtered = []
       @displayed = []
-      @selected = 0
       @selected_labels = {}
 
       @last_query = nil
       @scroll_start = 0
+      refresh_items
     end
 
     #########################################################################################
@@ -108,7 +109,7 @@ module Fatty
         title.to_s.dup.freeze,
         message.to_s.dup.freeze,
         displayed.map { |item| item.to_s.dup.freeze }.freeze,
-        selected,
+        current,
         field.buffer.text.to_s.dup.freeze,
         field.buffer.cursor,
         field.buffer.virtual_suffix.to_s.dup.freeze,
@@ -119,8 +120,12 @@ module Fatty
       ]
     end
 
+    def current
+      current_index
+    end
+
     def counts_present?
-      !!counts
+      true
     end
 
     # Renderer calls this to determine which slice of items to display.
@@ -194,32 +199,32 @@ module Fatty
     end
 
     action :popup_next do
-      move_selected_by(1)
+      move_current_by(1)
       ensure_scroll_visible
       notify_owner(:popup_changed)
     end
 
     action :popup_prev do
-      move_selected_by(-1)
+      move_current_by(-1)
       ensure_scroll_visible
       notify_owner(:popup_changed)
     end
 
     action :popup_page_down do
-      move_selected_by(popup_list_height)
+      move_current_by(popup_list_height)
       ensure_scroll_visible
       notify_owner(:popup_changed)
     end
 
     action :popup_page_up do
-      move_selected_by(-popup_list_height)
+      move_current_by(-popup_list_height)
       ensure_scroll_visible
       notify_owner(:popup_changed)
     end
 
     action :popup_top do
       unless @filtered.empty?
-        @selected = 0
+        @current = 0
         recenter_scroll
       end
       notify_owner(:popup_changed)
@@ -227,7 +232,7 @@ module Fatty
 
     action :popup_bottom do
       unless @filtered.empty?
-        @selected = [@filtered.length - 1, 0].max
+        @current = [@filtered.length - 1, 0].max
         recenter_scroll
       end
       notify_owner(:popup_changed)
@@ -264,13 +269,13 @@ module Fatty
       []
     end
 
-    def move_selected_by(delta)
+    def move_current_by(delta)
       return if @displayed.empty?
 
-      msg = "PopUpSession#move_selected_by before: selected=#{@selected.inspect} delta=#{delta} len=#{@displayed.length}"
+      msg = "PopUpSession#move_current_by before: current=#{@current.inspect} delta=#{delta} len=#{@displayed.length}"
       Fatty.debug(msg)
-      @selected = ((@selected || 0) + delta) % @displayed.length
-      Fatty.debug("PopUpSession#move_selected_by after: selected=#{@selected.inspect}")
+      @current = ((@current || 0) + delta) % @displayed.length
+      Fatty.debug("PopUpSession#move_current_by after: selected=#{@current.inspect}")
     end
 
     def accept_selection
@@ -295,7 +300,7 @@ module Fatty
     end
 
     def selected_item
-      @displayed[@selected]
+      @displayed[@current]
     end
 
     def selected_item_label?(item)
@@ -332,14 +337,12 @@ module Fatty
       validate_unique_labels!(@items) if @validate_unique_labels
 
       matcher = @matcher || method(:default_matcher)
-
       @filtered =
         if q.empty?
           @items
         else
           @items.select { |e| matcher.call(e, q) }
         end
-
       refresh_displayed_items
       apply_selection_policy!
     end
@@ -359,7 +362,6 @@ module Fatty
       else
         @selected_labels[label] = true
       end
-
       refresh_displayed_items
       item
     end
@@ -405,14 +407,14 @@ module Fatty
           kind: @kind,
           items: item,
           query: @field.buffer.text.to_s,
-          index: @selected
+          index: @current
         }
       else
         {
           kind: @kind,
           item: item,
           query: @field.buffer.text.to_s,
-          index: @selected
+          index: @current
         }
       end
     end
@@ -424,6 +426,7 @@ module Fatty
     def popup_extra_rows
       rows = 4
       rows += 1 if popup_has_message?
+      rows += 1 if counts_present?
       rows
     end
 
@@ -465,10 +468,10 @@ module Fatty
       top_zone = @scroll_start + band
       bot_zone = (@scroll_start + list_h - 1) - band
 
-      if @selected < top_zone
-        @scroll_start = @selected - band
-      elsif @selected > bot_zone
-        @scroll_start = @selected - (list_h - 1) + band
+      if @current < top_zone
+        @scroll_start = @current - band
+      elsif @current > bot_zone
+        @scroll_start = @current - (list_h - 1) + band
       end
 
       max_start = @displayed.length - list_h
@@ -480,7 +483,7 @@ module Fatty
 
     def recenter_scroll
       list_h = popup_list_height
-      @scroll_start = @selected - (list_h / 2)
+      @scroll_start = @current - (list_h / 2)
 
       max_start = @displayed.length - list_h
       max_start = 0 if max_start < 0
@@ -512,26 +515,30 @@ module Fatty
       end
     end
 
+    def current_index
+      return 0 if @displayed.empty?
+
+      @current = 0 unless @current.is_a?(Integer)
+      @current.clamp(0, @displayed.length - 1)
+    end
+
     def apply_selection_policy!
-      prior = @selected
+      prior = @current
       last_idx = [@displayed.length - 1, 0].max
-
-      @selected = if @displayed.empty?
-        0
-      else
-        case @selection
-        when :top
+      @current =
+        if @displayed.empty?
           0
-        when :bottom
-          last_idx
         else
-          @selected.clamp(0, last_idx)
+          case @current_policy
+          when :top
+            0
+          when :bottom
+            last_idx
+          else
+            @current.is_a?(Integer) ? @current.clamp(0, last_idx) : 0
+          end
         end
-      end
-
-      if @selection == :top || @selection == :bottom
-        recenter_scroll
-      elsif @selected != prior
+      if @current != prior
         ensure_scroll_visible
       end
     end

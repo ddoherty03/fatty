@@ -56,11 +56,11 @@ def stub_curses_window(rows: 24, cols: 80)
     erase: nil,
     noutrefresh: nil,
     close: nil,
+    maxy: rows,
+    maxx: cols,
   )
-
   allow(::Curses).to receive(:lines).and_return(rows)
   allow(::Curses).to receive(:cols).and_return(cols)
   allow(::Curses::Window).to receive(:new).and_return(win)
-
   win
 end
