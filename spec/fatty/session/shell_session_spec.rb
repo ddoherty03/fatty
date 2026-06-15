@@ -538,7 +538,7 @@ module Fatty
         init_shell_session(session)
 
         session.field.buffer.text.replace("e four score and seven")
-        session.field.buffer.cursor = 0
+        session.field.buffer.cursor = 1
 
         commands = apply_action(session, :completion_popup)
 
@@ -547,7 +547,7 @@ module Fatty
         expect(commands.first.target).to eq(:terminal)
         expect(commands.first.action).to eq(:push_modal)
         expect(popup).to be_a(Fatty::PopUpSession)
-        expect(popup.instance_variable_get(:@field).buffer.text).to eq("")
+        expect(popup.instance_variable_get(:@field).buffer.text).to eq("e")
       end
 
       it "opens command history search" do

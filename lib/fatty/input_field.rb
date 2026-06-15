@@ -179,15 +179,6 @@ module Fatty
       active = active_completion_autosuggestion
       return active if active
 
-      return if buffer.text.empty?
-
-      default_completion_autosuggestion || history_autosuggestion
-    end
-
-    def autosuggestion
-      active = active_completion_autosuggestion
-      return active if active
-
       text = buffer.text.to_s
       return if text.empty?
 
@@ -218,14 +209,12 @@ module Fatty
       end
     end
 
-    def autosuggestion_candidates
-      text = buffer.text.to_s
-
+    def autosuggestion_candidates(base: buffer.text.to_s)
       (history_autosuggestions + completion_suggestions)
         .compact
         .map(&:to_s)
-        .select { |candidate| candidate.start_with?(text) }
-        .reject { |candidate| candidate == text }
+        .select { |candidate| candidate.start_with?(base) }
+        .reject { |candidate| candidate == buffer.text.to_s }
         .uniq
     end
 
@@ -480,14 +469,7 @@ module Fatty
         path = rendered_path_candidates(path_prefix)
         return path if path.any?
       end
-
-      return [] unless @completion_proc
-
-      Array(@completion_proc.call(buffer))
-        .compact
-        .map(&:to_s)
-        .reject(&:empty?)
-        .uniq
+      autosuggestion_candidates(base: buffer.text.to_s[0...buffer.cursor])
     end
 
     def popup_path_completion_prefix
@@ -506,7 +488,11 @@ module Fatty
     end
 
     def popup_completion_range
-      path_completion_range || buffer.completion_replace_range
+      if popup_path_completion_prefix
+        path_completion_range
+      else
+        0...buffer.text.length
+      end
     end
 
     def popup_completion_query
