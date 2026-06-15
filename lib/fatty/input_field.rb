@@ -490,6 +490,15 @@ module Fatty
         .uniq
     end
 
+    def popup_completion_candidates
+      path_prefix = popup_path_completion_prefix
+      if path_prefix
+        path = rendered_path_candidates(path_prefix)
+        return path if path.any?
+      end
+      autosuggestion_candidates
+    end
+
     def popup_path_completion_prefix
       prefix = path_completion_prefix
       return if prefix.nil? || prefix.empty?
@@ -506,7 +515,11 @@ module Fatty
     end
 
     def popup_completion_range
-      path_completion_range || buffer.completion_replace_range
+      if popup_path_completion_prefix
+        path_completion_range
+      else
+        0...buffer.text.length
+      end
     end
 
     def popup_completion_query
