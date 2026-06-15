@@ -27,7 +27,7 @@ module Fatty
     include AlertApi
     include KeytestApi
 
-    attr_reader :label, :payload, :commands, :terminal
+    attr_reader :label, :payload, :commands, :terminal, :progress
 
     def initialize(terminal:, output_id:, label: nil, payload: nil)
       @terminal = terminal
