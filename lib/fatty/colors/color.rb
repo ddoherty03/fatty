@@ -175,6 +175,21 @@ module Fatty
         end
       end
 
+      def clamp_index(idx, available_colors:)
+        i = idx.to_i
+
+        result =
+          if available_colors.to_i <= 0
+            0
+          elsif available_colors.to_i <= 16
+            downmap_to_ansi16(i)
+          else
+            i.clamp(0, 255)
+          end
+
+        result
+      end
+
       private
 
       def resolve_stringish(str, available_colors: 256)
@@ -246,21 +261,6 @@ module Fatty
           b = hex[4, 2].to_i(16)
           [r, g, b]
         end
-      end
-
-      def clamp_index(idx, available_colors:)
-        i = idx.to_i
-
-        result =
-          if available_colors.to_i <= 0
-            0
-          elsif available_colors.to_i <= 16
-            downmap_to_ansi16(i)
-          else
-            i.clamp(0, 255)
-          end
-
-        result
       end
 
       def xterm_cube_index(r, g, b)

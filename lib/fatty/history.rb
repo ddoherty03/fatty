@@ -47,10 +47,6 @@ module Fatty
       @instances = {}
     end
 
-    def self.default
-      for_path(:default)
-    end
-
     ###################################################################################
     # Accessing History items from a consuming application
     ###################################################################################

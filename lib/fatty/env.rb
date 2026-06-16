@@ -19,6 +19,8 @@ module Fatty
       }
     end
 
+    private
+
     # -----------------------
     # OS / platform
     # -----------------------
