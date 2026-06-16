@@ -32,194 +32,197 @@ module Fatty
     # directly on the theme_spec.
     # module Resolver
     module Resolver
-      DEFAULT_ROLE_SPECS = {
-        region: { attrs: [:reverse] },
-        cursor: { attrs: [:reverse] },
-        input_suggestion: { attrs: [:dim] },
-        pager_status: { attrs: [:reverse] },
-        search_input: { attrs: [:reverse] },
-        match_current: { attrs: [:reverse] },
-        match_other: { attrs: [:underline] },
-        popup_counts: { attrs: [:bold] },
-        alert: { attrs: [:bold] },
-        markdown_table_cell: {},
-        markdown_underline: { attrs: [:underline] },
-        markdown_hrule: { attrs: [:dim] },
-      }.freeze
+      class << self
+        DEFAULT_ROLE_SPECS = {
+          region: { attrs: [:reverse] },
+          cursor: { attrs: [:reverse] },
+          input_suggestion: { attrs: [:dim] },
+          pager_status: { attrs: [:reverse] },
+          search_input: { attrs: [:reverse] },
+          match_current: { attrs: [:reverse] },
+          match_other: { attrs: [:underline] },
+          popup_counts: { attrs: [:bold] },
+          alert: { attrs: [:bold] },
+          markdown_table_cell: {},
+          markdown_underline: { attrs: [:underline] },
+          markdown_hrule: { attrs: [:dim] },
+        }.freeze
 
-      ROLE_PARENTS = {
-        input: :output,
-        input_suggestion: :input,
+        ROLE_PARENTS = {
+          input: :output,
+          input_suggestion: :input,
 
-        region: :output,
-        cursor: :input,
+          region: :output,
+          cursor: :input,
 
-        popup: :output,
-        popup_frame: :popup,
-        popup_input: :input,
-        popup_selection: :region,
-        popup_counts: :popup,
+          popup: :output,
+          popup_frame: :popup,
+          popup_input: :input,
+          popup_selection: :region,
+          popup_counts: :popup,
 
-        search_input: :popup,
+          search_input: :popup,
 
-        match_current: :region,
-        match_other: :region,
+          match_current: :region,
+          match_other: :region,
 
-        status: :output,
-        alert: :output,
-        info: :output,
-        good: :info,
-        warn: :info,
-        error: :warn,
+          status: :output,
+          alert: :output,
+          info: :output,
+          good: :info,
+          warn: :info,
+          error: :warn,
 
-        pager_status: :status,
+          pager_status: :status,
 
-        markdown_h1: :output,
-        markdown_h2: :markdown_h1,
-        markdown_h3: :markdown_h2,
+          markdown_h1: :output,
+          markdown_h2: :markdown_h1,
+          markdown_h3: :markdown_h2,
 
-        markdown_code: :output,
-        markdown_code_gutter: :markdown_code,
+          markdown_code: :output,
+          markdown_code_gutter: :markdown_code,
 
-        markdown_strong: :output,
-        markdown_emphasis: :output,
+          markdown_strong: :output,
+          markdown_emphasis: :output,
 
-        markdown_link: :output,
-        markdown_url: :markdown_link,
+          markdown_link: :output,
+          markdown_url: :markdown_link,
 
-        markdown_quote_gutter: :output,
-        markdown_highlight: :output,
-        markdown_table_header: :markdown_strong,
-        markdown_table_cell: :output,
-        markdown_underline: :output,
-        markdown_hrule: :output,
-      }.freeze
+          markdown_quote_gutter: :output,
+          markdown_highlight: :output,
+          markdown_table_header: :markdown_strong,
+          markdown_table_cell: :output,
+          markdown_underline: :output,
+          markdown_hrule: :output,
+        }.freeze
 
-      def self.empty_theme
-        {
-          name: nil,
-          inherit: nil,
-          roles: {},
-          source: nil,
-        }
-      end
+        def resolve(registry, name)
+          raw = merge_theme_chain(registry, name.to_sym, stack: [])
+          raw[:roles] = resolve_role_inheritance(raw[:roles])
+          raw[:roles] = add_composite_roles(raw[:roles])
+          raw[:name] = name.to_sym
+          raw
+        end
 
-      def self.resolve(registry, name)
-        raw = merge_theme_chain(registry, name.to_sym, stack: [])
-        raw[:roles] = resolve_role_inheritance(raw[:roles])
-        raw[:roles] = add_composite_roles(raw[:roles])
-        raw[:name] = name.to_sym
-        raw
-      end
+        private
 
-      def self.merge_theme_chain(registry, name, stack:)
-        defn = registry.fetch(name)
-        raise MissingThemeError, "Theme not found: #{name}" unless defn
         # simplecov:disable
 
-        if stack.include?(name)
-          cycle = (stack + [name]).join(" -> ")
-          raise InheritanceCycleError, "Theme inheritance cycle: #{cycle}"
+        def empty_theme
+          {
+            name: nil,
+            inherit: nil,
+            roles: {},
+            source: nil,
+          }
         end
 
-        parent =
-          if defn[:inherit]
-            merge_theme_chain(registry, defn[:inherit], stack: stack + [name])
-          else
-            empty_theme
+        def merge_theme_chain(registry, name, stack:)
+          defn = registry.fetch(name)
+          raise MissingThemeError, "Theme not found: #{name}" unless defn
+
+          if stack.include?(name)
+            cycle = (stack + [name]).join(" -> ")
+            raise InheritanceCycleError, "Theme inheritance cycle: #{cycle}"
           end
 
-        merged = deep_merge(parent, defn)
-        merged[:name] = name
-        merged[:inherit] = defn[:inherit]
-        merged[:source] = defn[:source]
-        merged
-      end
+          parent =
+            if defn[:inherit]
+              merge_theme_chain(registry, defn[:inherit], stack: stack + [name])
+            else
+              empty_theme
+            end
 
-      def self.resolve_role_inheritance(roles)
-        resolved = {}
-        names = (
-          ROLE_PARENTS.keys +
-          ROLE_PARENTS.values +
-          DEFAULT_ROLE_SPECS.keys +
-          roles.keys
-        ).compact.uniq
-
-        names.each do |name|
-          resolve_role(name, roles, resolved, stack: [])
+          merged = deep_merge(parent, defn)
+          merged[:name] = name
+          merged[:inherit] = defn[:inherit]
+          merged[:source] = defn[:source]
+          merged
         end
 
-        resolved
-      end
+        def resolve_role_inheritance(roles)
+          resolved = {}
+          names = (
+            ROLE_PARENTS.keys +
+            ROLE_PARENTS.values +
+            DEFAULT_ROLE_SPECS.keys +
+            roles.keys
+          ).compact.uniq
 
-      def self.resolve_role(name, roles, resolved, stack:)
-        return resolved[name] if resolved.key?(name)
-
-        if stack.include?(name)
-          raise InheritanceCycleError, "Role inheritance cycle: #{(stack + [name]).join(' -> ')}"
-        end
-
-        spec = roles[name] || DEFAULT_ROLE_SPECS.fetch(name, {})
-        parent_name =
-          if spec.key?(:inherit)
-            spec[:inherit]&.to_sym
-          else
-            ROLE_PARENTS[name]
+          names.each do |name|
+            resolve_role(name, roles, resolved, stack: [])
           end
 
-        parent_spec =
-          if parent_name
-            resolve_role(parent_name, roles, resolved, stack: stack + [name])
-          else
-            {}
-          end
-
-        resolved[name] = deep_merge_hash(parent_spec, spec.reject { |k, _| k == :inherit })
-      end
-
-      def self.deep_merge(parent, child)
-        out = parent.dup
-
-        out[:roles] = deep_merge_hash(parent[:roles] || {}, child[:roles] || {})
-
-        child.each do |key, value|
-          next if key == :roles
-
-          out[key] = value
+          resolved
         end
 
-        out
-      end
+        def resolve_role(name, roles, resolved, stack:)
+          return resolved[name] if resolved.key?(name)
 
-      def self.deep_merge_hash(parent, child)
-        parent.merge(child) do |_key, old_value, new_value|
-          if old_value.is_a?(Hash) && new_value.is_a?(Hash)
-            deep_merge_hash(old_value, new_value)
-          else
-            new_value
+          if stack.include?(name)
+            raise InheritanceCycleError, "Role inheritance cycle: #{(stack + [name]).join(' -> ')}"
+          end
+
+          spec = roles[name] || DEFAULT_ROLE_SPECS.fetch(name, {})
+          parent_name =
+            if spec.key?(:inherit)
+              spec[:inherit]&.to_sym
+            else
+              ROLE_PARENTS[name]
+            end
+
+          parent_spec =
+            if parent_name
+              resolve_role(parent_name, roles, resolved, stack: stack + [name])
+            else
+              {}
+            end
+
+          resolved[name] = deep_merge_hash(parent_spec, spec.reject { |k, _| k == :inherit })
+        end
+
+        def deep_merge(parent, child)
+          out = parent.dup
+
+          out[:roles] = deep_merge_hash(parent[:roles] || {}, child[:roles] || {})
+
+          child.each do |key, value|
+            next if key == :roles
+
+            out[key] = value
+          end
+
+          out
+        end
+
+        def deep_merge_hash(parent, child)
+          parent.merge(child) do |_key, old_value, new_value|
+            if old_value.is_a?(Hash) && new_value.is_a?(Hash)
+              deep_merge_hash(old_value, new_value)
+            else
+              new_value
+            end
           end
         end
-      end
 
-      def self.add_composite_roles(roles)
-        roles = roles.dup
+        def add_composite_roles(roles)
+          roles = roles.dup
 
-        roles[:alert_info]  = composite_role(roles[:alert] || {}, roles[:info]  || {})
-        roles[:alert_good]  = composite_role(roles[:alert] || {}, roles[:good]  || {})
-        roles[:alert_warn]  = composite_role(roles[:alert] || {}, roles[:warn]  || {})
-        roles[:alert_error] = composite_role(roles[:alert] || {}, roles[:error] || {})
-        roles
-      end
-      private_class_method :add_composite_roles
+          roles[:alert_info]  = composite_role(roles[:alert] || {}, roles[:info]  || {})
+          roles[:alert_good]  = composite_role(roles[:alert] || {}, roles[:good]  || {})
+          roles[:alert_warn]  = composite_role(roles[:alert] || {}, roles[:warn]  || {})
+          roles[:alert_error] = composite_role(roles[:alert] || {}, roles[:error] || {})
+          roles
+        end
 
-      def self.composite_role(base, accent)
-        {
-          fg: accent[:fg] || accent["fg"] || base[:fg] || base["fg"],
-          bg: base[:bg] || base["bg"] || accent[:bg] || accent["bg"],
-          attrs: accent[:attrs] || accent["attrs"] || base[:attrs] || base["attrs"],
-        }.compact
+        def composite_role(base, accent)
+          {
+            fg: accent[:fg] || accent["fg"] || base[:fg] || base["fg"],
+            bg: base[:bg] || base["bg"] || accent[:bg] || accent["bg"],
+            attrs: accent[:attrs] || accent["attrs"] || base[:attrs] || base["attrs"],
+          }.compact
+        end
       end
-      private_class_method :composite_role
     end
   end
 end
