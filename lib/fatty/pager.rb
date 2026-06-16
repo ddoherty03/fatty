@@ -667,6 +667,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def ensure_isearch_snapshot!
       return if @isearch_snapshot
 

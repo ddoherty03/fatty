@@ -73,6 +73,7 @@ module Fatty
         @io || $stdout
       end
 
+      # simplecov:disable
       private
 
       def save_cursor

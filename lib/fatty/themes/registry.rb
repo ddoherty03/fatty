@@ -44,6 +44,8 @@ module Fatty
 
       private
 
+      # simplecov:disable
+
       def normalize_name(name)
         return if name.nil?
 

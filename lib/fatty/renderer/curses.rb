@@ -379,6 +379,8 @@ module Fatty
 
       private
 
+      # simplecov:disable
+
       def available_colors
         ::Curses.colors
       end

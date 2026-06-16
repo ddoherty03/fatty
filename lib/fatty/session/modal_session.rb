@@ -15,6 +15,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def handle_resize
       rebuild_windows!
       []

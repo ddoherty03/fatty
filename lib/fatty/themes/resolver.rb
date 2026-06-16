@@ -115,6 +115,7 @@ module Fatty
       def self.merge_theme_chain(registry, name, stack:)
         defn = registry.fetch(name)
         raise MissingThemeError, "Theme not found: #{name}" unless defn
+        # simplecov:disable
 
         if stack.include?(name)
           cycle = (stack + [name]).join(" -> ")

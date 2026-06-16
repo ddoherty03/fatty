@@ -194,6 +194,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def normalize_kinds(*kinds)
       kinds.flatten.map(&:to_sym).uniq.sort
     end

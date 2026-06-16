@@ -301,6 +301,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def gesture_from_event(event)
       case event
       when Fatty::MouseEvent

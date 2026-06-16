@@ -51,6 +51,8 @@ module Fatty
         nil
       end
 
+      private_class_method
+
       def self.normalize(data)
         out = {
           name: normalize_optional_symbol(data[:name]),

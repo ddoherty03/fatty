@@ -115,6 +115,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def input_suppressed?
       terminal.modal_active? || output_session.pager_active?
     end

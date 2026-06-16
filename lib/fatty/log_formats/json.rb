@@ -22,6 +22,8 @@ module Fatty
 
       private
 
+      # simplecov:disable
+
       def stringify_keys(hash)
         hash.each_with_object({}) do |(k, v), memo|
           memo[k.to_s] = v

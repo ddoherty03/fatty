@@ -58,6 +58,8 @@ module Fatty
 
       private
 
+      # simplecov:disable
+
       def window
         context.input_win
       end

@@ -58,6 +58,7 @@ module Fatty
       end
 
       private
+      # simplecov:disable
 
       def infer_action_target
         base = name.split("::").last

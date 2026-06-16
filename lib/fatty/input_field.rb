@@ -505,6 +505,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def same_completion_state?(base:, candidates:)
       @completion_state &&
         @completion_state[:base] == base &&

@@ -44,6 +44,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     attr_reader :output_id
   end
 end

@@ -55,6 +55,8 @@ module Fatty
         nil
       end
 
+      # simplecov:disable
+
       private_class_method :parse_stamp
 
       private

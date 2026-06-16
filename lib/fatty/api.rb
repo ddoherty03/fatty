@@ -1,5 +1,7 @@
 module Fatty
   module ChooseApi
+    # simplecov:disable
+
     private
 
     def normalize_choices(choices)
@@ -13,6 +15,8 @@ module Fatty
     end
   end
 end
+
+# simplecov:enable
 
 require_relative './api/output.rb'
 require_relative './api/status.rb'

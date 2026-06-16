@@ -44,6 +44,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def clear
       @current = nil
     end

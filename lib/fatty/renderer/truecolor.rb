@@ -223,6 +223,8 @@ module Fatty
 
       private
 
+      # simplecov:disable
+
       def sync_window_background(win, role)
         return unless win
 

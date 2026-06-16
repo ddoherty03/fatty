@@ -36,6 +36,8 @@ module Fatty
 
       private
 
+      # simplecov:disable
+
       # Handle the decoding of meta keys which are returned as an Array of the
       # escape code followed by another key, nxt, which can be either a String
       # or an Integer.

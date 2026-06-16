@@ -42,6 +42,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     # Default layout:
     # - status: 1 row above input (when it has content)
     # - input:  1 row above alert

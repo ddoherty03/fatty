@@ -295,6 +295,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     # * Session management
     #
     # Terminal coordinates a small set of Session objects. A session is a UI

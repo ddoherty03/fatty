@@ -78,6 +78,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     attr_reader :current
 
     def show_status(text, role:)

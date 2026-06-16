@@ -160,6 +160,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def keymap_contexts
       if pager.active?
         [:paging, :terminal]

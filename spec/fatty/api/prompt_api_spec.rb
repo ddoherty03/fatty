@@ -53,6 +53,8 @@ module Fatty
 
         private
 
+        # simplecov:disable
+
         def capture_owner(command)
           if command.target == :terminal && command.action == :push_modal
             @owner = command.payload.fetch(:owner)

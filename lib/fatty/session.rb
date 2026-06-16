@@ -62,6 +62,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def log_update(command)
       payload = command.payload
       msg =

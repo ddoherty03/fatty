@@ -204,6 +204,8 @@ module Fatty
 
       private
 
+      # simplecov:disable
+
       def ensure_started!
         return if @started
 

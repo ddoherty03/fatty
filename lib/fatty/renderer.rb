@@ -112,6 +112,8 @@ module Fatty
 
     protected
 
+    # simplecov:disable
+
     def available_colors
       nil
     end

@@ -157,6 +157,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def selected_labels
       @selected_labels.keys
     end

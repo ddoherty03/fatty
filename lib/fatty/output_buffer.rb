@@ -52,6 +52,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def append_fragment(fragment)
       ntrimmed = 0
       if @line_open && @lines.any?

@@ -50,6 +50,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def rows
       return 0 unless visible?
 

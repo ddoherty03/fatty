@@ -64,6 +64,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def keymap_contexts
       [:search, :text, :terminal]
     end

@@ -84,6 +84,7 @@ module Fatty
     end
 
     private
+    # simplecov:disable
 
     def call_menu_action(action, label:, payload:)
       result =

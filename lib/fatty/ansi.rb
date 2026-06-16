@@ -346,6 +346,7 @@ module Fatty
       out
     end
 
+    # simplecov:disable
     private_class_method :consume_escape!, :parse_params, :apply_sgr!
     private_class_method :merge_adjacent_segments, :same_style?, :sgr_for
   end

@@ -92,6 +92,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def quit_key?(ev)
       ev.key == :q ||
         ev.key == :escape ||

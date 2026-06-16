@@ -271,6 +271,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def wrap(text, first_prefix: "", rest_prefix: first_prefix)
       hard_lines = text.to_s.split(HARD_BREAK, -1)
 

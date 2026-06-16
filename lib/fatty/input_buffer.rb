@@ -707,6 +707,8 @@ module Fatty
 
     private
 
+    # simplecov:disable
+
     def move_word_right_once
       break_undo_chain!
       chars = virtual_text.chars

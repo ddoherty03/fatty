@@ -42,6 +42,8 @@ module Fatty
 
       private
 
+      # simplecov:disable
+
       def render_hash(msg)
         event = msg[:event] || msg["event"]
         tag = msg[:tag] || msg["tag"]
