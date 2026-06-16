@@ -221,6 +221,25 @@ module Fatty
         self
       end
 
+      # Restore cursor into the output window at a specific *output-win* row.
+      # `row:` is 0..(screen.output_rect.rows-1), NOT an absolute screen row.
+      def restore_output_cursor(field, row:)
+        cols = @screen.cols
+
+        x = field.cursor_x.to_i
+        x = x.clamp(0, [cols - 1, 0].max)
+
+        row0 = @screen.output_rect.row
+        col0 = @screen.output_rect.col
+        cols = @screen.output_rect.cols
+
+        @pending_ansi_draws << {
+          type: :cursor,
+          row: row0 + row,
+          col: col0 + x.clamp(0, [cols - 1, 0].max),
+        }
+      end
+
       private
 
       # simplecov:disable
@@ -504,113 +523,94 @@ module Fatty
 
         out.reject { |seg| seg[:text].empty? }
       end
-    end
 
-    # Restore cursor into the output window at a specific *output-win* row.
-    # `row:` is 0..(screen.output_rect.rows-1), NOT an absolute screen row.
-    def restore_output_cursor(field, row:)
-      cols = @screen.cols
+      def queue_ansi_popup_line(win:, inner_row:, inner_col: 0, width:, text:, role:)
+        row, col = win.origin
+        return unless row && col
 
-      x = field.cursor_x.to_i
-      x = x.clamp(0, [cols - 1, 0].max)
-
-      row0 = @screen.output_rect.row
-      col0 = @screen.output_rect.col
-      cols = @screen.output_rect.cols
-
-      @pending_ansi_draws << {
-        type: :cursor,
-        row: row0 + row,
-        col: col0 + x.clamp(0, [cols - 1, 0].max),
-      }
-    end
-
-    def queue_ansi_popup_line(win:, inner_row:, inner_col: 0, width:, text:, role:)
-      row, col = win.origin
-      return unless row && col
-
-      queue_ansi_line(
-        row: row + 1 + inner_row,
-        col: col + 1 + inner_col,
-        width: width,
-        text: text.to_s,
-        role: role,
-      )
-    end
-
-    def queue_ansi_segments_line(row:, col:, width:, segments:, fill_role: :output)
-      @pending_ansi_draws << {
-        type: :segments_line,
-        row: row,
-        col: col,
-        width: width,
-        segments: segments,
-        fill_role: fill_role,
-      }
-      nil
-    end
-
-    def queue_ansi_line(row:, col:, width:, text:, role: nil)
-      spec = palette[role] || {}
-      @pending_ansi_draws << {
-        row: row,
-        col: col,
-        width: width,
-        text: text,
-        role: role,
-        spec: spec,
-      }
-    end
-
-    def queue_ansi_rect(row:, col:, width:, height:, role:)
-      return if height <= 0 || width <= 0
-
-      height.times do |i|
         queue_ansi_line(
-          row: row + i,
-          col: col,
+          row: row + 1 + inner_row,
+          col: col + 1 + inner_col,
           width: width,
-          text: " " * width,
+          text: text.to_s,
           role: role,
         )
       end
-      nil
-    end
 
-    def flush_ansi_draws
-      Fatty.debug("flush_ansi_draws pending_count=#{@pending_ansi_draws.length}", tag: :render)
+      def queue_ansi_segments_line(row:, col:, width:, segments:, fill_role: :output)
+        @pending_ansi_draws << {
+          type: :segments_line,
+          row: row,
+          col: col,
+          width: width,
+          segments: segments,
+          fill_role: fill_role,
+        }
+        nil
+      end
 
-      # Hide the cursor
-      @ansi_renderer.write_ansi("\e[?25l")
+      def queue_ansi_line(row:, col:, width:, text:, role: nil)
+        spec = palette[role] || {}
+        @pending_ansi_draws << {
+          row: row,
+          col: col,
+          width: width,
+          text: text,
+          role: role,
+          spec: spec,
+        }
+      end
 
-      @pending_ansi_draws.each do |draw|
-        case draw[:type]
-        when :cursor
-          @ansi_renderer.write_ansi("\e[#{draw[:row] + 1};#{draw[:col] + 1}H")
-        when :segments_line
-          @ansi_renderer.render_segments_line(
-            row: draw[:row],
-            col: draw[:col],
-            width: draw[:width],
-            segments: draw[:segments],
-            palette: palette,
-            fill_role: draw[:fill_role] || :output,
-          )
-        else
-          @ansi_renderer.render_line(
-            row: draw[:row],
-            col: draw[:col],
-            width: draw[:width],
-            text: draw[:text],
-            role: draw[:role],
-            palette: palette,
+      def queue_ansi_rect(row:, col:, width:, height:, role:)
+        return if height <= 0 || width <= 0
+
+        height.times do |i|
+          queue_ansi_line(
+            row: row + i,
+            col: col,
+            width: width,
+            text: " " * width,
+            role: role,
           )
         end
+        nil
       end
-      @pending_ansi_draws.clear
-    ensure
-      # Unhide the cursor
-      @ansi_renderer.write_ansi("\e[?25h")
+
+      def flush_ansi_draws
+        Fatty.debug("flush_ansi_draws pending_count=#{@pending_ansi_draws.length}", tag: :render)
+
+        # Hide the cursor
+        @ansi_renderer.write_ansi("\e[?25l")
+
+        @pending_ansi_draws.each do |draw|
+          case draw[:type]
+          when :cursor
+            @ansi_renderer.write_ansi("\e[#{draw[:row] + 1};#{draw[:col] + 1}H")
+          when :segments_line
+            @ansi_renderer.render_segments_line(
+              row: draw[:row],
+              col: draw[:col],
+              width: draw[:width],
+              segments: draw[:segments],
+              palette: palette,
+              fill_role: draw[:fill_role] || :output,
+            )
+          else
+            @ansi_renderer.render_line(
+              row: draw[:row],
+              col: draw[:col],
+              width: draw[:width],
+              text: draw[:text],
+              role: draw[:role],
+              palette: palette,
+            )
+          end
+        end
+        @pending_ansi_draws.clear
+      ensure
+        # Unhide the cursor
+        @ansi_renderer.write_ansi("\e[?25h")
+      end
     end
   end
 end

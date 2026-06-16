@@ -84,16 +84,8 @@ module Fatty
       !key.is_a?(Symbol)
     end
 
-    def bindings
-      Fatty::KeyMap.active.bindings_for(self) || {}
-    end
-
     def unbound?
       coded? && bindings.empty?
-    end
-
-    def key_name
-      coded? ? to_s : "(none)"
     end
 
     def code
@@ -108,6 +100,69 @@ module Fatty
     def raw_bytes
       bytes_from_raw(raw)
     end
+
+    def color
+      if uncoded?
+        :oops
+      elsif unbound?
+        :warn
+      else
+        :good
+      end
+    end
+
+    def status_string
+      if uncoded?
+        "(UNCODED)"
+      elsif unbound?
+        "(UNBOUND)"
+      else
+        "(BOUND)"
+      end
+    end
+
+    def report
+      if uncoded?
+        report_for_uncoded
+      elsif unbound?
+        report_for_unbound
+      else
+        report_for_bound
+      end
+    end
+
+    def suggested_snippet(terminal_name)
+      if uncoded?
+        suggested_keydef(terminal_name)
+      elsif unbound?
+        suggested_keybinding
+      else
+        ''
+      end
+    end
+
+    def key_name
+      coded? ? to_s : "(none)"
+    end
+
+    def bindings
+      Fatty::KeyMap.active.bindings_for(self) || {}
+    end
+
+    def clamp_index(idx, available_colors:)
+      max = available_colors.to_i - 1
+      0 if max < 0
+
+      i = idx.to_i
+
+      if available_colors.to_i <= 16
+        downmap_to_ansi16(i)
+      else
+        i.clamp(0, 255)
+      end
+    end
+
+    private
 
     def bytes_from_raw(value)
       case value
@@ -181,26 +236,6 @@ module Fatty
       name.split("::").last
     end
 
-    def color
-      if uncoded?
-        :oops
-      elsif unbound?
-        :warn
-      else
-        :good
-      end
-    end
-
-    def status_string
-      if uncoded?
-        "(UNCODED)"
-      elsif unbound?
-        "(UNBOUND)"
-      else
-        "(BOUND)"
-      end
-    end
-
     def ctrl?
       @ctrl
     end
@@ -211,16 +246,6 @@ module Fatty
 
     def shift?
       @shift
-    end
-
-    def report
-      if uncoded?
-        report_for_uncoded
-      elsif unbound?
-        report_for_unbound
-      else
-        report_for_bound
-      end
     end
 
     def report_for_uncoded
@@ -277,16 +302,6 @@ module Fatty
         Rainbow(text).red
       else
         text
-      end
-    end
-
-    def suggested_snippet(terminal_name)
-      if uncoded?
-        suggested_keydef(terminal_name)
-      elsif unbound?
-        suggested_keybinding
-      else
-        ''
       end
     end
 
