@@ -75,6 +75,108 @@ module Fatty
       ]
     end
 
+    def autosuggestion
+      active = active_completion_autosuggestion
+      return active if active
+
+      text = buffer.text.to_s
+      return if text.empty?
+
+      autosuggestion_candidates.first
+    end
+
+    def cycle_completion!(direction: 1)
+      text = buffer.text.to_s
+      candidates = autosuggestion_candidates
+      result = nil
+
+      if candidates.empty?
+        reset_completion_state!
+      elsif same_completion_state?(base: text, candidates: candidates)
+        @completion_state[:index] =
+          (@completion_state[:index] + direction) % @completion_state[:candidates].length
+        result = @completion_state[:candidates][@completion_state[:index]]
+      else
+        @completion_state = {
+          base: text,
+          candidates: candidates,
+          index: 0,
+        }
+        result = @completion_state[:candidates].first
+      end
+
+      sync_virtual_suffix!
+      result
+    end
+
+    def popup_completion_candidates
+      path_prefix = popup_path_completion_prefix
+      if path_prefix
+        path = rendered_path_candidates(path_prefix)
+        return path if path.any?
+      end
+      autosuggestion_candidates(base: buffer.text.to_s[0...buffer.cursor])
+    end
+
+    def path_completion_candidates
+      prefix = path_completion_prefix
+      return [] if prefix.nil? || prefix.empty?
+
+      rendered_path_candidates(prefix)
+    end
+
+    def popup_completion_range
+      if popup_path_completion_prefix
+        path_completion_range
+      else
+        0...buffer.text.length
+      end
+    end
+
+    def popup_completion_query
+      path_completion_prefix || buffer.completion_prefix
+    end
+
+    def reset_completion_state!
+      @completion_state = nil
+    end
+
+    def sync_virtual_suffix!
+      buffer.virtual_suffix = autosuggestion_suffix
+    end
+
+    def act_on(action, *args, env: nil, **kwargs)
+      return unless action
+
+      reset_history_cursor_for(action)
+
+      if Fatty::Actions.registered?(action)
+        if env
+          Fatty::Actions.call(action, env, *args, **kwargs)
+        else
+          defn = Fatty::Actions.lookup(action)
+          target =
+            case defn[:on]
+            when :field then self
+            when :buffer then buffer
+            else
+              raise Fatty::ActionError, "Cannot dispatch #{action} without env for target #{defn[:on].inspect}"
+            end
+          target.public_send(defn[:method], *args, **kwargs)
+        end
+      elsif buffer.respond_to?(action)
+        buffer.public_send(action, *args, **kwargs)
+      elsif respond_to?(action)
+        public_send(action, *args, **kwargs)
+      else
+        raise Fatty::ActionError, "Unknown action: #{action}"
+      end
+    end
+
+    private
+
+    # simplecov:disable
+
     # Visual cursor X position in the window
     def cursor_x
       before_cursor = buffer.text.to_s[0...buffer.cursor].to_s
@@ -145,45 +247,7 @@ module Fatty
       buffer.insert(s)
     end
 
-    def act_on(action, *args, env: nil, **kwargs)
-      return unless action
-
-      reset_history_cursor_for(action)
-
-      if Fatty::Actions.registered?(action)
-        if env
-          Fatty::Actions.call(action, env, *args, **kwargs)
-        else
-          defn = Fatty::Actions.lookup(action)
-          target =
-            case defn[:on]
-            when :field then self
-            when :buffer then buffer
-            else
-              raise Fatty::ActionError, "Cannot dispatch #{action} without env for target #{defn[:on].inspect}"
-            end
-          target.public_send(defn[:method], *args, **kwargs)
-        end
-      elsif buffer.respond_to?(action)
-        buffer.public_send(action, *args, **kwargs)
-      elsif respond_to?(action)
-        public_send(action, *args, **kwargs)
-      else
-        raise Fatty::ActionError, "Unknown action: #{action}"
-      end
-    end
-
     # :category: Completion
-
-    def autosuggestion
-      active = active_completion_autosuggestion
-      return active if active
-
-      text = buffer.text.to_s
-      return if text.empty?
-
-      autosuggestion_candidates.first
-    end
 
     def completion_candidates
       return [] unless @completion_proc
@@ -233,34 +297,6 @@ module Fatty
       end
     end
 
-    def cycle_completion!(direction: 1)
-      text = buffer.text.to_s
-      candidates = autosuggestion_candidates
-      result = nil
-
-      if candidates.empty?
-        reset_completion_state!
-      elsif same_completion_state?(base: text, candidates: candidates)
-        @completion_state[:index] =
-          (@completion_state[:index] + direction) % @completion_state[:candidates].length
-        result = @completion_state[:candidates][@completion_state[:index]]
-      else
-        @completion_state = {
-          base: text,
-          candidates: candidates,
-          index: 0,
-        }
-        result = @completion_state[:candidates].first
-      end
-
-      sync_virtual_suffix!
-      result
-    end
-
-    def reset_completion_state!
-      @completion_state = nil
-    end
-
     def completion_replace_range
       text = buffer.text.to_s
       cur = buffer.cursor.to_i
@@ -284,13 +320,6 @@ module Fatty
         prefix: buffer.text,
         ctx: resolve_history_ctx,
       )
-    end
-
-    def path_completion_candidates
-      prefix = path_completion_prefix
-      return [] if prefix.nil? || prefix.empty?
-
-      rendered_path_candidates(prefix)
     end
 
     def path_like_prefix?(prefix)
@@ -463,15 +492,6 @@ module Fatty
       buffer.accept_virtual_suffix!
     end
 
-    def popup_completion_candidates
-      path_prefix = popup_path_completion_prefix
-      if path_prefix
-        path = rendered_path_candidates(path_prefix)
-        return path if path.any?
-      end
-      autosuggestion_candidates(base: buffer.text.to_s[0...buffer.cursor])
-    end
-
     def popup_path_completion_prefix
       prefix = path_completion_prefix
       return if prefix.nil? || prefix.empty?
@@ -486,26 +506,6 @@ module Fatty
         escape_path("#{raw_prefix}/")
       end
     end
-
-    def popup_completion_range
-      if popup_path_completion_prefix
-        path_completion_range
-      else
-        0...buffer.text.length
-      end
-    end
-
-    def popup_completion_query
-      path_completion_prefix || buffer.completion_prefix
-    end
-
-    def sync_virtual_suffix!
-      buffer.virtual_suffix = autosuggestion_suffix
-    end
-
-    private
-
-    # simplecov:disable
 
     def same_completion_state?(base:, candidates:)
       @completion_state &&

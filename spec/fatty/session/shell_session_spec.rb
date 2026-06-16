@@ -465,6 +465,24 @@ module Fatty
         expect(session.field.autosuggestion).to eq("git status")
       end
 
+      it "shows the next completion as a virtual suffix" do
+        Dir.mktmpdir("fatty_shell_history") do |dir|
+          history_path = File.join(dir, "history.jsonl")
+          session = Fatty::ShellSession.new(
+            completion_proc: ->(_buffer) { ["fold"] },
+            history_path: history_path,
+          )
+
+          session.field.buffer.replace("fo")
+
+          result = apply_action(session, :complete)
+
+          expect(result).to eq([])
+          expect(session.field.buffer.text).to eq("fo")
+          expect(session.field.state[3]).to eq("ld")
+        end
+      end
+
       it "opens completion popup for multiple candidates" do
         session = Fatty::ShellSession.new(
           completion_proc: ->(_buffer) { %w[clear cd] },
