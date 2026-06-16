@@ -21,7 +21,8 @@ module Fatty
           when :popup_changed
             on_change&.call(command.payload)
           end
-        Array(result).compact
+
+        Command.normalize_list(result)
       end
     end
   end

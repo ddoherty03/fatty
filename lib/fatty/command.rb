@@ -33,6 +33,22 @@ module Fatty
       end
     end
 
+    def self.normalize_list(value)
+      result =
+        case value
+        when nil
+          []
+        when Command
+          [value]
+        when Array
+          value.grep(Command)
+        else
+          []
+        end
+
+      result
+    end
+
     def terminal?
       target == :terminal
     end
@@ -47,7 +63,6 @@ module Fatty
 
     def self.coerce_array(value)
       domain, name, *rest = value
-
       case domain
       when :terminal
         new(target: :terminal, action: name, payload: { args: rest })
@@ -58,5 +73,6 @@ module Fatty
         raise ArgumentError, "unknown command domain #{domain.inspect}"
       end
     end
+    private_class_method :coerce_array
   end
 end

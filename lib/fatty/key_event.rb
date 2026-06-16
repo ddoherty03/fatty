@@ -149,19 +149,6 @@ module Fatty
       Fatty::KeyMap.active.bindings_for(self) || {}
     end
 
-    def clamp_index(idx, available_colors:)
-      max = available_colors.to_i - 1
-      0 if max < 0
-
-      i = idx.to_i
-
-      if available_colors.to_i <= 16
-        downmap_to_ansi16(i)
-      else
-        i.clamp(0, 255)
-      end
-    end
-
     private
 
     def bytes_from_raw(value)

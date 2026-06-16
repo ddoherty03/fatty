@@ -66,6 +66,15 @@ module Fatty
         expect(owner.update(command)).to eq([returned])
       end
 
+      it "ignores non-command callback return values" do
+        owner = Fatty::Terminal::PopupOwner.new(
+          on_result: ->(_payload) { true },
+        )
+        command = Fatty::Command.session(:owner, :popup_result, item: "One")
+
+        expect(owner.update(command)).to eq([])
+      end
+
       it "returns an empty array when callbacks return nil" do
         owner = Fatty::Terminal::PopupOwner.new(
           on_result: ->(_payload) {},

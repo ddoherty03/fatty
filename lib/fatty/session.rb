@@ -83,16 +83,7 @@ module Fatty
     end
 
     def normalize_action_result(result)
-      case result
-      when nil
-        []
-      when Command
-        [result]
-      when Array
-        result.grep(Command)
-      else
-        []
-      end
+      Command.normalize_list(result)
     end
 
     def alert_cmd(level, text, ev: nil)
