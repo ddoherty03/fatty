@@ -2,8 +2,6 @@
 
 module Fatty
   class Alert
-    DETAIL_ORDER = %i[terminal key ctrl meta shift].freeze
-
     attr_reader :level, :text, :details
 
     # Return a new Alert object
@@ -18,6 +16,14 @@ module Fatty
       @level = level.to_sym
       @details = details
       @sticky  = !!sticky
+    end
+
+    # Return a new Alert object at level good
+    #
+    # @param msg [String]
+    # @return [Alert] with level info
+    def self.good(msg)
+      new(text: msg, level: :good)
     end
 
     # Return a new Alert object at level info
@@ -46,7 +52,7 @@ module Fatty
 
     # Translate the "level" to a "role" used by the renderers. The returned
     # roles are "composite" roles in the resolver in that they take the
-    # background ot the alert panel and apply a foreground color based on
+    # background of the alert panel and apply a foreground color based on
     # severity.
     #   @param level [:info, :warn, :error]
     #   @return [Symbol] composite or semantic role
@@ -66,18 +72,19 @@ module Fatty
         case level
         when :warn then " ⚠ "
         when :error then " ✖ "
-        else " ℹ "
+        when :info then " ℹ "
+        else ""
         end
-      details_str = ""
-      if details.respond_to?(:empty?) ? !details.empty? : !!details
-        details_str = if details.is_a?(Hash)
-          " (" +
-            DETAIL_ORDER.filter_map { |k| "#{k}=#{details[k]}" if details.key?(k) }.join(" ") +
-            ")"
+      details_str =
+        if details.nil? || details.empty?
+          ""
         else
-          " (#{details})"
+          key_strs = []
+          detail_key_order.each do |k|
+            key_strs << "#{k}=#{details[k]}"
+          end
+          " (#{key_strs.join(' ')})"
         end
-      end
       "#{icon} #{text}#{details_str}"
     end
 
@@ -87,6 +94,17 @@ module Fatty
     # @return [true, false] is this Alert sticky?
     def sticky?
       @sticky
+    end
+
+    def detail_key_order
+      keys = []
+      keys << :terminal if details.key?(:terminal)
+      keys << :key if details.key?(:key)
+      keys << :shift if details.key?(:shift)
+      keys << :ctrl if details.key?(:ctrl)
+      keys << :meta if details.key?(:meta)
+      other_keys = details.keys - [:terminal, :key, :shift, :ctrl, :meta]
+      keys + other_keys.sort
     end
   end
 end
