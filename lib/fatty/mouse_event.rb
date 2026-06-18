@@ -17,6 +17,10 @@ module Fatty
       Fatty.debug("#{self.class}#new(#{self})", tag: :event)
     end
 
+    def key
+      :mouse
+    end
+
     def to_s
       "MouseEvent: button: `#{button}`, x: `#{x}`, y: `#{y}`, raw: `#{raw}`, ctrl: `#{ctrl}`, meta: `#{meta}`, shift: `#{shift}`"
     end
