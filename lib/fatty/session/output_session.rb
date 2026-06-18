@@ -17,6 +17,10 @@ module Fatty
       @pager_field = Fatty::InputField.new(prompt: -> { pager_status_prompt })
     end
 
+    #########################################################################################
+    # Session Protocol
+    #########################################################################################
+
     def init(terminal:)
       super
     end
@@ -112,6 +116,62 @@ module Fatty
       dirty
     end
 
+    #########################################################################################
+    # Actions
+    #########################################################################################
+
+    desc "Search pager forward"
+    action :pager_search_forward do
+      regex = consume_search_regex_flag
+      searcher = Fatty::SearchSession.new(direction: :forward, regex: regex, history: @history)
+      Command.terminal(:push_modal, session: searcher, owner: self)
+    end
+
+    desc "Search pager backward"
+    action :pager_search_backward do
+      regex = consume_search_regex_flag
+      searcher = Fatty::SearchSession.new(direction: :backward, regex: regex, history: @history)
+      Command.terminal(:push_modal, session: searcher, owner: self)
+    end
+
+    desc "Search pager forward with regex"
+    action :pager_regex_search_forward do
+      searcher = Fatty::SearchSession.new(direction: :forward, regex: true, history: @history)
+      Command.terminal(:push_modal, session: searcher, owner: self)
+    end
+
+    desc "Search pager backward with regex"
+    action :pager_regex_search_backward do
+      searcher = Fatty::SearchSession.new(direction: :backward, regex: true, history: @history)
+      Command.terminal(:push_modal, session: searcher, owner: self)
+    end
+
+    desc "Start incremental pager search forward"
+    action :pager_isearch_forward do
+      isearcher = Fatty::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)
+      Command.terminal(:push_modal, session: isearcher, owner: self)
+    end
+
+    desc "Start incremental pager search backward"
+    action :pager_isearch_backward do
+      isearcher = Fatty::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)
+      Command.terminal(:push_modal, session: isearcher, owner: self)
+    end
+
+    desc "Repeat pager search forward"
+    action :pager_search_next do
+      handle_search_result(pager.search_repeat_next!)
+    end
+
+    desc "Repeat pager search backward"
+    action :pager_search_prev do
+      handle_search_result(pager.search_repeat_prev!)
+    end
+
+    #########################################################################################
+    # Other public API methods
+    #########################################################################################
+
     STATE_VIEWPORT = 0
     STATE_LINES = 1
 
@@ -193,54 +253,6 @@ module Fatty
       else
         viewport.page_bottom(output.lines)
       end
-    end
-
-    desc "Search pager forward"
-    action :pager_search_forward do
-      regex = consume_search_regex_flag
-      searcher = Fatty::SearchSession.new(direction: :forward, regex: regex, history: @history)
-      Command.terminal(:push_modal, session: searcher, owner: self)
-    end
-
-    desc "Search pager backward"
-    action :pager_search_backward do
-      regex = consume_search_regex_flag
-      searcher = Fatty::SearchSession.new(direction: :backward, regex: regex, history: @history)
-      Command.terminal(:push_modal, session: searcher, owner: self)
-    end
-
-    desc "Search pager forward with regex"
-    action :pager_regex_search_forward do
-      searcher = Fatty::SearchSession.new(direction: :forward, regex: true, history: @history)
-      Command.terminal(:push_modal, session: searcher, owner: self)
-    end
-
-    desc "Search pager backward with regex"
-    action :pager_regex_search_backward do
-      searcher = Fatty::SearchSession.new(direction: :backward, regex: true, history: @history)
-      Command.terminal(:push_modal, session: searcher, owner: self)
-    end
-
-    desc "Start incremental pager search forward"
-    action :pager_isearch_forward do
-      isearcher = Fatty::ISearchSession.new(direction: :forward, history: @history, last_pattern: pager.search_pattern)
-      Command.terminal(:push_modal, session: isearcher, owner: self)
-    end
-
-    desc "Start incremental pager search backward"
-    action :pager_isearch_backward do
-      isearcher = Fatty::ISearchSession.new(direction: :backward, history: @history, last_pattern: pager.search_pattern)
-      Command.terminal(:push_modal, session: isearcher, owner: self)
-    end
-
-    desc "Repeat pager search forward"
-    action :pager_search_next do
-      handle_search_result(pager.search_repeat_next!)
-    end
-
-    desc "Repeat pager search backward"
-    action :pager_search_prev do
-      handle_search_result(pager.search_repeat_prev!)
     end
 
     def pager_status_viewport(screen)

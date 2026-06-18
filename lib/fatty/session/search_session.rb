@@ -27,7 +27,7 @@ module Fatty
     end
 
     #########################################################################################
-    # Framework and Session Hooks
+    # Session Prototcol
     #########################################################################################
 
     def update(command)
@@ -62,6 +62,35 @@ module Fatty
       renderer.restore_output_cursor(@field, row: row)
     end
 
+    ############################################################################################
+    # Actions
+    ############################################################################################
+
+    desc "Return the line so far as the prompt input"
+    action :search_accept do
+      search_accept
+    end
+
+    desc "End the search session"
+    action :search_cancel do
+      cancel!
+    end
+
+    desc "Toggle between string i-search and regex search"
+    action :search_toggle_regex do
+      toggle_regex
+    end
+
+    desc "Move to the next search match"
+    action :search_step_forward do
+      step_search(:forward)
+    end
+
+    desc "Move to the prior search match"
+    action :search_step_backward do
+      step_search(:backward)
+    end
+
     private
 
     # simplecov:disable
@@ -90,35 +119,6 @@ module Fatty
         buffer: @field.buffer,
         field: @field,
       )
-    end
-
-    ############################################################################################
-    # Actions
-    ############################################################################################
-
-    desc "Return the line so far as the prompt input"
-    action :search_accept do
-      search_accept
-    end
-
-    desc "End the search session"
-    action :search_cancel do
-      cancel!
-    end
-
-    desc "Toggle between string i-search and regex search"
-    action :search_toggle_regex do
-      toggle_regex
-    end
-
-    desc "Move to the next search match"
-    action :search_step_forward do
-      step_search(:forward)
-    end
-
-    desc "Move to the prior search match"
-    action :search_step_backward do
-      step_search(:backward)
     end
 
     def toggle_regex

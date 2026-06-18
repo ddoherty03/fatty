@@ -12,6 +12,10 @@ module Fatty
       @role = :info
     end
 
+    #########################################################################################
+    # Session Protocol
+    #########################################################################################
+
     def update(command)
       log_update(command)
       old_rows = rows
@@ -33,9 +37,12 @@ module Fatty
     def view
       return unless visible?
 
-      # renderer.render_status(text, role: role || :info)
       renderer.render_status(self)
     end
+
+    #########################################################################################
+    # Other public API methods
+    #########################################################################################
 
     def state
       [
@@ -60,13 +67,6 @@ module Fatty
 
     def max_rows
       Fatty::Config.config.dig(:status, :max_rows)&.to_i || DEFAULT_MAX_ROWS
-    end
-
-    def lines
-      @text.to_s
-        .lines
-        .flat_map { |line| wrap_line(line.chomp, width) }
-        .last(max_rows)
     end
 
     def lines

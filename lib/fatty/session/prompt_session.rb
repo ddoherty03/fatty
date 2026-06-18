@@ -30,7 +30,7 @@ module Fatty
     end
 
     #########################################################################################
-    # Framework and Session Hooks
+    # Session Protocol
     #########################################################################################
 
     def init(terminal:)
@@ -63,27 +63,6 @@ module Fatty
       return unless @win
 
       renderer.render_prompt_popup(session: self)
-    end
-
-    def state
-      [
-        title.to_s.dup.freeze,
-        message.to_s.dup.freeze,
-        field.prompt_text.to_s.dup.freeze,
-        field.buffer.text.to_s.dup.freeze,
-        field.buffer.cursor,
-        field.buffer.virtual_suffix.to_s.dup.freeze,
-        renderer.screen.rows,
-        renderer.screen.cols,
-      ]
-    end
-
-    private
-
-    # simplecov:disable
-
-    def keymap_contexts
-      [:prompt, :text, :terminal]
     end
 
     ############################################################################################
@@ -123,6 +102,31 @@ module Fatty
         with_virtual_suffix_sync { @field.act_on(:delete_char_forward, env: action_env(event: nil)) }
         []
       end
+    end
+
+    #########################################################################################
+    # Other public API methods
+    #########################################################################################
+
+    def state
+      [
+        title.to_s.dup.freeze,
+        message.to_s.dup.freeze,
+        field.prompt_text.to_s.dup.freeze,
+        field.buffer.text.to_s.dup.freeze,
+        field.buffer.cursor,
+        field.buffer.virtual_suffix.to_s.dup.freeze,
+        renderer.screen.rows,
+        renderer.screen.cols,
+      ]
+    end
+
+    private
+
+    # simplecov:disable
+
+    def keymap_contexts
+      [:prompt, :text, :terminal]
     end
 
     def apply_action(action, args, event:)

@@ -25,7 +25,7 @@ module Fatty
     end
 
     #########################################################################################
-    # Framework and Session Hooks
+    # Session Protocol
     #########################################################################################
 
     def update(command)
@@ -67,14 +67,6 @@ module Fatty
       renderer.restore_output_cursor(@field, row: row)
     end
 
-    private
-
-    # simplecov:disable
-
-    def keymap_contexts
-      [:isearch, :text, :terminal]
-    end
-
     ############################################################################################
     # Actions
     ############################################################################################
@@ -97,6 +89,14 @@ module Fatty
     desc "Move to the prior matching text"
     action :isearch_prev do
       step_prev!
+    end
+
+    private
+
+    # simplecov:disable
+
+    def keymap_contexts
+      [:isearch, :text, :terminal]
     end
 
     def action_env(event:)

@@ -5,6 +5,10 @@ module Fatty
     attr_reader :win
     private attr_writer :win
 
+    #########################################################################################
+    # Session Protocol
+    #########################################################################################
+
     def close
       Fatty.debug("#{self.class}#close: object_id=#{object_id}", tag: :session)
       old_win = win

@@ -62,7 +62,7 @@ module Fatty
     end
 
     #########################################################################################
-    # Framework and Session Hooks
+    # Session Protocol
     #########################################################################################
 
     def init(terminal:)
@@ -104,6 +104,10 @@ module Fatty
       renderer.render_popup(session: self)
     end
 
+    #########################################################################################
+    # Other public API methods
+    #########################################################################################
+
     def state
       [
         title.to_s.dup.freeze,
@@ -122,6 +126,15 @@ module Fatty
 
     def current
       current_index
+    end
+
+    def counts
+      {
+        total: total_count,
+        selected: selected_count,
+        matching: matching_count,
+        showing: showing_count
+      }
     end
 
     def counts_present?
@@ -144,15 +157,6 @@ module Fatty
       else
         ' '
       end
-    end
-
-    def counts
-      {
-        total: total_count,
-        selected: selected_count,
-        matching: matching_count,
-        showing: showing_count
-      }
     end
 
     private

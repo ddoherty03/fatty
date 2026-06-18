@@ -70,6 +70,21 @@ module Fatty
       Command.terminal(:choose_theme)
     end
 
+    desc "Accumulate a count with a decimal digit"
+    action :count_digit, on: :session do |n|
+      counter.push_digit(n)
+    end
+
+    desc "Clear the accumulated count"
+    action :count_clear, on: :session do
+      counter.clear!
+    end
+
+    desc "Universal argument (C-u)"
+    action :universal_argument, on: :session do
+      counter.universal_argument!
+    end
+
     private
 
     # simplecov:disable
@@ -137,21 +152,6 @@ module Fatty
     # Subclasses override this to react to resolved actions.
     def apply_action(_action, _args, event:)
       []
-    end
-
-    desc "Accumulate a count with a decimal digit"
-    action :count_digit, on: :session do |n|
-      counter.push_digit(n)
-    end
-
-    desc "Clear the accumulated count"
-    action :count_clear, on: :session do
-      counter.clear!
-    end
-
-    desc "Universal argument (C-u)"
-    action :universal_argument, on: :session do
-      counter.universal_argument!
     end
   end
 end

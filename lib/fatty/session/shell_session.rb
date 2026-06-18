@@ -28,7 +28,7 @@ module Fatty
     end
 
     #########################################################################################
-    # Framework and Session Hooks
+    # Session Protocol
     #########################################################################################
 
     def init(terminal:)
@@ -93,87 +93,9 @@ module Fatty
       end
     end
 
-    # Save any state we want saved on quit, error, etc.
-    def persist!
-      return unless @history.respond_to?(:save!)
-
-      Fatty.debug("ShellSession#persist!: saving history", tag: :history)
-      @history.save!
-    rescue => e
-      Fatty.error("ShellSession#persist!: failed to save history: #{e.class}: #{e.message}", tag: :history)
-    end
-
-    # Called by Terminal#go on every loop iteration.  Returns true if any
-    # visible state changed (dirty).
-    def tick
-      output_session.tick
-    end
-
-    def pager_active?
-      output_session.pager_active?
-    end
-
-    private
-
-    # simplecov:disable
-
-    def input_suppressed?
-      terminal.modal_active? || output_session.pager_active?
-    end
-
-    def keymap_contexts
-      [:input, :text, :terminal]
-    end
-
-    ############################################################################################
+    #########################################################################################
     # Actions
-    ############################################################################################
-
-    def apply_action(action, args, event:)
-      which =
-        if event&.respond_to?(:key)
-          event.key.inspect
-        elsif event&.respond_to?(:mouse)
-          event.mouse.inspect
-        end
-      Fatty.debug("ShellSession#apply_action: #{which}", tag: :keymap)
-      @field.reset_completion_state! unless action.to_sym == :complete
-      env = action_env(event: event)
-      defn = Fatty::Actions.lookup(action)
-      result = Fatty::Actions.call(action, env, *args)
-
-      @field.sync_virtual_suffix! if defn && [:field, :buffer].include?(defn[:on])
-      normalize_action_result(result)
-    rescue Fatty::ActionError => e
-      [alert_cmd(:error, e.message, ev: event)]
-    end
-
-    def apply_popup_result(payload)
-      commands = []
-      case payload[:kind]&.to_sym
-      when :history_search
-        item = payload.fetch(:item, "").to_s
-        env = action_env(event: nil)
-        with_virtual_suffix_sync do
-          Fatty::Actions.call(:replace, env, item)
-        end
-      when :completion
-        apply_completion(payload.fetch(:item, "").to_s, range: @completion_range)
-        @completion_range = nil
-      end
-      commands
-    end
-
-    def action_env(event:)
-      Fatty::ActionEnvironment.new(
-        session: self,
-        counter: counter,
-        event: event,
-        buffer: @field.buffer,
-        field: @field,
-        pager: pager,
-      )
-    end
+    #########################################################################################
 
     desc "Pass the current input line to the on_accept proc or a shell"
     action :submit_line do
@@ -316,6 +238,88 @@ module Fatty
           initial_query: @field.buffer.text,
         )
       Command.terminal(:push_modal, session: hist_searcher)
+    end
+
+    #########################################################################################
+    # Other public API methods
+    #########################################################################################
+
+    # Save any state we want saved on quit, error, etc.
+    def persist!
+      return unless @history.respond_to?(:save!)
+
+      Fatty.debug("ShellSession#persist!: saving history", tag: :history)
+      @history.save!
+    rescue => e
+      Fatty.error("ShellSession#persist!: failed to save history: #{e.class}: #{e.message}", tag: :history)
+    end
+
+    # Called by Terminal#go on every loop iteration.  Returns true if any
+    # visible state changed (dirty).
+    def tick
+      output_session.tick
+    end
+
+    def pager_active?
+      output_session.pager_active?
+    end
+
+    private
+
+    # simplecov:disable
+
+    def input_suppressed?
+      terminal.modal_active? || output_session.pager_active?
+    end
+
+    def keymap_contexts
+      [:input, :text, :terminal]
+    end
+
+    def apply_action(action, args, event:)
+      which =
+        if event&.respond_to?(:key)
+          event.key.inspect
+        elsif event&.respond_to?(:mouse)
+          event.mouse.inspect
+        end
+      Fatty.debug("ShellSession#apply_action: #{which}", tag: :keymap)
+      @field.reset_completion_state! unless action.to_sym == :complete
+      env = action_env(event: event)
+      defn = Fatty::Actions.lookup(action)
+      result = Fatty::Actions.call(action, env, *args)
+
+      @field.sync_virtual_suffix! if defn && [:field, :buffer].include?(defn[:on])
+      normalize_action_result(result)
+    rescue Fatty::ActionError => e
+      [alert_cmd(:error, e.message, ev: event)]
+    end
+
+    def apply_popup_result(payload)
+      commands = []
+      case payload[:kind]&.to_sym
+      when :history_search
+        item = payload.fetch(:item, "").to_s
+        env = action_env(event: nil)
+        with_virtual_suffix_sync do
+          Fatty::Actions.call(:replace, env, item)
+        end
+      when :completion
+        apply_completion(payload.fetch(:item, "").to_s, range: @completion_range)
+        @completion_range = nil
+      end
+      commands
+    end
+
+    def action_env(event:)
+      Fatty::ActionEnvironment.new(
+        session: self,
+        counter: counter,
+        event: event,
+        buffer: @field.buffer,
+        field: @field,
+        pager: pager,
+      )
     end
 
     #########################################################################################
