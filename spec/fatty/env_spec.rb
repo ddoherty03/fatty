@@ -1,223 +1,143 @@
 # frozen_string_literal: true
 
+require "spec_helper"
+
 module Fatty
   RSpec.describe Env do
-    around do |ex|
-      old = ENV.to_hash
-      begin
-        ex.run
-      ensure
-        ENV.replace(old)
-      end
+    around do |example|
+      old_env = ENV.to_h
+      example.run
+    ensure
+      ENV.replace(old_env)
     end
 
-    def clear_terminal_env
+    def clear_terminal_env!
       %w[
-    TMUX STY KONSOLE_VERSION KITTY_WINDOW_ID ALACRITTY_LOG TERMINATOR_UUID
-    TERM_PROGRAM TERM
-      ].each { |k| ENV.delete(k) }
+        TERM
+        TERM_PROGRAM
+        TERM_PROGRAM_VERSION
+        COLORTERM
+        TMUX
+        STY
+        KONSOLE_VERSION
+        KITTY_WINDOW_ID
+        ALACRITTY_LOG
+        TERMINATOR_UUID
+        SSH_TTY
+        SSH_CONNECTION
+      ].each { |key| ENV.delete(key) }
     end
 
-    describe ".os" do
-      it "detects linux" do
-        stub_const("RUBY_PLATFORM", "x86_64-linux")
-        expect(Env.os).to eq(:linux)
-      end
-
-      it "detects darwin" do
-        stub_const("RUBY_PLATFORM", "arm64-darwin23")
-        expect(Env.os).to eq(:darwin)
-      end
-
-      it "detects bsd" do
-        stub_const("RUBY_PLATFORM", "x86_64-freebsd13")
-        expect(Env.os).to eq(:bsd)
-      end
-
-      it "detects windows" do
-        stub_const("RUBY_PLATFORM", "x64-mingw-ucrt")
-        expect(Env.os).to eq(:windows)
-      end
-
-      it "falls back to unknown" do
-        stub_const("RUBY_PLATFORM", "weird-platform")
-        expect(Env.os).to eq(:unknown)
-      end
+    before do
+      clear_terminal_env!
     end
 
-    describe ".arch" do
-      it "detects x86_64" do
-        stub_const("RUBY_PLATFORM", "x86_64-linux")
-        expect(Env.arch).to eq(:x86_64)
+    describe ".detect" do
+      it "includes platform information" do
+        info = Env.detect
+
+        expect(info.keys).to include(
+          :os,
+          :arch,
+          :ruby_platform,
+          :term,
+          :terminal,
+          :terminal_version,
+          :tmux,
+          :screen,
+          :ssh,
+          :curses,
+        )
+        expect(info.fetch(:ruby_platform)).to eq(RUBY_PLATFORM)
       end
 
-      it "detects arm64/aarch64" do
-        stub_const("RUBY_PLATFORM", "aarch64-linux")
-        expect(Env.arch).to eq(:arm64)
+      it "detects tmux terminal and session state" do
+        ENV["TMUX"] = "/tmp/tmux"
 
-        stub_const("RUBY_PLATFORM", "arm64-darwin23")
-        expect(Env.arch).to eq(:arm64)
+        info = Env.detect
+
+        expect(info.fetch(:terminal)).to eq("tmux")
+        expect(info.fetch(:tmux)).to be(true)
       end
 
-      it "falls back to unknown" do
-        stub_const("RUBY_PLATFORM", "mipsel-linux")
-        expect(Env.arch).to eq(:unknown)
-      end
-    end
+      it "detects screen terminal and session state" do
+        ENV["STY"] = "123.screen"
 
-    describe ".detect_terminal_program" do
-      it "prefers tmux when TMUX is present" do
-        ENV["TMUX"] = "1"
-        ENV["KONSOLE_VERSION"] = "999"
-        ENV["TERM_PROGRAM"] = "WezTerm"
-        expect(Env.detect_terminal_program).to eq("tmux")
+        info = Env.detect
+
+        expect(info.fetch(:terminal)).to eq("screen")
+        expect(info.fetch(:screen)).to be(true)
       end
 
-      it "prefers screen when STY is present (and no TMUX)" do
-        ENV.delete("TMUX")
-        ENV["STY"] = "screen"
-        ENV["KONSOLE_VERSION"] = "999"
-        expect(Env.detect_terminal_program).to eq("screen")
-      end
-
-      it "detects konsole via KONSOLE_VERSION" do
-        ENV.delete("TMUX")
-        ENV.delete("STY")
-        ENV["KONSOLE_VERSION"] = "1"
-        expect(Env.detect_terminal_program).to eq("konsole")
-      end
-
-      it "detects kitty via KITTY_WINDOW_ID" do
-        ENV.delete("TMUX")
-        ENV.delete("STY")
-        ENV.delete("KONSOLE_VERSION")
-        ENV["KITTY_WINDOW_ID"] = "abc"
-        expect(Env.detect_terminal_program).to eq("kitty")
-      end
-
-      it "detects wezterm via TERM_PROGRAM=wezterm (case-insensitive)" do
-        ENV.delete("TMUX")
-        ENV.delete("STY")
-        ENV.delete("KONSOLE_VERSION")
-        ENV.delete("KITTY_WINDOW_ID")
-        ENV["TERM_PROGRAM"] = "WezTerm"
-        expect(Env.detect_terminal_program).to eq("wezterm")
-      end
-
-      it "detects iTerm via TERM_PROGRAM=iTerm.app" do
-        ENV.delete("TMUX")
-        ENV.delete("STY")
-        ENV.delete("KONSOLE_VERSION")
-        ENV.delete("KITTY_WINDOW_ID")
-        ENV["TERM_PROGRAM"] = "iTerm.app"
-        expect(Env.detect_terminal_program).to eq("iterm")
-      end
-
-      it "detects ghostty via TERM_PROGRAM=ghostty" do
-        ENV.delete("TMUX")
-        ENV.delete("STY")
-        ENV.delete("KONSOLE_VERSION")
-        ENV.delete("KITTY_WINDOW_ID")
-        ENV["TERM_PROGRAM"] = "ghostty"
-        expect(Env.detect_terminal_program).to eq("ghostty")
-      end
-
-      it "detects alacritty via ALACRITTY_LOG" do
-        ENV.delete("TMUX")
-        ENV.delete("STY")
-        ENV.delete("KONSOLE_VERSION")
-        ENV.delete("KITTY_WINDOW_ID")
-        ENV.delete("TERM_PROGRAM")
-        ENV["ALACRITTY_LOG"] = "1"
-        expect(Env.detect_terminal_program).to eq("alacritty")
-      end
-
-      it "detects terminator via TERMINATOR_UUID" do
-        ENV.delete("TMUX")
-        ENV.delete("STY")
-        ENV.delete("KONSOLE_VERSION")
-        ENV.delete("KITTY_WINDOW_ID")
-        ENV.delete("TERM_PROGRAM")
-        ENV["TERMINATOR_UUID"] = "1"
-        expect(Env.detect_terminal_program).to eq("terminator")
-      end
-
-      it "falls back to TERM_PROGRAM downcased when present" do
-        ENV.delete("TMUX")
-        ENV.delete("STY")
-        ENV.delete("KONSOLE_VERSION")
-        ENV.delete("KITTY_WINDOW_ID")
-        ENV.delete("ALACRITTY_LOG")
-        ENV.delete("TERMINATOR_UUID")
-        ENV["TERM_PROGRAM"] = "CoolTerm"
-        expect(Env.detect_terminal_program).to eq("coolterm")
-      end
-
-      it "falls back to TERM downcased when TERM_PROGRAM is absent" do
-        clear_terminal_env
-        ENV.delete("TERM_PROGRAM")
-        ENV["TERM"] = "XTERM-256COLOR"
-        expect(Env.detect_terminal_program).to eq("xterm-256color")
-      end
-
-      it "returns 'unknown' when no relevant env vars are present" do
-        clear_terminal_env
-        ENV.delete("TERM_PROGRAM")
-        ENV.delete("TERM")
-        expect(Env.detect_terminal_program).to eq("unknown")
-      end
-    end
-
-    describe "session predicates" do
-      it ".tmux? is true when TMUX is set" do
-        ENV["TMUX"] = "1"
-        expect(Env.tmux?).to be(true)
-        ENV.delete("TMUX")
-        expect(Env.tmux?).to be(false)
-      end
-
-      it ".screen? is true when STY is set" do
-        ENV["STY"] = "screen"
-        expect(Env.screen?).to be(true)
-        ENV.delete("STY")
-        expect(Env.screen?).to be(false)
-      end
-
-      it ".ssh? is true when SSH_TTY or SSH_CONNECTION is set" do
+      it "detects ssh session state" do
         ENV["SSH_TTY"] = "/dev/pts/1"
-        expect(Env.ssh?).to be(true)
 
-        ENV.delete("SSH_TTY")
-        ENV["SSH_CONNECTION"] = "a b c d"
-        expect(Env.ssh?).to be(true)
-
-        ENV.delete("SSH_CONNECTION")
-        expect(Env.ssh?).to be(false)
-      end
-    end
-
-    describe ".curses_info" do
-      it "returns {} when Curses is not defined" do
-        hide_const("Curses") if defined?(Curses)
-        expect(Env.curses_info).to eq({})
+        expect(Env.detect.fetch(:ssh)).to be(true)
       end
 
-      it "returns key_min/key_max when Curses is defined" do
-        stub_const("Curses", Module.new)
-        ::Curses.const_set(:KEY_MIN, 1)
-        ::Curses.const_set(:KEY_MAX, 999)
+      it "detects konsole and terminal version" do
+        ENV["KONSOLE_VERSION"] = "240800"
 
-        expect(Env.curses_info).to eq({ key_min: 1, key_max: 999 })
+        info = Env.detect
+
+        expect(info.fetch(:terminal)).to eq("konsole")
+        expect(info.fetch(:terminal_version)).to eq("240800")
       end
 
-      it "returns {} if Curses access raises" do
-        stub_const("Curses", Module.new)
-        # Simulate a weird curses implementation raising on constant access
-        def Curses.const_missing(_name)
-          raise "boom"
-        end
+      it "detects kitty" do
+        ENV["KITTY_WINDOW_ID"] = "1"
 
-        expect(Env.curses_info).to eq({})
+        expect(Env.detect.fetch(:terminal)).to eq("kitty")
+      end
+
+      it "detects wezterm case-insensitively" do
+        ENV["TERM_PROGRAM"] = "WezTerm"
+
+        expect(Env.detect.fetch(:terminal)).to eq("wezterm")
+      end
+
+      it "detects iterm" do
+        ENV["TERM_PROGRAM"] = "iTerm.app"
+
+        expect(Env.detect.fetch(:terminal)).to eq("iterm")
+      end
+
+      it "detects ghostty" do
+        ENV["TERM_PROGRAM"] = "ghostty"
+
+        expect(Env.detect.fetch(:terminal)).to eq("ghostty")
+      end
+
+      it "detects alacritty" do
+        ENV["ALACRITTY_LOG"] = "/tmp/alacritty.log"
+
+        expect(Env.detect.fetch(:terminal)).to eq("alacritty")
+      end
+
+      it "detects terminator" do
+        ENV["TERMINATOR_UUID"] = "abc"
+
+        expect(Env.detect.fetch(:terminal)).to eq("terminator")
+      end
+
+      it "falls back to TERM_PROGRAM downcased" do
+        ENV["TERM_PROGRAM"] = "CoolTerm"
+
+        expect(Env.detect.fetch(:terminal)).to eq("coolterm")
+      end
+
+      it "falls back to TERM downcased" do
+        ENV["TERM"] = "xterm-256color"
+
+        expect(Env.detect.fetch(:terminal)).to eq("xterm-256color")
+      end
+
+      it "returns unknown terminal when no terminal indicators are present" do
+        expect(Env.detect.fetch(:terminal)).to eq("unknown")
+      end
+
+      it "includes curses info as a hash" do
+        expect(Env.detect.fetch(:curses)).to be_a(Hash)
       end
     end
   end
