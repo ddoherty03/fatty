@@ -15,12 +15,12 @@ module Fatty
           key_decoder: key_decoder,
           poll_ms: 10,
         )
-
         allow(source).to receive(:read_raw).and_return([:paste, "hello\nworld\n"])
-
         event = source.next_event
-
-        expect(event).to eq([:cmd, :paste, { text: "hello\nworld\n" }])
+        expect(event).to be_a(Command)
+        expect(event.target).to eq(:active)
+        expect(event.action).to eq(:terminal_paste)
+        expect(event.payload[:text]).to eq("hello\nworld\n")
       end
     end
   end
