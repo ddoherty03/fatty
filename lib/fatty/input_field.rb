@@ -27,7 +27,7 @@ module Fatty
     attr_reader :buffer, :prompt, :history
 
     def initialize(
-      prompt:,
+      prompt: ">",
       buffer: nil,
       completion_proc: nil,
       history: nil,
@@ -157,53 +157,26 @@ module Fatty
           defn = Fatty::Actions.lookup(action)
           target =
             case defn[:on]
-            when :field then self
             when :buffer then buffer
             else
               raise Fatty::ActionError, "Cannot dispatch #{action} without env for target #{defn[:on].inspect}"
             end
           target.public_send(defn[:method], *args, **kwargs)
         end
-      elsif buffer.respond_to?(action)
-        buffer.public_send(action, *args, **kwargs)
-      elsif respond_to?(action)
-        public_send(action, *args, **kwargs)
       else
         raise Fatty::ActionError, "Unknown action: #{action}"
       end
-    end
-
-    private
-
-    # simplecov:disable
-
-    # Visual cursor X position in the window
-    def cursor_x
-      before_cursor = buffer.text.to_s[0...buffer.cursor].to_s
-      prompt_width + Fatty::Ansi.visible_length(before_cursor)
     end
 
     def prompt_text
       prompt.text
     end
 
-    # The prompt might use coloring, so we use the visible length stripped of
-    # ANSI controls.
-    def prompt_width
-      Fatty::Ansi.visible_length(prompt_text.to_s.lines.last.to_s)
+    # Visual cursor X position in the window
+    def cursor_x
+      before_cursor = buffer.text.to_s[0...buffer.cursor].to_s
+      prompt_width + Fatty::Ansi.visible_length(before_cursor)
     end
-
-    def snapshot_input_state
-      [
-        prompt_text.to_s.dup.freeze,
-        buffer.text.to_s.dup.freeze,
-        buffer.virtual_suffix.to_s.dup.freeze,
-        cursor_x,
-        (r = buffer.region_range) ? [r.begin, r.end] : nil,
-      ]
-    end
-
-    # :category: Setters
 
     def prompt=(prompt)
       @prompt = Prompt.ensure(prompt)
@@ -245,6 +218,16 @@ module Fatty
       s = s.gsub(/\r\n?/, "\n")
       s = s.tr("\n", " ")
       buffer.insert(s)
+    end
+
+    private
+
+    # simplecov:disable
+
+    # The prompt might use coloring, so we use the visible length stripped of
+    # ANSI controls.
+    def prompt_width
+      Fatty::Ansi.visible_length(prompt_text.to_s.lines.last.to_s)
     end
 
     # :category: Completion
