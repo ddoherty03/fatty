@@ -2,79 +2,79 @@
 
 module Fatty
   module Color
+    DEFAULT_INDEX = -1
+
+    # Expected location for a bundled X11 rgb.txt (you provide it in the repo).
+    # Recommended path:
+    #   lib/fatty/color/rgb.txt
+    RGB_TXT_PATH = File.expand_path("rgb.txt", __dir__)
+
+    # ANSI 0..15 names (de-facto standard names)
+    ANSI_NAMES = {
+      "black" => 0,
+      "red" => 1,
+      "green" => 2,
+      "yellow" => 3,
+      "blue" => 4,
+      "magenta" => 5,
+      "cyan" => 6,
+      "white" => 7,
+      "bright_black" => 8,
+      "bright_red" => 9,
+      "bright_green" => 10,
+      "bright_yellow" => 11,
+      "bright_blue" => 12,
+      "bright_magenta" => 13,
+      "bright_cyan" => 14,
+      "bright_white" => 15,
+      "gray" => 8,
+      "grey" => 8,
+      "bright_gray" => 15,
+      "bright_grey" => 15,
+      "default" => DEFAULT_INDEX,
+    }.freeze
+
+    # Small alias set (xterm-256 indices). Keep this small + opinionated.
+    # Users can always use integers/hex/X11 names.
+    ALIASES_256 = {
+      "navy" => 17,
+      "dark_blue" => 18,
+      "orange" => 208,
+      "pink" => 205,
+      "violet" => 141,
+      "sky" => 117,
+      "teal" => 37,
+      "lime" => 118,
+      "dark_grey" => 238,
+      "dark_gray" => 238,
+      "grey" => 244,
+      "gray" => 244,
+      "light_grey" => 250,
+      "light_gray" => 250,
+    }.freeze
+
+    # Approximate RGB for xterm-style ANSI 0..15.
+    # Used only when down-mapping to <=16 colors.
+    ANSI_RGB = {
+      0 => [0, 0, 0],
+      1 => [205, 0, 0],
+      2 => [0, 205, 0],
+      3 => [205, 205, 0],
+      4 => [0, 0, 238],
+      5 => [205, 0, 205],
+      6 => [0, 205, 205],
+      7 => [229, 229, 229],
+      8 => [127, 127, 127],
+      9 => [255, 0, 0],
+      10 => [0, 255, 0],
+      11 => [255, 255, 0],
+      12 => [92, 92, 255],
+      13 => [255, 0, 255],
+      14 => [0, 255, 255],
+      15 => [255, 255, 255],
+    }.freeze
+
     class << self
-      DEFAULT_INDEX = -1
-
-      # Expected location for a bundled X11 rgb.txt (you provide it in the repo).
-      # Recommended path:
-      #   lib/fatty/color/rgb.txt
-      RGB_TXT_PATH = File.expand_path("rgb.txt", __dir__)
-
-      # ANSI 0..15 names (de-facto standard names)
-      ANSI_NAMES = {
-        "black" => 0,
-        "red" => 1,
-        "green" => 2,
-        "yellow" => 3,
-        "blue" => 4,
-        "magenta" => 5,
-        "cyan" => 6,
-        "white" => 7,
-        "bright_black" => 8,
-        "bright_red" => 9,
-        "bright_green" => 10,
-        "bright_yellow" => 11,
-        "bright_blue" => 12,
-        "bright_magenta" => 13,
-        "bright_cyan" => 14,
-        "bright_white" => 15,
-        "gray" => 8,
-        "grey" => 8,
-        "bright_gray" => 15,
-        "bright_grey" => 15,
-        "default" => DEFAULT_INDEX,
-      }.freeze
-
-      # Small alias set (xterm-256 indices). Keep this small + opinionated.
-      # Users can always use integers/hex/X11 names.
-      ALIASES_256 = {
-        "navy" => 17,
-        "dark_blue" => 18,
-        "orange" => 208,
-        "pink" => 205,
-        "violet" => 141,
-        "sky" => 117,
-        "teal" => 37,
-        "lime" => 118,
-        "dark_grey" => 238,
-        "dark_gray" => 238,
-        "grey" => 244,
-        "gray" => 244,
-        "light_grey" => 250,
-        "light_gray" => 250,
-      }.freeze
-
-      # Approximate RGB for xterm-style ANSI 0..15.
-      # Used only when down-mapping to <=16 colors.
-      ANSI_RGB = {
-        0 => [0, 0, 0],
-        1 => [205, 0, 0],
-        2 => [0, 205, 0],
-        3 => [205, 205, 0],
-        4 => [0, 0, 238],
-        5 => [205, 0, 205],
-        6 => [0, 205, 205],
-        7 => [229, 229, 229],
-        8 => [127, 127, 127],
-        9 => [255, 0, 0],
-        10 => [0, 255, 0],
-        11 => [255, 255, 0],
-        12 => [92, 92, 255],
-        13 => [255, 0, 255],
-        14 => [0, 255, 255],
-        15 => [255, 255, 255],
-      }.freeze
-
       # Resolve a color specification to an integer color index suitable for curses init_pair.
       #
       # Accepts:
