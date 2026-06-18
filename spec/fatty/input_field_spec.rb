@@ -5,6 +5,86 @@ require "fileutils"
 
 module Fatty
   RSpec.describe InputField do
+    describe "#state" do
+      it "returns prompt, text, cursor column, virtual suffix, mark, and selection state" do
+        buffer = Fatty::InputBuffer.new
+        buffer.replace("hello")
+        field = Fatty::InputField.new(prompt: "> ", buffer: buffer)
+
+        expect(field.state)
+          .to eq(["> ", "hello", 5, "", false, nil])
+      end
+
+      it "includes the synced virtual suffix" do
+        buffer = Fatty::InputBuffer.new
+        buffer.replace("fo")
+        field = Fatty::InputField.new(
+          prompt: "> ",
+          buffer: buffer,
+          completion_proc: ->(_buffer) { ["fold"] },
+        )
+
+        field.sync_virtual_suffix!
+
+        expect(field.state)
+          .to eq(["> ", "fo", 2, "ld", false, nil])
+      end
+
+      it "includes active region state" do
+        buffer = Fatty::InputBuffer.new
+        buffer.replace("hello")
+        field = Fatty::InputField.new(prompt: "> ", buffer: buffer)
+
+        buffer.cursor = 1
+        buffer.set_mark
+        buffer.cursor = 5
+
+        expect(field.state)
+          .to eq(["> ", "hello", 5, "", true, 1...5])
+      end
+    end
+
+    describe "#to_s" do
+      it "returns the buffer text" do
+        field = Fatty::InputField.new
+        field.buffer.replace("hello")
+
+        expect(field.to_s).to match(/hello/)
+      end
+    end
+
+    describe "#empty?" do
+      it "delegates to the buffer" do
+        field = Fatty::InputField.new
+
+        expect(field).to be_empty
+
+        field.buffer.replace("hello")
+
+        expect(field).not_to be_empty
+      end
+    end
+
+    describe "#act_on" do
+      it "returns nil for nil action" do
+        field = Fatty::InputField.new
+
+        expect(field.act_on(nil)).to be_nil
+      end
+
+      it "dispatches registered field actions without env" do
+        field = Fatty::InputField.new
+        field.act_on(:insert, "x")
+        expect(field.buffer.text).to eq("x")
+      end
+
+      it "raises for unknown actions" do
+        field = Fatty::InputField.new
+        expect { field.act_on(:definitely_unknown) }
+          .to raise_error(Fatty::ActionError, "Unknown action: definitely_unknown")
+      end
+    end
+
     describe "completion and autosuggestion" do
       let(:tmpdir) { Dir.mktmpdir("fatty_paths") }
 
@@ -146,6 +226,19 @@ module Fatty
         field = field_with("cat ~/Downloads/", history: history)
 
         expect(field.autosuggestion).to eq("cat ~/Downloads/zzz")
+      end
+    end
+
+    describe "#cycle_completion!" do
+      it "returns nil and clears virtual suffix when there are no candidates" do
+        field = Fatty::InputField.new(
+          completion_proc: ->(_buffer) { [] },
+        )
+        field.buffer.replace("zzz")
+        field.buffer.virtual_suffix = "old"
+
+        expect(field.cycle_completion!).to be_nil
+        expect(field.buffer.virtual_suffix).to eq("")
       end
     end
   end
