@@ -45,6 +45,10 @@ module Fatty
       )
     end
 
+    let(:terminal) do
+      instance_double(Fatty::Terminal, renderer: renderer, screen: screen)
+    end
+
     include_examples "renderer interface"
 
     it "renders status with truecolor foreground and status background" do
@@ -53,12 +57,18 @@ module Fatty
       $stdout = out
 
       renderer.begin_frame
-      renderer.render_status("good hello", role: :good)
+      status = Fatty::StatusSession.new
+      status.init(terminal: terminal)
+      status.update(
+        Fatty::Command.session(:status, :show, text: "Ready", role: :good),
+      )
+
+      renderer.render_status(status)
       renderer.finish_frame
 
       expect(out.string).to include("38;2;0;0;0")
       expect(out.string).to include("48;2;240;248;255")
-      expect(out.string).to include("good hello")
+      expect(out.string).to include("Ready")
       ensure
         $stdout = original_stdout
     end

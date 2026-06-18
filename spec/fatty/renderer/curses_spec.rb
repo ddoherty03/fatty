@@ -90,14 +90,23 @@ module Fatty
       allow(curses_context).to receive(:status_win).and_return(status_win)
       allow(::Curses).to receive(:color_pair) { |pair| pair }
 
-      renderer.render_status(
-        [
-          "Loading ",
-          { text: "+", role: :good },
-          { text: "!", role: :error },
-        ],
-        role: :status,
+      terminal = instance_double(Fatty::Terminal, renderer: renderer, screen: screen)
+      status = Fatty::StatusSession.new
+      status.init(terminal: terminal)
+      status.update(
+        Fatty::Command.session(
+          :status,
+          :show,
+          text: [
+            "Loading ",
+            { text: "+", role: :good },
+            { text: "!", role: :error },
+          ],
+          role: :status,
+        ),
       )
+
+      renderer.render_status(status)
 
       added = status_win.writes
                 .select { |op, _text| op == :addstr }
@@ -130,11 +139,20 @@ module Fatty
         message: "\e[32mMessage\e[0m",
         counts: nil,
         displayed: ["\e[33mChoice\e[0m"],
-        selected: 0,
+        current: 0,
         selected_labels: [],
         field: field,
         scroll_start: 0,
         gutter_for: "▶ ",
+        state: [
+          "\e[31mTitle\e[0m",
+          "\e[32mMessage\e[0m",
+          ["\e[33mChoice\e[0m"],
+          0,
+          [],
+          0,
+          field,
+        ],
       )
 
       renderer.render_popup(session: session)
