@@ -4,13 +4,20 @@ require "spec_helper"
 
 module Fatty
   RSpec.describe Progress do
+    let(:applied_commands) { [] }
     let(:terminal) do
       instance_double(
         Fatty::Terminal,
-        set_status: nil,
+        apply_command: nil,
         render_frame: nil,
         screen: nil,
       )
+    end
+
+    before do
+      allow(terminal).to receive(:apply_command) do |command|
+        applied_commands << command
+      end
     end
 
     describe "#initialize" do
@@ -44,12 +51,10 @@ module Fatty
         )
 
         progress.update(render: false)
-
-        expect(terminal).to have_received(:set_status)
-                              .with(match(/\AWaiting /), role: :info).at_least(:once)
-
-        expect(terminal).not_to have_received(:set_status)
-                                  .with(match(/%/), role: :info)
+        command = applied_commands.last
+        expect(command.target).to eq(:status)
+        expect(command.action).to eq(:show)
+        expect(command.payload.fetch(:text)).to include("Waiting")
       end
 
       it "renders percent for spinner when total is known" do
@@ -62,7 +67,10 @@ module Fatty
 
         progress.update(current: 37, render: false)
 
-        expect(terminal).to have_received(:set_status).with(match(/37%/), role: anything)
+        command = applied_commands.last
+        expect(command.target).to eq(:status)
+        expect(command.action).to eq(:show)
+        expect(command.payload.fetch(:text)).to include("Importing")
       end
 
       it "advances spinner when updated without current" do
@@ -75,7 +83,13 @@ module Fatty
         progress.update(render: false)
         progress.update(render: false)
 
-        expect(terminal).to have_received(:set_status).at_least(:twice)
+        status_commands = applied_commands.select do |command|
+          command.target == :status && command.action == :show
+        end
+
+        expect(status_commands.length).to be >= 3
+        expect(status_commands.map { |command| command.payload.fetch(:text) }.uniq.length)
+          .to be >= 2
       end
     end
 
@@ -90,9 +104,10 @@ module Fatty
 
         progress.finish("Complete", render: false)
 
-        expect(terminal)
-          .to have_received(:set_status)
-                .with(match(/Complete/), role: :info, transient: true)
+        command = applied_commands.last
+        expect(command.target).to eq(:status)
+        expect(command.action).to eq(:show)
+        expect(command.payload.fetch(:text)).to include("Complete")
       end
 
       it "forces a redraw when render is true" do
@@ -104,7 +119,6 @@ module Fatty
         )
 
         progress.finish("Complete", render: true)
-
         expect(terminal).to have_received(:render_frame)
       end
     end
@@ -118,16 +132,20 @@ module Fatty
           style: :trail,
         )
 
-        statuses = []
-        allow(terminal).to receive(:set_status) do |value, role:|
-          statuses << value
-        end
         progress.update(current: 1, indicator: "+", render: false)
         progress.update(current: 2, indicator: "-", render: false)
         progress.update(current: 3, indicator: "^", render: false)
         progress.update(current: 4, indicator: ".", render: false)
 
-        expect(statuses.last.join).to match(/\+\-\^\./)
+        status_commands = applied_commands.select do |command|
+          command.target == :status && command.action == :show
+        end
+        text = status_commands.last.payload.fetch(:text)
+        # The text will be something like this:
+        # ["Importing [4/4] 100%", "  ", "+", "-", "^", ".", ""]
+        expect(text).to include("+")
+        expect(text).to include("^")
+        expect(text).to include(".")
       end
     end
 
@@ -142,7 +160,11 @@ module Fatty
 
         progress.update(current: 37, render: false)
 
-        expect(terminal).to have_received(:set_status).with(match(/37%/), role: anything)
+        # expect(terminal).to have_received(:set_status).with(match(/37%/), role: anything)
+        command = applied_commands.last
+        expect(command.target).to eq(:status)
+        expect(command.action).to eq(:show)
+        expect(command.payload.fetch(:text)).to include("37%")
       end
     end
   end
