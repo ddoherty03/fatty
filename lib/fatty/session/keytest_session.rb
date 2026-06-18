@@ -6,7 +6,7 @@ module Fatty
   class KeyTestSession < Session
     attr_reader :output_session
 
-    def initialize
+    def initialize(output_dir: Dir.tmpdir)
       super(id: :keytest, keymap: nil)
       @output_session = OutputSession.new
       @path = nil
