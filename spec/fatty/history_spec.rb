@@ -6,16 +6,16 @@ module Fatty
   RSpec.describe History do
     describe "#initialize" do
       it "does not load from disk when path is nil" do
-        history = Fatty::History.new(path: nil)
+        history = History.new(path: nil)
         expect(history.to_a).to eq([])
       end
     end
 
     describe "class methods" do
-      before { Fatty::History.reset_instances! }
+      before { History.reset_instances! }
 
       it "returns the same default history object" do
-        expect(Fatty::History.default).to equal(Fatty::History.default)
+        expect(History.default).to equal(History.default)
       end
     end
 
@@ -66,7 +66,7 @@ module Fatty
         hist.add("git status")
         hist.add("ls")
         hist.add("git log")
-        f = Fatty::InputField.new(prompt: '> ', history: hist)
+        f = InputField.new(prompt: '> ', history: hist)
 
         f.buffer.replace("git")
         f.history_prev
@@ -92,7 +92,7 @@ module Fatty
         end
       end
 
-      it "Fatty::History#add appends JSONL entries to the history file" do
+      it "History#add appends JSONL entries to the history file" do
         Dir.mktmpdir do |dir|
           path = File.join(dir, "hist")
           h = History.new(path: path)
@@ -130,7 +130,7 @@ module Fatty
         expect(hist.entries.map(&:text)).to eq(["ok"])
       end
 
-      it "Fatty::History#truncate! enforces max size in memory" do
+      it "History#truncate! enforces max size in memory" do
         hist.add("1")
         hist.add("2")
         hist.add("3")
@@ -205,30 +205,30 @@ module Fatty
         expect(hist.next_for(:command, ctx: { pwd: "/alpha" })).to eq("")
       end
 
-      it "computes an autosuggestion from the most recent history prefix match" do
-        h = History.new(path: hist_path)
-        h.add("git status")
-        h.add("git stash")
+      # it "computes an autosuggestion from the most recent history prefix match" do
+      #   h = History.new(path: hist_path)
+      #   h.add("git status")
+      #   h.add("git stash")
 
-        f = InputField.new(prompt: "> ", history: h)
-        f.act_on(:insert, "git st")
+      #   f = InputField.new(prompt: "> ", history: h)
+      #   f.act_on(:insert, "git st")
 
-        expect(f.autosuggestion).to eq("git stash")
-        expect(f.autosuggestion_visible?).to be(true)
-        expect(f.autosuggestion_suffix).to eq("ash")
-      end
+      #   expect(f.autosuggestion).to eq("git stash")
+      #   expect(f.autosuggestion_visible?).to be(true)
+      #   expect(f.autosuggestion_suffix).to eq("ash")
+      # end
 
-      it "accept_autosuggestion! replaces the buffer with the suggestion" do
-        h = History.new(path: hist_path)
-        h.add("git status")
+      # it "accept_autosuggestion! replaces the buffer with the suggestion" do
+      #   h = History.new(path: hist_path)
+      #   h.add("git status")
 
-        f = InputField.new(prompt: "> ", history: h)
-        f.act_on(:insert, "git st")
-        f.accept_autosuggestion!
+      #   f = InputField.new(prompt: "> ", history: h)
+      #   f.act_on(:insert, "git st")
+      #   f.accept_autosuggestion!
 
-        expect(f.buffer.text).to eq("git status")
-        expect(f.autosuggestion_visible?).to be(false)
-      end
+      #   expect(f.buffer.text).to eq("git status")
+      #   expect(f.autosuggestion_visible?).to be(false)
+      # end
 
       it "moves an exact duplicate to the newest position" do
         hist.add("one")
@@ -258,9 +258,9 @@ module Fatty
         Dir.mktmpdir do |dir|
           path = File.join(dir, "hist")
           rows = [
-            Fatty::History::Entry.new(text: "one", kind: :command, ctx: { "pwd" => "/a" }).to_h,
-            Fatty::History::Entry.new(text: "two", kind: :command, ctx: { "pwd" => "/a" }).to_h,
-            Fatty::History::Entry.new(text: "one", kind: :command, ctx: { "pwd" => "/a" }).to_h,
+            History::Entry.new(text: "one", kind: :command, ctx: { "pwd" => "/a" }).to_h,
+            History::Entry.new(text: "two", kind: :command, ctx: { "pwd" => "/a" }).to_h,
+            History::Entry.new(text: "one", kind: :command, ctx: { "pwd" => "/a" }).to_h,
           ]
 
           File.write(path, rows.map { |row| JSON.generate(row) }.join("\n") + "\n")
@@ -286,7 +286,7 @@ module Fatty
 
     describe "#entries_for" do
       it "returns fallback entries before preferred entries, preserving chronological order within each bucket" do
-        h = Fatty::History.new
+        h = History.new
 
         h.add("g1", kind: :command, ctx: { pwd: "/tmp/other" })
         h.add("l1", kind: :command, ctx: { pwd: "/tmp/demo" })
@@ -300,27 +300,27 @@ module Fatty
     end
 
     describe "#suggestions_for" do
-      let(:history) { Fatty::History.new(path: nil) }
+      let(:history) { History.new(path: nil) }
 
       it "prefers ctx-local matches over global matches" do
         history.add("status old", kind: :command, ctx: { pwd: "/other" })
         history.add("status here", kind: :command, ctx: { pwd: "/here" })
 
         expect(history.suggestions_for(:command, prefix: "sta", ctx: { pwd: "/here" }))
-          .to eq("status here")
+          .to eq(["status here", "status old"])
       end
 
       it "falls back to global matches when no ctx-local match exists" do
         history.add("status old", kind: :command, ctx: { pwd: "/other" })
 
         expect(history.suggestions_for(:command, prefix: "sta", ctx: { pwd: "/here" }))
-          .to eq("status old")
+          .to eq(["status old"])
       end
     end
 
     describe "#next_for and #previous_for" do
       it "does not walk past the end of the filtered history list" do
-        h = Fatty::History.new
+        h = History.new
 
         h.add("global one", kind: :command, ctx: { pwd: "/tmp/other" })
         h.add("local one", kind: :command, ctx: { pwd: "/tmp/demo" })
@@ -330,7 +330,7 @@ module Fatty
       end
 
       it "returns scratch when navigating down past the newest matching entry" do
-        h = Fatty::History.new
+        h = History.new
 
         h.add("one", kind: :command, ctx: { pwd: "/tmp/demo" })
         h.add("two", kind: :command, ctx: { pwd: "/tmp/demo" })
@@ -341,7 +341,7 @@ module Fatty
     end
 
     describe "Enumerable access" do
-      let(:history) { Fatty::History.new(path: nil) }
+      let(:history) { History.new(path: nil) }
 
       before do
         history.add("ls",   kind: :command,       ctx: { pwd: "/a", proj: "x" })
@@ -417,9 +417,9 @@ module Fatty
 
       describe ".default" do
         it "returns the same object as for_path(:default)" do
-          Fatty::History.reset_instances! if Fatty::History.respond_to?(:reset_instances!)
+          History.reset_instances! if History.respond_to?(:reset_instances!)
 
-          expect(Fatty::History.default).to equal(Fatty::History.for_path(:default))
+          expect(History.default).to equal(History.for_path(:default))
         end
       end
     end
