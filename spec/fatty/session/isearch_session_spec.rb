@@ -175,7 +175,7 @@ module Fatty
         session = Fatty::ISearchSession.new
         output_rect = instance_double("OutputRect", rows: 10)
         screen = instance_double(Fatty::Screen, output_rect: output_rect)
-        renderer = instance_double(Fatty::Renderer)
+        renderer = instance_double(Fatty::Renderer::Truecolor)
         terminal = instance_double(Fatty::Terminal, screen: screen, renderer: renderer)
 
         session.init(terminal: terminal)

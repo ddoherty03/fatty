@@ -118,21 +118,17 @@ module Fatty
         session = Fatty::SearchSession.new
         output_rect = instance_double("OutputRect", rows: 10)
         screen = instance_double(Fatty::Screen, output_rect: output_rect)
-        renderer = instance_double(Fatty::Renderer)
+        renderer = instance_double(Fatty::Renderer::Truecolor)
         terminal = instance_double(Fatty::Terminal, screen: screen, renderer: renderer)
 
         session.init(terminal: terminal)
-
         allow(::Curses).to receive(:curs_set)
-
         expect(renderer)
           .to receive(:render_pager_field)
                 .with(session.field, row: 9, role: :search_input)
-
         expect(renderer)
           .to receive(:restore_output_cursor)
                 .with(session.field, row: 9)
-
         session.view
       end
     end
