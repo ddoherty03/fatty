@@ -148,7 +148,8 @@ module Fatty
           expect(commands.map(&:action)).to eq(
             [:append, :append, :clear, :pop_modal, :show],
           )
-          expect(commands.first.payload[:text]).to include(path)
+          expected_out = %r{KeyTest suggestions written to:\s*/tmp/.*/fatty-keytest-}
+          expect(commands.first.payload[:text]).to match(expected_out)
           expect(File.read(path).scan("No key name is associated with keycode 652").length).to eq(1)
           expect(commands.last.payload[:text]).to include(path)
         end
