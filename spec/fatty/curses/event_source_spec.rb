@@ -22,6 +22,35 @@ module Fatty
         expect(event.action).to eq(:terminal_paste)
         expect(event.payload[:text]).to eq("hello\nworld\n")
       end
+
+      it "returns a mouse event command when read_raw returns a mouse event" do
+        mouse = Fatty::MouseEvent.new(
+          button: :left,
+          x: 3,
+          y: 7,
+          ctrl: false,
+          meta: false,
+          shift: false,
+        )
+        source = EventSource.new(context: Context.new)
+        allow(source).to receive(:read_raw).and_return(mouse)
+
+        command = source.next_event
+        expect(command).to be_a(Fatty::Command)
+        expect(command.target).to eq(:active)
+        expect(command.action).to eq(:key)
+        ev = command.payload.fetch(:event)
+        expect(ev).to eq(mouse)
+        expect(ev.x).to eq(3)
+        expect(ev.y).to eq(7)
+        expect(ev.key).to eq(:mouse)
+        expect(ev.button).to eq(:left)
+        expect(ev.ctrl).to be false
+        expect(ev.meta).to be false
+        expect(ev.shift).to be false
+        expect(ev.printable?).to be false
+        expect(ev.mouse?).to be true
+      end
     end
   end
 end
