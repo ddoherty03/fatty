@@ -60,6 +60,16 @@ module Fatty
       terminal.screen
     end
 
+    desc "Cycle to the next theme"
+    action :cycle_theme do
+      Command.terminal(:cycle_theme)
+    end
+
+    desc "Choose a theme from a popup"
+    action :choose_theme do
+      Command.terminal(:choose_theme)
+    end
+
     private
 
     # simplecov:disable

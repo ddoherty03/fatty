@@ -253,16 +253,6 @@ module Fatty
       Command.session(output_session.id, :clear)
     end
 
-    desc "Cycle to the next theme"
-    action :cycle_theme do
-      Command.terminal(:cycle_theme)
-    end
-
-    desc "Choose a theme from a popup"
-    action :choose_theme do
-      Command.terminal(:choose_theme)
-    end
-
     desc "Add a digit to the current numeric prefix"
     action :prefix_digit do |digit|
       counter.push_digit(digit)
