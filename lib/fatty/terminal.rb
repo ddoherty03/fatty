@@ -85,6 +85,12 @@ module Fatty
       @sessions_by_id = {}
       @modal_stack = []
       @status_rows = 0
+
+      @immediate_render = false
+      @session_dirty = false
+      @last_render_time = nil
+      @render_count = 0
+      @deferred_count = 0
     end
 
     def inspect
@@ -129,108 +135,37 @@ module Fatty
       Fatty.debug("@sessions: #{@sessions.map(&:id).join('==')}")
 
       @running = true
-      last_render = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      pending_scroll_render = false
+      @last_render_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      @pending_scroll_render = false
       render_frame
 
-      # For performance logging
-      perf_started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       loop_count = 0
-      event_count = 0
-      tick_dirty_count = 0
-      render_count = 0
-      deferred_count = 0
-      frame_ms = 0.0
-
       while @running
         loop_count += 1
-        dirty = false
-        immediate = false
-        cmd = event_source.next_event
-        if cmd
-          apply_command(cmd)
-          dirty = true
-          immediate = true
-        end
-        s = active_session
-        begin
-          tick_dirty = !!s&.tick
-          tick_dirty_count += 1 if tick_dirty
-          dirty ||= tick_dirty
-        rescue StandardError => e
-          Fatty.error("Terminal#go tick failed: #{e.class}: #{e.message}", tag: :terminal)
-          dirty = true
-          immediate = true
-        end
-        if dirty
-          now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          if immediate || renderer.context.truecolor || !scrolling_output?
-            render_frame
-            last_render = now
-            pending_scroll_render = false
-            render_count += 1
-          elsif now - last_render >= SCROLL_RENDER_THROTTLE
-            render_frame
-            last_render = now
-            pending_scroll_render = false
-            render_count += 1
-          else
-            pending_scroll_render = true
-            deferred_count += 1
-          end
-        elsif pending_scroll_render
-          now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          if now - last_render >= SCROLL_RENDER_THROTTLE
-            render_frame
-            last_render = now
-            pending_scroll_render = false
-            render_count += 1
+        @session_dirty = false
+        @immediate_render = false
+        if (cmd = event_source.next_event)
+          begin
+            apply_command(cmd)
+            @session_dirty = true
+            @immediate_render = true
+          rescue StandardError => e
+            Fatty.error("Terminal#go apply_command failed: #{e.class}: #{e.message}", tag: :terminal)
+            Fatty.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
+            @session_dirty = true
+            @immediate_render = true
+            raise
           end
         end
-
-        now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        if now - perf_started_at >= 1.0
-          avg_frame_ms =
-            if render_count.zero?
-              0.0
-            else
-              (frame_ms / render_count).round(2)
-            end
-          # Performance logging
-          Fatty.debug(
-            "perf loops=#{loop_count} events=#{event_count} " \
-            "tick_dirty=#{tick_dirty_count} renders=#{render_count} " \
-            "deferred=#{deferred_count} avg_frame_ms=#{avg_frame_ms} " \
-            "scrolling=#{scrolling_output?}",
-            tag: :perf,
-          )
-          perf_started_at = now
-          loop_count = 0
-          event_count = 0
-          tick_dirty_count = 0
-          render_count = 0
-          deferred_count = 0
-          frame_ms = 0.0
-        end
+        @session_dirty ||= active_session&.tick
+        render_frame if render_due?
       end
     rescue => e
       Fatty.error("Terminal#go fatal error: #{e.class}: #{e.message}", tag: :terminal)
       Fatty.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
       raise
     ensure
-      begin
-        stop_curses!
-      rescue => e
-        Fatty.error("Terminal#go stop_curses! failed: #{e.class}: #{e.message}", tag: :terminal)
-        Fatty.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
-      end
-
-      begin
-        persist_sessions!
-      rescue => e
-        Fatty.error("Terminal#go persist_sessions! failed: #{e.class}: #{e.message}", tag: :terminal)
-        Fatty.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
-      end
+      cleanup_after_go
     end
 
     # --- Suspension  ------------------------------------------------
@@ -244,21 +179,6 @@ module Fatty
       start_curses!
       refresh_layout!
       render_frame
-    end
-
-    # --- Rendering ---------------------------------------------------------
-
-    def render_frame
-      renderer.begin_frame
-
-      @sessions.each do |session|
-        session.view
-      end
-      if (top = @modal_stack.last)
-        top[:session].view
-      end
-      restore_active_cursor
-      renderer.finish_frame
     end
 
     # A command is either bound for this Terminal or it's meant to be
@@ -291,6 +211,19 @@ module Fatty
 
     def tick_active_session
       active_session&.tick
+    end
+
+    def render_frame
+      renderer.begin_frame
+      @sessions.each(&:view)
+      if (top = @modal_stack.last)
+        top[:session].view
+      end
+
+      restore_active_cursor
+      renderer.finish_frame
+      @pending_scroll_render = false
+      @last_render_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     end
 
     private
@@ -432,69 +365,33 @@ module Fatty
       end
     end
 
-    # * Initialization
-    #
-    # These methods get Fatty started by reading the config, preparing
-    # Curses, the Logger, installing key definitions and mappings, and
-    # installing themes.
-    #
-    def preflight!
-      Fatty::Config.config
-      Fatty::Logger.configure
-      if Fatty::Logger.logger
-        Fatty.info("Fatty #{Fatty::VERSION} loaded from #{__dir__}", tag: :config)
-        Fatty.info("Logger configured to log to #{Logger.path}", tag: :config)
-        Fatty.info("Read config from #{Config.user_config_path}", tag: :config)
-        Fatty.info("Config", config: Config.config, tag: :config)
-      end
-      Fatty::Config.keydefs
-      Fatty::Config.keybindings
-      Fatty::Config.install_default_themes!
-      Fatty::Themes::Manager.load!
-      Thread.report_on_exception = true
-    rescue FatConfig::ParseError => ex
-      msg = "Terminal#preflight!: configuration error: #{ex.class}: #{ex.message}"
-      warn msg
-      begin
-        Fatty.error(msg, tag: :config)
-      rescue StandardError
-        nil
-      end
-      exit(1)
-    end
+    # --- Rendering ---------------------------------------------------------
 
-    def start_curses!
-      @ctx = Fatty::Curses::Context.new
-      @ctx.start
-
-      @screen = Fatty::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols, status_rows: 0)
-      @ctx.apply_layout(@screen)
-
-      @renderer =
-        if @ctx.truecolor
-          Fatty::Renderer::Truecolor.new(context: @ctx, screen: @screen, palette: @ctx.palette)
+    def render_due?
+      result =
+        if @session_dirty
+          immediate_render_due?
+        elsif @pending_scroll_render
+          scroll_render_due?
         else
-          Fatty::Renderer::Curses.new(context: @ctx, screen: @screen, palette: @ctx.palette)
+          false
         end
-      @renderer.sync_backgrounds! if @ctx.truecolor
-
-      @env ||= Fatty::Env.detect
-      key_decoder = Fatty::Curses::KeyDecoder.new(env: @env)
-      @event_source =
-        Fatty::Curses::EventSource.new(context: @ctx, key_decoder: key_decoder, poll_ms: 50)
-      self
+      if @session_dirty && !result
+        @pending_scroll_render = true
+      end
+      result
     end
 
-    def stop_curses!
-      @ctx&.close
-    ensure
-      begin
-        $stdout.write("\e[0m")  # SGR reset
-        $stdout.write("\e[0 q") # DECSCUSR: restore terminal default cursor
-        $stdout.flush
-      rescue StandardError
-        # best-effort cleanup
-      end
+    def immediate_render_due?
+      @immediate_render ||
+        renderer.context.truecolor ||
+        !scrolling_output? ||
+        scroll_render_due?
+    end
+
+    def scroll_render_due?
+      now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      now - @last_render_time >= SCROLL_RENDER_THROTTLE
     end
 
     def scrolling_output?
@@ -574,6 +471,90 @@ module Fatty
       []
     ensure
       @inside_resize_term = false if did_resize_term
+    end
+
+    # --- Initialization ---------------------------------------------------------
+
+    #
+    # These methods get Fatty started by reading the config, preparing
+    # Curses, the Logger, installing key definitions and mappings, and
+    # installing themes.
+    #
+    def preflight!
+      Fatty::Config.config
+      Fatty::Logger.configure
+      if Fatty::Logger.logger
+        Fatty.info("Fatty #{Fatty::VERSION} loaded from #{__dir__}", tag: :config)
+        Fatty.info("Logger configured to log to #{Logger.path}", tag: :config)
+        Fatty.info("Read config from #{Config.user_config_path}", tag: :config)
+        Fatty.info("Config", config: Config.config, tag: :config)
+      end
+      Fatty::Config.keydefs
+      Fatty::Config.keybindings
+      Fatty::Config.install_default_themes!
+      Fatty::Themes::Manager.load!
+      Thread.report_on_exception = true
+    rescue FatConfig::ParseError => ex
+      msg = "Terminal#preflight!: configuration error: #{ex.class}: #{ex.message}"
+      warn msg
+      begin
+        Fatty.error(msg, tag: :config)
+      rescue StandardError
+        nil
+      end
+      exit(1)
+    end
+
+    def start_curses!
+      @ctx = Fatty::Curses::Context.new
+      @ctx.start
+
+      @screen = Fatty::Screen.new(rows: ::Curses.lines, cols: ::Curses.cols, status_rows: 0)
+      @ctx.apply_layout(@screen)
+
+      @renderer =
+        if @ctx.truecolor
+          Fatty::Renderer::Truecolor.new(context: @ctx, screen: @screen, palette: @ctx.palette)
+        else
+          Fatty::Renderer::Curses.new(context: @ctx, screen: @screen, palette: @ctx.palette)
+        end
+      @renderer.sync_backgrounds! if @ctx.truecolor
+
+      @env ||= Fatty::Env.detect
+      key_decoder = Fatty::Curses::KeyDecoder.new(env: @env)
+      @event_source =
+        Fatty::Curses::EventSource.new(context: @ctx, key_decoder: key_decoder, poll_ms: 50)
+      self
+    end
+
+    # --- Shutdown ---------------------------------------------------------
+
+    def cleanup_after_go
+      begin
+        stop_curses!
+      rescue => e
+        Fatty.error("Terminal#go stop_curses! failed: #{e.class}: #{e.message}", tag: :terminal)
+        Fatty.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
+      end
+
+      begin
+        persist_sessions!
+      rescue => e
+        Fatty.error("Terminal#go persist_sessions! failed: #{e.class}: #{e.message}", tag: :terminal)
+        Fatty.error(e.backtrace.join("\n"), tag: :terminal) if e.backtrace
+      end
+    end
+
+    def stop_curses!
+      @ctx&.close
+    ensure
+      begin
+        $stdout.write("\e[0m")  # SGR reset
+        $stdout.write("\e[0 q") # DECSCUSR: restore terminal default cursor
+        $stdout.flush
+      rescue StandardError
+        # best-effort cleanup
+      end
     end
 
     def persist_sessions!
