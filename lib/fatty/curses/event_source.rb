@@ -30,9 +30,9 @@ module Fatty
 
       attr_reader :context, :key_decoder
 
-      def initialize(context:, key_decoder:, poll_ms: 200)
+      def initialize(context:, key_decoder: nil, poll_ms: 200)
         @context = context
-        @key_decoder = key_decoder
+        @key_decoder = key_decoder || KeyDecoder.new
         @poll_ms = poll_ms.to_i
         configure_input_polling!
       end

@@ -11,7 +11,7 @@ module Fatty
     class KeyDecoder
       attr_reader :map, :env
 
-      def initialize(env:)
+      def initialize(env: Env.detect)
         @env = env
         @map = {}
         load_builtin_map
