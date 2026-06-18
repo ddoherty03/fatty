@@ -149,6 +149,18 @@ module Fatty
       Fatty::KeyMap.active.bindings_for(self) || {}
     end
 
+    def ctrl?
+      @ctrl
+    end
+
+    def meta?
+      @meta
+    end
+
+    def shift?
+      @shift
+    end
+
     private
 
     def bytes_from_raw(value)
@@ -221,18 +233,6 @@ module Fatty
           owner.to_s
         end
       name.split("::").last
-    end
-
-    def ctrl?
-      @ctrl
-    end
-
-    def meta?
-      @meta
-    end
-
-    def shift?
-      @shift
     end
 
     def report_for_uncoded
