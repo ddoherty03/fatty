@@ -54,7 +54,6 @@ module Fatty
       # Counts (prefix arg)
       map.bind(key: :u, ctrl: true, action: :universal_argument)
       map.bind_digits(context: :text, meta: true)
-      map.bind_digits(context: :popup)
       map.bind_digits(context: :paging)
       # ShellSession uses contexts [:paging, :terminal] while the pager is
       # active. Bind C-u in :terminal so it works as a prefix during paging
