@@ -9,6 +9,9 @@ dynamically-generated help text to output in markdown. It would know about the
 user's keybindings, keydefs, and actions. It would get key descriptions from
 the action desc line.
 
+* DONE [#A] Fix numbers in search
+CLOSED: [2026-06-18 Thu 04:04]
+They are getting consumed as counts, I think.  They should be available for narrowing.
 * DONE Theming
 CLOSED: [2026-05-22 Fri 09:28]
 ** Add attributes (like bold to themes)
