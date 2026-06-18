@@ -12,7 +12,7 @@ module Fatty
   class KeyGesture
     attr_reader :key, :ctrl, :meta, :shift
 
-    def initialize(key:, ctrl:, meta:, shift:)
+    def initialize(key:, ctrl: false, meta: false, shift: false)
       @key = key
       @ctrl = ctrl
       @meta = meta
@@ -64,7 +64,7 @@ module Fatty
   class MouseGesture
     attr_reader :button, :ctrl, :meta, :shift
 
-    def initialize(button:, ctrl:, meta:, shift:)
+    def initialize(button:, ctrl: false, meta: false, shift: false)
       @button = button
       @ctrl = ctrl
       @meta = meta

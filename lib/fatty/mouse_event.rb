@@ -6,7 +6,7 @@ module Fatty
   class MouseEvent
     attr_reader :button, :x, :y, :ctrl, :meta, :shift, :raw
 
-    def initialize(button:, x: nil, y:, raw: nil, ctrl: false, meta: false, shift: false)
+    def initialize(button:, x: 0, y: 0, raw: nil, ctrl: false, meta: false, shift: false)
       @button = button
       @x = x
       @y = y

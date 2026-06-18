@@ -5,7 +5,7 @@ module Fatty
     attr_accessor :top
     attr_accessor :height
 
-    def initialize(top: 0, height:)
+    def initialize(top: 0, height: 10)
       @top    = top
       @height = height
     end

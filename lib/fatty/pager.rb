@@ -9,7 +9,7 @@ module Fatty
     action_on :pager
     attr_reader :mode
 
-    def initialize(output:, viewport:, mode: :paging)
+    def initialize(output:, viewport: Viewport.new, mode: :paging)
       @output   = output
       @viewport = viewport
       # @mode can be :paging, or :scrolling
