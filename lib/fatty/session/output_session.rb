@@ -94,8 +94,7 @@ module Fatty
 
     def view
       if pager_active?
-        ::Curses.curs_set(0)
-
+        renderer.hide_cursor
         renderer.render_output(self, viewport: pager_status_viewport(renderer.screen))
         renderer.render_pager_field(
           pager_field,

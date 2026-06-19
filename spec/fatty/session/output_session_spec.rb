@@ -287,13 +287,12 @@ RSpec.describe Fatty::OutputSession do
       session = Fatty::OutputSession.new
       init_output_session(session, rows: 4)
       append_lines(session, 5)
-
       allow(Curses).to receive(:curs_set)
-
+      expect(session.terminal.renderer)
+        .to receive(:hide_cursor)
       expect(session.terminal.renderer)
         .to receive(:render_output)
               .with(session, viewport: instance_of(Fatty::Viewport))
-
       expect(session.terminal.renderer)
         .to receive(:render_pager_field)
               .with(
@@ -301,7 +300,6 @@ RSpec.describe Fatty::OutputSession do
                 row: 3,
                 role: :pager_status,
               )
-
       session.view
     end
   end

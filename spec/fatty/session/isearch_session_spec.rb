@@ -179,17 +179,14 @@ module Fatty
         terminal = instance_double(Fatty::Terminal, screen: screen, renderer: renderer)
 
         session.init(terminal: terminal)
-
-        allow(::Curses).to receive(:curs_set)
-
+        expect(renderer)
+          .to receive(:show_cursor)
         expect(renderer)
           .to receive(:render_pager_field)
           .with(session.field, row: 9, role: :search_input)
-
         expect(renderer)
           .to receive(:restore_output_cursor)
           .with(session.field, row: 9)
-
         session.view
       end
     end

@@ -9,6 +9,7 @@ module Fatty
         super
         @ansi_renderer = Fatty::Ansi::Renderer.new
         @pending_ansi_draws = []
+        @cursor_visible = true
       end
 
       def render_status(status_session)
@@ -200,9 +201,25 @@ module Fatty
       end
 
       def restore_cursor(field)
+        return self unless @cursor_visible
+
         rect = screen.input_rect
         x = field.cursor_x.to_i.clamp(0, [rect.cols - 1, 0].max)
         queue_ansi_cursor(row: rect.row, col: rect.col + x)
+      end
+
+      def show_cursor
+        @cursor_visible = true
+        ::Curses.curs_set(1)
+        @ansi_renderer.write_ansi(@ansi_renderer.hide_cursor)
+        self
+      end
+
+      def hide_cursor
+        @cursor_visible = false
+        ::Curses.curs_set(0)
+        @ansi_renderer.write_ansi(@ansi_renderer.hide_cursor)
+        self
       end
 
       # In truecolor mode, curses windows must still have themed backgrounds.
@@ -224,15 +241,14 @@ module Fatty
       # Restore cursor into the output window at a specific *output-win* row.
       # `row:` is 0..(screen.output_rect.rows-1), NOT an absolute screen row.
       def restore_output_cursor(field, row:)
-        cols = @screen.cols
+        return self unless @cursor_visible
 
+        cols = @screen.cols
         x = field.cursor_x.to_i
         x = x.clamp(0, [cols - 1, 0].max)
-
         row0 = @screen.output_rect.row
         col0 = @screen.output_rect.col
         cols = @screen.output_rect.cols
-
         @pending_ansi_draws << {
           type: :cursor,
           row: row0 + row,
@@ -585,7 +601,9 @@ module Fatty
         @pending_ansi_draws.each do |draw|
           case draw[:type]
           when :cursor
-            @ansi_renderer.write_ansi("\e[#{draw[:row] + 1};#{draw[:col] + 1}H")
+            if @cursor_visible
+              @ansi_renderer.write_ansi("\e[#{draw[:row] + 1};#{draw[:col] + 1}H")
+            end
           when :segments_line
             @ansi_renderer.render_segments_line(
               row: draw[:row],
@@ -608,8 +626,7 @@ module Fatty
         end
         @pending_ansi_draws.clear
       ensure
-        # Unhide the cursor
-        @ansi_renderer.write_ansi("\e[?25h")
+        @ansi_renderer.write_ansi(@cursor_visible ? "\e[?25h" : "\e[?25l")
       end
     end
   end

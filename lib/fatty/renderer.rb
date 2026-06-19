@@ -110,6 +110,12 @@ module Fatty
       @last_popup_state = nil
     end
 
+    def hide_cursor
+    end
+
+    def show_cursor
+    end
+
     protected
 
     # simplecov:disable

@@ -53,7 +53,7 @@ module Fatty
     def view
       row = screen.output_rect.rows - 1
 
-      ::Curses.curs_set(1)
+      renderer.show_cursor
       renderer.render_pager_field(
         @field,
         row: row,

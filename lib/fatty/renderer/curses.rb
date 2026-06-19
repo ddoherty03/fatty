@@ -377,6 +377,16 @@ module Fatty
         stage_window(win)
       end
 
+      def hide_cursor
+        ::Curses.curs_set(0)
+        self
+      end
+
+      def show_cursor
+        ::Curses.curs_set(1)
+        self
+      end
+
       private
 
       # simplecov:disable

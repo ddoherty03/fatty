@@ -84,10 +84,10 @@ module Fatty
     def view
       output_session.view
       if input_suppressed?
-        ::Curses.curs_set(0)
         renderer.clear_input_field
+        renderer.hide_cursor
       else
-        ::Curses.curs_set(1)
+        renderer.show_cursor
         renderer.render_input_field(field)
         renderer.restore_cursor(field)
       end
@@ -255,6 +255,10 @@ module Fatty
 
     def pager_active?
       output_session.pager_active?
+    end
+
+    def cursor_visible?
+      !input_suppressed?
     end
 
     private

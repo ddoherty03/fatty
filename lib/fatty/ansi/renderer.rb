@@ -73,6 +73,14 @@ module Fatty
         @io || $stdout
       end
 
+      def show_cursor
+        "#{CSI}?25h"
+      end
+
+      def hide_cursor
+        "#{CSI}?25l"
+      end
+
       # simplecov:disable
       private
 
