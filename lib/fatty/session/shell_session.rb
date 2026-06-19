@@ -113,22 +113,15 @@ module Fatty
             Command.session(:alert, :clear),
           ]
         else
-          commands = [
-            Command.session(output_session.id, :begin_command),
-            Command.session(output_session.id, :append, text: "$ #{line}\n", follow: true),
-          ]
-          # Within the accept_proc, the text from `env.append` and
-          # `env.markdown` is rendered to output first, then whatever string
-          # is returned by the proc is rendered.  If you want to control order
-          # precisesly use `env.append` in the on_accept proc and return nil.
+          commands = []
           env = accept_env
+          terminal.apply_command(Command.session(output_session.id, :begin_command))
           result =
             if @on_accept
               @on_accept.call(line, env)
             else
               run_default_command(line)
             end
-
           commands.concat(env.commands)
           if result.is_a?(String)
             commands << Command.session(output_session.id, :append, text: result, follow: true)
