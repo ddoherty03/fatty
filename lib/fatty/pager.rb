@@ -295,6 +295,17 @@ module Fatty
       @autoscroll = false
     end
 
+    def finish_command!
+      @anchor = nil
+      if @mode == :scrolling && @output.lines.length > page_height
+        set_to_paging
+        @viewport.top = max_page_top
+      elsif @mode == :paging && @output.lines.length > page_height
+        @paused = true
+        clamp_to_page!
+      end
+    end
+
     def reset!(total_lines: 0, mode: :paging)
       @mode = mode
       @paused = false

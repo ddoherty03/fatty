@@ -70,6 +70,9 @@ module Fatty
           reset_for_command!
           pager.begin_command!(anchor: output.lines.length)
           []
+        when :finish_command
+          pager.finish_command!
+          []
         when :quit_paging
           pager.quit
           [Command.terminal(:refresh_layout)]
