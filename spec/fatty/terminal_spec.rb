@@ -93,6 +93,12 @@ module Fatty
       def context
         @context ||= TerminalSpecContext.new(truecolor: false)
       end
+
+      def hide_cursor
+      end
+
+      def show_cursor
+      end
     end
 
     def terminal
