@@ -19,6 +19,7 @@ module Fatty
         renderer: renderer,
         modal_active?: modal_active,
       )
+      allow(terminal).to receive(:apply_command)
       session.init(terminal: terminal)
       session
     end
@@ -170,18 +171,14 @@ module Fatty
         session = Fatty::ShellSession.new
         init_shell_session(session, modal_active: false)
 
-        allow(::Curses).to receive(:curs_set)
-
         expect(session.output_session).to receive(:view)
-
+        expect(session.renderer).to receive(:show_cursor)
         expect(session.renderer)
           .to receive(:render_input_field)
                 .with(session.field)
-
         expect(session.renderer)
           .to receive(:restore_cursor)
                 .with(session.field)
-
         session.view
       end
 
@@ -191,6 +188,7 @@ module Fatty
         allow(::Curses).to receive(:curs_set)
 
         expect(session.output_session).to receive(:view)
+        expect(session.renderer).to receive(:hide_cursor)
         expect(session.renderer).to receive(:clear_input_field)
         expect(session.renderer).not_to receive(:render_input_field)
         session.view
@@ -274,25 +272,27 @@ module Fatty
         session.field.buffer.replace("hello")
 
         commands = apply_action(session, :submit_line)
-
+        expect(session.terminal)
+          .to have_received(:apply_command)
+                .with(have_attributes(action: :begin_command))
         expect(commands.map(&:action))
-          .to eq([:begin_command, :append, :append, :append])
-        expect(commands[1].payload[:text]).to eq("$ hello\n")
-        expect(commands[2].payload[:text]).to eq("callback output\n")
-        expect(commands[3].payload[:text]).to eq("result output\n")
+          .to eq([:append, :append, :finish_command])
+        expect(commands[0].payload[:text]).to eq("callback output\n")
+        expect(commands[1].payload[:text]).to eq("result output\n")
       end
 
       it "submits default command output" do
         session = Fatty::ShellSession.new
         init_shell_session(session)
 
-        session.field.buffer.replace("hello")
-
+        session.field.buffer.replace("echo hello")
         commands = apply_action(session, :submit_line)
-
+        expect(session.terminal)
+          .to have_received(:apply_command)
+                .with(have_attributes(action: :begin_command))
         expect(commands.map(&:action))
-          .to eq([:begin_command, :append])
-        expect(commands[1].payload[:text]).to eq("$ hello\n")
+          .to eq([:append, :append, :finish_command])
+        expect(commands[0].payload[:text]).to eq("$ echo hello\n")
       end
 
       it "submits command arrays returned by the accept callback" do
@@ -302,18 +302,18 @@ module Fatty
             env.append("two\n"),
           ]
         end
-
         session = Fatty::ShellSession.new(on_accept: callback)
         init_shell_session(session)
 
         session.field.buffer.replace("hello")
-
         commands = apply_action(session, :submit_line)
-
+        expect(session.terminal)
+          .to have_received(:apply_command)
+                .with(have_attributes(action: :begin_command))
         expect(commands.map(&:action))
-          .to eq([:begin_command, :append, :append, :append])
-        expect(commands[2].payload[:text]).to eq("one\n")
-        expect(commands[3].payload[:text]).to eq("two\n")
+          .to eq([:append, :append, :finish_command])
+        expect(commands[0].payload[:text]).to eq("one\n")
+        expect(commands[1].payload[:text]).to eq("two\n")
       end
 
       it "submits and switches output to scrolling mode" do
@@ -325,14 +325,14 @@ module Fatty
         init_shell_session(session)
 
         session.field.buffer.replace("hello")
-
         commands = apply_action(session, :submit_and_scroll)
-
+        expect(session.terminal)
+          .to have_received(:apply_command)
+                .with(have_attributes(action: :begin_command))
         expect(commands.map(&:action))
-          .to eq([:begin_command, :append, :append, :paging_to_scrolling])
-        expect(commands[1].payload[:text]).to eq("$ hello\n")
-        expect(commands[2].payload[:text]).to eq("callback output\n")
-        expect(commands[3].target).to eq(session.output_session.id)
+          .to eq([:append, :finish_command, :paging_to_scrolling])
+        expect(commands[0].payload[:text]).to eq("callback output\n")
+        expect(commands[0].target).to eq(session.output_session.id)
       end
 
       it "interrupts paging" do

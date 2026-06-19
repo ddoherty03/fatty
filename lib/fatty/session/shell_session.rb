@@ -132,7 +132,7 @@ module Fatty
           elsif result
             commands << Command.session(output_session.id, :append, text: result.to_s, follow: true)
           end
-          commands
+          commands << Command.session(output_session.id, :finish_command)
         end
       end
     end
@@ -328,12 +328,14 @@ module Fatty
     end
 
     def run_default_command(line)
-      Command.session(output_session.id, :append, text: "$ #{line}\n", follow: true)
+      commands = [Command.session(output_session.id, :append, text: "$ #{line}\n", follow: true)]
       out, status = Open3.capture2e(line)
-      out << "\n[exit #{status.exitstatus}]\n" if status&.exitstatus && status.exitstatus != 0
-      out
-    rescue Errno::ENOENT
-      nil
+      if status&.exitstatus && status.exitstatus != 0
+        out << "\n[exit #{status.exitstatus}]\n"
+      end
+      commands << Command.session(output_session.id, :append, text: out, follow: true)
+    rescue Errno::ENOENT => ex
+      commands << Command.session(output_session.id, :append, text: ex.to_s, follow: true)
     end
 
     #########################################################################################
