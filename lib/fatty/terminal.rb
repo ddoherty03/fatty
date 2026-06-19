@@ -649,19 +649,27 @@ module Fatty
       @prompt_history ||= Fatty::History.new(path: :default)
     end
 
+    def hide_cursor
+      renderer.hide_cursor
+    end
+
+    def show_cursor
+      renderer.show_cursor
+    end
+
     def restore_active_cursor
       if @modal_stack && !@modal_stack.empty?
         session = @modal_stack.last[:session]
 
         if session.respond_to?(:pager_active?) && session.pager_active?
-          ::Curses.curs_set(0)
+          renderer.hide_cursor
           return
         end
 
         if session.respond_to?(:win) && session.respond_to?(:field) && session.field
           win = session.win
           unless win
-            ::Curses.curs_set(0)
+            renderer.hide_cursor
             return
           end
 
@@ -669,18 +677,17 @@ module Fatty
             maxy = win.maxy
             maxx = win.maxx
           rescue RuntimeError
-            ::Curses.curs_set(0)
+            renderer.hide_cursor
             return
           end
 
           # If the popup is too small to place a cursor safely, just hide it.
           if maxy < 3 || maxx < 3
-            ::Curses.curs_set(0)
+            renderer.hide_cursor
             return
           end
 
-          ::Curses.curs_set(1)
-
+          renderer.show_cursor
           cursor_x = session.field.cursor_x
           cursor_x = 0 if cursor_x.nil?
 
@@ -690,7 +697,7 @@ module Fatty
             begin
               win.setpos(input_row, 1 + cursor_x)
             rescue RuntimeError
-              ::Curses.curs_set(0)
+              renderer.hide_cursor
             end
           elsif session.is_a?(Fatty::PromptSession)
             message_rows = session.message && !session.message.empty? ? 1 : 0
@@ -699,30 +706,31 @@ module Fatty
             begin
               win.setpos(input_row, 1 + cursor_x)
             rescue RuntimeError
-              ::Curses.curs_set(0)
+              renderer.hide_cursor
             end
           else
-            ::Curses.curs_set(0)
+            renderer.hide_cursor
           end
-
           return
         end
-
-        ::Curses.curs_set(0)
+        renderer.hide_cursor
         return
       end
 
       session = active_session
       return unless session
 
-      if session.respond_to?(:pager_active?) && session.pager_active?
-        ::Curses.curs_set(0)
+      if session.respond_to?(:cursor_visible?) && !session.cursor_visible?
+        renderer.hide_cursor
         return
       end
-
+      if session.respond_to?(:pager_active?) && session.pager_active?
+        renderer.hide_cursor
+        return
+      end
       return unless session.respond_to?(:field) && session.field
 
-      ::Curses.curs_set(1)
+      renderer.show_cursor
       renderer.restore_cursor(session.field)
     end
 
