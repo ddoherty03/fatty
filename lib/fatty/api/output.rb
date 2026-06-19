@@ -7,6 +7,12 @@ module Fatty
       nil
     end
 
+    def append_now(text, follow: true, mode: nil)
+      cmd = Command.session(output_id, :append, text: text.to_s, follow:, mode:)
+      terminal.apply_command(cmd)
+      nil
+    end
+
     def markdown(text)
       md = Fatty::Markdown.render(
         text,

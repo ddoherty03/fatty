@@ -199,6 +199,7 @@ module Fatty
       else
         apply_session_command(command)
       end
+      render_frame if render_due?
     end
 
     def modal_active?
@@ -653,6 +654,7 @@ module Fatty
       end
 
       commands = session.update(command)
+      @session_dirty = true
       apply_commands(commands)
     end
 
