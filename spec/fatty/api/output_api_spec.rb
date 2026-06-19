@@ -5,7 +5,11 @@ require "spec_helper"
 module Fatty
   RSpec.describe OutputApi do
     let(:renderer) { instance_double(Fatty::Renderer, palette: :palette) }
-    let(:terminal) { instance_double(Fatty::Terminal, renderer: renderer) }
+    let(:terminal) do
+      term = instance_double(Fatty::Terminal, renderer: renderer)
+      allow(term).to receive(:apply_command)
+      term
+    end
 
     let(:env) do
       Fatty::CallbackEnvironment.new(
@@ -35,6 +39,52 @@ module Fatty
         env.append(:hello)
 
         expect(env.commands.first.payload.fetch(:text)).to eq("hello")
+      end
+    end
+
+    describe "#append_now" do
+      it "applies an output append command and returns nil" do
+        result = env.append_now("hello")
+
+        expect(result).to be_nil
+        expect(terminal)
+          .to have_received(:apply_command)
+                .with(have_attributes(
+                        target: :output,
+                        action: :append,
+                        payload: { text: "hello", follow: true },
+                      ))
+        expect(env.commands).to be_empty
+      end
+
+      it "honors follow" do
+        env.append_now("hello", follow: false)
+        expect(terminal)
+          .to have_received(:apply_command)
+                .with(have_attributes(
+                        action: :append,
+                        payload: { text: "hello", follow: false },
+                      ))
+      end
+
+      it "honors mode" do
+        env.append_now("hello", mode: :scrolling)
+        expect(terminal)
+          .to have_received(:apply_command)
+                .with(have_attributes(
+                        action: :append,
+                        payload: { text: "hello", follow: true, mode: :scrolling },
+                      ))
+      end
+
+      it "converts text to string" do
+        env.append_now(:hello)
+        expect(terminal)
+          .to have_received(:apply_command)
+                .with(have_attributes(
+                        action: :append,
+                        payload: { text: "hello", follow: true },
+                      ))
       end
     end
 

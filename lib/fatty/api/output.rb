@@ -8,8 +8,9 @@ module Fatty
     end
 
     def append_now(text, follow: true, mode: nil)
-      cmd = Command.session(output_id, :append, text: text.to_s, follow:, mode:)
-      terminal.apply_command(cmd)
+      payload = { text: text.to_s, follow: follow }
+      payload[:mode] = mode if mode
+      terminal.apply_command(Command.session(output_id, :append, **payload))
       nil
     end
 
