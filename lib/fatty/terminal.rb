@@ -264,19 +264,6 @@ module Fatty
     # Rendering follows the same layering: permanent sessions are rendered
     # first, followed by the top modal session.
     #
-    # Commands are plain Ruby arrays for now.
-    #
-    # Suggested shapes:
-    #
-    # Terminal/runtime commands:
-    #   [:terminal, :quit]
-    #   [:terminal, :push, session]
-    #   [:terminal, :pop]
-    #
-    # Session-targeted commands (no special casing):
-    #   [:send, :alert, :show, { level: :warn, message: "No matches" }]
-    #   [:send, :alert, :clear, {}]
-
     def install_session(session, focus: false)
       @sessions << session
       register(session)

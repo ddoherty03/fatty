@@ -2,12 +2,6 @@
 
 module Fatty
   # A pinned, non-interactive overlay session responsible for rendering alerts.
-  #
-  # It is intentionally dumb:
-  #   - Terminal does not special-case alerts
-  #   - other sessions emit commands like:
-  #       [:send, :alert, :show, { level:, message: }]
-  #       [:send, :alert, :clear, {}]
   class AlertSession < Session
     attr_reader :current
 
