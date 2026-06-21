@@ -147,6 +147,36 @@ module Fatty
         expect(text).to include("^")
         expect(text).to include(".")
       end
+
+      it "does not truncate trail indicators" do
+        progress = Progress.new(
+          terminal: terminal,
+          label: "Importing",
+          total: 150,
+          style: :trail,
+        )
+
+        statuses = []
+        allow(terminal).to receive(:apply_command) do |command|
+          if command.target == :status && command.action == :show
+            statuses << command.payload.fetch(:text)
+          end
+        end
+
+        150.times do |i|
+          progress.update(current: i + 1, indicator: ".", render: false)
+        end
+
+        text = statuses.last
+        rendered =
+          if text.is_a?(Array)
+            text.map { |part| part.is_a?(Hash) ? part[:text].to_s : part.to_s }.join
+          else
+            text.to_s
+          end
+
+        expect(rendered.count(".")).to eq(150)
+      end
     end
 
     describe "#update with bar style" do

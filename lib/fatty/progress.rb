@@ -83,16 +83,12 @@ module Fatty
     attr_reader :current
 
     def show_status(text, role:)
-      terminal.apply_command(
-        Command.session(:status, :show, text: text, role: role)
-      )
+      terminal.apply_command(Command.session(:status, :show, text: text, role: role))
       nil
     end
 
     def clear_status
-      terminal.apply_command(
-        Command.session(:status, :clear)
-      )
+      terminal.apply_command(Command.session(:status, :clear))
       nil
     end
 
@@ -103,21 +99,10 @@ module Fatty
       return if renderable_indicator_text(item).empty?
 
       @trail << item
-      trim_trail if @width && @width > 0
-    end
-
-    def renderable_indicator_text(item)
-      if item.is_a?(Hash) && item.key?(:text)
-        item[:text].to_s
-      else
-        item.to_s
-      end
     end
 
     def refresh
-      terminal.apply_command(
-        Fatty::Command.session(:status, :show, text: render_text, role: role)
-      )
+      terminal.apply_command(Fatty::Command.session(:status, :show, text: render_text, role: role))
     end
 
     def render_text(suffix: nil)
@@ -166,52 +151,7 @@ module Fatty
       trailer = suffix.to_s.empty? ? "" : "  #{suffix}"
       return "#{base}#{trailer}" if @trail.empty?
 
-      limit = trail_limit(base, trailer)
-      trail = limited_trail(limit)
-      [base, "  ", *trail, trailer]
-    end
-
-    def trail_limit(prefix, suffix = "")
-      cols =
-        if terminal.screen
-          terminal.screen.cols.to_i
-        else
-          80
-        end
-
-      available = cols - visible_length(prefix) - visible_length(suffix) - 4
-      available = 0 if available < 0
-      available
-    end
-
-    def limited_trail(limit)
-      used = 0
-      selected = []
-
-      @trail.reverse_each do |item|
-        width = visible_length(item)
-        break if used + width > limit
-
-        selected.unshift(item)
-        used += width
-      end
-
-      selected
-    end
-
-    def trim_trail
-      used = 0
-      selected = []
-
-      @trail.reverse_each do |item|
-        width = visible_length(item)
-        break if used + width > @width
-
-        selected.unshift(item)
-        used += width
-      end
-
-      @trail = selected
+      [base, "  ", *@trail, trailer]
     end
 
     def visible_length(value)
