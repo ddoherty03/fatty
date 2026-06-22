@@ -17,6 +17,10 @@ module Fatty
     #########################################################################################
 
     def update(command)
+      Fatty.debug(
+        "StatusSession before action=#{command.action} text=#{text.inspect}",
+        tag: :session,
+      )
       log_update(command)
       old_rows = rows
       case command.action
@@ -25,6 +29,10 @@ module Fatty
       when :clear
         clear
       end
+      Fatty.debug(
+        "StatusSession after action=#{command.action} text=#{text.inspect}",
+        tag: :session,
+      )
       new_rows = rows
       commands = []
       if old_rows != new_rows
@@ -35,6 +43,15 @@ module Fatty
     end
 
     def view
+      Fatty.debug(
+        "ShellSession#view " \
+        "visible=#{visible?} " \
+        "text=#{text.inspect} " \
+        "output_rect=#{renderer.screen.output_rect.inspect} " \
+        "status_rect=#{renderer.screen.status_rect.inspect} " \
+        "input_rect=#{renderer.screen.input_rect.inspect}",
+        tag: :render,
+      )
       return unless visible?
 
       renderer.render_status(self)
@@ -93,8 +110,22 @@ module Fatty
     end
 
     def set(payload)
-      @text = payload[:text]
+      @text = chomp_text(payload.fetch(:text))
       @role = payload[:role] || :info
+    end
+
+    def chomp_text(text)
+      case text
+      when String
+        text.chomp
+      when Array
+        text = text.dup
+        index = text.rindex { |segment| segment.is_a?(String) && !segment.empty? }
+        text[index] = text[index].chomp if index
+        text
+      else
+        text
+      end
     end
 
     def clear

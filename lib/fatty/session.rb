@@ -91,6 +91,7 @@ module Fatty
 
     def log_update(command)
       payload = command.payload
+      text = payload[:text] || nil
       msg =
         case command.action
         when :key
@@ -102,7 +103,7 @@ module Fatty
             else
               command.target.to_s
             end
-          "#{self.class}#update(command -> #{command.inspect}) session: #{sess_str}"
+          "#{self.class}#update(command -> #{command.inspect}) session: #{sess_str} text: #{text}"
         end
       Fatty.debug(msg, tag: :session)
     end
