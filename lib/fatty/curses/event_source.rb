@@ -49,7 +49,11 @@ module Fatty
           # operation instead of decoding them as individual key events.
           Command.session(:active, :terminal_paste, text: raw.last)
         elsif (ev = @key_decoder.decode(raw))
-          Command.session(:active, :key, event: ev)
+          if ev.key == :resize
+            Command.terminal(:resize)
+          else
+            Command.session(:active, :key, event: ev)
+          end
         else
           Fatty.warn("undecoded input: #{raw.inspect}", tag: :input)
           nil

@@ -88,6 +88,7 @@ module Fatty
 
       @immediate_render = false
       @session_dirty = false
+      @render_requested = false
       @last_render_time = nil
       @render_count = 0
       @deferred_count = 0
@@ -216,14 +217,21 @@ module Fatty
 
     def render_frame
       renderer.begin_frame
-      @sessions.each(&:view)
+      focused_session&.view
+      Fatty.info("rendering #{focused_session.id}", tag: :render)
       if (top = @modal_stack.last)
+        Fatty.info("rendering #{top[:session].id}", tag: :render)
         top[:session].view
       end
-
+      Fatty.info("rendering #{status_session.id}", tag: :render)
+      status_session.view
+      Fatty.info("rendering #{alert_session.id}", tag: :render)
+      alert_session.view
       restore_active_cursor
       renderer.finish_frame
       @pending_scroll_render = false
+      @render_requested = false
+      @session_dirty = false
       @last_render_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     end
 
@@ -356,6 +364,8 @@ module Fatty
     # --- Rendering ---------------------------------------------------------
 
     def render_due?
+      return true if @render_requested
+
       result =
         if @session_dirty
           immediate_render_due?
@@ -423,25 +433,28 @@ module Fatty
       return [] if size == @last_handled_resize_size
 
       @last_handled_resize_size = size
-
       did_resize_term = false
-
       # ncurses must be told to finalize internal resize state before we
       # draw ANSI output. Without this, ANSI writes after resize may be
       # ignored or clipped. Guarded to avoid recursive resize storms.
       unless @inside_resize_term
         @inside_resize_term = true
         did_resize_term = true
-
         # Use ncurses' high-level resize finalizer. This updates stdscr/curscr
         # and ncurses bookkeeping before we rebuild Fatty's own layout and draw
         # the ANSI overlay. resize_term is lower-level and is not equivalent here.
         ::Curses.resizeterm(rows, cols)
       end
 
-      renderer.clear_physical_screen! if renderer.context.truecolor
+      # renderer.clear_physical_screen! if renderer.context.truecolor
 
       screen.resize(rows: rows, cols: cols, status_rows: @status_rows)
+      Fatty.info(
+        "handle_resize after=#{screen.rows}x#{screen.cols} " \
+        "output_after=#{screen.output_rect.inspect}",
+        tag: :resize,
+      )
+
       renderer.context.apply_layout(screen)
       renderer.screen = screen
       renderer.sync_backgrounds! if renderer.context.truecolor
@@ -456,6 +469,7 @@ module Fatty
         cmds = session.handle_resize
         apply_commands(cmds)
       end
+      @render_requested = true
       []
     ensure
       @inside_resize_term = false if did_resize_term
@@ -565,6 +579,15 @@ module Fatty
 
     def user_interaction_command?(command)
       key_event_command?(command) && !resize_command?(command)
+    end
+
+    def user_interaction_command?(command)
+      return false if command.action == :resize
+      return false unless command.target == :active
+      return false unless command.action == :key
+
+      event = command.payload[:event]
+      event && event.key != :resize
     end
 
     # Return whether command is a key event

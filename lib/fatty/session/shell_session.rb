@@ -64,8 +64,6 @@ module Fatty
               apply_action(action, args, event: ev)
             else
               case ev.key
-              when :resize
-                Command.terminal(:resize)
               when :enter, :return
                 apply_action(:submit_line, [], event: ev)
               else
@@ -82,6 +80,11 @@ module Fatty
     end
 
     def view
+      Fatty.debug(
+        "ShellSession#view output_session=" \
+        "#{output_session.class}:#{output_session.object_id}",
+        tag: :render,
+      )
       output_session.view
       if input_suppressed?
         renderer.clear_input_field

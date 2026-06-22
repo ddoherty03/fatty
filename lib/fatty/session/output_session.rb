@@ -96,6 +96,10 @@ module Fatty
     end
 
     def view
+      Fatty.debug(
+        "OutputSession#view id=#{id} pager_active=#{pager_active?} output_rect=#{renderer.screen.output_rect.inspect}",
+        tag: :render,
+      )
       if pager_active?
         renderer.hide_cursor
         renderer.render_output(self, viewport: pager_status_viewport(renderer.screen))
