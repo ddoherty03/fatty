@@ -23,6 +23,22 @@ module Fatty
         expect(event.payload[:text]).to eq("hello\nworld\n")
       end
 
+      it "converts a resize key into a terminal resize command" do
+        source = EventSource.new(
+          context: context,
+          key_decoder: key_decoder,
+          poll_ms: 10,
+        )
+        allow(source).to receive(:read_raw).and_return(::Curses::KEY_RESIZE)
+        allow(key_decoder)
+          .to receive(:decode)
+                .with(::Curses::KEY_RESIZE)
+                .and_return(Fatty::KeyEvent.new(key: :resize))
+        command = source.next_event
+        expect(command.target).to eq(:terminal)
+        expect(command.action).to eq(:resize)
+      end
+
       it "returns a mouse event command when read_raw returns a mouse event" do
         mouse = Fatty::MouseEvent.new(
           button: :left,

@@ -102,13 +102,25 @@ module Fatty
     end
 
     def terminal
-      t = Fatty::Terminal.new
-      t.instance_variable_set(:@renderer, TerminalSpecRenderer.new)
-      t.instance_variable_set(:@sessions, [])
-      t.instance_variable_set(:@sessions_by_id, {})
-      t.instance_variable_set(:@modal_stack, [])
-      t.instance_variable_set(:@running, false)
-      t
+      terminal = Fatty::Terminal.new
+      terminal.instance_variable_set(:@renderer, TerminalSpecRenderer.new)
+      terminal.instance_variable_set(:@sessions, [])
+      terminal.instance_variable_set(:@sessions_by_id, {})
+      terminal.instance_variable_set(:@modal_stack, [])
+      terminal.instance_variable_set(:@running, false)
+
+      ss = install_session(
+        terminal,
+        TerminalSpecSession.new(id: :status),
+      )
+      terminal.instance_variable_set(:@status_session, ss)
+      as = install_session(
+        terminal,
+        TerminalSpecSession.new(id: :alert),
+      )
+      terminal.instance_variable_set(:@alert_session, as)
+
+      terminal
     end
 
     def install_session(terminal, session, focus: false)
@@ -128,7 +140,7 @@ module Fatty
         shell = install_session(t, TerminalSpecSession.new(id: :shell), focus: true)
 
         expect(t.inspect).to include("Terminal:")
-        expect(t.inspect).to include("sessions size: 1")
+        expect(t.inspect).to include("sessions size: 3")
         expect(t.inspect).to include("active: #{shell.id}")
       end
     end
@@ -476,11 +488,16 @@ module Fatty
     end
 
     describe "#render_frame" do
-      it "renders permanent sessions, then the top modal, inside a renderer frame" do
+      it "renders the focused session, top modal, status, and alert inside a renderer frame" do
         t = terminal
         renderer = t.renderer
-        shell = install_session(t, TerminalSpecSession.new(id: :shell), focus: true)
-        status = install_session(t, TerminalSpecSession.new(id: :status))
+        shell = install_session(
+          t,
+          TerminalSpecSession.new(id: :shell),
+          focus: true,
+        )
+        status = t.status_session
+        alert = t.alert_session
         modal = TerminalSpecSession.new(id: :modal)
 
         t.apply_command(Fatty::Command.terminal(:push_modal, session: modal))
@@ -488,8 +505,9 @@ module Fatty
 
         expect(renderer.begins).to eq(1)
         expect(shell.views).to eq(1)
-        expect(status.views).to eq(1)
         expect(modal.views).to eq(1)
+        expect(status.views).to eq(1)
+        expect(alert.views).to eq(1)
         expect(renderer.finishes).to eq(1)
       end
     end

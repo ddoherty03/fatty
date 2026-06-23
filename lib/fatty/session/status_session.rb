@@ -43,15 +43,6 @@ module Fatty
     end
 
     def view
-      Fatty.debug(
-        "ShellSession#view " \
-        "visible=#{visible?} " \
-        "text=#{text.inspect} " \
-        "output_rect=#{renderer.screen.output_rect.inspect} " \
-        "status_rect=#{renderer.screen.status_rect.inspect} " \
-        "input_rect=#{renderer.screen.input_rect.inspect}",
-        tag: :render,
-      )
       return unless visible?
 
       renderer.render_status(self)

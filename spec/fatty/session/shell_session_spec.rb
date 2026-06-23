@@ -99,16 +99,16 @@ module Fatty
         expect(commands.first.payload[:event]).to be(ev)
       end
 
-      it "handles resize keys" do
-        session = Fatty::ShellSession.new
-        init_shell_session(session)
+      # it "handles resize keys" do
+      #   session = Fatty::ShellSession.new
+      #   init_shell_session(session)
 
-        commands = update(session, :key, event: key(:resize))
+      #   commands = update(session, :key, event: key(:resize))
 
-        expect(commands.length).to eq(1)
-        expect(commands.first.target).to eq(:terminal)
-        expect(commands.first.action).to eq(:resize)
-      end
+      #   expect(commands.length).to eq(1)
+      #   expect(commands.first.target).to eq(:terminal)
+      #   expect(commands.first.action).to eq(:resize)
+      # end
 
       it "handles enter by submitting the current line" do
         session = Fatty::ShellSession.new
