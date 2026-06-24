@@ -8,8 +8,7 @@ module Fatty
       a = Alert.new(text: "hello, world")
       expect(a).to be_a(Alert)
       expect(a.text).to eq('hello, world')
-      expect(a.level).to eq(:info)
-      expect(a.role).to eq(:alert_info)
+      expect(a.role).to eq(:info)
       expect(a.format).to eq(" ℹ  hello, world")
       expect(a).not_to be_sticky
     end
@@ -18,9 +17,8 @@ module Fatty
       a = Alert.good("hello, world")
       expect(a).to be_a(Alert)
       expect(a.text).to eq('hello, world')
-      expect(a.level).to eq(:good)
-      expect(a.role).to eq(:alert_good)
-      expect(a.format).to eq(" hello, world")
+      expect(a.role).to eq(:good)
+      expect(a.format).to eq(" ✔  hello, world")
       expect(a).not_to be_sticky
     end
 
@@ -28,8 +26,7 @@ module Fatty
       a = Alert.info("hello, world")
       expect(a).to be_a(Alert)
       expect(a.text).to eq('hello, world')
-      expect(a.level).to eq(:info)
-      expect(a.role).to eq(:alert_info)
+      expect(a.role).to eq(:info)
       expect(a.format).to eq(" ℹ  hello, world")
       expect(a).not_to be_sticky
     end
@@ -38,8 +35,7 @@ module Fatty
       a = Alert.warn("hello, world")
       expect(a).to be_a(Alert)
       expect(a.text).to eq('hello, world')
-      expect(a.level).to eq(:warn)
-      expect(a.role).to eq(:alert_warn)
+      expect(a.role).to eq(:warn)
       expect(a.format).to eq(" ⚠  hello, world")
       expect(a).not_to be_sticky
     end
@@ -48,8 +44,7 @@ module Fatty
       a = Alert.error("hello, world")
       expect(a).to be_a(Alert)
       expect(a.text).to eq('hello, world')
-      expect(a.level).to eq(:error)
-      expect(a.role).to eq(:alert_error)
+      expect(a.role).to eq(:error)
       expect(a.format).to eq(" ✖  hello, world")
       expect(a).not_to be_sticky
     end
@@ -57,14 +52,13 @@ module Fatty
     it "initializes non-sticky with all parameters" do
       a = Alert.new(
         text: "hello, world",
-        level: :info,
+        role: :info,
         details: { key: "h", meta: true, shift: false },
       )
       expect(a).to be_a(Alert)
       expect(a.text).to eq('hello, world')
-      expect(a.level).to eq(:info)
+      expect(a.role).to eq(:info)
       expect(a.details).to be_a(Hash)
-      expect(a.role).to eq(:alert_info)
       expect(a.format).to eq(" ℹ  hello, world (key=h shift=false meta=true)")
       expect(a).not_to be_sticky
     end
@@ -72,14 +66,13 @@ module Fatty
     it "initializes sticky with all parameters" do
       a = Alert.new(
         text: "hello, world",
-        level: :error,
+        role: :error,
         details: { one: "1", two: "2" },
         sticky: true,
       )
       expect(a).to be_a(Alert)
-      expect(a.level).to eq(:error)
+      expect(a.role).to eq(:error)
       expect(a.details).to be_a(Hash)
-      expect(a.role).to eq(:alert_error)
       expect(a.format).to eq(" ✖  hello, world (one=1 two=2)")
       expect(a).to be_sticky
     end

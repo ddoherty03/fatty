@@ -56,14 +56,14 @@ module Fatty
 
     describe "#alert" do
       it "applies an alert command immediately and does not queue it" do
-        result = env.alert("Careful", level: :warn)
+        result = env.alert("Careful", role: :warn)
 
         expect(result).to be_nil
         expect(env.commands).to eq([])
         expect(terminal).to have_received(:apply_command) do |command|
           expect(command.target).to eq(:alert)
           expect(command.action).to eq(:show)
-          expect(command.payload).to eq(text: "Careful", level: :warn)
+          expect(command.payload).to eq(text: "Careful", role: :warn)
         end
       end
     end

@@ -28,7 +28,7 @@ module Fatty
         alert = alert_session.current
         @last_alert_state = state
         text = alert ? alert.format : ""
-        role = alert ? alert.role : :alert_info
+        role = alert ? alert_role(alert.role) : :alert_info
 
         queue_ansi_line(
           row: screen.alert_rect.row,

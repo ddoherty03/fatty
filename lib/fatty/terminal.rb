@@ -633,7 +633,7 @@ module Fatty
           Command.session(
             :alert,
             :show,
-            level: :info,
+            role: :info,
             text: "Theme: #{new_theme}",
           ))
       when :set_theme
@@ -644,7 +644,7 @@ module Fatty
           Command.session(
             :alert,
             :show,
-            level: :info,
+            role: :info,
             text: "Theme: #{theme}",
           ))
       when :resize

@@ -120,6 +120,10 @@ module Fatty
 
     # simplecov:disable
 
+    def alert_role(role)
+      :"alert_#{role}"
+    end
+
     def available_colors
       nil
     end

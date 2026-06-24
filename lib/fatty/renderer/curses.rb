@@ -98,7 +98,7 @@ module Fatty
         alert = alert_session.current
         text = alert ? alert.format : ""
         text = Fatty::Ansi.strip(text)
-        role = alert ? alert.role : :alert
+        role = alert ? alert_role(alert.role) : :alert_info
         attr = pair_attr(role, fallback: pair_attr(:alert, fallback: ::Curses::A_REVERSE))
         cols = win.respond_to?(:maxx) ? win.maxx : screen.alert_rect.cols
 

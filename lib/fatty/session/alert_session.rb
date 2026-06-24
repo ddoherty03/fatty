@@ -32,7 +32,7 @@ module Fatty
     def state
       [
         current&.text.dup.freeze,
-        current&.level,
+        current&.role,
         current&.details,
         renderer.screen.alert_rect.row,
         renderer.screen.alert_rect.cols,
@@ -60,11 +60,11 @@ module Fatty
         return
       end
 
-      level = (payload[:level] || :info).to_sym
+      role = (payload[:role] || :info).to_sym
       text = payload[:text].to_s
       details = payload[:details]
       sticky  = !!payload[:sticky]
-      @current = Fatty::Alert.new(level: level, text: text, details: details, sticky: sticky)
+      @current = Fatty::Alert.new(role: role, text: text, details: details, sticky: sticky)
     end
   end
 end

@@ -112,7 +112,7 @@ module Fatty
       Command.normalize_list(result)
     end
 
-    def alert_cmd(level, text, ev: nil)
+    def alert_cmd(role, text, ev: nil)
       details =
         if ev
           {
@@ -125,7 +125,7 @@ module Fatty
         else
           {}
         end
-      alert = Alert.new(text: text, level: level, details: details)
+      alert = Alert.new(text: text, role: role, details: details)
       Command.session(:alert, :show, alert: alert)
     end
 

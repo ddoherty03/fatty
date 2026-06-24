@@ -7,9 +7,9 @@ module Fatty
   module AlertApi
     # Display text in the status area with the given "role", which determines
     # the coloring of the displayed text via themeing.
-    def alert(text, level: :info)
+    def alert(text, role: :info)
       terminal.apply_command(
-        Command.session(:alert, :show, text: text, level: level)
+        Command.session(:alert, :show, text: text, role: role)
       )
       nil
     end

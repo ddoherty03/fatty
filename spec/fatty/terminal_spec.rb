@@ -457,7 +457,7 @@ module Fatty
         owner = TerminalSpecSession.new(id: :owner)
         modal = TerminalSpecSession.new(id: :modal)
         owner.update_commands = [
-          Fatty::Command.session(:alert, :show, text: "changed", level: :info),
+          Fatty::Command.session(:alert, :show, text: "changed", role: :info),
         ]
         owner_command = Fatty::Command.session(:owner, :popup_changed, item: "One")
 

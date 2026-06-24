@@ -25,20 +25,20 @@ module Fatty
 
     describe "#alert" do
       it "applies an alert command immediately and returns nil" do
-        result = env.alert("Careful", level: :warn)
+        result = env.alert("Careful", role: :warn)
 
         expect(result).to be_nil
         expect(env.commands).to eq([])
         expect(applied_commands.length).to eq(1)
         expect(applied_commands.first.target).to eq(:alert)
         expect(applied_commands.first.action).to eq(:show)
-        expect(applied_commands.first.payload).to eq(text: "Careful", level: :warn)
+        expect(applied_commands.first.payload).to eq(text: "Careful", role: :warn)
       end
 
-      it "defaults to info level" do
+      it "defaults to info role" do
         env.alert("Hello")
 
-        expect(applied_commands.first.payload).to eq(text: "Hello", level: :info)
+        expect(applied_commands.first.payload).to eq(text: "Hello", role: :info)
       end
     end
   end

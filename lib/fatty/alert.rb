@@ -2,52 +2,52 @@
 
 module Fatty
   class Alert
-    attr_reader :level, :text, :details
+    attr_reader :role, :text, :details
 
     # Return a new Alert object
     #
     # @param message [String]
-    # @param level [:info, :warn, :error]
+    # @param role [:good, :info, :warn, :error]
     # @param details [Hash|String]
     # @param sticky [Boolean]
     # @return [Alert]
-    def initialize(text:, level: :info, details: nil, sticky: false)
+    def initialize(text:, role: :info, details: nil, sticky: false)
       @text = text
-      @level = level.to_sym
+      @role = role.to_sym
       @details = details
       @sticky  = !!sticky
     end
 
-    # Return a new Alert object at level good
+    # Return a new Alert object at role good
     #
     # @param msg [String]
-    # @return [Alert] with level info
+    # @return [Alert] with role :good
     def self.good(msg)
-      new(text: msg, level: :good)
+      new(text: msg, role: :good)
     end
 
-    # Return a new Alert object at level info
+    # Return a new Alert object at role :info
     #
     # @param msg [String]
-    # @return [Alert] with level info
+    # @return [Alert] with role :info
     def self.info(msg)
-      new(text: msg, level: :info)
+      new(text: msg, role: :info)
     end
 
-    # Return a new Alert object at level warn
+    # Return a new Alert object at role :warn
     #
     # @param msg [String]
-    # @return [Alert] with level warn
+    # @return [Alert] with role :warn
     def self.warn(msg)
-      new(text: msg, level: :warn)
+      new(text: msg, role: :warn)
     end
 
-    # Return a new Alert object at level error
+    # Return a new Alert object at role error
     #
     # @param msg [String]
-    # @return [Alert] with level error
+    # @return [Alert] with role :error
     def self.error(msg)
-      new(text: msg, level: :error)
+      new(text: msg, role: :error)
     end
 
     # Translate the "level" to a "role" used by the renderers. The returned
@@ -57,23 +57,24 @@ module Fatty
     #   @param level [:info, :warn, :error]
     #   @return [Symbol] composite or semantic role
     # used by renderer (e.g., alert_good, :alert_info, :alert_warn, :alert_error)
-    def role
-      case level
-      when :good then :alert_good
-      when :warn then :alert_warn
-      when :error then :alert_error
-      else :alert_info
-      end
-    end
+    # def role
+    #   case level
+    #   when :good then :alert_good
+    #   when :warn then :alert_warn
+    #   when :error then :alert_error
+    #   else :alert_info
+    #   end
+    # end
 
     # Build a string version of the Alert suitable for display to the user.
     def format
       icon =
-        case level
+        case role
+        when :good then " ✔ "
+        when :info then " ℹ "
         when :warn then " ⚠ "
         when :error then " ✖ "
-        when :info then " ℹ "
-        else ""
+        else "   "
         end
       details_str =
         if details.nil? || details.empty?

@@ -144,7 +144,7 @@ module Fatty
         expect(commands.length).to eq(1)
         expect(commands.first.target).to eq(:alert)
         expect(commands.first.action).to eq(:show)
-        expect(commands.first.payload[:alert].level).to eq(:warn)
+        expect(commands.first.payload[:alert].role).to eq(:warn)
       end
 
       it "ignores non-KeyEvent key payloads" do

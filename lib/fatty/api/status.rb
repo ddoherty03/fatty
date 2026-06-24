@@ -13,15 +13,15 @@ module Fatty
     end
 
     # Display a message to the user in the status line, colored according to
-    # the Config for "info".
-    def info(text)
-      status(text, role: :info)
-    end
-
-    # Display a message to the user in the status line, colored according to
     # the Config for "good," i.e., success.
     def good(text)
       status(text, role: :good)
+    end
+
+    # Display a message to the user in the status line, colored according to
+    # the Config for "info".
+    def info(text)
+      status(text, role: :info)
     end
 
     # Display a message to the user in the status line, colored according to
@@ -33,6 +33,10 @@ module Fatty
 
     # Display a message to the user in the status line, colored according to
     # the Config for "oops," i.e., a soft failure.
+    def error(text)
+      status(text, role: :error)
+    end
+
     def oops(text)
       status(text, role: :error)
     end

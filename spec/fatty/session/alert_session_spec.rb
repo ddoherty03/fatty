@@ -34,7 +34,7 @@ module Fatty
         commands = update(
           session,
           :show,
-          level: :warn,
+          role: :warn,
           text: "Careful",
           details: { key: "C-x" },
           sticky: true,
@@ -42,7 +42,7 @@ module Fatty
 
         expect(commands).to eq([])
         expect(session.current).to be_a(Fatty::Alert)
-        expect(session.current.level).to eq(:warn)
+        expect(session.current.role).to eq(:warn)
         expect(session.current.text).to eq("Careful")
         expect(session.current.details).to eq(key: "C-x")
         expect(session.current).to be_sticky
@@ -60,13 +60,13 @@ module Fatty
         expect(session.current).to be(alert)
       end
 
-      it "defaults payload alerts to info level" do
+      it "defaults payload alerts to info role" do
         session = Fatty::AlertSession.new
         init_alert_session(session)
 
         update(session, :show, text: "Hello")
 
-        expect(session.current.level).to eq(:info)
+        expect(session.current.role).to eq(:info)
         expect(session.current.text).to eq("Hello")
       end
 
@@ -79,7 +79,7 @@ module Fatty
         expect(commands).to eq([])
         expect(session.current).to be_a(Fatty::Alert)
         expect(session.current.text).to eq("")
-        expect(session.current.level).to eq(:info)
+        expect(session.current.role).to eq(:info)
         expect(session.current.details).to be_nil
         expect(session.current).not_to be_sticky
       end
@@ -138,7 +138,7 @@ module Fatty
           session,
           :show,
           text: "Careful",
-          level: :warn,
+          role: :warn,
           details: { key: "C-x" },
         )
 
