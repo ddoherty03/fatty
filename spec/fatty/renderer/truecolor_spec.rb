@@ -34,7 +34,17 @@ module Fatty
           bg_rgb: [240, 248, 255],
           attrs: [],
         },
+        input: {
+          pair: 3,
+          fg_rgb: [220, 220, 220],
+          bg_rgb: [0, 0, 0],
+          attrs: [],
+        },
       }
+    end
+
+    let(:terminal) do
+      instance_double(Fatty::Terminal, renderer: renderer, screen: screen)
     end
 
     subject(:renderer) do
@@ -45,11 +55,7 @@ module Fatty
       )
     end
 
-    let(:terminal) do
-      instance_double(Fatty::Terminal, renderer: renderer, screen: screen)
-    end
-
-    include_examples "renderer interface"
+    it_behaves_like "renderer interface"
 
     it "renders status with truecolor foreground and status background" do
       out = StringIO.new
@@ -69,8 +75,28 @@ module Fatty
       expect(out.string).to include("38;2;0;0;0")
       expect(out.string).to include("48;2;240;248;255")
       expect(out.string).to include("Ready")
-      ensure
-        $stdout = original_stdout
+    ensure
+      $stdout = original_stdout
+    end
+
+    it "renders ANSI colors embedded in the input prompt" do
+      field = InputField.new(prompt: "\e[31mred\e[0m> ")
+      field.buffer.insert("hello")
+
+      out = StringIO.new
+      original_stdout = $stdout
+      $stdout = out
+
+      renderer.begin_frame
+      renderer.render_input_field(field)
+      renderer.finish_frame
+
+      expect(out.string).to include("\e[38;2;")
+      expect(out.string).to include("red")
+      expect(out.string).to include("> ")
+      expect(out.string).to include("hello")
+    ensure
+      $stdout = original_stdout
     end
 
     it "clamps restored input cursor position to the input rect width" do
@@ -89,8 +115,8 @@ module Fatty
       col = screen.input_rect.col + screen.input_rect.cols
 
       expect(out.string).to include("\e[#{row};#{col}H")
-      ensure
-        $stdout = original_stdout
+    ensure
+      $stdout = original_stdout
     end
   end
 end

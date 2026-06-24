@@ -671,13 +671,16 @@ module Fatty
           break if remaining <= 0
 
           attr =
-            case segment[:role]
-            when :region then region_attr
-            when :input_suggestion then suggestion_attr
-            else base_attr
+            if segment[:style]
+              ansi_style_attr(segment[:style], fallback: base_attr)
+            else
+              case segment[:role]
+              when :region then region_attr
+              when :input_suggestion then suggestion_attr
+              else base_attr
+              end
             end
-
-          text = Fatty::Ansi.strip(segment[:text].to_s).tr("\r\n", " ")
+          text = segment[:text].to_s.tr("\r\n", " ")
           text = Fatty::Ansi.truncate_visible(text, remaining)
           next if text.empty?
 

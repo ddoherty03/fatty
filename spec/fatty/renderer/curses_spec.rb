@@ -170,6 +170,25 @@ module Fatty
       expect(popup_win.derived.closed).to be(true)
     end
 
+    it "renders ANSI-colored prompt segments through curses attributes" do
+      win = CursesRendererSpecWindow.new(maxx: 20)
+      allow(curses_context).to receive(:input_win).and_return(win)
+      allow(::Curses).to receive(:color_pair) { |pair| pair }
+      allow(::Curses).to receive(:init_pair)
+
+      field = InputField.new(prompt: "\e[31mred\e[0m> ")
+      field.buffer.insert("hello")
+
+      renderer.render_input_field(field)
+
+      added = win.writes
+                .select { |operation, _value| operation == :addstr }
+                .map { |_operation, value| value }
+
+      expect(added.join).to include("red> hello")
+      expect(added.join).not_to include("\e[")
+    end
+
     it "clamps restored input cursor position to the input window width" do
       field = instance_double(InputField, cursor_x: 99)
 
