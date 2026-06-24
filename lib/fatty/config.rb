@@ -73,6 +73,39 @@ module Fatty
       File.join(user_config_dir, "themes")
     end
 
+    def self.default_config_dir
+      File.expand_path("config_files", __dir__)
+    end
+
+    def self.sys_themes_dir
+      File.join(default_config_dir, "themes")
+    end
+
+    def self.user_config_dir
+      dir || File.join(
+        ENV.fetch("XDG_CONFIG_HOME", File.expand_path("~/.config")),
+        progname,
+      )
+    end
+
+    def self.user_themes_dir
+      File.join(user_config_dir, "themes")
+    end
+
+    def self.install_defaults!
+      FileUtils.mkdir_p(user_config_dir)
+
+      Dir.glob(File.join(default_config_dir, "*")).each do |src|
+        next unless File.file?(src)
+
+        dst = File.join(user_config_dir, File.basename(src))
+        FileUtils.cp(src, dst) unless File.exist?(dst)
+      end
+
+      install_default_themes!
+      nil
+    end
+
     def self.install_default_themes!
       FileUtils.mkdir_p(user_themes_dir)
 

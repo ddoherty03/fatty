@@ -1,10 +1,10 @@
 * Fatty Help
 ** The =fatty= demo command
 
-When you =fatty=, it operates as a simple demo of the =fatty= gem by
+When you run =fatty=, it operates as a simple demo of the =fatty= gem by
 presenting an editable command-line using emacs key bindings.  It has several
 builtin commands to demonstrate =fatty= features, and any command it does not
-recognized is handed off to the shell.
+recognize is handed off to the shell.
 
 ** Builtin commands
 
@@ -110,40 +110,6 @@ For example, `M-8 M-0 #` will insert 80 '#' characters at the cursor.
 | M-:tab     | Popup all completions based on input-so-far           |
 |            |                                                       |
 
-*** Popup Context
-Certain keys cause a popup, such as C-r to bring up history items and M-:tab
-to bring up completions.
-
-| Key            | Description                                                           |
-|----------------+-----------------------------------------------------------------------|
-| <search terms> | typing text narrows to those items matching all space-separated words |
-| C-c            | cancel the popup with no return                                       |
-| C-g            | cancel the popup with no return                                       |
-| :escape        | cancel the popup with no return                                       |
-|                |                                                                       |
-| :enter         | select the current item                                               |
-| :return        | select the current item                                               |
-|                |                                                                       |
-| :up            | select the prior item                                                 |
-| C-p            | select the prior item                                                 |
-| :down          | select the next item                                                  |
-| C-n            | select the next item                                                  |
-|                |                                                                       |
-| :page_up       | display prior page of items                                           |
-| M-v            | display prior page of items                                           |
-| :page_down     | display next page of items                                            |
-| C-v            | display next page of items                                            |
-|                |                                                                       |
-| :home          | display first page of items                                           |
-| M-<            | display first page of items                                           |
-| :end           | display last page of items                                            |
-| M->            | display last page of items                                            |
-|                |                                                                       |
-| C-l            | re-center display on current item                                     |
-|                |                                                                       |
-| :space         | if popup allows multiple selections, add current item to selections   |
-|                |                                                                       |
-
 *** Paging Context
 
 By default, `fatty` sends output to the large output pane, and if the output
@@ -185,6 +151,40 @@ searching the environment.
 | N          | find the prior match                   |
 |            |                                        |
 
+*** Popup Context
+Certain keys cause a popup, such as C-r to bring up history items and M-:tab
+to bring up completions.
+
+| Key            | Description                                                           |
+|----------------+-----------------------------------------------------------------------|
+| <search terms> | typing text narrows to those items matching all space-separated words |
+| C-c            | cancel the popup with no return                                       |
+| C-g            | cancel the popup with no return                                       |
+| :escape        | cancel the popup with no return                                       |
+|                |                                                                       |
+| :enter         | select the current item                                               |
+| :return        | select the current item                                               |
+|                |                                                                       |
+| :up            | select the prior item                                                 |
+| C-p            | select the prior item                                                 |
+| :down          | select the next item                                                  |
+| C-n            | select the next item                                                  |
+|                |                                                                       |
+| :page_up       | display prior page of items                                           |
+| M-v            | display prior page of items                                           |
+| :page_down     | display next page of items                                            |
+| C-v            | display next page of items                                            |
+|                |                                                                       |
+| :home          | display first page of items                                           |
+| M-<            | display first page of items                                           |
+| :end           | display last page of items                                            |
+| M->            | display last page of items                                            |
+|                |                                                                       |
+| C-l            | re-center display on current item                                     |
+|                |                                                                       |
+| :space         | if popup allows multiple selections, add current item to selections   |
+|                |                                                                       |
+
 *** Prompt Context
 Fatty can popup a prompt for getting text from the user by presenting a prompt
 together with an input field.  The input field has all the line-editing
@@ -206,5 +206,3 @@ capabilities of the primary input context.
 | :down   | display next prompt history item  |
 |         |                                   |
 |         |                                   |
-
-** fatty on the Web

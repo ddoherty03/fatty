@@ -3,7 +3,7 @@
 module Fatty
   module Help
     def self.path
-      File.expand_path("config_files/help.md", __dir__)
+      File.expand_path("../../help/help.md", __dir__)
     end
 
     def self.text

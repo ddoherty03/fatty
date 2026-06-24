@@ -27,6 +27,7 @@ Gem::Specification.new do |spec|
       "LICENSE.txt",
       "README.md",
       "README.org",
+      "help/help.md",
       "exe/*",
       "lib/**/*",
     ].select { |path| File.file?(path) }.sort

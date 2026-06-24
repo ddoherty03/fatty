@@ -1,27 +1,26 @@
-- [Fatty Help](#org61dbde2)
-  - [The `fatty` demo command](#org3da98f4)
-  - [Builtin commands](#orgfecabab)
-  - [Keybindings](#org625d983)
-    - [Input Context](#orgec03410)
-    - [Popup Context](#orga6b4058)
-    - [Paging Context](#org9a14b7d)
-    - [Prompt Context](#org0d2e624)
-  - [fatty on the Web](#orgbe7acfc)
+- [Fatty Help](#orgcdcb438)
+  - [The `fatty` demo command](#org9a0d270)
+  - [Builtin commands](#orgeb69e65)
+  - [Keybindings](#org8765e03)
+    - [Input Context](#orge9466a5)
+    - [Paging Context](#org47afb02)
+    - [Popup Context](#orgfcb9256)
+    - [Prompt Context](#org7c1c5f4)
 
 
-<a id="org61dbde2"></a>
+<a id="orgcdcb438"></a>
 
 # Fatty Help
 
 
-<a id="org3da98f4"></a>
+<a id="org9a0d270"></a>
 
 ## The `fatty` demo command
 
-When you `fatty`, it operates as a simple demo of the `fatty` gem by presenting an editable command-line using emacs key bindings. It has several builtin commands to demonstrate `fatty` features, and any command it does not recognized is handed off to the shell.
+When you run `fatty`, it operates as a simple demo of the `fatty` gem by presenting an editable command-line using emacs key bindings. It has several builtin commands to demonstrate `fatty` features, and any command it does not recognize is handed off to the shell.
 
 
-<a id="orgfecabab"></a>
+<a id="orgeb69e65"></a>
 
 ## Builtin commands
 
@@ -55,14 +54,14 @@ Here are the commands builtin to `fatty`
 | <shell\_command>             | Anything else is treated as a shell command, run, and its output displayed |
 
 
-<a id="org625d983"></a>
+<a id="org8765e03"></a>
 
 ## Keybindings
 
 The following tables explain the keybindings available in \`fatty\` in different contexts. Named keys are indicated by \`:name\` and key categories, such as \`<digits>\` are indicated with brackets.
 
 
-<a id="orgec03410"></a>
+<a id="orge9466a5"></a>
 
 ### Input Context
 
@@ -129,44 +128,7 @@ When editing the input line or text input for widgets like the \`prompt\`, \`fat
 |            |                                                        |
 
 
-<a id="orga6b4058"></a>
-
-### Popup Context
-
-Certain keys cause a popup, such as C-r to bring up history items and M-:tab to bring up completions.
-
-| Key            | Description                                                           |
-|-------------- |--------------------------------------------------------------------- |
-| <search terms> | typing text narrows to those items matching all space-separated words |
-| C-c            | cancel the popup with no return                                       |
-| C-g            | cancel the popup with no return                                       |
-| :escape        | cancel the popup with no return                                       |
-|                |                                                                       |
-| :enter         | select the current item                                               |
-| :return        | select the current item                                               |
-|                |                                                                       |
-| :up            | select the prior item                                                 |
-| C-p            | select the prior item                                                 |
-| :down          | select the next item                                                  |
-| C-n            | select the next item                                                  |
-|                |                                                                       |
-| :page\_up      | display prior page of items                                           |
-| M-v            | display prior page of items                                           |
-| :page\_down    | display next page of items                                            |
-| C-v            | display next page of items                                            |
-|                |                                                                       |
-| :home          | display first page of items                                           |
-| M-<            | display first page of items                                           |
-| :end           | display last page of items                                            |
-| M->            | display last page of items                                            |
-|                |                                                                       |
-| C-l            | re-center display on current item                                     |
-|                |                                                                       |
-| :space         | if popup allows multiple selections, add current item to selections   |
-|                |                                                                       |
-
-
-<a id="org9a14b7d"></a>
+<a id="org47afb02"></a>
 
 ### Paging Context
 
@@ -208,7 +170,44 @@ By default, \`fatty\` sends output to the large output pane, and if the output i
 |             |                                        |
 
 
-<a id="org0d2e624"></a>
+<a id="orgfcb9256"></a>
+
+### Popup Context
+
+Certain keys cause a popup, such as C-r to bring up history items and M-:tab to bring up completions.
+
+| Key            | Description                                                           |
+|-------------- |--------------------------------------------------------------------- |
+| <search terms> | typing text narrows to those items matching all space-separated words |
+| C-c            | cancel the popup with no return                                       |
+| C-g            | cancel the popup with no return                                       |
+| :escape        | cancel the popup with no return                                       |
+|                |                                                                       |
+| :enter         | select the current item                                               |
+| :return        | select the current item                                               |
+|                |                                                                       |
+| :up            | select the prior item                                                 |
+| C-p            | select the prior item                                                 |
+| :down          | select the next item                                                  |
+| C-n            | select the next item                                                  |
+|                |                                                                       |
+| :page\_up      | display prior page of items                                           |
+| M-v            | display prior page of items                                           |
+| :page\_down    | display next page of items                                            |
+| C-v            | display next page of items                                            |
+|                |                                                                       |
+| :home          | display first page of items                                           |
+| M-<            | display first page of items                                           |
+| :end           | display last page of items                                            |
+| M->            | display last page of items                                            |
+|                |                                                                       |
+| C-l            | re-center display on current item                                     |
+|                |                                                                       |
+| :space         | if popup allows multiple selections, add current item to selections   |
+|                |                                                                       |
+
+
+<a id="org7c1c5f4"></a>
 
 ### Prompt Context
 
@@ -230,8 +229,3 @@ Fatty can popup a prompt for getting text from the user by presenting a prompt t
 | :down   | display next prompt history item  |
 |         |                                   |
 |         |                                   |
-
-
-<a id="orgbe7acfc"></a>
-
-## fatty on the Web

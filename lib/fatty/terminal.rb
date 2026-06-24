@@ -483,6 +483,7 @@ module Fatty
     # installing themes.
     #
     def preflight!
+      Fatty::Config.install_defaults!
       Fatty::Config.config
       Fatty::Logger.configure
       if Fatty::Logger.logger
@@ -493,7 +494,6 @@ module Fatty
       end
       Fatty::Config.keydefs
       Fatty::Config.keybindings
-      Fatty::Config.install_default_themes!
       Fatty::Themes::Manager.load!
       Thread.report_on_exception = true
     rescue FatConfig::ParseError => ex
