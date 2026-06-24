@@ -21,12 +21,15 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/ddoherty03/fatty"
 
-  # Specify which files should be added to the gem when it is released.
-  # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
-  spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
-    ls.readlines("\x0", chomp: true).reject do |f|
-      f.start_with?(*%w[bin/ Gemfile .gitignore .rspec spec/ .github/ .rubocop.yml])
-    end
+  spec.files = Dir.chdir(__dir__) do
+    Dir[
+      "CHANGELOG.org",
+      "LICENSE.txt",
+      "README.md",
+      "README.org",
+      "exe/*",
+      "lib/**/*",
+    ].select { |path| File.file?(path) }.sort
   end
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
@@ -34,9 +37,9 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "curses", "~> 1.4"
   spec.add_dependency "fat_config", ">=0.8.0"
-  spec.add_dependency "unicode-display_width", "~> 2.5"
-  spec.add_dependency "yaml"
   spec.add_dependency "rainbow"
   spec.add_dependency "redcarpet"
   spec.add_dependency "rouge"
+  spec.add_dependency "unicode-display_width", "~> 2.5"
+  spec.add_dependency "yaml"
 end
