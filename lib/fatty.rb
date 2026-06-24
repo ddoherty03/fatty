@@ -14,7 +14,33 @@ require 'debug'
 # Gem Overview (extracted from README.org by gem_docs)
 #
 # * Introduction
+# ~Fatty~ aims to provide a full-featured command-line environment that provides:
 #
+# 1. an editing command-line input,
+# 2. a history facility,
+# 3. command completion,
+# 4. completion of partially-typed file path names,
+# 5. output into a paging environment,
+# 6. searching within the paged output,
+# 7. issuing messages to a "status" area separate from the output pane,
+# 8. binding keys to pre-defined actions,
+# 9. defining unrecognized key-codes as named keys,
+# 10. color themes that can be selected in real time,
+# 11. a way to define new themes,
+# 12. processes completed command-lines with a callback procedure of your
+#     choosing,
+# 13. several user-interface widgets such a selection popups, prompt for input, etc.,
+# 14. a set of progress indicators you can use to display to the end user,
+# 15. a way to render markdown to the output pane,
+#
+# In other words, fatty allows you to write a terminal-based REPL of your choosing but takes
+# care of all the difficult parts.
+#
+# ~Fatty~ is written entirely in Ruby and was born from my frustrations at the
+# limitations of libraries like ~readline~ and ~reline~.  It relies on ~curses~
+# and ~truecolor~ for low-level rendering and is surprisingly snappy.
+#
+# ~Fatty~ is /not/ a terminal emulator but runs on top of one.
 module Fatty
   require_relative "fatty/version"
   require_relative "fatty/core_ext"

@@ -18,6 +18,92 @@
 #+PROPERTY: header-args:bash :exports code :eval no
 
 * Introduction
+~Fatty~ aims to provide a full-featured command-line environment that provides:
+
+1. an editing command-line input,
+2. a history facility,
+3. command completion,
+4. completion of partially-typed file path names,
+5. output into a paging environment,
+6. searching within the paged output,
+7. issuing messages to a "status" area separate from the output pane,
+8. binding keys to pre-defined actions,
+9. defining unrecognized key-codes as named keys,
+10. color themes that can be selected in real time,
+11. a way to define new themes,
+12. processes completed command-lines with a callback procedure of your
+    choosing,
+13. several user-interface widgets such a selection popups, prompt for input, etc.,
+14. a set of progress indicators you can use to display to the end user,
+15. a way to render markdown to the output pane,
+
+In other words, fatty allows you to write a terminal-based REPL of your choosing but takes
+care of all the difficult parts.
+
+~Fatty~ is written entirely in Ruby and was born from my frustrations at the
+limitations of libraries like ~readline~ and ~reline~.  It relies on ~curses~
+and ~truecolor~ for low-level rendering and is surprisingly snappy.
+
+~Fatty~ is /not/ a terminal emulator but runs on top of one.
+
+* Quick Start
+** Installing
+~Fatty~ is a ruby gem, so it can be installed with
+
+#+begin_src sh
+  $ gem install fatty
+#+end_src
+
+** Trying it Out
+Once installed, you can try out ~fatty~ with the included program called
+~fatty~.  It allows you to easily exercise all of the important features of the
+~fatty~ library.  At a normal shell prompt simply type ~fatty~, and it will
+launch the ~fatty~ demo program.
+
+Once inside ~fatty~ you will be prompted with a prompt that names your current
+directory.  Type ~help~ to get a summary of the builtin commands available to
+you.  If you type anything other than a builtin command, ~fatty~ attempts to
+run it as a shell command and displays the output.
+
+* Usage
+** Launching a Fatty Terminal with ~on_accept~
+You can launch a ~Fatty~ terminal session that does arbitrary processing of an
+edited command line as show in this file that we'll call ~loudrev~:
+
+#+begin_src ruby
+  #! /usr/bin/env ruby
+  # -*- mode: ruby -*-
+
+  require 'fatty'
+
+  loud_reversal = lambda do |line|
+    line.upcase.reverse
+  end
+
+  Fatty::Terminal.new(
+    on_accept: loud_reversal,
+  ).go
+#+end_src
+
+#+RESULTS:
+#+begin_example
+#+end_example
+
+Now you have an interactive application that allows you to type text and see
+what it looks like when written backwards in uppercase letters. It's as easy
+as that!
+
+On running a fatty application, it installs a few files if they do not exists:
+
+- a history file at =~/.fatty_history=
+- a config directory at =~/.config/fatty= that contains
+  + =config.yml=, the main configuration file
+  + =keydefs.yml=, a file for associating keycodes emitted by the underlying
+    terminal with names when curses does not do so automatically,
+  + =keybindings.yml=, a file for associating named keys with actions above
+    and beyond the emacs bindings that are used by default, and
+  + =themes=, a directory of pre-defined theme definitions that you can choose
+    from and add to by adding your own themes.
 
 * Reading Keys
 
