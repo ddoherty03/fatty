@@ -156,8 +156,19 @@ module Fatty
       @trail << item
     end
 
-    def refresh
-      terminal.apply_command(Fatty::Command.session(:status, :show, text: render_text, role: role))
+    def refresh(render: false)
+      terminal.without_cursor_restore do
+        terminal.apply_command(
+          Command.session(
+            :status,
+            :show,
+            text: render_text,
+            role: role,
+          )
+        )
+        terminal.render_frame if render
+      end
+      nil
     end
 
     def render_text(suffix: nil)

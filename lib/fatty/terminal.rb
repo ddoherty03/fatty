@@ -90,6 +90,7 @@ module Fatty
       @session_dirty = false
       @render_requested = false
       @last_render_time = nil
+      @restore_cursor_after_render = true
       @render_count = 0
       @deferred_count = 0
     end
@@ -218,21 +219,29 @@ module Fatty
     def render_frame
       renderer.begin_frame
       focused_session&.view
-      Fatty.info("rendering #{focused_session.id}", tag: :render)
       if (top = @modal_stack.last)
-        Fatty.info("rendering #{top[:session].id}", tag: :render)
         top[:session].view
       end
-      Fatty.info("rendering #{status_session.id}", tag: :render)
       status_session.view
-      Fatty.info("rendering #{alert_session.id}", tag: :render)
       alert_session.view
-      restore_active_cursor
+      if @restore_cursor_after_render
+        restore_active_cursor
+      else
+        renderer.hide_cursor
+      end
       renderer.finish_frame
       @pending_scroll_render = false
       @render_requested = false
       @session_dirty = false
       @last_render_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+
+    def without_cursor_restore
+      old_restore_cursor = @restore_cursor_after_render
+      @restore_cursor_after_render = false
+      yield
+    ensure
+      @restore_cursor_after_render = old_restore_cursor
     end
 
     private

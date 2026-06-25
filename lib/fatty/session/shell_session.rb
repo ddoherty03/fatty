@@ -82,17 +82,14 @@ module Fatty
     def view
       Fatty.debug(
         "ShellSession#view output_session=" \
-        "#{output_session.class}:#{output_session.object_id}",
+          "#{output_session.class}:#{output_session.object_id}",
         tag: :render,
       )
       output_session.view
       if input_suppressed?
         renderer.clear_input_field
-        renderer.hide_cursor
       else
-        renderer.show_cursor
         renderer.render_input_field(field)
-        renderer.restore_cursor(field)
       end
     end
 
