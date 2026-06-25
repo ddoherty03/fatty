@@ -24,14 +24,14 @@ region:
 
 good:
   fg: green
-  bg: navy
+  bg: lightblue
 
 info:
-  fg: black
+  fg: white
   bg: navy
 
 warn:
-  fg: black
+  fg: yellow
   bg: magenta
 
 error:
