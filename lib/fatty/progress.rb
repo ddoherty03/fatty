@@ -12,46 +12,65 @@ module Fatty
 
     BRAILLE_STEPS = ["⠀", "⣀", "⣄", "⣆", "⣇", "⣧", "⣷", "⣿"].freeze
 
-    attr_reader :terminal, :label, :total, :style, :role, :width
+    STYLES = %i[
+      count
+      percent
+      count_percent
+      trail
+      bar
+      unicode_bar
+      braille_bar
+      spinner
+      ].freeze
+
+    DEFAULT_LABEL = "Progress"
+    DEFAULT_ROLE = :info
+    DEFAULT_STYLE = :percent
+    DEFAULT_WIDTH = 40
+
+    attr_reader :terminal, :label, :total, :current, :style, :role, :width
 
     # The width parameter's purpose varies by style:
     #
-    # :trail       width = max visible width of the trail portion
-    # :bar         width = max bar width
-    # :unicode_bar width = max bar width
-    # :braille_bar width = max bar width
-    # :spinner     width ignored, unless later used for suffix/trail
-    # :count       width ignored
-    # :percent     width ignored
-    def initialize(terminal:, label:, total: nil, style: :percent, role: :info, width: 40)
+    # | Style          | Width Purpose                                     |
+    # |----------------+---------------------------------------------------|
+    # | :trail         | width = max visible width of the trail portion    |
+    # | :bar           | width = max bar width                             |
+    # | :unicode_bar   | width = max bar width                             |
+    # | :braille_bar   | width = max bar width                             |
+    # | :spinner       | width ignored, unless later used for suffix/trail |
+    # | :count         | width ignored                                     |
+    # | :percent       | width ignored                                     |
+    # | :count_percent | width ignored                                     |
+    def initialize(
+      terminal:,
+      label: DEFAULT_LABEL,
+      total: nil,
+      style: DEFAULT_STYLE,
+      role: DEFAULT_ROLE,
+      width: DEFAULT_WIDTH
+    )
       @terminal = terminal
-      @label = label.to_s
-      @total = total&.to_i
-      @style = style.to_sym
-      @role = role
-      @width = width.to_i
+      @label = normalize_label(label)
+      @total = normalize_total(total)
+      @style = normalize_style(style)
+      @role = normalize_role(role)
+      @width = normalize_width(width)
       @trail = []
       @current = 0
       @spinner_index = 0
-
       validate_total_requirement!
-
       refresh
     end
 
-    def update(current: nil, total: @total, label: @label, indicator: nil, render: false)
-      @current = current.to_i unless current.nil?
-      @total = total&.to_i
-      @label = label.to_s
-
+    def update(current: nil, indicator: nil, render: false)
+      @current = normalize_current(current) unless current.nil?
       if style == :spinner
         advance_spinner
       else
         append_indicator(indicator)
       end
-
-      refresh
-      terminal.render_frame if render
+      refresh(render:)
       self
     end
 
@@ -80,7 +99,43 @@ module Fatty
 
     # simplecov:disable
 
-    attr_reader :current
+    def normalize_label(value)
+      text = value.to_s.strip
+      text.empty? ? DEFAULT_LABEL : text
+    end
+
+    def normalize_total(value)
+      return if value.nil?
+
+      Integer(value, exception: false)
+    end
+
+    def normalize_style(value)
+      candidate = value&.to_sym || DEFAULT_STYLE
+      return candidate if STYLES.include?(candidate)
+
+      raise ArgumentError, "unknown progress style: #{value.inspect}"
+    end
+
+    def normalize_role(value)
+      if (md = value.to_s.match(/good|info|warn|error/i))
+        md ? md[0].to_sym : DEFAULT_ROLE
+      else
+        raise ArgumentError, "progress role must be :good, :info, :warn, or :error"
+      end
+    end
+
+    def normalize_width(value)
+      candidate = Integer(value, exception: false)
+      candidate&.positive? ? candidate : DEFAULT_WIDTH
+    end
+
+    def normalize_current(value)
+      candidate = Integer(value, exception: false)
+      return candidate if candidate
+
+      raise ArgumentError, "progress current must be an integer: #{value.inspect}"
+    end
 
     def show_status(text, role:)
       terminal.apply_command(Command.session(:status, :show, text: text, role: role))
@@ -110,22 +165,29 @@ module Fatty
       when :count
         base = total ? "#{label} [#{current}/#{total}]" : "#{label} [#{current}]"
         suffix_text(base, suffix)
-      when :simple_percent
+      when :percent
         base = total && total > 0 ? "#{label} #{percent}%" : label.to_s
         suffix_text(base, suffix)
-      when :trail
-        render_trail_text(suffix: suffix)
-      when :bar
-        render_bar_text(suffix: suffix, mode: :solid)
-      when :unicode_bar
-        render_bar_text(suffix: suffix, mode: :unicode)
-      when :braille_bar
-        render_bar_text(suffix: suffix, mode: :braille)
-      when :spinner
-        render_spinner_text(suffix: suffix)
-      else
-        base = total && total > 0 ? "#{label} [#{current}/#{total}] #{percent}%" : "#{label} [#{current}]"
+      when :count_percent
+        base =
+          if total && total > 0
+            "#{label} [#{current}/#{total}] #{percent}%"
+          else
+            "#{label} [#{current}]"
+          end
         suffix_text(base, suffix)
+      when :trail
+        render_trail_text(suffix:)
+      when :bar
+        render_bar_text(suffix:, mode: :solid)
+      when :unicode_bar
+        render_bar_text(suffix:, mode: :unicode)
+      when :braille_bar
+        render_bar_text(suffix:, mode: :braille)
+      when :spinner
+        render_spinner_text(suffix:)
+      else
+        raise ArgumentError, "unknown progress style: #{style.inspect}"
       end
     end
 
@@ -324,10 +386,11 @@ module Fatty
     end
 
     def validate_total_requirement!
-      return if style == :spinner
-      return if total && total > 0
+      return if style == :spinner && total.nil?
+      return if total&.positive?
 
-      raise ArgumentError, "progress style #{style.inspect} requires total:"
+      raise ArgumentError,
+            "progress style #{style.inspect} requires a positive integer total:"
     end
 
     def advance_spinner

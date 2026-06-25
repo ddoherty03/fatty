@@ -28,7 +28,7 @@ module Fatty
             label: "Importing",
             style: :bar,
           )
-        }.to raise_error(ArgumentError, /requires total/)
+        }.to raise_error(ArgumentError, /requires a positive integer total/)
       end
 
       it "allows spinner without total" do
@@ -40,9 +40,69 @@ module Fatty
           )
         }.not_to raise_error
       end
+
+      it "uses defaults for blank optional values" do
+        progress = Progress.new(
+          terminal: terminal,
+          label: nil,
+          total: 10,
+          style: nil,
+          role: nil,
+          width: nil,
+        )
+
+        expect(progress.label).to eq("Progress")
+        expect(progress.style).to eq(:percent)
+        expect(progress.role).to eq(:info)
+        expect(progress.width).to eq(40)
+      end
+
+      it "rejects an unknown style" do
+        expect {
+          Progress.new(
+            terminal: terminal,
+            label: "Importing",
+            total: 10,
+            style: :percnet,
+          )
+        }.to raise_error(ArgumentError, /unknown progress style/)
+      end
+
+      it "rejects a malformed total" do
+        expect {
+          Progress.new(
+            terminal: terminal,
+            label: "Importing",
+            total: "ten",
+            style: :percent,
+          )
+        }.to raise_error(ArgumentError, /positive integer total/)
+      end
+
+      it "uses the default width for a nonpositive width" do
+        progress = Progress.new(
+          terminal: terminal,
+          label: "Importing",
+          total: 10,
+          style: :bar,
+          width: 0,
+        )
+        expect(progress.width).to eq(40)
+      end
     end
 
     describe "#update" do
+      it "rejects a malformed current value" do
+        progress = Progress.new(
+          terminal: terminal,
+          label: "Importing",
+          total: 10,
+        )
+        expect {
+          progress.update(current: "five")
+        }.to raise_error(ArgumentError, /current must be an integer/)
+      end
+
       it "renders spinner without percent when total is unknown" do
         progress = Progress.new(
           terminal: terminal,

@@ -63,7 +63,7 @@ module Fatty
       end
 
       it "refreshes status immediately when progress is created" do
-        env.add_progress(label: "Importing", total: 10, role: :info)
+        env.add_progress(label: "Importing", style: :count_percent, total: 10, role: :info)
 
         expect(terminal).to have_received(:apply_command) do |command|
           expect(command.target).to eq(:status)
@@ -95,7 +95,7 @@ module Fatty
 
     describe "created progress object" do
       it "updates status immediately" do
-        progress = env.add_progress(label: "Importing", total: 10)
+        progress = env.add_progress(label: "Importing", style: :count_percent, total: 10)
 
         progress.update(current: 5)
 
