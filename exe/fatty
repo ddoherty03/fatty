@@ -92,17 +92,17 @@ on_accept_proc = lambda do |line, env|
       "Demo menu",
       choices: {
         "Write to output pane" => proc { |env|
-          env.append("menu: wrote this from MenuEnv#output\n")
-          :output_written
-         },
+      env.append("menu: wrote this from MenuEnv#output\n")
+      :output_written
+    },
         "Show status message" => proc { |env|
-          env.status("menu: status set from MenuEnv#status")
-          :status_written
-         },
+      env.status("menu: status set from MenuEnv#status")
+      :status_written
+    },
         "Show markdown" => proc { |env|
-          env.markdown("\# Your Choices\n\n- one\n- two\n- three\n")
-          :markdown_written
-         },
+      env.markdown("\# Your Choices\n\n- one\n- two\n- three\n")
+      :markdown_written
+    },
         "Return plain value" => :plain_value,
       },
       initial_choice_idx: 0,
@@ -138,7 +138,10 @@ on_accept_proc = lambda do |line, env|
     value = env.prompt(question, initial: "demo")
     env.append("prompt: #{value.inspect}\n")
   when "progress"
-    styles = %w[count percent simple_percent trail bar unicode_bar braille_bar spinner]
+    # The first argument is the style (or :trail if not given), the optional
+    # second argument is the total if it is all digits, or the role otherwise.
+    # If the role is not recognized, it defaults to :info
+    styles = %w[count percent count_percent trail bar unicode_bar braille_bar spinner]
     style_name = args.first
     style =
       if style_name && styles.include?(style_name)
@@ -146,12 +149,18 @@ on_accept_proc = lambda do |line, env|
       else
         :trail
       end
-    total =
-      begin
-        args.first ? Integer(args.first) : nil
-      rescue StandardError
-        nil
+    total = 40
+    width = 60
+    role = :info
+    args.each do |arg|
+      case arg
+      when /\A\d+\z/
+        total = Integer(arg)
+      when Symbol, String
+        md = arg.match(/good|info|warn|error/i)
+        role = md ? md[0].to_sym : :info
       end
+    end
     if style != :spinner
       total ||= 40
       total = 1 if total < 1
@@ -162,13 +171,15 @@ on_accept_proc = lambda do |line, env|
       label: "Demo progress",
       total: total,
       style: style,
+      role: role || :info,
+      width: width,
     )
     if style == :spinner && total.nil?
       40.times do
         prog.update(render: true)
         sleep 0.1
       end
-      prog.finish("Demo progress complete.", render: true)
+      prog.finish("Done", render: true)
       env.append("progress: style=#{style} completed indeterminate demo\n")
     else
       total.times do |i|
@@ -182,7 +193,7 @@ on_accept_proc = lambda do |line, env|
         prog.update(current: i + 1, indicator: indicator, render: true)
         sleep 0.1
       end
-      prog.finish("Demo progress complete.".green, render: true)
+      prog.finish("Done".green, render: true)
       env.append("progress: style=#{style} completed #{total} steps\n")
     end
   when "keytest"
