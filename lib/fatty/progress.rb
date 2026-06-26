@@ -118,11 +118,13 @@ module Fatty
     end
 
     def normalize_role(value)
-      if (md = value.to_s.match(/good|info|warn|error/i))
-        md ? md[0].to_sym : DEFAULT_ROLE
-      else
-        raise ArgumentError, "progress role must be :good, :info, :warn, or :error"
-      end
+      text = value.to_s.strip
+      return DEFAULT_ROLE if text.empty?
+
+      candidate = text.downcase.to_sym
+      return candidate if %i[good info warn error].include?(candidate)
+
+      raise ArgumentError, "progress role must be :good, :info, :warn, or :error"
     end
 
     def normalize_width(value)

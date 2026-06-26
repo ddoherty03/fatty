@@ -91,7 +91,7 @@ module Fatty
 
     def log_update(command)
       payload = command.payload
-      text = payload[:text] || nil
+      text = payload[:text] || "(NO TEXT)"
       msg =
         case command.action
         when :key

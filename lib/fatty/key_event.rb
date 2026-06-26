@@ -103,7 +103,7 @@ module Fatty
 
     def color
       if uncoded?
-        :oops
+        :error
       elsif unbound?
         :warn
       else

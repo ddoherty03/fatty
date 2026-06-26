@@ -15,7 +15,7 @@ module Fatty
     #########################################################################################
 
     def update(command)
-      log_update(command)
+      Fatty.debug("AlertSession#update: action: #{command.action} alert: #{command.payload[:alert].inspect}")
       case command.action
       when :show
         show_from_payload(command.payload[:alert] || command.payload)
