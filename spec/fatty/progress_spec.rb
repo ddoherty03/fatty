@@ -15,6 +15,7 @@ module Fatty
     end
 
     before do
+      allow(terminal).to receive(:without_cursor_restore).and_yield
       allow(terminal).to receive(:apply_command) do |command|
         applied_commands << command
       end
