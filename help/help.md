@@ -1,26 +1,26 @@
-- [Fatty Help](#orgcdcb438)
-  - [The `fatty` demo command](#org9a0d270)
-  - [Builtin commands](#orgeb69e65)
-  - [Keybindings](#org8765e03)
-    - [Input Context](#orge9466a5)
-    - [Paging Context](#org47afb02)
-    - [Popup Context](#orgfcb9256)
-    - [Prompt Context](#org7c1c5f4)
+- [Fatty Help](#org0aaaf31)
+  - [The `fatty` demo command](#org26ce7af)
+  - [Builtin commands](#orgf6ddca8)
+  - [Keybindings](#org7402488)
+    - [Input Context](#org98e9ceb)
+    - [Paging Context](#org8767a81)
+    - [Popup Context](#org38b29c9)
+    - [Prompt Context](#orgb8f4a36)
 
 
-<a id="orgcdcb438"></a>
+<a id="org0aaaf31"></a>
 
 # Fatty Help
 
 
-<a id="org9a0d270"></a>
+<a id="org26ce7af"></a>
 
 ## The `fatty` demo command
 
 When you run `fatty`, it operates as a simple demo of the `fatty` gem by presenting an editable command-line using emacs key bindings. It has several builtin commands to demonstrate `fatty` features, and any command it does not recognize is handed off to the shell.
 
 
-<a id="orgeb69e65"></a>
+<a id="orgf6ddca8"></a>
 
 ## Builtin commands
 
@@ -28,40 +28,41 @@ Here are the commands builtin to `fatty`
 
 | Command                      | Description                                                                |
 |---------------------------- |-------------------------------------------------------------------------- |
-| help                         | Display this file on the output pane                                       |
 | cd                           | Change the current directory used by the shell                             |
 | choose                       | Present a series of choices in a popup window                              |
-| choosevals                   | Also present choices in a popup window but return an associated value      |
 | choose\_multi                | Present choices with a "checkbox" for selecting multiple values            |
+| choosevals                   | Also present choices in a popup window but return an associated value      |
 | choosevals\_multi            | Also present a checkbox but return associated values                       |
-| menu                         | Present a menu of labeled routines to run                                  |
-| info                         | Display an "info" message on the status line                               |
+| environment                  | Print out the environment detected by Fatty                                |
 | good                         | Display a "good" message colored to indicate success                       |
-| warn                         | Display a "warn" message colored to indicate caution                       |
-| oops                         | Display an "oops" message colored to indicate failure                      |
-| prompt                       | Popup a text box for entering a value in response to a prompt              |
-| progress count <N>           | Display an animated progress indicator counting up to 40 or the given N    |
-| progress percent <N>         | Same but also show the percent complete                                    |
-| progress simple\_percent <N> | Same but show only the percent complete                                    |
-| progress trail               | Show progress by displaying an "indicator" character for each step         |
-| progress bar                 | Show progress by a filling bar using ASCII characters                      |
-| progress unicode\_bar        | Same, but using unicode characters                                         |
-| progress braille\_bar        | Same, but using braille characters                                         |
-| progress spinner             | Animate a "spinner" showing a busy state                                   |
+| help                         | Display this file on the output pane                                       |
+| info                         | Display an "info" message on the status line                               |
 | keytest                      | Enter key diagnostic mode report keycodes, key names, and bindings         |
 | markdown <file.md>           | Render the markdown file to the output pane; defaults to a demo file       |
 | markdown\_org                | Render the markdown file exported from org mode with ofx-gfm package       |
+| menu                         | Present a menu of labeled routines to run                                  |
+| oops                         | Display an "oops" message colored to indicate failure                      |
+| progress bar                 | Show progress by a filling bar using ASCII characters                      |
+| progress braille\_bar        | Same, but using braille characters                                         |
+| progress count <N>           | Display an animated progress indicator counting up to 40 or the given N    |
+| progress percent <N>         | Same but also show the percent complete                                    |
+| progress simple\_percent <N> | Same but show only the percent complete                                    |
+| progress spinner             | Animate a "spinner" showing a busy state                                   |
+| progress trail               | Show progress by displaying an "indicator" character for each step         |
+| progress unicode\_bar        | Same, but using unicode characters                                         |
+| prompt                       | Popup a text box for entering a value in response to a prompt              |
 | <shell\_command>             | Anything else is treated as a shell command, run, and its output displayed |
+| warn                         | Display a "warn" message colored to indicate caution                       |
 
 
-<a id="org8765e03"></a>
+<a id="org7402488"></a>
 
 ## Keybindings
 
 The following tables explain the keybindings available in \`fatty\` in different contexts. Named keys are indicated by \`:name\` and key categories, such as \`<digits>\` are indicated with brackets.
 
 
-<a id="orge9466a5"></a>
+<a id="org98e9ceb"></a>
 
 ### Input Context
 
@@ -128,7 +129,7 @@ When editing the input line or text input for widgets like the \`prompt\`, \`fat
 |            |                                                        |
 
 
-<a id="org47afb02"></a>
+<a id="org8767a81"></a>
 
 ### Paging Context
 
@@ -170,7 +171,7 @@ By default, \`fatty\` sends output to the large output pane, and if the output i
 |             |                                        |
 
 
-<a id="orgfcb9256"></a>
+<a id="org38b29c9"></a>
 
 ### Popup Context
 
@@ -207,7 +208,7 @@ Certain keys cause a popup, such as C-r to bring up history items and M-:tab to 
 |                |                                                                       |
 
 
-<a id="org7c1c5f4"></a>
+<a id="orgb8f4a36"></a>
 
 ### Prompt Context
 

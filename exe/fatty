@@ -18,6 +18,15 @@ on_accept_proc = lambda do |line, env|
     dir = args.first || ENV["HOME"]
     dir = File.expand_path(dir)
     Dir.chdir(dir)
+  when "environment"
+    env.append("The environment Fatty has detected is:\n")
+    environment = Fatty::Env.detect
+
+    environment.sort.each do |key, value|
+      env.append("#{key} -> #{value}\n")
+    end
+
+    nil
   when "choose"
     choices =
       if args.empty?
