@@ -18,6 +18,14 @@ module Fatty
       @sticky  = !!sticky
     end
 
+    def inspect
+      txt = +"Alert: "
+      txt << "text: #{@text}; " if @text
+      txt << "role: #{@role}; " if @role
+      txt << "details: #{@details}; " if @details
+      txt << "sticky: #{@sticky}."
+    end
+
     # Return a new Alert object at role good
     #
     # @param msg [String]
