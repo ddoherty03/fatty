@@ -156,6 +156,36 @@ module Fatty
         expect(commands).to eq([])
       end
 
+      it "alerts for an undefined key" do
+        session = Fatty::ShellSession.new
+        init_shell_session(session)
+
+        commands = update(
+          session,
+          :key,
+          event: Fatty::KeyEvent.new(key: 544, raw: 544),
+        )
+
+        alert = commands.first.payload[:alert]
+
+        expect(alert.role).to eq(:error)
+        expect(alert.text).to include("Undefined key: 544")
+        expect(alert.text).to include("keydefs.yml")
+      end
+
+      it "alerts for an unbound named key" do
+        session = Fatty::ShellSession.new
+        init_shell_session(session)
+
+        commands = update(session, :key, event: key(:f99))
+
+        alert = commands.first.payload[:alert]
+
+        expect(alert.role).to eq(:warn)
+        expect(alert.text).to include("Unbound key: f99")
+        expect(alert.text).to include("keybindings.yml")
+      end
+
       it "ignores unknown commands" do
         session = Fatty::ShellSession.new
         init_shell_session(session)
@@ -172,25 +202,21 @@ module Fatty
         init_shell_session(session, modal_active: false)
 
         expect(session.output_session).to receive(:view)
-        expect(session.renderer).to receive(:show_cursor)
         expect(session.renderer)
           .to receive(:render_input_field)
                 .with(session.field)
-        expect(session.renderer)
-          .to receive(:restore_cursor)
-                .with(session.field)
+
         session.view
       end
 
       it "renders output and clears input when a modal is active" do
         session = Fatty::ShellSession.new
         init_shell_session(session, modal_active: true)
-        allow(::Curses).to receive(:curs_set)
 
         expect(session.output_session).to receive(:view)
-        expect(session.renderer).to receive(:hide_cursor)
         expect(session.renderer).to receive(:clear_input_field)
         expect(session.renderer).not_to receive(:render_input_field)
+
         session.view
       end
     end

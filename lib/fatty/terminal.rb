@@ -674,6 +674,7 @@ module Fatty
 
       commands = session.update(command)
       @session_dirty = true
+      @immediate_render = true if %i[status alert].include?(session.id)
       apply_commands(commands)
     end
 

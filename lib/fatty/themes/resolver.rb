@@ -218,9 +218,16 @@ module Fatty
         def composite_role(base, accent)
           {
             fg: accent[:fg] || accent["fg"] || base[:fg] || base["fg"],
-            bg: base[:bg] || base["bg"] || accent[:bg] || accent["bg"],
-            attrs: accent[:attrs] || accent["attrs"] || base[:attrs] || base["attrs"],
+            bg: accent[:bg] || accent["bg"] || base[:bg] || base["bg"],
+            attrs: combine_attrs(base, accent),
           }.compact
+        end
+
+        def combine_attrs(base, accent)
+          (
+            Array(base[:attrs] || base["attrs"]) +
+            Array(accent[:attrs] || accent["attrs"])
+          ).uniq
         end
       end
     end

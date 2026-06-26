@@ -67,7 +67,7 @@ module Fatty
               when :enter, :return
                 apply_action(:submit_line, [], event: ev)
               else
-                alert_cmd(:warn, "Unbound key: #{ev} (edit config in 'keybindings.yml' to bind)", ev: ev)
+                unrecognized_key_alert(ev)
               end
             end
           else
@@ -340,6 +340,24 @@ module Fatty
       commands << Command.session(output_session.id, :append, text: out, follow: true)
     rescue Errno::ENOENT => ex
       commands << Command.session(output_session.id, :append, text: ex.to_s, follow: true)
+    end
+
+    def unrecognized_key_alert(ev)
+      if ev.uncoded?
+        alert_cmd(
+          :error,
+          "Undefined key: #{ev.key} " \
+          "(edit config in 'keydefs.yml' to name)",
+          ev: ev,
+        )
+      else
+        alert_cmd(
+          :warn,
+          "Unbound key: #{ev} " \
+          "(edit config in 'keybindings.yml' to bind)",
+          ev: ev,
+        )
+      end
     end
 
     #########################################################################################
