@@ -634,9 +634,11 @@ module Fatty
         commands = owner ? owner.update(command) : []
         apply_commands(commands)
       when :choose_theme
+        Fatty.debug("choose_theme: themes=#{Fatty::Themes::Manager.theme_names.inspect}", tag: :theme)
         choose_theme
       when :cycle_theme
         new_theme = Fatty::Themes::Manager.cycle
+        Fatty.debug("cycle_theme: new_theme=#{new_theme.inspect}", tag: :theme)
         renderer.apply_theme!(new_theme)
         apply_command(
           Command.session(
