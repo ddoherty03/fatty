@@ -16,6 +16,7 @@ module Fatty
         message: prompt,
         prompt: "> ",
         current: :top,
+        show_counts: false,
         validate_unique_labels: true,
       )
       popup.instance_variable_set(:@current, initial_choice_idx.to_i.clamp(0, labels.length - 1))
@@ -86,6 +87,7 @@ module Fatty
         message: prompt,
         prompt: "> ",
         current: :top,
+        show_counts: true,
         selection_mode: :multiple,
         validate_unique_labels: true,
       )

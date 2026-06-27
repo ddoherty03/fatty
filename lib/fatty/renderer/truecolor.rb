@@ -138,11 +138,26 @@ module Fatty
         row = render_popup_message(session: session, layout: layout)
 
         input_row = inner_h - 1
-        counts_row = session.counts_present? ? input_row - 1 : nil
-
         # Draw the displayed items inside the window with a gutter to have an
         # indicator of what is selected, if any.
-        list_h = [inner_h - row - 1 - (session.counts_present? ? 1 : 0), 0].max
+        filter_present = session.filter_present?
+        counts_present = session.counts_present?
+        input_row = filter_present ? inner_h - 1 : nil
+        counts_row =
+          if counts_present
+            filter_present ? input_row - 1 : inner_h - 1
+          end
+
+        list_end =
+          if counts_present
+            counts_row
+          elsif filter_present
+            input_row
+          else
+            inner_h
+          end
+        list_h = [list_end - row, 0].max
+
         layout = PopupLayout.new(row: row, width: inner_w, height: list_h)
         render_popup_items(session: session, layout: layout)
 
@@ -151,10 +166,12 @@ module Fatty
         layout = PopupLayout.new(row: counts_row, width: inner_w)
         render_popup_counts(session: session, layout: layout) if session.counts_present?
 
-        # Draw the input field for the user to type narrowing selection
-        # queries.
-        layout = PopupLayout.new(row: input_row, width: inner_w)
-        render_popup_input_field(session: session, layout: layout)
+        if filter_present
+          # Draw the input field for the user to type narrowing selection
+          # queries.
+          layout = PopupLayout.new(row: input_row, width: inner_w)
+          render_popup_input_field(session: session, layout: layout)
+        end
       end
 
       def render_prompt_popup(session:)

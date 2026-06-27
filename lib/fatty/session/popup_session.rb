@@ -8,7 +8,7 @@ module Fatty
 
     MAX_WIDTH      = 120
     DEFAULT_HEIGHT = 12
-    MIN_LIST_H     = 3
+    MIN_LIST_H     = 1
     MAX_LIST_H     = 20
     MARGIN         = 2
 
@@ -31,6 +31,8 @@ module Fatty
       kind: nil,
       current: :preserve,
       initial_query: nil,
+      show_counts: true,
+      show_filter: true,
       selection_mode: :single,
       validate_unique_labels: false
     )
@@ -45,6 +47,8 @@ module Fatty
       @current_policy = current.to_sym
       @current = nil
       @selection_mode = selection_mode.to_sym
+      @show_counts = !!show_counts
+      @show_filter = !!show_filter
       @validate_unique_labels = !!validate_unique_labels
 
       @field = InputField.new(prompt: @prompt)
@@ -138,7 +142,11 @@ module Fatty
     end
 
     def counts_present?
-      true
+      @show_counts
+    end
+
+    def filter_present?
+      @show_filter
     end
 
     # Renderer calls this to determine which slice of items to display.
@@ -430,9 +438,10 @@ module Fatty
     end
 
     def popup_extra_rows
-      rows = 4
+      rows = 2 # border rows
       rows += 1 if popup_has_message?
       rows += 1 if counts_present?
+      rows += 1 if filter_present?
       rows
     end
 

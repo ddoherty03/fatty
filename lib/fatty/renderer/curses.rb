@@ -207,14 +207,26 @@ module Fatty
           row += 1
         end
 
-        counts_present = !!session.counts
-        input_row = inner_h - 1
-        counts_row = counts_present ? input_row - 1 : nil
-
+        counts_present = session.counts_present?
+        filter_present = session.filter_present?
+        input_row =
+          if filter_present
+            inner_h - 1
+          end
+        counts_row =
+          if counts_present
+            filter_present ? input_row - 1 : inner_h - 1
+          end
         list_row = row
-        list_h = input_row - list_row
-        list_h -= 1 if counts_present
-        list_h = [list_h, 0].max
+        list_end =
+          if counts_present
+            counts_row
+          elsif filter_present
+            input_row
+          else
+            inner_h
+          end
+        list_h = [list_end - list_row, 0].max
 
         items = session.displayed
         selected = session.current
@@ -248,19 +260,20 @@ module Fatty
           inner.addstr(counts_text.ljust(inner_w))
         end
 
-        render_field_into(
-          win: inner,
-          field: session.field,
-          row: input_row,
-          width: inner_w,
-          base_role: :popup_input,
-          base_attr: input_attr,
-          region_attr: pair_attr(:region, fallback: ::Curses::A_REVERSE),
-          suggestion_attr: pair_attr(:input_suggestion, fallback: input_attr),
-        )
-
-        cursor_x = session.field.cursor_x.to_i.clamp(0, [inner_w - 1, 0].max)
-        win.setpos(1 + input_row, 1 + cursor_x)
+        if session.filter_present?
+          render_field_into(
+            win: inner,
+            field: session.field,
+            row: input_row,
+            width: inner_w,
+            base_role: :popup_input,
+            base_attr: input_attr,
+            region_attr: pair_attr(:region, fallback: ::Curses::A_REVERSE),
+            suggestion_attr: pair_attr(:input_suggestion, fallback: input_attr),
+          )
+          cursor_x = session.field.cursor_x.to_i.clamp(0, [inner_w - 1, 0].max)
+          win.setpos(1 + input_row, 1 + cursor_x)
+        end
 
         stage_window(win)
       rescue RuntimeError => e
