@@ -120,7 +120,7 @@ module Fatty
         result = env.choose(
           "Pick",
           choices: [["One", :one]],
-          quit_value: :quit,
+          cancel_value: :quit,
         )
 
         expect(result).to eq(:quit)
@@ -184,7 +184,7 @@ module Fatty
         result = env.choose_multi(
           "Pick",
           choices: [["One", :one]],
-          quit_value: :quit,
+          cancel_value: :quit,
         )
 
         expect(result).to eq(:quit)

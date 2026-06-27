@@ -111,7 +111,7 @@ module Fatty
         terminal = terminal_cancelling
         env = env_for(terminal)
 
-        result = env.prompt("Name?", quit_value: :quit)
+        result = env.prompt("Name?", cancel_value: :quit)
 
         expect(result).to eq(:quit)
       end

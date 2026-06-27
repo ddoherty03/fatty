@@ -14,7 +14,7 @@ module Fatty
     #   terminal:
     #   terminal:, label:
     #   terminal:, label:, payload:
-    def menu(prompt, choices:, initial_choice_idx: 0, quit_value: nil)
+    def menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)
       items = normalize_choices(choices)
       raise ArgumentError, "choices must not be empty" if items.empty?
 
@@ -48,7 +48,7 @@ module Fatty
         done = true
       end
       cancel_proc = -> do
-        result = quit_value
+        result = cancel_value
         done = true
       end
       owner = Fatty::Terminal::PopupOwner.new(

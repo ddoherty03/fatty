@@ -7,7 +7,7 @@ module Fatty
     # history_key is given, the prompt text.  If save_history is set to false, no
     # history will be recorded, which can suppress writing sensitive values
     # such as passwords to the history file.
-    def prompt(prompt, initial: "", quit_value: nil, history_key: nil, save_history: true)
+    def prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)
       history_ctx = lambda do
         base =
           if @history_ctx.respond_to?(:call)
@@ -39,7 +39,7 @@ module Fatty
       end
 
       cancel_proc = -> do
-        result = quit_value
+        result = cancel_value
         done = true
       end
 

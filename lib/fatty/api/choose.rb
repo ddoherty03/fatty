@@ -4,7 +4,7 @@ module Fatty
   module ChooseApi
     # The consumer can call #choose to cause an interactive popup session to
     # present the user with a series of choices to select from.
-    def choose(prompt, choices:, initial_choice_idx: 0, quit_value: nil)
+    def choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)
       items = normalize_choices(choices)
       raise ArgumentError, "choices must not be empty" if items.empty?
 
@@ -26,11 +26,11 @@ module Fatty
       acc_proc = ->(payload) do
         item = payload[:item]
         idx = labels.index(item)
-        result = idx ? items[idx][1] : quit_value
+        result = idx ? items[idx][1] : cancel_value
         done = true
       end
       cancel_proc = -> do
-        result = quit_value
+        result = cancel_value
         done = true
       end
       owner = Terminal::PopupOwner.new(on_result: acc_proc, on_cancel: cancel_proc)
@@ -76,7 +76,7 @@ module Fatty
 
     # The consumer can call #choose_multi to cause an interactive popup session to
     # present the user with a series of choices to select from.
-    def choose_multi(prompt, choices:, quit_value: nil)
+    def choose_multi(prompt, choices:, cancel_value: nil)
       items = normalize_choices(choices)
       raise ArgumentError, "choices must not be empty" if items.empty?
 
@@ -100,12 +100,12 @@ module Fatty
         selected = payload[:items] || {}
         result =
           selected.each_with_object({}) do |(label, _), h|
-          h[label] = label_to_value.fetch(label, quit_value)
+          h[label] = label_to_value.fetch(label, cancel_value)
         end
         done = true
       end
       cancel_proc = -> do
-        result = quit_value
+        result = cancel_value
         done = true
       end
       owner = Terminal::PopupOwner.new(on_result: acc_proc, on_cancel: cancel_proc)

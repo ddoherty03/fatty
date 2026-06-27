@@ -125,7 +125,7 @@ module Fatty
         terminal = terminal_cancelling
         env = env_for(terminal)
 
-        result = env.menu("Choose", choices: [["One", :one]], quit_value: :quit)
+        result = env.menu("Choose", choices: [["One", :one]], cancel_value: :quit)
 
         expect(result).to eq(:quit)
       end

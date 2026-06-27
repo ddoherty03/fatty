@@ -38,7 +38,7 @@ on_accept_proc = lambda do |line, env|
       "Select one",
       choices: choices,
       initial_choice_idx: 0,
-      quit_value: nil,
+      cancel_value: nil,
     )
     choice ? "choose: #{choice}\n" : "choose: cancelled\n"
   when "choosevals"
@@ -55,7 +55,7 @@ on_accept_proc = lambda do |line, env|
       "Select one",
       choices: pairs,
       initial_choice_idx: 1,
-      quit_value: nil,
+      cancel_value: nil,
     )
     choice ? "choosevals: #{choice}\n" : "choosevals: cancelled\n"
   when "choose_multi"
@@ -68,7 +68,7 @@ on_accept_proc = lambda do |line, env|
     choices = env.choose_multi(
       "Select one or more",
       choices: choices,
-      quit_value: nil,
+      cancel_value: nil,
     )
     choices ? "choose_multi: #{choices}\n" : "choose_multi: cancelled\n"
   when "choosevals_multi"
@@ -84,7 +84,7 @@ on_accept_proc = lambda do |line, env|
     choices = env.choose_multi(
       "Select one or more",
       choices: pairs,
-      quit_value: nil,
+      cancel_value: nil,
     )
     choices ? "choosevals_multi: #{choices}\n" : "choosevals_multi: cancelled\n"
   when "confirm"
@@ -115,7 +115,7 @@ on_accept_proc = lambda do |line, env|
         "Return plain value" => :plain_value,
       },
       initial_choice_idx: 0,
-      quit_value: nil,
+      cancel_value: nil,
     )
     if result.nil?
       env.append("menu: cancelled\n")
