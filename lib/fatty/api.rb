@@ -5,12 +5,21 @@ module Fatty
     private
 
     def normalize_choices(choices)
-      Array(choices).map do |choice|
-        if choice.is_a?(Array) && choice.length == 2
-          [choice[0].to_s, choice[1]]
-        else
-          [choice.to_s, choice]
+      case choices
+      when Hash
+        choices.map do |label, value|
+          [label.to_s, value]
         end
+      when Array
+        choices.map do |choice|
+          unless choice.is_a?(String)
+            raise ArgumentError, "choices array must contain strings"
+          end
+
+          [choice, choice]
+        end
+      else
+        raise ArgumentError, "choices must be an Array of strings or a Hash"
       end
     end
   end

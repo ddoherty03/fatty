@@ -67,7 +67,7 @@ module Fatty
     def confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)
       choose(
         prompt,
-        choices: [[yes_label, true], [no_label, false]],
+        choices: { yes_label => true, no_label => false },
         cancel_value: cancel_value,
       )
     end
