@@ -587,10 +587,6 @@ module Fatty
     # --- Dispatch ----------------------------------------------------------
 
     def user_interaction_command?(command)
-      key_event_command?(command) && !resize_command?(command)
-    end
-
-    def user_interaction_command?(command)
       return false if command.action == :resize
       return false unless command.target == :active
       return false unless command.action == :key

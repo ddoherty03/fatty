@@ -9,6 +9,7 @@ group :development do
   gem 'debug', '>= 1.0.0'
   gem "irb"
   gem "rspec"
+  gem 'prime'
   gem 'pry'
   gem 'pry-doc'
   gem "rake", "~> 13.0"
