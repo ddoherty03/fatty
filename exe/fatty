@@ -44,12 +44,12 @@ on_accept_proc = lambda do |line, env|
   when "choosevals"
     pairs =
       if args.empty?
-        [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", 2.7181828]]
+        { "Choice A" => 55, "Choice B" => 3.14159, "Choice C" => 2.7181828 }
       elsif args.length.odd?
         session.append_output("choosevals: needs even number of args\n")
         next
       else
-        args.each_slice(2).map { |label, value| [label, value] }
+        args.each_slice(2).to_h
       end
     choice = env.choose(
       "Select one",
@@ -74,12 +74,12 @@ on_accept_proc = lambda do |line, env|
   when "choosevals_multi"
     pairs =
       if args.empty?
-        [["Choice A", 55], ["Choice B", 3.14159], ["Choice C", 2.7181828]]
+        { "Choice A" => 55, "Choice B" => 3.14159, "Choice C" => 2.7181828 }
       elsif args.length.odd?
         session.append_output("choosevals_multi: needs even number of args\n")
         next
       else
-        args.each_slice(2).map { |label, value| [label, value] }
+        args.each_slice(2).to_h
       end
     choices = env.choose_multi(
       "Select one or more",
