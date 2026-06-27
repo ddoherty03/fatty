@@ -108,6 +108,7 @@ module Fatty
       @last_status_state = nil
       @last_pager_field_state = nil
       @last_popup_state = nil
+      @last_prompt_popup_state = nil
     end
 
     def hide_cursor

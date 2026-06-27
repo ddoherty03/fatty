@@ -190,18 +190,31 @@ module Fatty
       command = Fatty::Command.coerce(command)
       return unless command
 
-      Fatty.debug("Terminal#apply_command: active_session: #{active_session.id}", tag: :session)
+      @apply_command_depth ||= 0
+      outermost = @apply_command_depth.zero?
+      @apply_command_depth += 1
+
+      Fatty.debug(
+        "Terminal#apply_command: active_session: #{active_session.id}",
+        tag: :session,
+      )
       Fatty.debug("Terminal#apply_command(#{command.inspect})", tag: :session)
+
       if user_interaction_command?(command)
         apply_command(Command.session(:status, :clear))
         apply_command(Command.session(:alert, :clear))
       end
+
       if command.terminal?
         apply_terminal_command(command)
       else
         apply_session_command(command)
       end
-      render_frame if render_due?
+    ensure
+      if command
+        @apply_command_depth -= 1
+        render_frame if outermost && render_due?
+      end
     end
 
     def modal_active?
@@ -219,11 +232,11 @@ module Fatty
     def render_frame
       renderer.begin_frame
       focused_session&.view
+      status_session.view
+      alert_session.view
       if (top = @modal_stack.last)
         top[:session].view
       end
-      status_session.view
-      alert_session.view
       if @restore_cursor_after_render
         restore_active_cursor
       else
@@ -690,61 +703,6 @@ module Fatty
 
     def restore_active_cursor
       if @modal_stack && !@modal_stack.empty?
-        session = @modal_stack.last[:session]
-
-        if session.respond_to?(:pager_active?) && session.pager_active?
-          renderer.hide_cursor
-          return
-        end
-
-        if session.respond_to?(:win) && session.respond_to?(:field) && session.field
-          win = session.win
-          unless win
-            renderer.hide_cursor
-            return
-          end
-
-          begin
-            maxy = win.maxy
-            maxx = win.maxx
-          rescue RuntimeError
-            renderer.hide_cursor
-            return
-          end
-
-          # If the popup is too small to place a cursor safely, just hide it.
-          if maxy < 3 || maxx < 3
-            renderer.hide_cursor
-            return
-          end
-
-          renderer.show_cursor
-          cursor_x = session.field.cursor_x
-          cursor_x = 0 if cursor_x.nil?
-
-          if session.is_a?(Fatty::PopUpSession)
-            input_row = maxy - 2
-            cursor_x = cursor_x.clamp(0, [maxx - 3, 0].max)
-            begin
-              win.setpos(input_row, 1 + cursor_x)
-            rescue RuntimeError
-              renderer.hide_cursor
-            end
-          elsif session.is_a?(Fatty::PromptSession)
-            message_rows = session.message && !session.message.empty? ? 1 : 0
-            input_row = 1 + message_rows
-            cursor_x = cursor_x.clamp(0, [maxx - 3, 0].max)
-            begin
-              win.setpos(input_row, 1 + cursor_x)
-            rescue RuntimeError
-              renderer.hide_cursor
-            end
-          else
-            renderer.hide_cursor
-          end
-          return
-        end
-        renderer.hide_cursor
         return
       end
 
@@ -755,10 +713,12 @@ module Fatty
         renderer.hide_cursor
         return
       end
+
       if session.respond_to?(:pager_active?) && session.pager_active?
         renderer.hide_cursor
         return
       end
+
       return unless session.respond_to?(:field) && session.field
 
       renderer.show_cursor

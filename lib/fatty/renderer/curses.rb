@@ -151,12 +151,15 @@ module Fatty
         field_win&.close if field_win&.respond_to?(:close)
       end
 
+      # Modal overlays, render_popup and render_prompt_popu are deliberately
+      # not state-cached.
+      #
+      # They must be restaged on every frame because they are drawn on top of the
+      # focused session. Even when the overlay's own state has not changed, the
+      # underlying session may have redrawn the area beneath it. Skipping the overlay
+      # render would let the underlying frame erase or visually punch through it.
+
       def render_popup(session:)
-        state = popup_state(session)
-        return if state == @last_popup_state
-
-        @last_popup_state = state
-
         win = session.win
         return unless win
 
@@ -270,11 +273,6 @@ module Fatty
       end
 
       def render_prompt_popup(session:)
-        state = prompt_popup_state(session)
-        return if state == @last_prompt_popup_state
-
-        @last_prompt_popup_state = state
-
         win = session.win
         return unless win
 
@@ -326,6 +324,7 @@ module Fatty
         )
 
         cursor_x = session.field.cursor_x.to_i.clamp(0, [inner_w - 1, 0].max)
+        show_cursor
         win.setpos(1 + input_row, 1 + cursor_x)
 
         stage_window(inner)
