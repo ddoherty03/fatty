@@ -64,13 +64,11 @@ module Fatty
     end
 
     # A simple Yes/No chooser.
-    def confirm(prompt, default: true)
-      idx = default ? 0 : 1
+    def confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)
       choose(
         prompt,
-        choices: [["Yes", true], ["No", false]],
-        initial_choice_idx: idx,
-        quit_value: false,
+        choices: [[yes_label, true], [no_label, false]],
+        cancel_value: cancel_value,
       )
     end
 
