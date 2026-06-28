@@ -14,6 +14,7 @@ module Fatty
         terminal_version: ENV["KONSOLE_VERSION"] || ENV["TERM_PROGRAM_VERSION"],
         tmux: tmux?,
         screen: screen?,
+        truecolor: truecolor?,
         ssh: ssh?,
         curses: curses_info,
       }
@@ -70,6 +71,17 @@ module Fatty
       else
         'unknown'
       end
+    end
+
+    def self.truecolor?
+      colorterm = ENV["COLORTERM"].to_s
+      term = ENV["TERM"].to_s
+      term_program = ENV["TERM_PROGRAM"].to_s
+
+      colorterm.match?(/truecolor|24bit/i) ||
+      term.match?(/truecolor|24bit|direct/i) ||
+      term.match?(/kitty|wezterm|alacritty|ghostty|foot/i) ||
+        term_program.match?(/kitty|wezterm|alacritty|ghostty|iTerm/i)
     end
 
     def tmux?

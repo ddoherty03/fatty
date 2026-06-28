@@ -136,7 +136,7 @@ module Fatty
           when "false", "no", "off", "0"
             false
           else
-            truecolor_env?
+            Fatty::Env.truecolor?
           end
         Fatty.info(
           "truecolor=#{@truecolor} setting=#{setting.inspect} " \
@@ -145,17 +145,6 @@ module Fatty
           tag: :themes,
         )
         @truecolor
-      end
-
-      def truecolor_env?
-        colorterm = ENV["COLORTERM"].to_s
-        term = ENV["TERM"].to_s
-        term_program = ENV["TERM_PROGRAM"].to_s
-
-        colorterm.match?(/truecolor|24bit/i) ||
-          term.match?(/truecolor|24bit|direct/i) ||
-          term.match?(/kitty|wezterm|alacritty|ghostty|foot/i) ||
-          term_program.match?(/kitty|wezterm|alacritty|ghostty|iTerm/i)
       end
 
       # Map a Fatty::Ansi::Style to a curses attribute.
