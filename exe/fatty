@@ -101,21 +101,18 @@ on_accept_proc = lambda do |line, env|
       "Demo menu",
       choices: {
         "Write to output pane" => proc { |env|
-      env.append("menu: wrote this from MenuEnv#output\n")
-      :output_written
-    },
+          env.append("menu: wrote this from MenuEnv#output\n")
+          :output_written
+        },
         "Show status message" => proc { |env|
-      env.status("menu: status set from MenuEnv#status")
-      :status_written
-    },
+          env.status("menu: status set from MenuEnv#status")
+          :status_written
+        },
         "Show markdown" => proc { |env|
-      env.markdown("\# Your Choices\n\n- one\n- two\n- three\n")
-      :markdown_written
-    },
-        "Return plain value" => :plain_value,
+          env.markdown("\# Your Choices\n\n- one\n- two\n- three\n")
+          :markdown_written
+        },
       },
-      initial_choice_idx: 0,
-      cancel_value: nil,
     )
     if result.nil?
       env.append("menu: cancelled\n")

@@ -2,23 +2,11 @@
 
 module Fatty
   module MenuApi
-    # Present a chooser whose selected value is executed.
-    #
-    # choices may be:
-    #   [["Label", proc { ... }], ...]
-    # or:
-    #   { "Label" => proc { ... } }
-    #
-    # The proc may accept:
-    #   0 args
-    #   terminal:
-    #   terminal:, label:
-    #   terminal:, label:, payload:
     def menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)
-      items = normalize_choices(choices)
+      items = normalize_menu_choices(choices)
       raise ArgumentError, "choices must not be empty" if items.empty?
 
-      labels = items.map(&:first)
+      labels = items.keys
       popup = Fatty::PopUpSession.new(
         source: labels,
         kind: :terminal_menu,
@@ -28,7 +16,6 @@ module Fatty
         current: :top,
         validate_unique_labels: true,
       )
-
       popup.instance_variable_set(
         :@current,
         initial_choice_idx.to_i.clamp(0, labels.length - 1),
@@ -38,13 +25,15 @@ module Fatty
       result = nil
       acc_proc = ->(payload) do
         label = payload[:item]
-        idx = labels.index(label)
-        action = idx ? items[idx][1] : nil
-        result = call_menu_action(
-          action,
-          label: label,
-          payload: payload,
-        )
+        action = items[label]
+
+        result =
+          if action
+            call_menu_action(action, label: label)
+          else
+            cancel_value
+          end
+
         done = true
       end
       cancel_proc = -> do
@@ -69,12 +58,17 @@ module Fatty
             terminal.apply_command(command)
             dirty = true
           end
+
           begin
             dirty ||= !!terminal.tick_active_session
           rescue StandardError => e
-            Fatty.error("MenuApi#menu tick failed: #{e.class}: #{e.message}", tag: :terminal)
+            Fatty.error(
+              "MenuApi#menu tick failed: #{e.class}: #{e.message}",
+              tag: :terminal,
+            )
             dirty = true
           end
+
           terminal.render_frame if dirty
         end
       ensure
@@ -84,31 +78,24 @@ module Fatty
     end
 
     private
+
     # simplecov:disable
 
-    def call_menu_action(action, label:, payload:)
-      result =
-        if action.respond_to?(:call)
-          env = CallbackEnvironment.new(
-            terminal: terminal,
-            output_id: output_id,
-            label: label,
-            payload: payload,
-          )
-          value =
-            if action.arity.zero?
-              action.call
-            else
-              action.call(env)
-            end
-          env.commands.each do |command|
-            queue(command)
-          end
-          value
-        else
-          action
+    def normalize_menu_choices(choices)
+      unless choices.is_a?(Hash)
+        raise ArgumentError, "menu choices must be a Hash of label => callable"
+      end
+
+      choices.each_with_object({}) do |(label, action), normalized|
+        unless action.respond_to?(:call)
+          raise ArgumentError, "menu choice #{label.inspect} is not callable"
         end
-      result
+        normalized[label.to_s] = action
+      end
+    end
+
+    def call_menu_action(action, label:)
+      action.call(self, label)
     end
   end
 end
