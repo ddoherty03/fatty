@@ -49,6 +49,33 @@ module Fatty
         self
       end
 
+      def started?
+        @started
+      end
+
+      def environment
+        data = {
+          started: started?,
+          truecolor: truecolor,
+          key_min: ::Curses::KEY_MIN,
+          key_max: ::Curses::KEY_MAX,
+        }
+        if started?
+          data.merge(
+            lines: ::Curses.lines,
+            cols: ::Curses.cols,
+            has_colors: ::Curses.has_colors?,
+            colors: ::Curses.colors,
+            color_pairs: ::Curses.color_pairs,
+            can_change_color: ::Curses.can_change_color?,
+          )
+        else
+          data
+        end
+      rescue StandardError
+        {}
+      end
+
       def configure_escape_delay!
         delay =
           if ENV["ESCDELAY"]

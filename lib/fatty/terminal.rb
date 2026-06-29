@@ -63,7 +63,7 @@ module Fatty
   class Terminal
     SCROLL_RENDER_THROTTLE = 0.05
 
-    attr_reader :screen, :renderer, :event_source, :env
+    attr_reader :screen, :renderer, :event_source, :env, :ctx
     attr_reader :shell_session, :status_session, :alert_session, :focused_session
 
     def initialize(prompt: "> ",
@@ -86,6 +86,7 @@ module Fatty
       @modal_stack = []
       @status_rows = 0
 
+      @ctx = nil
       @immediate_render = false
       @session_dirty = false
       @render_requested = false

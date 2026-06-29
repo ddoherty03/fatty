@@ -6,17 +6,16 @@ module Fatty
 
     def detect
       {
-        os: os,
         arch: arch,
+        os: os,
         ruby_platform: RUBY_PLATFORM,
+        screen: screen?,
+        ssh: ssh?,
         term: ENV["TERM"],
         terminal: detect_terminal_program,
         terminal_version: ENV["KONSOLE_VERSION"] || ENV["TERM_PROGRAM_VERSION"],
         tmux: tmux?,
-        screen: screen?,
         truecolor: truecolor?,
-        ssh: ssh?,
-        curses: curses_info,
       }
     end
 
@@ -94,21 +93,6 @@ module Fatty
 
     def ssh?
       ENV.key?("SSH_TTY") || ENV.key?("SSH_CONNECTION")
-    end
-
-    # -----------------------
-    # ncurses capabilities
-    # -----------------------
-
-    def curses_info
-      return {} unless defined?(::Curses)
-
-      {
-        key_min: ::Curses::KEY_MIN,
-        key_max: ::Curses::KEY_MAX,
-      }
-    rescue StandardError
-      {}
     end
   end
 end

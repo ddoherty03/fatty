@@ -20,10 +20,15 @@ on_accept_proc = lambda do |line, env|
     Dir.chdir(dir)
   when "environment"
     env.append("The environment Fatty has detected is:\n")
-    environment = Fatty::Env.detect
-
-    environment.sort.each do |key, value|
-      env.append("#{key} -> #{value}\n")
+    env.environment.each do |key, value|
+      if value.is_a?(Hash)
+        env.append("#{key}:\n")
+        value.each do |sub_key, sub_value|
+          env.append("  #{sub_key} -> #{sub_value}\n")
+        end
+      else
+        env.append("#{key} -> #{value}\n")
+      end
     end
 
     nil
