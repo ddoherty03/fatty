@@ -30,11 +30,10 @@ module Fatty
 
     attr_reader :label, :payload, :commands, :terminal, :progress
 
-    def initialize(terminal:, output_id:, label: nil, payload: nil)
+    def initialize(terminal:, output_id:, label: nil)
       @terminal = terminal
       @output_id = output_id
       @label = label
-      @payload = payload
       @commands = []
     end
 
