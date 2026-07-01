@@ -92,7 +92,7 @@ module Fatty
         terminal = terminal_selecting("One")
         env = env_for(terminal)
 
-        env.choose("Pick", choices: [["One", :one]])
+        env.choose("Pick", choices: { "One" => :one })
 
         command = terminal.applied_commands.first
         expect(command.target).to eq(:terminal)
@@ -107,7 +107,7 @@ module Fatty
 
         result = env.choose(
           "Pick",
-          choices: [["One", :one], ["Two", :two]],
+          choices: { "One" => :one, "Two" => :two }
         )
 
         expect(result).to eq(:two)
@@ -119,7 +119,7 @@ module Fatty
 
         result = env.choose(
           "Pick",
-          choices: [["One", :one]],
+          choices: { "One" => :one },
           cancel_value: :quit,
         )
 
@@ -171,7 +171,7 @@ module Fatty
 
         result = env.choose_multi(
           "Pick",
-          choices: [["One", :one], ["Two", :two]],
+          choices: { "One" => :one, "Two" => :two },
         )
 
         expect(result).to eq("One" => :one, "Two" => :two)
@@ -183,7 +183,7 @@ module Fatty
 
         result = env.choose_multi(
           "Pick",
-          choices: [["One", :one]],
+          choices: { "One" => :one },
           cancel_value: :quit,
         )
 

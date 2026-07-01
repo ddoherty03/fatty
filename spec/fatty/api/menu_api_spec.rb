@@ -99,11 +99,28 @@ module Fatty
     end
 
     describe "#menu" do
+      # let(:env) { env_for(terminal_selecting("One")) }
+      # let(:env_cancelling) { env_for(terminal_cancelling) }
+      # let(:menu) {
+      #   env.menu("Choose",
+      #     choices: {
+      #       "One" => ->(_fatty, _label) { :one },
+      #       "Two" => ->(_fatty, _label) { :two },
+      #     },
+      #     cancel_value: :quit
+      #   )
+      # }
+
       it "pushes a popup modal" do
         terminal = terminal_selecting("One")
         env = env_for(terminal)
 
-        env.menu("Choose", choices: [["One", "result"]])
+        env.menu("Choose",
+          choices: {
+            "One" => ->(_fatty, _label) { :one },
+            "Two" => ->(_fatty, _label) { :two },
+          }
+        )
 
         command = terminal.applied_commands.first
         expect(command.target).to eq(:terminal)
@@ -112,20 +129,16 @@ module Fatty
         expect(command.payload.fetch(:owner)).to be_a(Fatty::Terminal::PopupOwner)
       end
 
-      it "returns the selected non-callable value" do
-        terminal = terminal_selecting("One")
-        env = env_for(terminal)
-
-        result = env.menu("Choose", choices: [["One", :one]])
-
-        expect(result).to eq(:one)
-      end
-
       it "returns the quit value when cancelled" do
         terminal = terminal_cancelling
         env = env_for(terminal)
 
-        result = env.menu("Choose", choices: [["One", :one]], cancel_value: :quit)
+        result =
+          env.menu("Choose", choices: {
+            "One" => ->(_fatty, _label) { :one },
+            "Two" => ->(_fatty, _label) { :two },
+          },
+          cancel_value: :quit)
 
         expect(result).to eq(:quit)
       end
@@ -137,20 +150,15 @@ module Fatty
 
         env.menu(
           "Choose",
-          choices: [
-            [
-              "One",
-              proc do |inner_env|
-          callback_env = inner_env
-          :done
-        end,
-            ],
-          ],
+          choices:
+            {
+              "One" => proc do |inner_env, _label|
+                callback_env = inner_env
+               :done
+              end,
+            },
         )
-
         expect(callback_env).to be_a(Fatty::CallbackEnvironment)
-        expect(callback_env.label).to eq("One")
-        expect(callback_env.payload).to eq(item: "One")
       end
 
       it "queues nested callback commands onto the outer environment" do
@@ -159,15 +167,12 @@ module Fatty
 
         result = env.menu(
           "Choose",
-          choices: [
-            [
-              "One",
-              proc do |inner_env|
-          inner_env.append("hello")
-          :done
-        end,
-            ],
-          ],
+          choices: {
+            "One" => proc do |inner_env|
+                       inner_env.append("hello")
+                       :done
+                     end
+          },
         )
 
         expect(result).to eq(:done)
@@ -184,15 +189,12 @@ module Fatty
 
         env.menu(
           "Choose",
-          choices: [
-            [
-              "One",
-              proc do |inner_env|
-          inner_env.append("one")
-          inner_env.append("two", follow: false)
-        end,
-            ],
-          ],
+          choices: {
+            "One" => proc do |inner_env|
+               inner_env.append("one")
+               inner_env.append("two", follow: false)
+             end,
+          },
         )
 
         expect(env.commands.map { |command| command.payload.fetch(:text) })
@@ -207,17 +209,13 @@ module Fatty
 
         env.menu(
           "Choose",
-          choices: [
-            [
-              "One",
-              proc do |inner_env|
-          inner_env.status("working", role: :good)
-          inner_env.append("hello")
-        end,
-            ],
-          ],
+          choices: {
+            "One" => proc do |inner_env|
+               inner_env.status("working", role: :good)
+               inner_env.append("hello")
+             end,
+          },
         )
-
         status_command = terminal.applied_commands.find do |command|
           command.target == :status && command.action == :show
         end
@@ -226,34 +224,28 @@ module Fatty
         expect(env.commands.first.payload.fetch(:text)).to eq("hello")
       end
 
-      it "calls zero-arity menu actions" do
+      it "raises when a menu choice is not callable" do
         terminal = terminal_selecting("One")
         env = env_for(terminal)
-        called = false
-
-        result = env.menu(
-          "Choose",
-          choices: [
-            [
-              "One",
-              proc do
-          called = true
-          :zero_arity
-        end,
-            ],
-          ],
-        )
-
-        expect(called).to be(true)
-        expect(result).to eq(:zero_arity)
+        expect {
+          env.menu("Choose", choices: { "One" => :one })
+        }.to raise_error(ArgumentError, 'menu choice "One" is not callable')
       end
 
       it "raises when choices are empty" do
         terminal = terminal_selecting("One")
         env = env_for(terminal)
 
-        expect { env.menu("Choose", choices: []) }
+        expect { env.menu("Choose", choices: {}) }
           .to raise_error(ArgumentError, "choices must not be empty")
+      end
+
+      it "raises an error for non-Hash choices" do
+        terminal = terminal_selecting("One")
+        env = env_for(terminal)
+        expect {
+          env.menu("Choose", choices: [])
+        }.to raise_error(ArgumentError, "menu choices must be a Hash of label => callable")
       end
     end
   end

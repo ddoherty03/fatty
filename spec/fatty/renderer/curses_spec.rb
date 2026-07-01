@@ -143,6 +143,8 @@ module Fatty
         selected_labels: [],
         field: field,
         scroll_start: 0,
+        counts_present?: false,
+        filter_present?: true,
         gutter_for: "▶ ",
         state: [
           "\e[31mTitle\e[0m",
