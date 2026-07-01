@@ -9,7 +9,6 @@ module Fatty
         Fatty::Terminal,
         apply_command: nil,
         render_frame: nil,
-        screen: nil,
       )
     end
     let(:env) do
@@ -31,6 +30,7 @@ module Fatty
       allow(terminal).to receive(:apply_command) do |command|
         applied_commands << command
       end
+      allow(terminal).to receive(:without_cursor_restore).and_yield
     end
 
     describe "#add_progress" do
@@ -89,7 +89,7 @@ module Fatty
       it "raises for non-spinner progress without a total" do
         expect {
           env.add_progress(label: "Importing", style: :percent)
-        }.to raise_error(ArgumentError, /requires total/)
+        }.to raise_error(ArgumentError, /positive integer total/)
       end
     end
 
