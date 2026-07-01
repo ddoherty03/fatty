@@ -1,4 +1,4 @@
-# lib/fatty/api/prompt.rb
+# frozen_string_literal: true
 
 module Fatty
   module ChooseApi
