@@ -163,7 +163,7 @@ module Fatty
           when "false", "no", "off", "0"
             false
           else
-            Fatty::Env.truecolor?
+            Fatty::Env.truecolor_available?
           end
         Fatty.info(
           "truecolor=#{@truecolor} setting=#{setting.inspect} " \
@@ -184,6 +184,12 @@ module Fatty
       def ansi_attr(style, fallback_role: :output)
         base_pair_id = Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(fallback_role)
         base_attr = ::Curses.color_pair(base_pair_id)
+
+        Fatty.debug(
+          "ansi_attr fg=#{style.fg.inspect} bg=#{style.bg.inspect} " \
+          "pair=#{pair_id.inspect} fallback=#{base_pair_id.inspect}",
+          tag: :themes,
+        )
 
         has_explicit = !(style.fg.nil? && style.bg.nil?)
         attr =
@@ -206,15 +212,19 @@ module Fatty
       end
 
       def apply_palette(palette)
+        reset_ansi_pairs!
+
         if ::Curses.has_colors?
           ::Curses.start_color
           ::Curses.use_default_colors if ::Curses.respond_to?(:use_default_colors)
+
           palette.each_value do |entry|
             next unless entry[:pair]
 
             ::Curses.init_pair(entry[:pair], entry[:fg], entry[:bg])
           end
         end
+
         @palette = palette
       end
 
@@ -273,12 +283,18 @@ module Fatty
           @ansi_pairs[key] = pair_id
         end
 
+        Fatty.debug(
+          "ansi_pair_id init pair=#{pair_id.inspect} fg=#{fg_i.inspect} bg=#{bg_i.inspect}",
+          tag: :themes,
+        )
+
         @ansi_pairs[key]
       end
 
       def reset_ansi_pairs!
         @ansi_pairs = {}
-        @ansi_next_pair_id = 1
+        @ansi_next_pair_id = nil
+        @ansi_pair_limit = nil
       end
 
       def enable_bracketed_paste!

@@ -217,6 +217,63 @@ on_accept_proc = lambda do |line, env|
     file = File.expand_path("../examples/markdown/ox-gfm-markdown.md", __dir__)
     text = File.read(File.expand_path(file))
     env.markdown(text)
+  when "colors"
+    environment = env.environment
+    available = environment.dig(:curses, :colors).to_i
+    available = 16 if available <= 0
+    truecolor_enabled = environment[:truecolor_enabled]
+
+    env.append("Fatty color report\n")
+    env.append("truecolor enabled -> #{truecolor_enabled}\n")
+    env.append("available indexed colors -> #{available}\n")
+    env.append("rendering mode -> #{truecolor_enabled ? '24-bit RGB' : "#{available}-color indexed"}\n")
+    env.append("\n")
+
+
+    env.append("ANSI colors\n")
+    Fatty::Color.ansi_colors.each do |name, index|
+      rgb = Fatty::Color.xterm_rgb_for_index(index)
+      env.append(
+        color_swatch_line(
+          name: name,
+          requested_rgb: rgb,
+          fallback_index: Fatty::Color.resolve(index, available_colors: available),
+          truecolor: truecolor_enabled,
+        )
+      )
+    end
+
+    env.append("\n256 colors\n")
+    256.times do |index|
+      rgb = Fatty::Color.xterm_rgb_for_index(index)
+      env.append(
+        color_swatch_line(
+          name: Fatty::Color.xterm_color_name(index),
+          requested_rgb: rgb,
+          fallback_index: Fatty::Color.resolve(index, available_colors: available),
+          truecolor: truecolor_enabled,
+        )
+      )
+    end
+
+    env.append("\nX11 colors\n")
+    Fatty::Color.x11_colors.sort.each do |name, rgb|
+      fallback_index = Fatty::Color.resolve(
+        Fatty::Color.hex_for_rgb(rgb),
+        available_colors: available,
+      )
+
+      env.append(
+        color_swatch_line(
+          name: name,
+          requested_rgb: rgb,
+          fallback_index: fallback_index,
+          truecolor: truecolor_enabled,
+        )
+      )
+    end
+
+    nil
   when 'help'
     env.markdown(Fatty::Help.text)
   else
@@ -229,6 +286,52 @@ on_accept_proc = lambda do |line, env|
   rescue SystemCallError => ex
     env.alert(ex.message, role: :error)
     nil
+end
+
+def color_swatch_line(name:, requested_rgb:, fallback_index:, truecolor:, width: 24)
+  fallback_rgb = Fatty::Color.xterm_rgb_for_index(fallback_index)
+  rendered_rgb =
+    if truecolor
+      requested_rgb
+    else
+      fallback_rgb
+    end
+
+  band = color_band_for_rgb(
+    rendered_rgb,
+    truecolor: truecolor,
+    fallback_index: fallback_index,
+    width: width,
+  )
+
+  format(
+    "%3s  %-28s requested %s  rendered %s  fallback %3d %s  %s\n",
+    truecolor ? "-" : fallback_index,
+    name,
+    Fatty::Color.hex_for_rgb(requested_rgb),
+    Fatty::Color.hex_for_rgb(rendered_rgb),
+    fallback_index,
+    Fatty::Color.hex_for_rgb(fallback_rgb),
+    band,
+  )
+end
+
+def color_band_for_rgb(rgb, truecolor:, fallback_index:, width: 24)
+  if truecolor
+    fg = Fatty::Color.contrasting_rgb(rgb)
+
+    "\e[38;2;#{fg[0]};#{fg[1]};#{fg[2]}m" \
+    "\e[48;2;#{rgb[0]};#{rgb[1]};#{rgb[2]}m" \
+    "#{' ' * width}" \
+    "\e[0m"
+  else
+    fg_index = Fatty::Color.contrasting_ansi_index(fallback_index)
+
+    "\e[38;5;#{fg_index}m" \
+    "\e[48;5;#{fallback_index}m" \
+    "#{' ' * width}" \
+    "\e[0m"
+  end
 end
 
 cutes = []

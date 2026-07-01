@@ -15,7 +15,8 @@ module Fatty
         terminal: detect_terminal_program,
         terminal_version: ENV["KONSOLE_VERSION"] || ENV["TERM_PROGRAM_VERSION"],
         tmux: tmux?,
-        truecolor: truecolor?,
+        truecolor_detected: truecolor_detected?,
+        curses: {},
       }
     end
 
@@ -72,7 +73,7 @@ module Fatty
       end
     end
 
-    def self.truecolor?
+    def self.truecolor_detected?
       colorterm = ENV["COLORTERM"].to_s
       term = ENV["TERM"].to_s
       term_program = ENV["TERM_PROGRAM"].to_s

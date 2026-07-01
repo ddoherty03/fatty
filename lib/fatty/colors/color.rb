@@ -34,6 +34,25 @@ module Fatty
       "default" => DEFAULT_INDEX,
     }.freeze
 
+    CANONICAL_ANSI_COLORS = {
+      "black" => 0,
+      "red" => 1,
+      "green" => 2,
+      "yellow" => 3,
+      "blue" => 4,
+      "magenta" => 5,
+      "cyan" => 6,
+      "white" => 7,
+      "bright_black" => 8,
+      "bright_red" => 9,
+      "bright_green" => 10,
+      "bright_yellow" => 11,
+      "bright_blue" => 12,
+      "bright_magenta" => 13,
+      "bright_cyan" => 14,
+      "bright_white" => 15,
+    }.freeze
+
     # Small alias set (xterm-256 indices). Keep this small + opinionated.
     # Users can always use integers/hex/X11 names.
     ALIASES_256 = {
@@ -75,6 +94,32 @@ module Fatty
     }.freeze
 
     class << self
+      def ansi_colors
+        CANONICAL_ANSI_COLORS.dup
+      end
+
+      def xterm_colors
+        (0..255).to_h do |index|
+          [xterm_color_name(index), index]
+        end
+      end
+
+      def x11_colors
+        x11_table.dup
+      end
+
+      def xterm_color_name(index)
+        if index.between?(0, 15)
+          CANONICAL_ANSI_COLORS.key(index)
+        elsif index.between?(16, 231)
+          "xterm_#{index}"
+        elsif index.between?(232, 255)
+          "gray_#{index}"
+        else
+          "color_#{index}"
+        end
+      end
+
       # Resolve a color specification to an integer color index suitable for curses init_pair.
       #
       # Accepts:
@@ -188,6 +233,42 @@ module Fatty
           end
 
         result
+      end
+
+      def contrasting_ansi_index_for_rgb(rgb)
+        luminance = ((rgb[0] * 299) + (rgb[1] * 587) + (rgb[2] * 114)) / 1000
+        luminance >= 140 ? 0 : 15
+      end
+
+      def hex_for_rgb(rgb)
+        format("#%02x%02x%02x", *rgb)
+      end
+
+      def hex_for_index(index)
+        hex_for_rgb(xterm_rgb_for_index(index))
+      end
+
+      def luminance_for_rgb(rgb)
+        ((rgb[0] * 299) + (rgb[1] * 587) + (rgb[2] * 114)) / 1000
+      end
+
+      def contrasting_rgb(rgb)
+        if luminance_for_rgb(rgb) >= 140
+          [0, 0, 0]
+        else
+          [255, 255, 255]
+        end
+      end
+
+      def contrasting_ansi_index(index)
+        rgb = xterm_rgb_for_index(index)
+        fg = contrasting_rgb(rgb)
+
+        if fg == [0, 0, 0]
+          0
+        else
+          15
+        end
       end
 
       private
@@ -373,6 +454,37 @@ module Fatty
             g = parts[1].to_i
             b = parts[2].to_i
             name = parts[3..].join(" ")
+            key = normalize_name(name)
+            table[key] = [r, g, b]
+          end
+        end
+
+        table
+      end
+
+      def load_x11_rgb_txt(path)
+        table = {}
+
+        if File.file?(path)
+          File.foreach(path) do |line|
+            next if line.strip.empty?
+            next if line.lstrip.start_with?("!")
+            next if line.lstrip.start_with?("#")
+
+            parts = line.strip.split(/\s+/, 4)
+            next unless parts.length == 4
+            next unless parts[0].match?(/\A\d+\z/)
+            next unless parts[1].match?(/\A\d+\z/)
+            next unless parts[2].match?(/\A\d+\z/)
+
+            r = parts[0].to_i
+            g = parts[1].to_i
+            b = parts[2].to_i
+            next unless r.between?(0, 255)
+            next unless g.between?(0, 255)
+            next unless b.between?(0, 255)
+
+            name = parts[3]
             key = normalize_name(name)
             table[key] = [r, g, b]
           end

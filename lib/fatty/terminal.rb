@@ -538,12 +538,14 @@ module Fatty
       @ctx.apply_layout(@screen)
 
       @renderer =
-        if @ctx.truecolor
+        if @ctx.truecolor_enabled?
           Fatty::Renderer::Truecolor.new(context: @ctx, screen: @screen, palette: @ctx.palette)
         else
           Fatty::Renderer::Curses.new(context: @ctx, screen: @screen, palette: @ctx.palette)
         end
-      @renderer.sync_backgrounds! if @ctx.truecolor
+      @renderer.invalidate!
+      @renderer.clear_physical_screen! if @ctx.truecolor_enabled?
+      @renderer.sync_backgrounds! if @ctx.truecolor_enabled?
 
       @env ||= Fatty::Env.detect
       key_decoder = Fatty::Curses::KeyDecoder.new(env: @env)
