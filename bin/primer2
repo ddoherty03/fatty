@@ -1,0 +1,53 @@
+#! /usr/bin/env -S ruby -Ilib
+# -*- mode: ruby -*-
+
+require 'fatty'
+require 'prime'
+require "rainbow/refinement"
+
+using Rainbow
+
+primer = lambda do |input, fatty|
+  if input.match?(/\A[1-9]\d*\z/)
+    k = input.to_i
+    prog = fatty.add_progress(label: "Thinking...", total: k, style: :trail, width: 100)
+    out_line = +""
+    num_primes = 0
+    Prime.each do |p|
+      num_primes += 1
+      out = "#{p} "
+
+      if out_line.length + out.length > 100
+        fatty.append_now("#{out_line}\n", mode: :scrolling)
+        out_line.clear
+      end
+
+      out_line << out
+      last_dig = p.to_s.split('').last
+      sig =
+        case last_dig
+        when '1'
+          last_dig.red
+        when '3'
+          last_dig.blue
+        when '7'
+          last_dig.green
+        when '9'
+          last_dig.yellow
+        else
+          '!'
+        end
+      prog.update(current: num_primes, indicator: sig)
+      break if num_primes >= k
+    end
+    fatty.append_now("#{out_line}\n", mode: :scrolling) unless out_line.empty?
+  else
+    fatty.alert "Give me a positive integer", role: :error
+  end
+  prog.finish("Done")
+end
+
+Fatty::Terminal.new(
+  on_accept: primer,
+  prompt: 'How many primes? ',
+).go

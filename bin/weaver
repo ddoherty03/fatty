@@ -1,0 +1,14 @@
+#! /usr/bin/env -S ruby -Ilib
+# -*- mode: ruby -*-
+
+require 'fatty'
+
+weaver = lambda do |line, fatty|
+  str = fatty.prompt("Secondary string to weave in with '#{line}'", initial: line)
+  (line + str).downcase.gsub(/[^a-z]/, '').split('').shuffle.join
+end
+
+Fatty::Terminal.new(
+  on_accept: weaver,
+  prompt: "Primary String> "
+).go

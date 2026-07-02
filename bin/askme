@@ -1,0 +1,27 @@
+#! /usr/bin/env -S ruby -Ilib
+# -*- mode: ruby -*-
+
+require 'fatty'
+
+asker = lambda do |_line, fatty|
+  result = fatty.menu(
+    "Pick an action",
+    choices: {
+      "Self Echo" => ->(fatty, label) {
+        fatty.append("You chose #{label}\n")
+        "XXXXXXX"
+      },
+      "Say Hello" => ->(fatty, _payload) {
+        name = fatty.prompt("Name?")
+        fatty.append("Hello, #{name}\n")
+        "YYYYYYY"
+      },
+    },
+  )
+  fatty.good(result)
+end
+
+Fatty::Terminal.new(
+  on_accept: asker,
+  prompt: "Type 'go' for some action> ",
+).go

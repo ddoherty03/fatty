@@ -1,0 +1,13 @@
+#! /usr/bin/env -S ruby -Ilib
+# -*- mode: ruby -*-
+
+require 'fatty'
+
+loud_reversal = lambda do |line, fatty|
+  fatty.good(line)
+  line.upcase.reverse
+end
+
+Fatty::Terminal.new(
+  on_accept: loud_reversal,
+).go
