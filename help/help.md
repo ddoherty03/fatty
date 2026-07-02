@@ -1,26 +1,26 @@
-- [Fatty Help](#org0aaaf31)
-  - [The `fatty` demo command](#org26ce7af)
-  - [Builtin commands](#orgf6ddca8)
-  - [Keybindings](#org7402488)
-    - [Input Context](#org98e9ceb)
-    - [Paging Context](#org8767a81)
-    - [Popup Context](#org38b29c9)
-    - [Prompt Context](#orgb8f4a36)
+- [Fatty Help](#org245a92e)
+  - [The `fatty` demo command](#orgffe615f)
+  - [Builtin commands](#orgd27e40e)
+  - [Keybindings](#orgab9d7b6)
+    - [Input Context](#org68708fa)
+    - [Paging Context](#org7729d50)
+    - [Popup Context](#org684d15c)
+    - [Prompt Context](#org741e059)
 
 
-<a id="org0aaaf31"></a>
+<a id="org245a92e"></a>
 
 # Fatty Help
 
 
-<a id="org26ce7af"></a>
+<a id="orgffe615f"></a>
 
 ## The `fatty` demo command
 
 When you run `fatty`, it operates as a simple demo of the `fatty` gem by presenting an editable command-line using emacs key bindings. It has several builtin commands to demonstrate `fatty` features, and any command it does not recognize is handed off to the shell.
 
 
-<a id="orgf6ddca8"></a>
+<a id="orgd27e40e"></a>
 
 ## Builtin commands
 
@@ -29,6 +29,7 @@ Here are the commands builtin to `fatty`
 | Command                      | Description                                                                |
 |---------------------------- |-------------------------------------------------------------------------- |
 | cd                           | Change the current directory used by the shell                             |
+| colors                       | Display all available colors, names and rgb codes                          |
 | choose                       | Present a series of choices in a popup window                              |
 | choose\_multi                | Present choices with a "checkbox" for selecting multiple values            |
 | choosevals                   | Also present choices in a popup window but return an associated value      |
@@ -55,14 +56,14 @@ Here are the commands builtin to `fatty`
 | warn                         | Display a "warn" message colored to indicate caution                       |
 
 
-<a id="org7402488"></a>
+<a id="orgab9d7b6"></a>
 
 ## Keybindings
 
 The following tables explain the keybindings available in \`fatty\` in different contexts. Named keys are indicated by \`:name\` and key categories, such as \`<digits>\` are indicated with brackets.
 
 
-<a id="org98e9ceb"></a>
+<a id="org68708fa"></a>
 
 ### Input Context
 
@@ -129,7 +130,7 @@ When editing the input line or text input for widgets like the \`prompt\`, \`fat
 |            |                                                        |
 
 
-<a id="org8767a81"></a>
+<a id="org7729d50"></a>
 
 ### Paging Context
 
@@ -171,7 +172,7 @@ By default, \`fatty\` sends output to the large output pane, and if the output i
 |             |                                        |
 
 
-<a id="org38b29c9"></a>
+<a id="org684d15c"></a>
 
 ### Popup Context
 
@@ -208,7 +209,7 @@ Certain keys cause a popup, such as C-r to bring up history items and M-:tab to 
 |                |                                                                       |
 
 
-<a id="orgb8f4a36"></a>
+<a id="org741e059"></a>
 
 ### Prompt Context
 
