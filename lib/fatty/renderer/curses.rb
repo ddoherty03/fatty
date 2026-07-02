@@ -27,7 +27,9 @@ module Fatty
         curr = output_state(output_session, viewport: viewport)
         prev = @last_output_state
 
-        if prev && output_session.incrementally_scrollable_from?(prev, curr)
+        if prev &&
+           !ansi_lines?(lines) &&
+           output_session.incrementally_scrollable_from?(prev, curr)
           scroll_output_window_delta!(
             delta: output_session.scroll_delta_from(prev, curr),
             lines: lines,
@@ -407,9 +409,11 @@ module Fatty
         ::Curses.colors
       end
 
+      def ansi_lines?(lines)
+        lines.any? { |line| line.to_s.include?("\e[") }
+      end
+
       def after_apply_theme!
-        @ansi_pair_cache = {}
-        @next_ansi_pair_id = nil
         context.apply_palette(palette)
       end
 
@@ -510,6 +514,8 @@ module Fatty
       end
 
       def draw_output_lines(lines, viewport:, highlights: nil)
+        context.reset_ansi_pairs!
+
         win = context.output_win
         base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
 
@@ -684,7 +690,7 @@ module Fatty
 
           attr =
             if segment[:style]
-              ansi_style_attr(segment[:style], fallback: base_attr)
+              ansi_style_attr(segment[:style], fallback: base_attr, fallback_role: base_role)
             else
               case segment[:role]
               when :region then region_attr
@@ -702,18 +708,27 @@ module Fatty
         end
       end
 
-      def ansi_style_attr(style, fallback:)
+      def ansi_style_attr(style, fallback:, fallback_role: :output)
         attr = fallback
+
         if style.fg || style.bg
           fg = curses_color_for_style(style.fg)
           bg = curses_color_for_style(style.bg)
 
-          output_spec = palette[:output] || {}
-          fg = output_spec[:fg] if fg.nil?
-          bg = output_spec[:bg] if bg.nil?
+          role_spec = palette[fallback_role] || palette[:output] || {}
+          fg = role_spec[:fg] if fg.nil?
+          bg = role_spec[:bg] if bg.nil?
 
-          attr = ::Curses.color_pair(ansi_pair_for(fg, bg))
+          fallback_pair_id = Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(fallback_role)
+          pair_id = context.ansi_pair_for(
+            fg,
+            bg,
+            fallback_pair_id: fallback_pair_id,
+          )
+
+          attr = ::Curses.color_pair(pair_id)
         end
+
         attr |= ::Curses::A_BOLD if style.bold
         attr |= ::Curses::A_DIM if style.respond_to?(:dim) && style.dim
         attr |= ::Curses::A_UNDERLINE if style.underline
@@ -733,25 +748,6 @@ module Fatty
             available_colors: available_colors,
           )
         end
-      end
-
-      def ansi_pair_for(fg, bg)
-        @ansi_pair_cache ||= {}
-        key = [fg.to_i, bg.to_i]
-
-        @ansi_pair_cache[key] ||=
-          begin
-            pair_id = next_ansi_pair_id
-            ::Curses.init_pair(pair_id, fg.to_i, bg.to_i)
-            pair_id
-          end
-      end
-
-      def next_ansi_pair_id
-        @next_ansi_pair_id ||= Fatty::Colors::Pairs::ROLE_TO_PAIR.values.max + 1
-        id = @next_ansi_pair_id
-        @next_ansi_pair_id += 1
-        id
       end
     end
   end

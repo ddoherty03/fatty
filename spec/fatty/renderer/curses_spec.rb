@@ -174,10 +174,14 @@ module Fatty
 
     it "renders ANSI-colored prompt segments through curses attributes" do
       win = CursesRendererSpecWindow.new(maxx: 20)
-      allow(curses_context).to receive(:input_win).and_return(win)
-      allow(::Curses).to receive(:color_pair) { |pair| pair }
-      allow(::Curses).to receive(:init_pair)
 
+      allow(curses_context).to receive(:input_win).and_return(win)
+      allow(curses_context).to receive(:ansi_pair_for).and_return(64)
+      allow(::Curses).to receive(:colors).and_return(256)
+      allow(::Curses).to receive(:color_pair) { |pair| pair }
+      allow(::Curses).to receive(:color_pair).with(64).and_return(0x6400)
+
+      # field = InputField.new(prompt: "\e[31mred\e[0m> ")
       field = InputField.new(prompt: "\e[31mred\e[0m> ")
       field.buffer.insert("hello")
 
@@ -189,6 +193,13 @@ module Fatty
 
       expect(added.join).to include("red> hello")
       expect(added.join).not_to include("\e[")
+      expect(curses_context)
+        .to have_received(:ansi_pair_for)
+              .with(
+                1,
+                nil,
+                fallback_pair_id: Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(:input),
+              )
     end
 
     it "clamps restored input cursor position to the input window width" do
