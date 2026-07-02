@@ -108,6 +108,12 @@ module Fatty
         x11_table.dup
       end
 
+      def x11_colors_by_name
+        x11_colors.sort_by do |name, _rgb|
+          color_name_sort_key(name)
+        end.to_h
+      end
+
       def xterm_color_name(index)
         if index.between?(0, 15)
           CANONICAL_ANSI_COLORS.key(index)
@@ -272,6 +278,16 @@ module Fatty
       end
 
       private
+
+      def color_name_sort_key(name)
+        name.to_s.split(/(\d+)/).map do |part|
+          if part.match?(/\A\d+\z/)
+            [0, part.to_i]
+          else
+            [1, part]
+          end
+        end
+      end
 
       def resolve_stringish(str, available_colors: 256)
         s = normalize_name(str)
