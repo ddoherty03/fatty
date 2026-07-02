@@ -20,7 +20,7 @@
 * Introduction
 ~Fatty~ aims to provide a full-featured command-line environment that provides:
 
-1. an editing command-line input,
+1. an emacs-like editing command-line input, including undo/redo and kill/yank
 2. a history facility,
 3. command completion,
 4. completion of partially-typed file path names,
@@ -66,11 +66,12 @@ you.  If you type anything other than a builtin command, ~fatty~ attempts to
 run it as a shell command and displays the output.
 
 * Usage
-** Launching a Fatty Terminal with ~on_accept~
+** Launching a Fatty Terminal with ~on_accept~m
 You can launch a ~Fatty~ terminal session that does arbitrary processing of an
-edited command line as show in this file that we'll call ~loudrev~:
+edited command line and returns a String to be displayed on the output pane,
+as show in this file that we'll call ~loudrev~:
 
-#+begin_src ruby
+#+begin_src ruby :tangle no
   #! /usr/bin/env ruby
   # -*- mode: ruby -*-
 
@@ -85,15 +86,11 @@ edited command line as show in this file that we'll call ~loudrev~:
   ).go
 #+end_src
 
-#+RESULTS:
-#+begin_example
-#+end_example
-
 Now you have an interactive application that allows you to type text and see
 what it looks like when written backwards in uppercase letters. It's as easy
 as that!
 
-On running a fatty application, it installs a few files if they do not exists:
+On running a =fatty= application, =fatty= installs a few files if they do not exists:
 
 - a history file at =~/.fatty_history=
 - a config directory at =~/.config/fatty= that contains
@@ -104,6 +101,356 @@ On running a fatty application, it installs a few files if they do not exists:
     and beyond the emacs bindings that are used by default, and
   + =themes=, a directory of pre-defined theme definitions that you can choose
     from and add to by adding your own themes.
+
+** Adding a Callback to =on_accept=
+The =on_accept= proc can have a second parameter named whatever you like that
+serves as a callback into certain facilities provided by =fatty=.  Here is a
+variation of the prior example that also echoes the original typed string into
+the so-called status area:
+
+#+begin_src ruby :tangle no
+  #! /usr/bin/env ruby
+  # -*- mode: ruby -*-
+
+  require 'fatty'
+
+  loud_reversal = lambda do |line, fatty|
+    fatty.good(line)
+    line.upcase.reverse
+  end
+
+  Fatty::Terminal.new(
+    on_accept: loud_reversal,
+  ).go
+#+end_src
+
+This callback parameter responds to several methods that allow your
+application to interact with the user:
+
+*** =environment=
+This returns a =Hash= of various runtime conditions detected by =Fatty=:
+
+| Key       | Description                             |
+|-----------+-----------------------------------------|
+| =arch:=   | System CPU architecture, e.g., 'x86_64' |
+| =curses:= |                                         |
+
+*** =append(text, follow: true)=
+Add the given text to the output pane.  After a full page of output is
+produced, enter paging mode so the user can view the output at leisure and
+search the output. If =follow= is true, keep the output pane's viewport
+covering the last lines of output.
+
+*** =append_now(text, follow: true)=
+Like =append=, but display output as it is produced rather than wait for a
+full page to be produced.
+
+*** =markdown(text)=
+Render the given text as markdown source according to the current theme then
+=append= the result to the output pane.
+
+*** =status(text, role: :info)=
+Display the text in the "status" area, the lines immediately above the input
+field and assigning it one of the following "roles":
+- :good :: colored according something affirming according to the theme,
+  usually something greenish;
+- :info :: colored something neutral simply for informational purposes;
+- :warn :: colored something to suggest caution, usually something in the
+  orange to yellow range;
+- :error :: colored something to suggest danger, usually some tone of red.
+
+*** =good(text)=
+Display the text in the status area with the role :good.
+
+*** =info(text)=
+Display the text in the status area with the role :info.
+
+*** =warn(text)=
+Display the text in the status area with the role :warn.
+
+*** =error(text)=
+Display the text in the status area with the role :error.
+
+*** =oops(text)=
+Display the text in the status area with the role :error.
+
+Display the text in the status area with the role :error. An alias for
+=error(text)=
+
+*** =alert(text, role: :info)=
+Display the text in the one-line alert panel just below the input field.  In
+the case of the alert panel, the role only controls the foreground color not
+the background.
+
+*** =prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)=
+Display a popup dialog box that allows the user to type in any string and
+return it.  Combine the input line with a prompted-for string and shuffle
+their letters together:
+
+#+begin_src ruby :tangle no
+#! /usr/bin/env -S ruby -Ilib
+# -*- mode: ruby -*-
+
+require 'fatty'
+
+weaver = lambda do |line, fatty|
+  str = fatty.prompt("Secondary string to weave in with '#{line}'")
+  (line + str).downcase.gsub(/[^a-z]/, '').split('').shuffle.join
+end
+
+Fatty::Terminal.new(
+  on_accept: weaver,
+  prompt: "Primary String> "
+).go
+#+end_src
+
+You can pre-fill the prompt's input line by passing in an =initial:=
+parameter.
+
+The =prompt= input has its own history facility separate from the history in
+the main input command line.  You can turn it off by setting =save_history= to
+=false=.
+
+=prompt= returns whatever the user typed and returns =nil= if the user cancels
+with C-c or C-g unless you specify an alternative =cancel_value=.
+
+*** =add_progress(label:, total: nil, style: :percent, role: :info, width: 40)=
+Display a progress widget in the status area to show the user that the system
+is working, not frozen.  The =add_progress= method returns a =Progress= object
+on which the =#update= method can be called to cause it to animate one step.
+To the left of the widget the =label:= is displayed, followed by the widget.
+For processes where the total size is known in advance, the =total:= parameter
+indicates that size.  The =role:= parameter controls the styling of the
+widget. The =width:= parameter places a limit on the size of the widget.
+=Fatty= supports several styles of progress widgets:
+
+- :spinner :: a simple busy-wait indicator that just animates on every call;
+- :count :: count up to =total= on each call of =update(current: <count>)=
+- :percent :: count up to percent of =total= on each call of =update(current: <count>)=
+- :count_percent :: count up and show percent of =total= on each call of =update(current: <count>)=
+- :bar :: display a filling ASCII progress bar with percent and count
+- :unicode_bar :: display a filling Unicode progress bar with percent and count
+- :braille_bar :: display a filling progress bar with percent and count using
+  braille characters
+- :trail :: display an "indicator" on each call of =update(indicator: <string>)=
+
+**** Initialization =add_progress(label:, style: :percent, total: nil, role: :info, width: 40)=
+
+- =label:= :: Text displayed before the progress widget, "Progress" by default.
+- =style:= :: The style of the progress widget from one of those named above.
+- =total:= :: For all styles except :trail and :spinner, the number that
+  represents the size of the task.  As the =#update= calls increase the value
+  of =current= towards =total=, the widget indicates increasing completion.
+- =role:= :: One of :good, :info, :warn, or :error to color the widget
+  according to the theme's idea of these roles.  By default, :info.
+- =width= :: The number of characters for the full widget display: it is only
+  relevant for the bar styles and the trail style; otherwise it is ignored.
+
+**** Update =update(current: nil, indicator: nil, render: false)=
+You update the progress widget by calling =#update= on the Progress object,
+passing as the =current:= parameter a number that indicates progress so far.
+
+#+begin_src ruby :tangle no
+#! /usr/bin/env -S ruby -Ilib
+# -*- mode: ruby -*-
+
+require 'fatty'
+require 'prime'
+
+primer = lambda do |input, fatty|
+  if input.match?(/\A[1-9]\d*\z/)
+    k = input.to_i
+    prog = fatty.add_progress(label: "Thinking...", total: k, style: :bar)
+    out_line = +""
+    num_primes = 0
+    Prime.each do |p|
+      num_primes += 1
+      out = "#{p} "
+
+      if out_line.length + out.length > 100
+        fatty.append_now("#{out_line}\n", mode: :scrolling)
+        out_line.clear
+      end
+
+      out_line << out
+      prog.update(current: num_primes)
+      break if num_primes >= k
+    end
+    fatty.append_now("#{out_line}\n", mode: :scrolling) unless out_line.empty?
+  else
+    fatty.alert "Give me a positive integer", role: :error
+  end
+  prog.finish("Done")
+end
+
+Fatty::Terminal.new(
+  on_accept: primer,
+  prompt: 'How many primes? ',
+).go
+#+end_src
+
+For the trail-style progress, you can use an arbitrary string to indicate
+progress by adding an =indicator:= parameter to the =#update= call.
+
+Suppose, for example, you wanted to print a trail in which the last digit of
+the prime is displayed to indicate progress and colored so it stands out:
+
+#+begin_src ruby :tangle no
+#! /usr/bin/env -S ruby -Ilib
+# -*- mode: ruby -*-
+
+require 'fatty'
+require 'prime'
+require "rainbow/refinement"
+
+using Rainbow
+
+primer = lambda do |input, fatty|
+  if input.match?(/\A[1-9]\d*\z/)
+    k = input.to_i
+    prog = fatty.add_progress(label: "Thinking...", total: k, style: :trail, width: 100)
+    out_line = +""
+    num_primes = 0
+    Prime.each do |p|
+      num_primes += 1
+      out = "#{p} "
+
+      if out_line.length + out.length > 100
+        fatty.append_now("#{out_line}\n", mode: :scrolling)
+        out_line.clear
+      end
+
+      out_line << out
+      last_dig = p.to_s.split('').last
+      sig =
+        case last_dig
+        when '1'
+          last_dig.red
+        when '3'
+          last_dig.blue
+        when '7'
+          last_dig.green
+        when '9'
+          last_dig.yellow
+        else
+          '!'
+        end
+      prog.update(current: num_primes, indicator: sig)
+      break if num_primes >= k
+    end
+    fatty.append_now("#{out_line}\n", mode: :scrolling) unless out_line.empty?
+  else
+    fatty.alert "Give me a positive integer", role: :error
+  end
+  prog.finish("Done")
+end
+
+Fatty::Terminal.new(
+  on_accept: primer,
+  prompt: 'How many primes? ',
+).go
+#+end_src
+
+**** Finish
+As the prior examples illustrate, you can issue an ending message at the end
+of the process by calling =#finish= on the Progress object.
+
+**** Clear
+And, if you have occasion, you can clear the Progress by calling =#clear= on
+the Progress object.
+
+*** =choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)=
+Present a set of =choices:=, which can either be
+- an Array whose items are converted to =Strings= and presented as choices
+- a Hash whose keys converted to =Strings= and presented as choices
+
+=choose= returns
+- the user's selection as a String if =choices:= was an =Array= of =Strings=,
+- the value from the =choices:= =Hash= if =choices:= was an =Hash=,
+- or the =cancel_value= if the user canceled the selection with C-c of C-g.
+
+The =prompt= String (by default "Choose") can guide the user about the purpose
+of the choices.
+
+If you want to set one of the choices as the initial choice, set
+=initial_choice_idx:= to the Integer index of one of the choices.
+
+If you want a value associated with the user's cancellation of the chooser
+with C-c or C-g, set =cancel_value:= to that value.
+
+
+*** =choose_multi(prompt, choices:, cancel_value: nil)=
+Present a set of =choices:=, which can either be
+- an Array whose items are converted to =Strings= and presented as choices
+- a Hash whose keys converted to =Strings= and presented as choices
+
+=choose_multi= returns
+- a =Hash= whose keys and values are the user's
+  selections if =choices:= was an =Array= of =Strings=,
+- a =Hash= whose keys and values are those selected from the =choices:= =Hash=
+  if =choices:= was an =Hash=,
+- or the =cancel_value= if the user canceled the selection with C-c of C-g.
+
+The =prompt= String (by default "Choose Many") can guide the user about the purpose
+of the choices.
+
+*** =confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)=
+Present the user with a simple Yes/No choice using your choice of ways to
+express "Yes" or "No" with =yes_label:= and =no_label:=.
+
+=confirm= returns =true= for "Yes" and =false= for "No."
+
+=confirm= will return =false= on cancellation with C-c or C-g unless you
+provide an alternative =cancel_value:=, in which case it returns that.
+
+*** =menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)=
+Present the user with a set of =choices:= representing actions to execute.
+
+=choices:= is a =Hash= whose keys are labels presented to the user and whose
+values are procs, lambdas, or other objects that respond to =#call=.
+
+#+begin_src ruby :tangle no
+#! /usr/bin/env -S ruby -Ilib
+# -*- mode: ruby -*-
+
+require 'fatty'
+
+asker = lambda do |_line, fatty|
+  result = fatty.menu(
+    "Pick an action",
+    choices: {
+      "Self Echo" => ->(fatty, label) {
+        fatty.append("You chose #{label}\n")
+        "XXXXXXX"
+      },
+      "Say Hello" => ->(fatty, _payload) {
+        name = fatty.prompt("Name?")
+        fatty.append("Hello, #{name}\n")
+        "YYYYYYY"
+      },
+    },
+  )
+  fatty.good(result)
+end
+
+Fatty::Terminal.new(
+  on_accept: asker,
+  prompt: "Type 'go' for some action> ",
+).go
+#+end_src
+
+Each callable has access to the =CallbackEnvironment=, called =fatty= here and
+the =String= label that the user selected.
+
+Each callable can return a value that the =@on_accept= proc can process as it
+pleases.  In the example, they are printed to the status area.
+
+If you want to set one of the choices as the initial choice, set
+=initial_choice_idx:= to the Integer index of one of the choices.
+
+If you want a value associated with the user's cancellation of the chooser
+with C-c or C-g, set =cancel_value:= to that value.
+
 
 * Reading Keys
 
