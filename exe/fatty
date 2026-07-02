@@ -257,7 +257,7 @@ on_accept_proc = lambda do |line, env|
     end
 
     env.append("\nX11 colors\n")
-    Fatty::Color.x11_colors.sort.each do |name, rgb|
+    Fatty::Color.x11_colors_by_name.each do |name, rgb|
       fallback_index = Fatty::Color.resolve(
         Fatty::Color.hex_for_rgb(rgb),
         available_colors: available,
@@ -298,7 +298,8 @@ def color_swatch_line(name:, requested_rgb:, fallback_index:, truecolor:, width:
     end
 
   band = color_band_for_rgb(
-    rendered_rgb,
+    name: name,
+    rgb: rendered_rgb,
     truecolor: truecolor,
     fallback_index: fallback_index,
     width: width,
@@ -316,20 +317,23 @@ def color_swatch_line(name:, requested_rgb:, fallback_index:, truecolor:, width:
   )
 end
 
-def color_band_for_rgb(rgb, truecolor:, fallback_index:, width: 24)
+def color_band_for_rgb(name:, rgb:, truecolor:, fallback_index:, width: 36)
+  label = " #{name} "
+  label = label[0, width].center(width)
+
   if truecolor
     fg = Fatty::Color.contrasting_rgb(rgb)
 
     "\e[38;2;#{fg[0]};#{fg[1]};#{fg[2]}m" \
     "\e[48;2;#{rgb[0]};#{rgb[1]};#{rgb[2]}m" \
-    "#{' ' * width}" \
+    "#{label}" \
     "\e[0m"
   else
     fg_index = Fatty::Color.contrasting_ansi_index(fallback_index)
 
     "\e[38;5;#{fg_index}m" \
     "\e[48;5;#{fallback_index}m" \
-    "#{' ' * width}" \
+    "#{label}" \
     "\e[0m"
   end
 end

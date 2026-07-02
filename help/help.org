@@ -13,6 +13,7 @@ Here are the commands builtin to =fatty=
 | Command                     | Description                                                                |
 |-----------------------------+----------------------------------------------------------------------------|
 | cd                          | Change the current directory used by the shell                             |
+| colors                      | Display all available colors, names and rgb codes                          |
 | choose                      | Present a series of choices in a popup window                              |
 | choose_multi                | Present choices with a "checkbox" for selecting multiple values            |
 | choosevals                  | Also present choices in a popup window but return an associated value      |
