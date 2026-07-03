@@ -6,7 +6,7 @@ module Fatty
   class ShellSession < Session
     action_on :session
 
-    attr_reader :field, :history, :output_session
+    attr_reader :field, :history, :output_session, :on_accept
 
     def initialize(id: nil, prompt: "sh> ", on_accept: nil, completion_proc: nil, history_ctx: nil, history_path: :default)
       keymap = Keymaps.emacs
@@ -100,40 +100,38 @@ module Fatty
     desc "Pass the current input line to the on_accept proc or a shell"
     action :submit_line do
       line = @field.accept_line.to_s.strip
-      if line.empty?
-        []
+      return [] if line.blank? && on_accept.nil?
+
+      Fatty.info("ShellSession: accept_line: #{line}")
+      case line
+      when "exit", "quit"
+        Command.terminal(:quit)
+      when "clear"
+        [
+          Command.session(output_session.id, :clear),
+          Command.session(:alert, :clear),
+        ]
       else
-        Fatty.info("ShellSession: accept_line: #{line}")
-        case line
-        when "exit", "quit"
-          Command.terminal(:quit)
-        when "clear"
-          [
-            Command.session(output_session.id, :clear),
-            Command.session(:alert, :clear),
-          ]
-        else
-          commands = []
-          env = accept_env
-          terminal.apply_command(Command.session(output_session.id, :begin_command))
-          result =
-            if @on_accept
-              @on_accept.call(line, env)
-            else
-              run_default_command(line)
-            end
-          commands.concat(env.commands)
-          if result.is_a?(String)
-            commands << Command.session(output_session.id, :append, text: result, follow: true)
-          elsif result.is_a?(Fatty::Command)
-            commands << result
-          elsif result.is_a?(Array)
-            commands.concat(result.grep(Fatty::Command))
-          elsif result
-            commands << Command.session(output_session.id, :append, text: result.to_s, follow: true)
+        commands = []
+        env = accept_env
+        terminal.apply_command(Command.session(output_session.id, :begin_command))
+        result =
+          if @on_accept
+            @on_accept.call(line, env)
+          else
+            run_default_command(line)
           end
-          commands << Command.session(output_session.id, :finish_command)
+        commands.concat(env.commands)
+        if result.is_a?(String)
+          commands << Command.session(output_session.id, :append, text: result, follow: true)
+        elsif result.is_a?(Fatty::Command)
+          commands << result
+        elsif result.is_a?(Array)
+          commands.concat(result.grep(Fatty::Command))
+        elsif result
+          commands << Command.session(output_session.id, :append, text: result.to_s, follow: true)
         end
+        commands << Command.session(output_session.id, :finish_command)
       end
     end
 
