@@ -128,12 +128,37 @@ This callback parameter responds to several methods that allow your
 application to interact with the user:
 
 *** =environment=
-This returns a =Hash= of various runtime conditions detected by =Fatty=:
+This returns a =Hash= of runtime conditions detected by =Fatty=:
 
-| Key       | Description                             |
-|-----------+-----------------------------------------|
-| =arch:=   | System CPU architecture, e.g., 'x86_64' |
-| =curses:= |                                         |
+| Key                   | Description                                          |
+|-----------------------+------------------------------------------------------|
+| =:arch=               | System CPU architecture, e.g., =x86_64=              |
+| =:os=                 | Operating system detected                            |
+| =:ruby_platform=      | Ruby platform, e.g., =x86_64-linux=                  |
+| =:screen=             | Whether the terminal is running under =screen=       |
+| =:ssh=                | Whether the terminal is running under SSH            |
+| =:tmux=               | Whether the terminal is running under =tmux=         |
+| =:terminal=           | Detected underlying terminal, e.g., =kitty=          |
+| =:terminal_version=   | Version of the terminal, if known                    |
+| =:term=               | The =TERM= terminal type                             |
+| =:truecolor_detected= | Whether truecolor capability appears to be available |
+| =:truecolor_enabled=  | Whether Fatty is actually using truecolor rendering  |
+| =:curses=             | Runtime curses capabilities and parameters           |
+
+The environment report also includes a nested =:curses= hash:
+
+| Key                 | Description                                            |
+|---------------------+--------------------------------------------------------|
+| =:started=          | Whether curses has been initialized                    |
+| =:truecolor=        | Whether the active curses context is using truecolor   |
+| =:key_min=          | Lowest keycode with a curses name                      |
+| =:key_max=          | Highest keycode with a curses name                     |
+| =:lines=            | Number of terminal rows available                      |
+| =:cols=             | Number of terminal columns available                   |
+| =:has_colors=       | Whether curses reports color support                   |
+| =:colors=           | Number of colors available to curses                   |
+| =:color_pairs=      | Number of color pairs available to curses              |
+| =:can_change_color= | Whether curses can redefine color values               |
 
 *** =append(text, follow: true)=
 Add the given text to the output pane.  After a full page of output is
@@ -378,6 +403,49 @@ If you want to set one of the choices as the initial choice, set
 If you want a value associated with the user's cancellation of the chooser
 with C-c or C-g, set =cancel_value:= to that value.
 
+With an Array of Strings:
+
+#+begin_src ruby :tangle no
+#! /usr/bin/env -S ruby -Ilib
+# -*- mode: ruby -*-
+
+require 'fatty'
+
+rgb = lambda do |_line, fatty|
+  color = fatty.choose(
+    "Choose a color",
+    choices: ["red", "green", "blue"],
+  )
+  fatty.status("If you say so: #{Rainbow(color).send(color.to_sym)} it is!\n")
+end
+
+Fatty::Terminal.new(
+  prompt: "Hit RETURN to choose a color> ",
+  on_accept: rgb,
+).go
+#+end_src
+
+Or with a Hash:
+
+#+begin_src ruby :tangle no
+#! /usr/bin/env -S ruby -Ilib
+# -*- mode: ruby -*-
+
+require 'fatty'
+
+nums = lambda do |_line, fatty|
+  const = fatty.choose(
+    "Choose a constant",
+    choices: { "Pi" => 3.14159, "Euler" => 2.718281828, "Golden Ratio" => 1.61803398875 }
+  )
+  fatty.status("Somewhere around #{const}\n")
+end
+
+Fatty::Terminal.new(
+  prompt: "Hit RETURN to choose a constant> ",
+  on_accept: nums,
+).go
+#+end_src
 
 *** =choose_multi(prompt, choices:, cancel_value: nil)=
 Present a set of =choices:=, which can either be
@@ -423,7 +491,7 @@ asker = lambda do |_line, fatty|
         fatty.append("You chose #{label}\n")
         "XXXXXXX"
       },
-      "Say Hello" => ->(fatty, _payload) {
+      "Say Hello" => ->(fatty, _label) {
         name = fatty.prompt("Name?")
         fatty.append("Hello, #{name}\n")
         "YYYYYYY"
@@ -435,7 +503,7 @@ end
 
 Fatty::Terminal.new(
   on_accept: asker,
-  prompt: "Type 'go' for some action> ",
+  prompt: "Type RETURN for some action> ",
 ).go
 #+end_src
 

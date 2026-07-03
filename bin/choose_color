@@ -1,0 +1,17 @@
+#! /usr/bin/env -S ruby -Ilib
+# -*- mode: ruby -*-
+
+require 'fatty'
+
+rgb = lambda do |_line, fatty|
+  color = fatty.choose(
+    "Choose a color",
+    choices: ["red", "green", "blue"],
+  )
+  fatty.status("If you say so: #{Rainbow(color).send(color.to_sym)} it is!\n")
+end
+
+Fatty::Terminal.new(
+  prompt: "Hit RETURN to choose a color> ",
+  on_accept: rgb,
+).go

@@ -23,5 +23,5 @@ end
 
 Fatty::Terminal.new(
   on_accept: asker,
-  prompt: "Type 'go' for some action> ",
+  prompt: "Type RETURN for some action> ",
 ).go

@@ -1,0 +1,17 @@
+#! /usr/bin/env -S ruby -Ilib
+# -*- mode: ruby -*-
+
+require 'fatty'
+
+nums = lambda do |_line, fatty|
+  const = fatty.choose(
+    "Choose a constant",
+    choices: { "Pi" => 3.14159, "Euler" => 2.718281828, "Golden Ratio" => 1.61803398875 }
+  )
+  fatty.status("Somewhere around #{const}\n")
+end
+
+Fatty::Terminal.new(
+  prompt: "Hit RETURN to choose a constant> ",
+  on_accept: nums,
+).go
