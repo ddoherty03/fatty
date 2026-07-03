@@ -10,7 +10,10 @@ module Fatty
     def append_now(text, follow: true, mode: nil)
       payload = { text: text.to_s, follow: follow }
       payload[:mode] = mode if mode
+
       terminal.apply_command(Command.session(output_id, :append, **payload))
+      terminal.render_frame
+
       nil
     end
 

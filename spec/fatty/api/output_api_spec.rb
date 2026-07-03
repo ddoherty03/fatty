@@ -8,6 +8,7 @@ module Fatty
     let(:terminal) do
       term = instance_double(Fatty::Terminal, renderer: renderer)
       allow(term).to receive(:apply_command)
+      allow(term).to receive(:render_frame)
       term
     end
 
@@ -54,6 +55,7 @@ module Fatty
                         action: :append,
                         payload: { text: "hello", follow: true },
                       ))
+        expect(terminal).to have_received(:render_frame)
         expect(env.commands).to be_empty
       end
 
