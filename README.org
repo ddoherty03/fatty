@@ -51,7 +51,7 @@ and ~truecolor~ for low-level rendering and is surprisingly snappy.
 ** Installing
 ~Fatty~ is a ruby gem, so it can be installed with
 
-#+begin_src sh
+#+begin_src sh :tangle no
   $ gem install fatty
 #+end_src
 
