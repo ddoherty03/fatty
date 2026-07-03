@@ -48,7 +48,11 @@ module Fatty
           meta: false,
           shift: false,
         )
-        source = EventSource.new(context: Context.new)
+        source = EventSource.new(
+          context: context,
+          key_decoder: key_decoder,
+          poll_ms: 10,
+        )
         allow(source).to receive(:read_raw).and_return(mouse)
 
         command = source.next_event

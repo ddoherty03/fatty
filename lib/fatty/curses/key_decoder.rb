@@ -173,11 +173,13 @@ module Fatty
 
       # Make sure the user config Hash uses symbols for its keys.  Return the
       # Hash as so corrected.
-      def normalize_spec(hash)
-        spec = hash.transform_keys(&:to_sym)
-        if spec[:key].is_a?(String)
-          spec[:key] = spec[:key].to_sym
+      def normalize_spec(value)
+        unless value.is_a?(Hash)
+          raise ArgumentError, "keydef spec must be a Hash, got #{value.class}: #{value.inspect}"
         end
+
+        spec = value.transform_keys(&:to_sym)
+        spec[:key] = spec[:key].to_sym if spec[:key].is_a?(String)
         spec
       end
     end

@@ -1,11 +1,11 @@
 terminal:
-  konsole:
-    map:
-      556: ...
+  # konsole:
+  #   map:
+  #     556: {}
 
-  kitty:
-    map:
-      577: ...
+  # kitty:
+  #   map:
+  #     577: {}
 
   tmux:
     map:
