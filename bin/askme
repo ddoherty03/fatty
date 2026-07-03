@@ -9,12 +9,12 @@ asker = lambda do |_line, fatty|
     choices: {
       "Self Echo" => ->(fatty, label) {
         fatty.append("You chose #{label}\n")
-        "XXXXXXX"
+        :echoed
       },
       "Say Hello" => ->(fatty, _payload) {
         name = fatty.prompt("Name?")
         fatty.append("Hello, #{name}\n")
-        "YYYYYYY"
+        :greeted
       },
     },
   )

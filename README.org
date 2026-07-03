@@ -31,9 +31,10 @@
 9. defining unrecognized key-codes as named keys,
 10. color themes that can be selected in real time,
 11. a way to define new themes,
-12. processes completed command-lines with a callback procedure of your
+12. processing completed command lines with a callback procedure of your
     choosing,
-13. several user-interface widgets such a selection popups, prompt for input, etc.,
+13. several user-interface widgets such a selection popups, text prompts,
+    menus, progress bars, etc.,
 14. a set of progress indicators you can use to display to the end user,
 15. a way to render markdown to the output pane,
 
@@ -54,7 +55,7 @@ and ~truecolor~ for low-level rendering and is surprisingly snappy.
   $ gem install fatty
 #+end_src
 
-** Trying it Out
+** Trying it Out with the `fatty` Demo
 Once installed, you can try out ~fatty~ with the included program called
 ~fatty~.  It allows you to easily exercise all of the important features of the
 ~fatty~ library.  At a normal shell prompt simply type ~fatty~, and it will
@@ -65,11 +66,50 @@ directory.  Type ~help~ to get a summary of the builtin commands available to
 you.  If you type anything other than a builtin command, ~fatty~ attempts to
 run it as a shell command and displays the output.
 
+*** The =fatty= demo command
+
+When you run =fatty=, it operates as a simple demo of the =fatty= gem by
+presenting an editable command line using Emacs-style keybindings.  It has
+several builtin commands to demonstrate =fatty= features, and any command it
+does not recognize is handed off to the shell.
+
+*** Builtin commands
+
+Here are the commands builtin to =fatty=
+
+| Command                     | Description                                                             |
+|-----------------------------+-------------------------------------------------------------------------|
+| help                        | Display this file on the output pane                                    |
+| cd                          | Change the current directory used by the shell                          |
+| choose                      | Present a series of choices in a popup window                           |
+| choosevals                  | Also present choices in a popup window but return an associated value   |
+| choose_multi                | Present choices with a "checkbox" for selecting multiple values         |
+| choosevals_multi            | Also present a checkbox but return associated values                    |
+| menu                        | Present a menu of labeled routines to run                               |
+| info                        | Display an "info" message on the status line                            |
+| good                        | Display a "good" message colored to indicate success                    |
+| warn                        | Display a "warn" message colored to indicate caution                    |
+| oops                        | Display an "oops" message colored to indicate failure                   |
+| prompt                      | Popup a text box for entering a value in response to a prompt           |
+| progress count <N>          | Display an animated progress indicator counting up to 40 or the given N |
+| progress percent <N>        | Same but also show the percent complete                                 |
+| progress simple_percent <N> | Same but show only the percent complete                                 |
+| progress trail              | Show progress by displaying an "indicator" character for each step      |
+| progress bar                | Show progress by a filling bar using ASCII characters                   |
+| progress unicode_bar        | Same, but using unicode characters                                      |
+| progress braille_bar        | Same, but using braille characters                                      |
+| progress spinner            | Animate a "spinner" showing a busy state                                |
+| markdown <file.md>          | Render the markdown file to the output pane; defaults to a demo file    |
+| keytest                     | Enter key diagnostic mode report keycodes, key names, and bindings      |
+| colors                      | Display ANSI, 256-color, and X11 color diagnostics                      |
+
+
+
 * Usage
-** Launching a Fatty Terminal with ~on_accept~m
+** Launching a Fatty Terminal with ~on_accept~
 You can launch a ~Fatty~ terminal session that does arbitrary processing of an
 edited command line and returns a String to be displayed on the output pane,
-as show in this file that we'll call ~loudrev~:
+as shown in this file that we'll call ~loudrev~:
 
 #+begin_src ruby :tangle no
   #! /usr/bin/env ruby
@@ -90,7 +130,8 @@ Now you have an interactive application that allows you to type text and see
 what it looks like when written backwards in uppercase letters. It's as easy
 as that!
 
-On running a =fatty= application, =fatty= installs a few files if they do not exists:
+When a =fatty= application runs, =fatty= installs a few files if they do not
+exists:
 
 - a history file at =~/.fatty_history=
 - a config directory at =~/.config/fatty= that contains
@@ -176,7 +217,7 @@ Render the given text as markdown source according to the current theme then
 
 *** =status(text, role: :info)=
 Display the text in the "status" area, the lines immediately above the input
-field and assigning it one of the following "roles":
+field, using one of the following "roles":
 - :good :: colored according something affirming according to the theme,
   usually something greenish;
 - :info :: colored something neutral simply for informational purposes;
@@ -197,15 +238,19 @@ Display the text in the status area with the role :warn.
 Display the text in the status area with the role :error.
 
 *** =oops(text)=
-Display the text in the status area with the role :error.
-
-Display the text in the status area with the role :error. An alias for
-=error(text)=
+An alias for =error(text)=
 
 *** =alert(text, role: :info)=
 Display the text in the one-line alert panel just below the input field.  In
-the case of the alert panel, the role only controls the foreground color not
-the background.
+the alert panel, the role only controls the foreground color, not the
+background.
+
+*** ANSI Colors in Output
+Text passed to =append=, =append_now=, =status=, and =alert= may contain ANSI
+SGR color/style sequences. Fatty interprets those sequences relative to the
+current theme role, so an ANSI reset returns to the active Fatty role rather
+than to the terminal's physical default colors.  =fatty= includes the nice
+[[https://github.com/ku1ik/rainbow][=Rainbow= gem]] for colorizing text as a convenience.
 
 *** =prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)=
 Display a popup dialog box that allows the user to type in any string and
@@ -276,42 +321,42 @@ You update the progress widget by calling =#update= on the Progress object,
 passing as the =current:= parameter a number that indicates progress so far.
 
 #+begin_src ruby :tangle no
-#! /usr/bin/env -S ruby -Ilib
-# -*- mode: ruby -*-
+  #! /usr/bin/env -S ruby -Ilib
+  # -*- mode: ruby -*-
 
-require 'fatty'
-require 'prime'
+  require 'fatty'
+  require 'prime'
 
-primer = lambda do |input, fatty|
-  if input.match?(/\A[1-9]\d*\z/)
-    k = input.to_i
-    prog = fatty.add_progress(label: "Thinking...", total: k, style: :bar)
-    out_line = +""
-    num_primes = 0
-    Prime.each do |p|
-      num_primes += 1
-      out = "#{p} "
+  primer = lambda do |input, fatty|
+    if input.match?(/\A[1-9]\d*\z/)
+      k = input.to_i
+      prog = fatty.add_progress(label: "Thinking...", total: k, style: :bar)
+      out_line = +""
+      num_primes = 0
+      Prime.each do |p|
+        num_primes += 1
+        out = "#{p} "
 
-      if out_line.length + out.length > 100
-        fatty.append_now("#{out_line}\n", mode: :scrolling)
-        out_line.clear
+        if out_line.length + out.length > 100
+          fatty.append_now("#{out_line}\n", mode: :scrolling)
+          out_line.clear
+        end
+
+        out_line << out
+        prog.update(current: num_primes)
+        break if num_primes >= k
       end
-
-      out_line << out
-      prog.update(current: num_primes)
-      break if num_primes >= k
+      fatty.append_now("#{out_line}\n", mode: :scrolling) unless out_line.empty?
+      prog.finish("Done")
+    else
+      fatty.alert "Give me a positive integer", role: :error
     end
-    fatty.append_now("#{out_line}\n", mode: :scrolling) unless out_line.empty?
-  else
-    fatty.alert "Give me a positive integer", role: :error
   end
-  prog.finish("Done")
-end
 
-Fatty::Terminal.new(
-  on_accept: primer,
-  prompt: 'How many primes? ',
-).go
+  Fatty::Terminal.new(
+    on_accept: primer,
+    prompt: 'How many primes? ',
+  ).go
 #+end_src
 
 For the trail-style progress, you can use an arbitrary string to indicate
@@ -385,14 +430,17 @@ And, if you have occasion, you can clear the Progress by calling =#clear= on
 the Progress object.
 
 *** =choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)=
-Present a set of =choices:=, which can either be
-- an Array whose items are converted to =Strings= and presented as choices
-- a Hash whose keys converted to =Strings= and presented as choices
+Present a set of =choices:=, which can be either:
 
-=choose= returns
-- the user's selection as a String if =choices:= was an =Array= of =Strings=,
-- the value from the =choices:= =Hash= if =choices:= was an =Hash=,
-- or the =cancel_value= if the user canceled the selection with C-c of C-g.
+- an =Array= of =String= choices, where the selected string is returned; or
+- a =Hash= whose keys are converted to =String= labels and whose values are
+  returned.
+
+=choose= returns:
+
+- the selected =String= when =choices:= is an =Array=;
+- the associated value when =choices:= is a =Hash=; or
+- =cancel_value= when the user cancels with C-c or C-g.
 
 The =prompt= String (by default "Choose") can guide the user about the purpose
 of the choices.
@@ -457,7 +505,7 @@ Present a set of =choices:=, which can either be
   selections if =choices:= was an =Array= of =Strings=,
 - a =Hash= whose keys and values are those selected from the =choices:= =Hash=
   if =choices:= was an =Hash=,
-- or the =cancel_value= if the user canceled the selection with C-c of C-g.
+- or the =cancel_value= if the user canceled the selection with C-c or C-g.
 
 The =prompt= String (by default "Choose Many") can guide the user about the purpose
 of the choices.
@@ -478,33 +526,33 @@ Present the user with a set of =choices:= representing actions to execute.
 values are procs, lambdas, or other objects that respond to =#call=.
 
 #+begin_src ruby :tangle no
-#! /usr/bin/env -S ruby -Ilib
-# -*- mode: ruby -*-
+  #! /usr/bin/env -S ruby -Ilib
+  # -*- mode: ruby -*-
 
-require 'fatty'
+  require 'fatty'
 
-asker = lambda do |_line, fatty|
-  result = fatty.menu(
-    "Pick an action",
-    choices: {
-      "Self Echo" => ->(fatty, label) {
-        fatty.append("You chose #{label}\n")
-        "XXXXXXX"
+  asker = lambda do |_line, fatty|
+    result = fatty.menu(
+      "Pick an action",
+      choices: {
+        "Self Echo" => ->(fatty, label) {
+          fatty.append("You chose #{label}\n")
+          :echoed
+        },
+        "Say Hello" => ->(fatty, _label) {
+          name = fatty.prompt("Name?")
+          fatty.append("Hello, #{name}\n")
+          :greeted
+        },
       },
-      "Say Hello" => ->(fatty, _label) {
-        name = fatty.prompt("Name?")
-        fatty.append("Hello, #{name}\n")
-        "YYYYYYY"
-      },
-    },
-  )
-  fatty.good(result)
-end
+    )
+    fatty.good(result)
+  end
 
-Fatty::Terminal.new(
-  on_accept: asker,
-  prompt: "Type RETURN for some action> ",
-).go
+  Fatty::Terminal.new(
+    on_accept: asker,
+    prompt: "Type RETURN for some action> ",
+  ).go
 #+end_src
 
 Each callable has access to the =CallbackEnvironment=, called =fatty= here and
@@ -520,48 +568,13 @@ If you want a value associated with the user's cancellation of the chooser
 with C-c or C-g, set =cancel_value:= to that value.
 
 
-* Reading Keys
+* Default Interaction
+** Parts of the Screen
+*** Alerts
+Alerts are short-lived, non-scrolling messages shown below the input line.
+They are intended for user-visible conditions that require attention.
 
-Shift/Ctrl/Meta F-keys are normalized when ncurses provides distinct constants.
-
-* Fatty Help
-** The =fatty= demo command
-
-When you =fatty=, it operates as a simple demo of the =fatty= gem by
-presenting an editable command-line using emacs key bindings.  It has several
-builtin commands to demonstrate =fatty= features, and any command it does not
-recognized is handed off to the shell.
-
-** Builtin commands
-
-Here are the commands builtin to =fatty=
-
-| Command                     | Description                                                             |
-|-----------------------------+-------------------------------------------------------------------------|
-| help                        | Display this file on the output pane                                    |
-| cd                          | Change the current directory used by the shell                          |
-| choose                      | Present a series of choices in a popup window                           |
-| choosevals                  | Also present choices in a popup window but return an associated value   |
-| choose_multi                | Present choices with a "checkbox" for selecting multiple values         |
-| choosevals_multi            | Also present a checkbox but return associated values                    |
-| menu                        | Present a menu of labeled routines to run                               |
-| info                        | Display an "info" message on the status line                            |
-| good                        | Display a "good" message colored to indicate success                    |
-| warn                        | Display a "warn" message colored to indicate caution                    |
-| oops                        | Display an "oops" message colored to indicate failure                   |
-| prompt                      | Popup a text box for entering a value in response to a prompt           |
-| progress count <N>          | Display an animated progress indicator counting up to 40 or the given N |
-| progress percent <N>        | Same but also show the percent complete                                 |
-| progress simple_percent <N> | Same but show only the percent complete                                 |
-| progress trail              | Show progress by displaying an "indicator" character for each step      |
-| progress bar                | Show progress by a filling bar using ASCII characters                   |
-| progress unicode_bar        | Same, but using unicode characters                                      |
-| progress braille_bar        | Same, but using braille characters                                      |
-| progress spinner            | Animate a "spinner" showing a busy state                                |
-| markdown <file.md>          | Render the markdown file to the output pane; defaults to a demo file    |
-| keytest                     | Enter key diagnostic mode report keycodes, key names, and bindings      |
-
-
+** Command-line Editing
 ** Keybindings
 
 The following tables explain the keybindings available in `fatty` in different
@@ -621,7 +634,7 @@ For example, `M-8 M-0 #` will insert 80 '#' characters at the cursor.
 | C-p        | replace the line with the prior history item          |
 | :up        | replace the line with the prior history item          |
 | C-n        | replace the line with the next history item           |
-| :down      | replace the line with the prior history item          |
+| :down      | replace the line with the next history item           |
 | C-r        | search the history in a popup                         |
 |            |                                                       |
 | :enter     | feed the line to the on_accept proc and page output   |
@@ -647,12 +660,9 @@ searching the environment.
 |       |                           |
 
 
-* Alerts
-Alerts are short-lived, non-scrolling messages shown below the input line.
-They are intended for user-visible conditions that require attention.
-
-* Markdown
-** Forced line breaks
+** Paging
+** Markdown
+*** Forced line breaks
 Use ~<br>~ to force a line break.
 
 #+begin_example
@@ -665,3 +675,10 @@ will render as
 This line has a forced line break
 and this should appear on the next line.
 #+end_example
+
+
+* Configuration
+** Key Codes
+** Key Bindings
+** Themes
+** Plugins
