@@ -137,7 +137,6 @@ module Fatty
         layout = PopupLayout.new(row: 0, width: inner_w)
         row = render_popup_message(session: session, layout: layout)
 
-        input_row = inner_h - 1
         # Draw the displayed items inside the window with a gutter to have an
         # indicator of what is selected, if any.
         filter_present = session.filter_present?

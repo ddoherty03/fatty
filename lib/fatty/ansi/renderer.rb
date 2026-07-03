@@ -14,12 +14,23 @@ module Fatty
         return unless spec
 
         msg = text.to_s.tr("\r\n", " ")
-        msg = Fatty::Ansi.truncate_visible(msg, width)
-        visible = Fatty::Ansi.visible_length(msg)
-        pad = width - visible
-        sgr = sgr_for_spec(spec)
-        padding = pad.positive? ? " " * pad : ""
-        write_ansi("#{CSI}#{row + 1};#{col + 1}H", sgr, msg, sgr, padding, reset)
+
+        segments = Fatty::Ansi.segment(msg).map do |segment_text, style|
+          {
+            text: segment_text,
+            role: role,
+            style: style,
+          }
+        end
+
+        render_segments_line(
+          row: row,
+          col: col,
+          width: width,
+          segments: segments,
+          palette: palette,
+          fill_role: role,
+        )
       end
 
       def render_segments_line(row:, col:, width:, segments:, palette:, fill_role: :output)

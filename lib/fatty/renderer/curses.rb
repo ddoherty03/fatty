@@ -99,16 +99,30 @@ module Fatty
 
         alert = alert_session.current
         text = alert ? alert.format : ""
-        text = Fatty::Ansi.strip(text)
         role = alert ? alert_role(alert.role) : :alert_info
-        attr = pair_attr(role, fallback: pair_attr(:alert, fallback: ::Curses::A_REVERSE))
+        base_attr = pair_attr(role, fallback: pair_attr(:alert, fallback: ::Curses::A_REVERSE))
         cols = win.respond_to?(:maxx) ? win.maxx : screen.alert_rect.cols
 
-        win.bkgdset(attr) if win.respond_to?(:bkgdset)
+        win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
         win.erase
-        win.attrset(attr)
+        win.attrset(base_attr)
         win.setpos(0, 0)
-        win.addstr(text.ljust(cols)[0, cols])
+
+        segments = Fatty::Ansi.segment(text).map do |segment_text, style|
+          {
+            text: segment_text,
+            role: role,
+            style: style,
+          }
+        end
+
+        draw_status_row(
+          win,
+          row: 0,
+          cols: cols,
+          segments: segments,
+          base_attr: base_attr,
+        )
 
         stage_window(win)
       end
@@ -495,18 +509,33 @@ module Fatty
       def draw_status_row(win, row:, cols:, segments:, base_attr:)
         win.setpos(row, 0)
         remaining = cols
+
         segments.each do |segment|
           break if remaining <= 0
 
-          text = Fatty::Ansi.strip(segment[:text].to_s).tr("\r\n", " ")
+          text = segment[:text].to_s.tr("\r\n", " ")
           text = Fatty::Ansi.truncate_visible(text, remaining)
           next if text.empty?
 
-          attr = pair_attr(segment[:role], fallback: base_attr)
+          segment_role = segment[:role] || :status
+          role_attr = pair_attr(segment_role, fallback: base_attr)
+
+          attr =
+            if segment[:style]
+              ansi_style_attr(
+                segment[:style],
+                fallback: role_attr,
+                fallback_role: segment_role,
+              )
+            else
+              role_attr
+            end
+
           win.attrset(attr)
           win.addstr(text)
           remaining -= Fatty::Ansi.visible_length(text)
         end
+
         if remaining.positive?
           win.attrset(base_attr)
           win.addstr(" " * remaining)

@@ -243,18 +243,35 @@ module Fatty
     end
 
     def renderable_segments(value, role:)
-      renderable_parts(value).map do |part|
-        if part.is_a?(Hash) && part.key?(:text)
+      renderable_parts(value).flat_map do |part|
+        part_role =
+          if part.is_a?(Hash) && part.key?(:text)
+            part[:role] || role
+          else
+            role
+          end
+
+        text =
+          if part.is_a?(Hash) && part.key?(:text)
+            part[:text].to_s
+          else
+            part.to_s
+          end
+
+        if part.is_a?(Hash) && part[:style]
           {
-            text: part[:text].to_s,
-            role: part[:role] || role,
+            text: text,
+            role: part_role,
             style: part[:style],
-          }.compact
-        else
-          {
-            text: part.to_s,
-            role: role,
           }
+        else
+          Fatty::Ansi.segment(text).map do |segment_text, style|
+            {
+              text: segment_text,
+              role: part_role,
+              style: style,
+            }
+          end
         end
       end
     end
