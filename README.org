@@ -66,13 +66,6 @@ directory.  Type ~help~ to get a summary of the builtin commands available to
 you.  If you type anything other than a builtin command, ~fatty~ attempts to
 run it as a shell command and displays the output.
 
-*** The =fatty= demo command
-
-When you run =fatty=, it operates as a simple demo of the =fatty= gem by
-presenting an editable command line using Emacs-style keybindings.  It has
-several builtin commands to demonstrate =fatty= features, and any command it
-does not recognize is handed off to the shell.
-
 *** Builtin commands
 
 Here are the commands builtin to =fatty=
@@ -103,7 +96,14 @@ Here are the commands builtin to =fatty=
 | keytest                     | Enter key diagnostic mode report keycodes, key names, and bindings      |
 | colors                      | Display ANSI, 256-color, and X11 color diagnostics                      |
 
+*** Screenshot
+The ~fatty~ demo running the =markdown= command and paging the output.
 
+#+CAPTION: Running the =fatty= demo =markdown= command.
+#+ATTR_HTML: :alt Fatty terminal UI demo screenshot :width 900
+[[file:images/page_markdown.png]]
+
+* Quick Start
 
 * Usage
 ** Launching a Fatty Terminal with ~on_accept~
@@ -167,39 +167,6 @@ the so-called status area:
 
 This callback parameter responds to several methods that allow your
 application to interact with the user:
-
-*** =environment=
-This returns a =Hash= of runtime conditions detected by =Fatty=:
-
-| Key                   | Description                                          |
-|-----------------------+------------------------------------------------------|
-| =:arch=               | System CPU architecture, e.g., =x86_64=              |
-| =:os=                 | Operating system detected                            |
-| =:ruby_platform=      | Ruby platform, e.g., =x86_64-linux=                  |
-| =:screen=             | Whether the terminal is running under =screen=       |
-| =:ssh=                | Whether the terminal is running under SSH            |
-| =:tmux=               | Whether the terminal is running under =tmux=         |
-| =:terminal=           | Detected underlying terminal, e.g., =kitty=          |
-| =:terminal_version=   | Version of the terminal, if known                    |
-| =:term=               | The =TERM= terminal type                             |
-| =:truecolor_detected= | Whether truecolor capability appears to be available |
-| =:truecolor_enabled=  | Whether Fatty is actually using truecolor rendering  |
-| =:curses=             | Runtime curses capabilities and parameters           |
-
-The environment report also includes a nested =:curses= hash:
-
-| Key                 | Description                                            |
-|---------------------+--------------------------------------------------------|
-| =:started=          | Whether curses has been initialized                    |
-| =:truecolor=        | Whether the active curses context is using truecolor   |
-| =:key_min=          | Lowest keycode with a curses name                      |
-| =:key_max=          | Highest keycode with a curses name                     |
-| =:lines=            | Number of terminal rows available                      |
-| =:cols=             | Number of terminal columns available                   |
-| =:has_colors=       | Whether curses reports color support                   |
-| =:colors=           | Number of colors available to curses                   |
-| =:color_pairs=      | Number of color pairs available to curses              |
-| =:can_change_color= | Whether curses can redefine color values               |
 
 *** =append(text, follow: true)=
 Add the given text to the output pane.  After a full page of output is
@@ -568,11 +535,64 @@ If you want a value associated with the user's cancellation of the chooser
 with C-c or C-g, set =cancel_value:= to that value.
 
 
+*** =environment=
+This returns a =Hash= of runtime conditions detected by =Fatty=:
+
+| Key                   | Description                                          |
+|-----------------------+------------------------------------------------------|
+| =:arch=               | System CPU architecture, e.g., =x86_64=              |
+| =:os=                 | Operating system detected                            |
+| =:ruby_platform=      | Ruby platform, e.g., =x86_64-linux=                  |
+| =:screen=             | Whether the terminal is running under =screen=       |
+| =:ssh=                | Whether the terminal is running under SSH            |
+| =:tmux=               | Whether the terminal is running under =tmux=         |
+| =:terminal=           | Detected underlying terminal, e.g., =kitty=          |
+| =:terminal_version=   | Version of the terminal, if known                    |
+| =:term=               | The =TERM= terminal type                             |
+| =:truecolor_detected= | Whether truecolor capability appears to be available |
+| =:truecolor_enabled=  | Whether Fatty is actually using truecolor rendering  |
+| =:curses=             | Runtime curses capabilities and parameters           |
+
+The environment report also includes a nested =:curses= hash:
+
+| Key                 | Description                                            |
+|---------------------+--------------------------------------------------------|
+| =:started=          | Whether curses has been initialized                    |
+| =:truecolor=        | Whether the active curses context is using truecolor   |
+| =:key_min=          | Lowest keycode with a curses name                      |
+| =:key_max=          | Highest keycode with a curses name                     |
+| =:lines=            | Number of terminal rows available                      |
+| =:cols=             | Number of terminal columns available                   |
+| =:has_colors=       | Whether curses reports color support                   |
+| =:colors=           | Number of colors available to curses                   |
+| =:color_pairs=      | Number of color pairs available to curses              |
+| =:can_change_color= | Whether curses can redefine color values               |
+
 * Default Interaction
 ** Parts of the Screen
-*** Alerts
-Alerts are short-lived, non-scrolling messages shown below the input line.
-They are intended for user-visible conditions that require attention.
+*** Input Field
+Just above the bottom of the screen where all the action takes place: it is a
+line for editing the input.  It displays a prompt followed by an area in which
+you build the command line using =fatty's= editing facilities.
+
+*** Output Pane
+Most of the top part of the screen is reserved for displaying whatever output
+is sent to it with the =on_accept= callback to the =Terminal=.  It can render
+colored ANSI-encoded strings and will page long output so you can view it a
+page at a time and even search the output.
+
+*** Status Area
+The one to four lines just above the Input Field that displays output to the
+user that is out of band for the Output Pane.  Brief messages of confirmation,
+warning, or error can be displayed there so as to get the user's immediate
+attention.  Progress bars also render there where their visibility is made
+prominent.
+
+*** Alert  Area
+Alerts are short-lived, non-scrolling messages shown below the input field.
+They are intended for user-visible conditions that require attention.  =Fatty=
+uses this area to warn the user of unrecognized key codes and of unbound key
+presses.
 
 ** Command-line Editing
 ** Keybindings
