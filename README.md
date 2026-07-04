@@ -1,49 +1,34 @@
-- [Introduction](#org13cd0c8)
-- [Quick Start](#org06b4cd9)
-  - [Installing](#org3d31238)
-  - [Trying it Out with the \`fatty\` Demo](#orgdf2c44e)
-    - [Builtin commands](#orgffb34cf)
-    - [Screenshots](#org73fe5da)
-- [Quick Start](#orge7ddb7e)
-- [Usage](#orgd96d7c5)
-  - [Launching a Fatty Terminal with `on_accept`](#org7547b15)
-  - [Adding a Callback to `on_accept`](#orgfad0791)
-    - [`append(text, follow: true)`](#org2b3de59)
-    - [`append_now(text, follow: true)`](#org04a8160)
-    - [`markdown(text)`](#orge1164e1)
-    - [`status(text, role: :info)`](#orgf4f444a)
-    - [`good(text)`](#org1c68603)
-    - [`info(text)`](#orgafd8644)
-    - [`warn(text)`](#org4e41c0e)
-    - [`error(text)`](#org31d8bbd)
-    - [`oops(text)`](#orgdb99288)
-    - [`alert(text, role: :info)`](#org7fb2a00)
-    - [ANSI Colors in Output](#org1da9625)
-    - [`prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)`](#org13b4535)
-    - [`add_progress(label:, total: nil, style: :percent, role: :info, width: 40)`](#orgcb70526)
-    - [`choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#orgdf2b8ef)
-    - [`choose_multi(prompt, choices:, cancel_value: nil)`](#org880e8e8)
-    - [`confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)`](#orgc8a5fae)
-    - [`menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#orga4e7e2e)
-    - [`environment`](#orgbf4a3e3)
-- [Default Interaction](#org52e579d)
-  - [Parts of the Screen](#orgd6fdd60)
-    - [Input Field](#org5469986)
-    - [Output Pane](#org7995b10)
-    - [Status Area](#orga9c83b4)
-    - [Alert  Area](#org6179d0b)
-  - [Command-line Editing](#org88ab464)
-  - [Keybindings](#org68ad2f1)
-    - [Input Context](#orgc3aa8b4)
-    - [Paging Context](#org6ab7492)
-  - [Paging](#orga1370f7)
-  - [Markdown](#orga55c0a0)
-    - [Forced line breaks](#org0b726e9)
-- [Configuration](#orge1c2a32)
-  - [Key Codes](#org0119c82)
-  - [Key Bindings](#org354efac)
-  - [Themes](#orgcbd4fa2)
-  - [Plugins](#orgce67592)
+- [Introduction](#org9c1f6e5)
+- [Quick Start](#org49538bc)
+  - [Installing](#org844e331)
+  - [Trying it Out with the \`fatty\` Demo](#org4a31395)
+    - [Builtin commands](#org9ee5236)
+    - [Screenshots](#orgcc102c3)
+- [Quick Start](#orgb3e6b83)
+- [Usage](#orgf6a77de)
+  - [Launching a Fatty Terminal with `on_accept`](#org100dd88)
+  - [Parameters to `on_accept`](#org8bbcc1c)
+  - [The `line` parameter to `on_accept`](#orgbb03bc5)
+  - [The callback parameter to `on_accept`](#orgb746d82)
+  - [Output Ordering](#org6a07be9)
+- [Default Interaction](#org6de3b40)
+  - [Parts of the Screen](#org9ae7b57)
+    - [Input Field](#org584aa0a)
+    - [Output Pane](#orge0147ae)
+    - [Status Area](#org3c5b4c4)
+    - [Alert  Area](#org715be3a)
+  - [Command-line Editing](#orgf84761b)
+  - [Keybindings](#orgc3b8837)
+    - [Input Context](#orga914f85)
+    - [Paging Context](#org24282d6)
+  - [Paging](#org529d9c8)
+  - [Markdown](#org895b9ef)
+    - [Forced line breaks](#orga2ad7d9)
+- [Configuration](#orgb6f4d42)
+  - [Key Codes](#org14633f2)
+  - [Key Bindings](#org97d6943)
+  - [Themes](#org06753d1)
+  - [Plugins](#orga8adb3a)
 
 #+PROPERTY: header-args:ruby :results value :colnames no :hlines yes :exports both :dir "./"
 #+PROPERTY: header-args:ruby+ :wrap example :session fatty_session :eval yes
@@ -55,7 +40,7 @@
 [![CI](https://github.com/ddoherty03/fatty/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/ddoherty03/fatty/actions/workflows/main.yml)
 
 
-<a id="org13cd0c8"></a>
+<a id="org9c1f6e5"></a>
 
 # Introduction
 
@@ -84,12 +69,12 @@ In other words, fatty allows you to write a terminal-based REPL of your choosing
 `Fatty` is *not* a terminal emulator but runs on top of one.
 
 
-<a id="org06b4cd9"></a>
+<a id="org49538bc"></a>
 
 # Quick Start
 
 
-<a id="org3d31238"></a>
+<a id="org844e331"></a>
 
 ## Installing
 
@@ -100,7 +85,7 @@ $ gem install fatty
 ```
 
 
-<a id="orgdf2c44e"></a>
+<a id="org4a31395"></a>
 
 ## Trying it Out with the \`fatty\` Demo
 
@@ -109,7 +94,7 @@ Once installed, you can try out `fatty` with the included program called `fatty`
 Once inside `fatty` you will be prompted with a prompt that names your current directory. Type `help` to get a summary of the builtin commands available to you. If you type anything other than a builtin command, `fatty` attempts to run it as a shell command and displays the output.
 
 
-<a id="orgffb34cf"></a>
+<a id="org9ee5236"></a>
 
 ### Builtin commands
 
@@ -142,7 +127,7 @@ Here are the commands builtin to `fatty`
 | colors                       | Display ANSI, 256-color, and X11 color diagnostics                      |
 
 
-<a id="org73fe5da"></a>
+<a id="orgcc102c3"></a>
 
 ### Screenshots
 
@@ -171,17 +156,17 @@ Here are the commands builtin to `fatty`
     ![img](images/choose_popup.png "Running the `fatty` demo `choose` command.")
 
 
-<a id="orge7ddb7e"></a>
+<a id="orgb3e6b83"></a>
 
 # Quick Start
 
 
-<a id="orgd96d7c5"></a>
+<a id="orgf6a77de"></a>
 
 # Usage
 
 
-<a id="org7547b15"></a>
+<a id="org100dd88"></a>
 
 ## Launching a Fatty Terminal with `on_accept`
 
@@ -204,6 +189,8 @@ Fatty::Terminal.new(
 
 Now you have an interactive application that allows you to type text and see what it looks like when written backwards in uppercase letters. It's as easy as that!
 
+Text passed to the output pane, the status area, and the alert pane may contain ANSI SGR color/style sequences. Fatty interprets those sequences relative to the current theme and role, so an ANSI reset returns to the active Fatty role rather than to the terminal's physical default colors. `fatty` includes the nice [`Rainbow` gem](https://github.com/ku1ik/rainbow) for colorizing text as a convenience.
+
 When a `fatty` application runs, `fatty` installs a few files if they do not exists:
 
 -   a history file at `~/.fatty_history`
@@ -214,11 +201,59 @@ When a `fatty` application runs, `fatty` installs a few files if they do not exi
     -   `themes`, a directory of pre-defined theme definitions that you can choose from and add to by adding your own themes.
 
 
-<a id="orgfad0791"></a>
+<a id="org8bbcc1c"></a>
 
-## Adding a Callback to `on_accept`
+## Parameters to `on_accept`
 
-The `on_accept` proc can have a second parameter named whatever you like that serves as a callback into certain facilities provided by `fatty`. Here is a variation of the prior example that also echoes the original typed string into the so-called status area:
+The `on_accept` proc passed to an instance of `Fatty::Terminal` can take one or two parameters: (1) `line`, the edited line as it exists when the user types `RETURN` and (2) an optional callback parameter that you can use to access the facilities of `fatty`.
+
+
+<a id="orgbb03bc5"></a>
+
+## The `line` parameter to `on_accept`
+
+`Fatty` does not parse command lines for your application. When the user accepts a `line`, `Fatty` passes the line to `on_accept` as text. It is up to your callback to decide whether to strip whitespace, split words, interpret quotes, parse options, recognize subcommands, or treat punctuation specially.
+
+This keeps `Fatty` useful for many different kinds of REPLs. Some applications want shell-like parsing. Others want to preserve the user's input exactly.
+
+For shell-like parsing, Ruby's standard `Shellwords` library is often useful:
+
+```ruby
+#! /usr/bin/env ruby
+# -*- mode: ruby -*-
+
+require 'fatty'
+require 'shellwords'
+
+runner = lambda do |line, fatty|
+  words = Shellwords.split(line)
+
+  case words
+  when ["echo", *rest]
+    fatty.append("#{rest.join(" ")}\n")
+  when ["count", *rest]
+    fatty.append("#{rest.length}\n")
+  when []
+    fatty.status("Blank line", role: :info)
+  else
+    fatty.alert("Unknown command: #{words.first}", role: :warn)
+  end
+rescue ArgumentError => e
+  fatty.alert("Could not parse line: #{e.message}", role: :error)
+end
+
+Fatty::Terminal.new(
+  prompt: "shellwords> ",
+  on_accept: runner,
+).go
+```
+
+
+<a id="orgb746d82"></a>
+
+## The callback parameter to `on_accept`
+
+The `on_accept` proc can have a second parameter named whatever you like that serves as a callback into certain facilities provided by `fatty`. In this README we use the name `fatty` for the callback parameter since it provides access to the facilities provided by the `fatty` library. Here is a variation of the prior example that also echoes the original typed string into the so-called status area:
 
 ```ruby
 #! /usr/bin/env ruby
@@ -236,486 +271,85 @@ Fatty::Terminal.new(
 ).go
 ```
 
-This callback parameter responds to several methods that allow your application to interact with the user:
+The callback parameter responds to several methods that allow your application to interact with the user. They are documented below.
 
 
-<a id="org2b3de59"></a>
+<a id="org6a07be9"></a>
 
-### `append(text, follow: true)`
+## Output Ordering
 
-Add the given text to the output pane. After a full page of output is produced, enter paging mode so the user can view the output at leisure and search the output. If `follow` is true, keep the output pane's viewport covering the last lines of output.
+The `on_accept` callback can send text to the output pane in three ways:
 
+1.  by returning a value from the callback;
+2.  by calling `append` or `markdown` on the callback environment; or
+3.  by calling `append_now` on the callback environment.
 
-<a id="org04a8160"></a>
-
-### `append_now(text, follow: true)`
-
-Like `append`, but display output as it is produced rather than wait for a full page to be produced.
-
-
-<a id="orge1164e1"></a>
-
-### `markdown(text)`
-
-Render the given text as markdown source according to the current theme then `append` the result to the output pane.
-
-
-<a id="orgf4f444a"></a>
-
-### `status(text, role: :info)`
-
-Display the text in the "status" area, the lines immediately above the input field, using one of the following "roles":
-
--   **:good:** colored according something affirming according to the theme, usually something greenish;
--   **:info:** colored something neutral simply for informational purposes;
--   **:warn:** colored something to suggest caution, usually something in the orange to yellow range;
--   **:error:** colored something to suggest danger, usually some tone of red.
-
-
-<a id="org1c68603"></a>
-
-### `good(text)`
-
-Display the text in the status area with the role :good.
-
-
-<a id="orgafd8644"></a>
-
-### `info(text)`
-
-Display the text in the status area with the role :info.
-
-
-<a id="org4e41c0e"></a>
-
-### `warn(text)`
-
-Display the text in the status area with the role :warn.
-
-
-<a id="org31d8bbd"></a>
-
-### `error(text)`
-
-Display the text in the status area with the role :error.
-
-
-<a id="orgdb99288"></a>
-
-### `oops(text)`
-
-An alias for `error(text)`
-
-
-<a id="org7fb2a00"></a>
-
-### `alert(text, role: :info)`
-
-Display the text in the one-line alert panel just below the input field. In the alert panel, the role only controls the foreground color, not the background.
-
-
-<a id="org1da9625"></a>
-
-### ANSI Colors in Output
-
-Text passed to `append`, `append_now`, `status`, and `alert` may contain ANSI SGR color/style sequences. Fatty interprets those sequences relative to the current theme role, so an ANSI reset returns to the active Fatty role rather than to the terminal's physical default colors. `fatty` includes the nice [`Rainbow` gem](https://github.com/ku1ik/rainbow) for colorizing text as a convenience.
-
-
-<a id="org13b4535"></a>
-
-### `prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)`
-
-Display a popup dialog box that allows the user to type in any string and return it. Combine the input line with a prompted-for string and shuffle their letters together:
+A returned `String` is the simplest output mechanism. It is displayed after the callback finishes:
 
 ```ruby
-#! /usr/bin/env -S ruby -Ilib
-# -*- mode: ruby -*-
-
-require 'fatty'
-
-weaver = lambda do |line, fatty|
-  str = fatty.prompt("Secondary string to weave in with '#{line}'")
-  (line + str).downcase.gsub(/[^a-z]/, '').split('').shuffle.join
-end
-
 Fatty::Terminal.new(
-  on_accept: weaver,
-  prompt: "Primary String> "
+  on_accept: ->(line) { line.upcase.reverse },
 ).go
 ```
 
-You can pre-fill the prompt's input line by passing in an `initial:` parameter.
+Calls to `append` and `markdown` also queue output until the callback finishes. If a callback both calls `append` or `markdown` and returns a `String`, the queued output is displayed first and the returned string is displayed after it.
 
-The `prompt` input has its own history facility separate from the history in the main input command line. You can turn it off by setting `save_history` to `false`.
+Calls to `append_now` are different. They append text and immediately render a frame, so the user can see output while the callback is still running. Use `append_now` for long-running callbacks that should stream progress to the output pane.
 
-`prompt` returns whatever the user typed and returns `nil` if the user cancels with C-c or C-g unless you specify an alternative `cancel_value`.
+At the end of the callback, `Fatty` finishes the command and updates the pager state. Output produced with `append_now` may therefore appear during the callback, while output from `append`, `markdown`, and the callback's return value appears after the callback returns.
 
 
-<a id="orgcb70526"></a>
-
-### `add_progress(label:, total: nil, style: :percent, role: :info, width: 40)`
-
-Display a progress widget in the status area to show the user that the system is working, not frozen. The `add_progress` method returns a `Progress` object on which the `#update` method can be called to cause it to animate one step. To the left of the widget the `label:` is displayed, followed by the widget. For processes where the total size is known in advance, the `total:` parameter indicates that size. The `role:` parameter controls the styling of the widget. The `width:` parameter places a limit on the size of the widget. `Fatty` supports several styles of progress widgets:
-
--   **:spinner:** a simple busy-wait indicator that just animates on every call;
--   **:count:** count up to `total` on each call of `update(current: <count>)`
--   **:percent:** count up to percent of `total` on each call of `update(current: <count>)`
--   **:count\_percent:** count up and show percent of `total` on each call of `update(current: <count>)`
--   **:bar:** display a filling ASCII progress bar with percent and count
--   **:unicode\_bar:** display a filling Unicode progress bar with percent and count
--   **:braille\_bar:** display a filling progress bar with percent and count using braille characters
--   **:trail:** display an "indicator" on each call of `update(indicator: <string>)`
-
-1.  Initialization `add_progress(label:, style: :percent, total: nil, role: :info, width: 40)`
-
-    -   **`label:`:** Text displayed before the progress widget, "Progress" by default.
-    -   **`style:`:** The style of the progress widget from one of those named above.
-    -   **`total:`:** For all styles except :trail and :spinner, the number that represents the size of the task. As the `#update` calls increase the value of `current` towards `total`, the widget indicates increasing completion.
-    -   **`role:`:** One of :good, :info, :warn, or :error to color the widget according to the theme's idea of these roles. By default, :info.
-    -   **`width`:** The number of characters for the full widget display: it is only relevant for the bar styles and the trail style; otherwise it is ignored.
-
-2.  Update `update(current: nil, indicator: nil, render: false)`
-
-    You update the progress widget by calling `#update` on the Progress object, passing as the `current:` parameter a number that indicates progress so far.
-    
-    ```ruby
-    #! /usr/bin/env -S ruby -Ilib
-    # -*- mode: ruby -*-
-    
-    require 'fatty'
-    require 'prime'
-    
-    primer = lambda do |input, fatty|
-      if input.match?(/\A[1-9]\d*\z/)
-        k = input.to_i
-        prog = fatty.add_progress(label: "Thinking...", total: k, style: :bar)
-        out_line = +""
-        num_primes = 0
-        Prime.each do |p|
-          num_primes += 1
-          out = "#{p} "
-    
-          if out_line.length + out.length > 100
-            fatty.append_now("#{out_line}\n", mode: :scrolling)
-            out_line.clear
-          end
-    
-          out_line << out
-          prog.update(current: num_primes)
-          break if num_primes >= k
-        end
-        fatty.append_now("#{out_line}\n", mode: :scrolling) unless out_line.empty?
-        prog.finish("Done")
-      else
-        fatty.alert "Give me a positive integer", role: :error
-      end
-    end
-    
-    Fatty::Terminal.new(
-      on_accept: primer,
-      prompt: 'How many primes? ',
-    ).go
-    ```
-    
-    For the trail-style progress, you can use an arbitrary string to indicate progress by adding an `indicator:` parameter to the `#update` call.
-    
-    Suppose, for example, you wanted to print a trail in which the last digit of the prime is displayed to indicate progress and colored so it stands out:
-    
-    ```ruby
-    #! /usr/bin/env -S ruby -Ilib
-    # -*- mode: ruby -*-
-    
-    require 'fatty'
-    require 'prime'
-    require "rainbow/refinement"
-    
-    using Rainbow
-    
-    primer = lambda do |input, fatty|
-      if input.match?(/\A[1-9]\d*\z/)
-        k = input.to_i
-        prog = fatty.add_progress(label: "Thinking...", total: k, style: :trail, width: 100)
-        out_line = +""
-        num_primes = 0
-        Prime.each do |p|
-          num_primes += 1
-          out = "#{p} "
-    
-          if out_line.length + out.length > 100
-            fatty.append_now("#{out_line}\n", mode: :scrolling)
-            out_line.clear
-          end
-    
-          out_line << out
-          last_dig = p.to_s.split('').last
-          sig =
-            case last_dig
-            when '1'
-              last_dig.red
-            when '3'
-              last_dig.blue
-            when '7'
-              last_dig.green
-            when '9'
-              last_dig.yellow
-            else
-              '!'
-            end
-          prog.update(current: num_primes, indicator: sig)
-          break if num_primes >= k
-        end
-        fatty.append_now("#{out_line}\n", mode: :scrolling) unless out_line.empty?
-      else
-        fatty.alert "Give me a positive integer", role: :error
-      end
-      prog.finish("Done")
-    end
-    
-    Fatty::Terminal.new(
-      on_accept: primer,
-      prompt: 'How many primes? ',
-    ).go
-    ```
-
-3.  Finish
-
-    As the prior examples illustrate, you can issue an ending message at the end of the process by calling `#finish` on the Progress object.
-
-4.  Clear
-
-    And, if you have occasion, you can clear the Progress by calling `#clear` on the Progress object.
-
-
-<a id="orgdf2b8ef"></a>
-
-### `choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`
-
-Present a set of `choices:`, which can be either:
-
--   an `Array` of `String` choices, where the selected string is returned; or
--   a `Hash` whose keys are converted to `String` labels and whose values are returned.
-
-`choose` returns:
-
--   the selected `String` when `choices:` is an `Array`;
--   the associated value when `choices:` is a `Hash`; or
--   `cancel_value` when the user cancels with C-c or C-g.
-
-The `prompt` String (by default "Choose") can guide the user about the purpose of the choices.
-
-If you want to set one of the choices as the initial choice, set `initial_choice_idx:` to the Integer index of one of the choices.
-
-If you want a value associated with the user's cancellation of the chooser with C-c or C-g, set `cancel_value:` to that value.
-
-With an Array of Strings:
-
-```ruby
-#! /usr/bin/env -S ruby -Ilib
-# -*- mode: ruby -*-
-
-require 'fatty'
-
-rgb = lambda do |_line, fatty|
-  color = fatty.choose(
-    "Choose a color",
-    choices: ["red", "green", "blue"],
-  )
-  fatty.status("If you say so: #{Rainbow(color).send(color.to_sym)} it is!\n")
-end
-
-Fatty::Terminal.new(
-  prompt: "Hit RETURN to choose a color> ",
-  on_accept: rgb,
-).go
-```
-
-Or with a Hash:
-
-```ruby
-#! /usr/bin/env -S ruby -Ilib
-# -*- mode: ruby -*-
-
-require 'fatty'
-
-nums = lambda do |_line, fatty|
-  const = fatty.choose(
-    "Choose a constant",
-    choices: { "Pi" => 3.14159, "Euler" => 2.718281828, "Golden Ratio" => 1.61803398875 }
-  )
-  fatty.status("Somewhere around #{const}\n")
-end
-
-Fatty::Terminal.new(
-  prompt: "Hit RETURN to choose a constant> ",
-  on_accept: nums,
-).go
-```
-
-
-<a id="org880e8e8"></a>
-
-### `choose_multi(prompt, choices:, cancel_value: nil)`
-
-Present a set of `choices:`, which can either be
-
--   an Array whose items are converted to `Strings` and presented as choices
--   a Hash whose keys converted to `Strings` and presented as choices
-
-`choose_multi` returns
-
--   a `Hash` whose keys and values are the user's selections if `choices:` was an `Array` of `Strings`,
--   a `Hash` whose keys and values are those selected from the `choices:` `Hash` if `choices:` was an `Hash`,
--   or the `cancel_value` if the user canceled the selection with C-c or C-g.
-
-The `prompt` String (by default "Choose Many") can guide the user about the purpose of the choices.
-
-
-<a id="orgc8a5fae"></a>
-
-### `confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)`
-
-Present the user with a simple Yes/No choice using your choice of ways to express "Yes" or "No" with `yes_label:` and `no_label:`.
-
-`confirm` returns `true` for "Yes" and `false` for "No."
-
-`confirm` will return `false` on cancellation with C-c or C-g unless you provide an alternative `cancel_value:`, in which case it returns that.
-
-
-<a id="orga4e7e2e"></a>
-
-### `menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`
-
-Present the user with a set of `choices:` representing actions to execute.
-
-`choices:` is a `Hash` whose keys are labels presented to the user and whose values are procs, lambdas, or other objects that respond to `#call`.
-
-```ruby
-#! /usr/bin/env -S ruby -Ilib
-# -*- mode: ruby -*-
-
-require 'fatty'
-
-asker = lambda do |_line, fatty|
-  result = fatty.menu(
-    "Pick an action",
-    choices: {
-      "Self Echo" => ->(fatty, label) {
-        fatty.append("You chose #{label}\n")
-        :echoed
-      },
-      "Say Hello" => ->(fatty, _label) {
-        name = fatty.prompt("Name?")
-        fatty.append("Hello, #{name}\n")
-        :greeted
-      },
-    },
-  )
-  fatty.good(result)
-end
-
-Fatty::Terminal.new(
-  on_accept: asker,
-  prompt: "Type RETURN for some action> ",
-).go
-```
-
-Each callable has access to the `CallbackEnvironment`, called `fatty` here and the `String` label that the user selected.
-
-Each callable can return a value that the `@on_accept` proc can process as it pleases. In the example, they are printed to the status area.
-
-If you want to set one of the choices as the initial choice, set `initial_choice_idx:` to the Integer index of one of the choices.
-
-If you want a value associated with the user's cancellation of the chooser with C-c or C-g, set `cancel_value:` to that value.
-
-
-<a id="orgbf4a3e3"></a>
-
-### `environment`
-
-This returns a `Hash` of runtime conditions detected by `Fatty`:
-
-| Key                   | Description                                          |
-|--------------------- |---------------------------------------------------- |
-| `:arch`               | System CPU architecture, e.g., `x86_64`              |
-| `:os`                 | Operating system detected                            |
-| `:ruby_platform`      | Ruby platform, e.g., `x86_64-linux`                  |
-| `:screen`             | Whether the terminal is running under `screen`       |
-| `:ssh`                | Whether the terminal is running under SSH            |
-| `:tmux`               | Whether the terminal is running under `tmux`         |
-| `:terminal`           | Detected underlying terminal, e.g., `kitty`          |
-| `:terminal_version`   | Version of the terminal, if known                    |
-| `:term`               | The `TERM` terminal type                             |
-| `:truecolor_detected` | Whether truecolor capability appears to be available |
-| `:truecolor_enabled`  | Whether Fatty is actually using truecolor rendering  |
-| `:curses`             | Runtime curses capabilities and parameters           |
-
-The environment report also includes a nested `:curses` hash:
-
-| Key                 | Description                                          |
-|------------------- |---------------------------------------------------- |
-| `:started`          | Whether curses has been initialized                  |
-| `:truecolor`        | Whether the active curses context is using truecolor |
-| `:key_min`          | Lowest keycode with a curses name                    |
-| `:key_max`          | Highest keycode with a curses name                   |
-| `:lines`            | Number of terminal rows available                    |
-| `:cols`             | Number of terminal columns available                 |
-| `:has_colors`       | Whether curses reports color support                 |
-| `:colors`           | Number of colors available to curses                 |
-| `:color_pairs`      | Number of color pairs available to curses            |
-| `:can_change_color` | Whether curses can redefine color values             |
-
-
-<a id="org52e579d"></a>
+<a id="org6de3b40"></a>
 
 # Default Interaction
 
 
-<a id="orgd6fdd60"></a>
+<a id="org9ae7b57"></a>
 
 ## Parts of the Screen
 
 
-<a id="org5469986"></a>
+<a id="org584aa0a"></a>
 
 ### Input Field
 
 Just above the bottom of the screen where all the action takes place: it is a line for editing the input. It displays a prompt followed by an area in which you build the command line using `fatty's` editing facilities.
 
 
-<a id="org7995b10"></a>
+<a id="orge0147ae"></a>
 
 ### Output Pane
 
 Most of the top part of the screen is reserved for displaying whatever output is sent to it with the `on_accept` callback to the `Terminal`. It can render colored ANSI-encoded strings and will page long output so you can view it a page at a time and even search the output.
 
 
-<a id="orga9c83b4"></a>
+<a id="org3c5b4c4"></a>
 
 ### Status Area
 
 The one to four lines just above the Input Field that displays output to the user that is out of band for the Output Pane. Brief messages of confirmation, warning, or error can be displayed there so as to get the user's immediate attention. Progress bars also render there where their visibility is made prominent.
 
 
-<a id="org6179d0b"></a>
+<a id="org715be3a"></a>
 
 ### Alert  Area
 
 Alerts are short-lived, non-scrolling messages shown below the input field. They are intended for user-visible conditions that require attention. `Fatty` uses this area to warn the user of unrecognized key codes and of unbound key presses.
 
 
-<a id="org88ab464"></a>
+<a id="orgf84761b"></a>
 
 ## Command-line Editing
 
 
-<a id="org68ad2f1"></a>
+<a id="orgc3b8837"></a>
 
 ## Keybindings
 
 The following tables explain the keybindings available in \`fatty\` in different contexts. Named keys are indicated by \`:name\` and key categories, such as \`<digits>\` are indicated with brackets.
 
 
-<a id="orgc3aa8b4"></a>
+<a id="orga914f85"></a>
 
 ### Input Context
 
@@ -778,7 +412,7 @@ When editing the input line or text input for widgets like the \`prompt\`, \`fat
 |            |                                                        |
 
 
-<a id="org6ab7492"></a>
+<a id="org24282d6"></a>
 
 ### Paging Context
 
@@ -793,17 +427,17 @@ By default, \`fatty\` sends output to the large output pane, and if the output i
 |       |                           |
 
 
-<a id="orga1370f7"></a>
+<a id="org529d9c8"></a>
 
 ## Paging
 
 
-<a id="orga55c0a0"></a>
+<a id="org895b9ef"></a>
 
 ## Markdown
 
 
-<a id="org0b726e9"></a>
+<a id="orga2ad7d9"></a>
 
 ### Forced line breaks
 
@@ -821,26 +455,26 @@ and this should appear on the next line.
 ```
 
 
-<a id="orge1c2a32"></a>
+<a id="orgb6f4d42"></a>
 
 # Configuration
 
 
-<a id="org0119c82"></a>
+<a id="org14633f2"></a>
 
 ## Key Codes
 
 
-<a id="org354efac"></a>
+<a id="org97d6943"></a>
 
 ## Key Bindings
 
 
-<a id="orgcbd4fa2"></a>
+<a id="org06753d1"></a>
 
 ## Themes
 
 
-<a id="orgce67592"></a>
+<a id="orga8adb3a"></a>
 
 ## Plugins

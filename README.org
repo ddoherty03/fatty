@@ -67,7 +67,6 @@ you.  If you type anything other than a builtin command, ~fatty~ attempts to
 run it as a shell command and displays the output.
 
 *** Builtin commands
-
 Here are the commands builtin to =fatty=
 
 | Command                     | Description                                                             |
