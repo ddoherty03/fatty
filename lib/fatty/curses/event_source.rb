@@ -80,11 +80,16 @@ module Fatty
       def read_raw
         return unless window
 
+        pending = read_pending_raw
+        return pending if pending
+
         window.timeout = @poll_ms if window.respond_to?(:timeout=)
 
         ch = window.getch
         return if ch == -1
         return unless ch
+
+        log_keycode(ch)
 
         if ch.is_a?(Integer) && ch == ::Curses::KEY_MOUSE
           mouse = ::Curses.getmouse
@@ -92,37 +97,70 @@ module Fatty
           return decode_mouse(mouse)
         end
 
-        if Fatty::Config.config.dig(:log, :tags)&.include?(:keycode)
-          Fatty.debug(
-            :curses_getch,
-            tag: :keycode,
-            ch_class: ch.class.name,
-            ch_inspect: ch.inspect,
-            ch_int: (ch.is_a?(Integer) ? ch : nil),
-            ch_chr: (ch.is_a?(Integer) && ch.between?(0, 255) ? ch.chr : nil),
-          )
-        end
+        return ch unless escape_char?(ch)
 
-        if ch.is_a?(Integer) && ch == 27
-          nxt = with_window_timeout(ESCAPE_LOOKAHEAD_MS) { window.getch }
+        read_escape_raw(ch)
+      end
 
-          if nxt == -1 || !nxt
-            ch
-          elsif nxt == "[".ord || nxt == "["
-            suffix = read_escape_suffix
-            seq = "[" + suffix
+      def read_escape_raw(ch)
+        nxt = with_window_timeout(ESCAPE_LOOKAHEAD_MS) { window.getch }
 
-            if seq == BRACKETED_PASTE_START
-              [:paste, read_bracketed_paste]
-            else
-              [ch, nxt]
-            end
+        return ch if nxt == -1 || !nxt
+
+        if csi_prefix?(nxt)
+          suffix = read_escape_suffix
+          seq = "[" + suffix
+
+          if seq == BRACKETED_PASTE_START
+            [:paste, read_bracketed_paste]
           else
-            [ch, nxt]
+            push_pending_raw(*suffix.chars.reverse)
+            push_pending_raw(nxt)
+            ch
           end
+        elsif esc_meta?
+          [ch, nxt]
         else
+          push_pending_raw(nxt)
           ch
         end
+      end
+
+      def read_pending_raw
+        @pending_raw ||= []
+        @pending_raw.shift
+      end
+
+      def push_pending_raw(*values)
+        @pending_raw ||= []
+        values.each do |value|
+          @pending_raw.unshift(value)
+        end
+      end
+
+      def escape_char?(ch)
+        ch.is_a?(Integer) && ch == 27
+      end
+
+      def csi_prefix?(ch)
+        ch == "[".ord || ch == "["
+      end
+
+      def esc_meta?
+        Fatty::Config.config.fetch(:esc_meta, false)
+      end
+
+      def log_keycode(ch)
+        return unless Fatty::Config.config.dig(:log, :tags)&.include?(:keycode)
+
+        Fatty.debug(
+          :curses_getch,
+          tag: :keycode,
+          ch_class: ch.class.name,
+          ch_inspect: ch.inspect,
+          ch_int: (ch.is_a?(Integer) ? ch : nil),
+          ch_chr: (ch.is_a?(Integer) && ch.between?(0, 255) ? ch.chr : nil),
+        )
       end
 
       def with_window_timeout(ms)

@@ -21,7 +21,7 @@ module Fatty
     # Context exists so that all curses state is centralized and never leaks
     # into Sessions or Terminal.
     class Context
-      DEFAULT_ESC_DELAY = 25
+      DEFAULT_ESC_DELAY = 0
 
       attr_reader :input_win, :output_win, :status_win, :alert_win
       attr_reader :rows, :cols, :palette, :truecolor
@@ -33,8 +33,8 @@ module Fatty
       def start
         return self if @started
 
-        ::Curses.init_screen
         configure_escape_delay!
+        ::Curses.init_screen
         MouseConstants.ensure!
 
         ::Curses.raw
@@ -83,7 +83,7 @@ module Fatty
           else
             Fatty::Config.config.dig(:esc_delay)&.to_i
           end
-        delay = DEFAULT_ESC_DELAY if delay.nil? || delay <= 0
+        delay = DEFAULT_ESC_DELAY if delay.nil? || delay.negative?
         if ::Curses.respond_to?(:set_escdelay)
           ::Curses.set_escdelay(delay)
         else
