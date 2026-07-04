@@ -35,6 +35,16 @@ module Fatty
         expect(result).to eq([])
         expect(session).to have_received(:rebuild_windows!)
       end
+
+      it "is public session protocol" do
+        session = Fatty::PopUpSession.new(
+          source: ["one", "two"],
+          kind: :terminal_choose,
+          title: "Choose",
+          message: "Pick one",
+        )
+        expect(session).to respond_to(:handle_resize)
+      end
     end
 
     describe "#rebuild_windows!" do

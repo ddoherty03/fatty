@@ -44,6 +44,10 @@ module Fatty
     def close
     end
 
+    def handle_resize
+      []
+    end
+
     # Save any state we want saved on quit, error, etc.
     def persist!
     end

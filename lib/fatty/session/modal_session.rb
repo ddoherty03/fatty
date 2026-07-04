@@ -17,14 +17,14 @@ module Fatty
       nil
     end
 
-    private
-
-    # simplecov:disable
-
     def handle_resize
       rebuild_windows!
       []
     end
+
+    private
+
+    # simplecov:disable
 
     def rebuild_windows!
       old_win = win
