@@ -96,12 +96,47 @@ Here are the commands builtin to =fatty=
 | keytest                     | Enter key diagnostic mode report keycodes, key names, and bindings      |
 | colors                      | Display ANSI, 256-color, and X11 color diagnostics                      |
 
-*** Screenshot
-The ~fatty~ demo running the =markdown= command and paging the output.
+*** Screenshots
+
+**** Command line editing
+
+Here is the command line, mid-edit showing a region selected and, in dim text
+to the right, a predictive completion based on history.
+
+#+CAPTION: Input editing showing region and predictive completion.
+#+ATTR_HTML: :alt Fatty command line screenshot :width 900
+[[file:images/input_editing.png]]
+
+**** Searchable Output
+
+While paging output, you can search for words, as here the user searches for
+the word =tty= in the output.  The current match is highlighted in yellow with
+other matches highlighted in gray.  The paging status line shows the search
+term and the direction of search.  The user can navigate for other matches in
+the output using =n= and =N=.
+
+#+CAPTION: Searching for instances of =tty= in the output.
+#+ATTR_HTML: :alt Fatty search pane :width 900
+[[file:images/search_output.png]]
+
+**** Paging Markdown
+
+The ~fatty~ demo running the =markdown= command and paging the output.  It
+shows =fatty's= ability to render markdown using ANSI codes, including
+colorizing code blocks, as well as its paging interface.
 
 #+CAPTION: Running the =fatty= demo =markdown= command.
 #+ATTR_HTML: :alt Fatty terminal UI demo screenshot :width 900
 [[file:images/page_markdown.png]]
+
+**** Popup Selection
+One of the many "widgets" available through =fatty= is the ability to present
+the user with a set of choices to select from.  After running the demo's
+=choose "AAA" "BBB" "CCC" "DDD" "EEE"=
+
+#+CAPTION: Running the =fatty= demo =choose= command.
+#+ATTR_HTML: :alt Fatty terminal UI demo screenshot :width 900
+[[file:images/choose_popup.png]]
 
 * Quick Start
 
