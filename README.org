@@ -165,6 +165,12 @@ Now you have an interactive application that allows you to type text and see
 what it looks like when written backwards in uppercase letters. It's as easy
 as that!
 
+Text passed to the output pane, the status area, and the alert pane may
+contain ANSI SGR color/style sequences. Fatty interprets those sequences
+relative to the current theme and role, so an ANSI reset returns to the active
+Fatty role rather than to the terminal's physical default colors.  =fatty=
+includes the nice [[https://github.com/ku1ik/rainbow][=Rainbow= gem]] for colorizing text as a convenience.
+
 When a =fatty= application runs, =fatty= installs a few files if they do not
 exists:
 
@@ -178,11 +184,60 @@ exists:
   + =themes=, a directory of pre-defined theme definitions that you can choose
     from and add to by adding your own themes.
 
-** Adding a Callback to =on_accept=
+** Parameters to =on_accept=
+The =on_accept= proc passed to an instance of =Fatty::Terminal= can take one
+or two parameters: (1) =line=, the edited line as it exists when the user
+types =RETURN= and (2) an optional callback parameter that you can use to
+access the facilities of =fatty=.
+
+** The =line= parameter to =on_accept=
+=Fatty= does not parse command lines for your application.  When the user
+accepts a =line=, =Fatty= passes the line to =on_accept= as text.  It is up to
+your callback to decide whether to strip whitespace, split words, interpret
+quotes, parse options, recognize subcommands, or treat punctuation specially.
+
+This keeps =Fatty= useful for many different kinds of REPLs.  Some applications
+want shell-like parsing.  Others want to preserve the user's input exactly.
+
+For shell-like parsing, Ruby's standard =Shellwords= library is often useful:
+
+#+begin_src ruby :tangle no
+  #! /usr/bin/env ruby
+  # -*- mode: ruby -*-
+
+  require 'fatty'
+  require 'shellwords'
+
+  runner = lambda do |line, fatty|
+    words = Shellwords.split(line)
+
+    case words
+    when ["echo", *rest]
+      fatty.append("#{rest.join(" ")}\n")
+    when ["count", *rest]
+      fatty.append("#{rest.length}\n")
+    when []
+      fatty.status("Blank line", role: :info)
+    else
+      fatty.alert("Unknown command: #{words.first}", role: :warn)
+    end
+  rescue ArgumentError => e
+    fatty.alert("Could not parse line: #{e.message}", role: :error)
+  end
+
+  Fatty::Terminal.new(
+    prompt: "shellwords> ",
+    on_accept: runner,
+  ).go
+#+end_src
+
+** The callback parameter to =on_accept=
 The =on_accept= proc can have a second parameter named whatever you like that
-serves as a callback into certain facilities provided by =fatty=.  Here is a
-variation of the prior example that also echoes the original typed string into
-the so-called status area:
+serves as a callback into certain facilities provided by =fatty=.  In this
+README we use the name =fatty= for the callback parameter since it provides
+access to the facilities provided by the =fatty= library.  Here is a variation
+of the prior example that also echoes the original typed string into the
+so-called status area:
 
 #+begin_src ruby :tangle no
   #! /usr/bin/env ruby
@@ -200,408 +255,38 @@ the so-called status area:
   ).go
 #+end_src
 
-This callback parameter responds to several methods that allow your
-application to interact with the user:
+The callback parameter responds to several methods that allow your
+application to interact with the user.  They are documented below.
 
-*** =append(text, follow: true)=
-Add the given text to the output pane.  After a full page of output is
-produced, enter paging mode so the user can view the output at leisure and
-search the output. If =follow= is true, keep the output pane's viewport
-covering the last lines of output.
+** Output Ordering
+The =on_accept= callback can send text to the output pane in three ways:
 
-*** =append_now(text, follow: true)=
-Like =append=, but display output as it is produced rather than wait for a
-full page to be produced.
+1. by returning a value from the callback;
+2. by calling =append= or =markdown= on the callback environment; or
+3. by calling =append_now= on the callback environment.
 
-*** =markdown(text)=
-Render the given text as markdown source according to the current theme then
-=append= the result to the output pane.
-
-*** =status(text, role: :info)=
-Display the text in the "status" area, the lines immediately above the input
-field, using one of the following "roles":
-- :good :: colored according something affirming according to the theme,
-  usually something greenish;
-- :info :: colored something neutral simply for informational purposes;
-- :warn :: colored something to suggest caution, usually something in the
-  orange to yellow range;
-- :error :: colored something to suggest danger, usually some tone of red.
-
-*** =good(text)=
-Display the text in the status area with the role :good.
-
-*** =info(text)=
-Display the text in the status area with the role :info.
-
-*** =warn(text)=
-Display the text in the status area with the role :warn.
-
-*** =error(text)=
-Display the text in the status area with the role :error.
-
-*** =oops(text)=
-An alias for =error(text)=
-
-*** =alert(text, role: :info)=
-Display the text in the one-line alert panel just below the input field.  In
-the alert panel, the role only controls the foreground color, not the
-background.
-
-*** ANSI Colors in Output
-Text passed to =append=, =append_now=, =status=, and =alert= may contain ANSI
-SGR color/style sequences. Fatty interprets those sequences relative to the
-current theme role, so an ANSI reset returns to the active Fatty role rather
-than to the terminal's physical default colors.  =fatty= includes the nice
-[[https://github.com/ku1ik/rainbow][=Rainbow= gem]] for colorizing text as a convenience.
-
-*** =prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)=
-Display a popup dialog box that allows the user to type in any string and
-return it.  Combine the input line with a prompted-for string and shuffle
-their letters together:
+A returned =String= is the simplest output mechanism.  It is displayed after
+the callback finishes:
 
 #+begin_src ruby :tangle no
-#! /usr/bin/env -S ruby -Ilib
-# -*- mode: ruby -*-
-
-require 'fatty'
-
-weaver = lambda do |line, fatty|
-  str = fatty.prompt("Secondary string to weave in with '#{line}'")
-  (line + str).downcase.gsub(/[^a-z]/, '').split('').shuffle.join
-end
-
-Fatty::Terminal.new(
-  on_accept: weaver,
-  prompt: "Primary String> "
-).go
-#+end_src
-
-You can pre-fill the prompt's input line by passing in an =initial:=
-parameter.
-
-The =prompt= input has its own history facility separate from the history in
-the main input command line.  You can turn it off by setting =save_history= to
-=false=.
-
-=prompt= returns whatever the user typed and returns =nil= if the user cancels
-with C-c or C-g unless you specify an alternative =cancel_value=.
-
-*** =add_progress(label:, total: nil, style: :percent, role: :info, width: 40)=
-Display a progress widget in the status area to show the user that the system
-is working, not frozen.  The =add_progress= method returns a =Progress= object
-on which the =#update= method can be called to cause it to animate one step.
-To the left of the widget the =label:= is displayed, followed by the widget.
-For processes where the total size is known in advance, the =total:= parameter
-indicates that size.  The =role:= parameter controls the styling of the
-widget. The =width:= parameter places a limit on the size of the widget.
-=Fatty= supports several styles of progress widgets:
-
-- :spinner :: a simple busy-wait indicator that just animates on every call;
-- :count :: count up to =total= on each call of =update(current: <count>)=
-- :percent :: count up to percent of =total= on each call of =update(current: <count>)=
-- :count_percent :: count up and show percent of =total= on each call of =update(current: <count>)=
-- :bar :: display a filling ASCII progress bar with percent and count
-- :unicode_bar :: display a filling Unicode progress bar with percent and count
-- :braille_bar :: display a filling progress bar with percent and count using
-  braille characters
-- :trail :: display an "indicator" on each call of =update(indicator: <string>)=
-
-**** Initialization =add_progress(label:, style: :percent, total: nil, role: :info, width: 40)=
-
-- =label:= :: Text displayed before the progress widget, "Progress" by default.
-- =style:= :: The style of the progress widget from one of those named above.
-- =total:= :: For all styles except :trail and :spinner, the number that
-  represents the size of the task.  As the =#update= calls increase the value
-  of =current= towards =total=, the widget indicates increasing completion.
-- =role:= :: One of :good, :info, :warn, or :error to color the widget
-  according to the theme's idea of these roles.  By default, :info.
-- =width= :: The number of characters for the full widget display: it is only
-  relevant for the bar styles and the trail style; otherwise it is ignored.
-
-**** Update =update(current: nil, indicator: nil, render: false)=
-You update the progress widget by calling =#update= on the Progress object,
-passing as the =current:= parameter a number that indicates progress so far.
-
-#+begin_src ruby :tangle no
-  #! /usr/bin/env -S ruby -Ilib
-  # -*- mode: ruby -*-
-
-  require 'fatty'
-  require 'prime'
-
-  primer = lambda do |input, fatty|
-    if input.match?(/\A[1-9]\d*\z/)
-      k = input.to_i
-      prog = fatty.add_progress(label: "Thinking...", total: k, style: :bar)
-      out_line = +""
-      num_primes = 0
-      Prime.each do |p|
-        num_primes += 1
-        out = "#{p} "
-
-        if out_line.length + out.length > 100
-          fatty.append_now("#{out_line}\n", mode: :scrolling)
-          out_line.clear
-        end
-
-        out_line << out
-        prog.update(current: num_primes)
-        break if num_primes >= k
-      end
-      fatty.append_now("#{out_line}\n", mode: :scrolling) unless out_line.empty?
-      prog.finish("Done")
-    else
-      fatty.alert "Give me a positive integer", role: :error
-    end
-  end
-
   Fatty::Terminal.new(
-    on_accept: primer,
-    prompt: 'How many primes? ',
+    on_accept: ->(line) { line.upcase.reverse },
   ).go
 #+end_src
 
-For the trail-style progress, you can use an arbitrary string to indicate
-progress by adding an =indicator:= parameter to the =#update= call.
+Calls to =append= and =markdown= also queue output until the callback finishes.
+If a callback both calls =append= or =markdown= and returns a =String=, the
+queued output is displayed first and the returned string is displayed after it.
 
-Suppose, for example, you wanted to print a trail in which the last digit of
-the prime is displayed to indicate progress and colored so it stands out:
+Calls to =append_now= are different.  They append text and immediately render a
+frame, so the user can see output while the callback is still running.  Use
+=append_now= for long-running callbacks that should stream progress to the
+output pane.
 
-#+begin_src ruby :tangle no
-#! /usr/bin/env -S ruby -Ilib
-# -*- mode: ruby -*-
-
-require 'fatty'
-require 'prime'
-require "rainbow/refinement"
-
-using Rainbow
-
-primer = lambda do |input, fatty|
-  if input.match?(/\A[1-9]\d*\z/)
-    k = input.to_i
-    prog = fatty.add_progress(label: "Thinking...", total: k, style: :trail, width: 100)
-    out_line = +""
-    num_primes = 0
-    Prime.each do |p|
-      num_primes += 1
-      out = "#{p} "
-
-      if out_line.length + out.length > 100
-        fatty.append_now("#{out_line}\n", mode: :scrolling)
-        out_line.clear
-      end
-
-      out_line << out
-      last_dig = p.to_s.split('').last
-      sig =
-        case last_dig
-        when '1'
-          last_dig.red
-        when '3'
-          last_dig.blue
-        when '7'
-          last_dig.green
-        when '9'
-          last_dig.yellow
-        else
-          '!'
-        end
-      prog.update(current: num_primes, indicator: sig)
-      break if num_primes >= k
-    end
-    fatty.append_now("#{out_line}\n", mode: :scrolling) unless out_line.empty?
-  else
-    fatty.alert "Give me a positive integer", role: :error
-  end
-  prog.finish("Done")
-end
-
-Fatty::Terminal.new(
-  on_accept: primer,
-  prompt: 'How many primes? ',
-).go
-#+end_src
-
-**** Finish
-As the prior examples illustrate, you can issue an ending message at the end
-of the process by calling =#finish= on the Progress object.
-
-**** Clear
-And, if you have occasion, you can clear the Progress by calling =#clear= on
-the Progress object.
-
-*** =choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)=
-Present a set of =choices:=, which can be either:
-
-- an =Array= of =String= choices, where the selected string is returned; or
-- a =Hash= whose keys are converted to =String= labels and whose values are
-  returned.
-
-=choose= returns:
-
-- the selected =String= when =choices:= is an =Array=;
-- the associated value when =choices:= is a =Hash=; or
-- =cancel_value= when the user cancels with C-c or C-g.
-
-The =prompt= String (by default "Choose") can guide the user about the purpose
-of the choices.
-
-If you want to set one of the choices as the initial choice, set
-=initial_choice_idx:= to the Integer index of one of the choices.
-
-If you want a value associated with the user's cancellation of the chooser
-with C-c or C-g, set =cancel_value:= to that value.
-
-With an Array of Strings:
-
-#+begin_src ruby :tangle no
-#! /usr/bin/env -S ruby -Ilib
-# -*- mode: ruby -*-
-
-require 'fatty'
-
-rgb = lambda do |_line, fatty|
-  color = fatty.choose(
-    "Choose a color",
-    choices: ["red", "green", "blue"],
-  )
-  fatty.status("If you say so: #{Rainbow(color).send(color.to_sym)} it is!\n")
-end
-
-Fatty::Terminal.new(
-  prompt: "Hit RETURN to choose a color> ",
-  on_accept: rgb,
-).go
-#+end_src
-
-Or with a Hash:
-
-#+begin_src ruby :tangle no
-#! /usr/bin/env -S ruby -Ilib
-# -*- mode: ruby -*-
-
-require 'fatty'
-
-nums = lambda do |_line, fatty|
-  const = fatty.choose(
-    "Choose a constant",
-    choices: { "Pi" => 3.14159, "Euler" => 2.718281828, "Golden Ratio" => 1.61803398875 }
-  )
-  fatty.status("Somewhere around #{const}\n")
-end
-
-Fatty::Terminal.new(
-  prompt: "Hit RETURN to choose a constant> ",
-  on_accept: nums,
-).go
-#+end_src
-
-*** =choose_multi(prompt, choices:, cancel_value: nil)=
-Present a set of =choices:=, which can either be
-- an Array whose items are converted to =Strings= and presented as choices
-- a Hash whose keys converted to =Strings= and presented as choices
-
-=choose_multi= returns
-- a =Hash= whose keys and values are the user's
-  selections if =choices:= was an =Array= of =Strings=,
-- a =Hash= whose keys and values are those selected from the =choices:= =Hash=
-  if =choices:= was an =Hash=,
-- or the =cancel_value= if the user canceled the selection with C-c or C-g.
-
-The =prompt= String (by default "Choose Many") can guide the user about the purpose
-of the choices.
-
-*** =confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)=
-Present the user with a simple Yes/No choice using your choice of ways to
-express "Yes" or "No" with =yes_label:= and =no_label:=.
-
-=confirm= returns =true= for "Yes" and =false= for "No."
-
-=confirm= will return =false= on cancellation with C-c or C-g unless you
-provide an alternative =cancel_value:=, in which case it returns that.
-
-*** =menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)=
-Present the user with a set of =choices:= representing actions to execute.
-
-=choices:= is a =Hash= whose keys are labels presented to the user and whose
-values are procs, lambdas, or other objects that respond to =#call=.
-
-#+begin_src ruby :tangle no
-  #! /usr/bin/env -S ruby -Ilib
-  # -*- mode: ruby -*-
-
-  require 'fatty'
-
-  asker = lambda do |_line, fatty|
-    result = fatty.menu(
-      "Pick an action",
-      choices: {
-        "Self Echo" => ->(fatty, label) {
-          fatty.append("You chose #{label}\n")
-          :echoed
-        },
-        "Say Hello" => ->(fatty, _label) {
-          name = fatty.prompt("Name?")
-          fatty.append("Hello, #{name}\n")
-          :greeted
-        },
-      },
-    )
-    fatty.good(result)
-  end
-
-  Fatty::Terminal.new(
-    on_accept: asker,
-    prompt: "Type RETURN for some action> ",
-  ).go
-#+end_src
-
-Each callable has access to the =CallbackEnvironment=, called =fatty= here and
-the =String= label that the user selected.
-
-Each callable can return a value that the =@on_accept= proc can process as it
-pleases.  In the example, they are printed to the status area.
-
-If you want to set one of the choices as the initial choice, set
-=initial_choice_idx:= to the Integer index of one of the choices.
-
-If you want a value associated with the user's cancellation of the chooser
-with C-c or C-g, set =cancel_value:= to that value.
-
-
-*** =environment=
-This returns a =Hash= of runtime conditions detected by =Fatty=:
-
-| Key                   | Description                                          |
-|-----------------------+------------------------------------------------------|
-| =:arch=               | System CPU architecture, e.g., =x86_64=              |
-| =:os=                 | Operating system detected                            |
-| =:ruby_platform=      | Ruby platform, e.g., =x86_64-linux=                  |
-| =:screen=             | Whether the terminal is running under =screen=       |
-| =:ssh=                | Whether the terminal is running under SSH            |
-| =:tmux=               | Whether the terminal is running under =tmux=         |
-| =:terminal=           | Detected underlying terminal, e.g., =kitty=          |
-| =:terminal_version=   | Version of the terminal, if known                    |
-| =:term=               | The =TERM= terminal type                             |
-| =:truecolor_detected= | Whether truecolor capability appears to be available |
-| =:truecolor_enabled=  | Whether Fatty is actually using truecolor rendering  |
-| =:curses=             | Runtime curses capabilities and parameters           |
-
-The environment report also includes a nested =:curses= hash:
-
-| Key                 | Description                                            |
-|---------------------+--------------------------------------------------------|
-| =:started=          | Whether curses has been initialized                    |
-| =:truecolor=        | Whether the active curses context is using truecolor   |
-| =:key_min=          | Lowest keycode with a curses name                      |
-| =:key_max=          | Highest keycode with a curses name                     |
-| =:lines=            | Number of terminal rows available                      |
-| =:cols=             | Number of terminal columns available                   |
-| =:has_colors=       | Whether curses reports color support                   |
-| =:colors=           | Number of colors available to curses                   |
-| =:color_pairs=      | Number of color pairs available to curses              |
-| =:can_change_color= | Whether curses can redefine color values               |
+At the end of the callback, =Fatty= finishes the command and updates the pager
+state.  Output produced with =append_now= may therefore appear during the
+callback, while output from =append=, =markdown=, and the callback's return
+value appears after the callback returns.
 
 * Default Interaction
 ** Parts of the Screen
