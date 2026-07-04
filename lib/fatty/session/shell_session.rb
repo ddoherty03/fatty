@@ -99,7 +99,7 @@ module Fatty
 
     desc "Pass the current input line to the on_accept proc or a shell"
     action :submit_line do
-      line = @field.accept_line.to_s.strip
+      line = @field.accept_line.to_s
       return [] if line.blank? && on_accept.nil?
 
       Fatty.info("ShellSession: accept_line: #{line}")
