@@ -10,6 +10,10 @@ module Fatty
       KeyEvent.new(key:, ctrl:, meta:, shift:)
     end
 
+    def mouse(button, ctrl: false, meta: false, shift: false)
+      Fatty::MouseEvent.new(button: button, ctrl: ctrl, meta: meta, shift: shift)
+    end
+
     describe "#bind / #resolve" do
       it "returns nil when resolving nil event" do
         km = KeyMap.new
@@ -127,6 +131,53 @@ module Fatty
         km = KeyMap.new
         expect(km.resolve(nil, contexts: [:input])).to be_nil
       end
+
+      it "resolves unmodified mouse bindings" do
+        km = KeyMap.new
+        km.bind_mouse(context: :paging, button: :scroll_down, action: :scroll_down)
+        expect(km.resolve(mouse(:scroll_down), contexts: :paging)).to eq(:scroll_down)
+      end
+
+      it "resolves ctrl mouse bindings separately from unmodified mouse bindings" do
+        km = KeyMap.new
+        km.bind_mouse(context: :paging, button: :scroll_down, action: :scroll_down)
+        km.bind_mouse(context: :paging, button: :scroll_down, ctrl: true, action: :page_down)
+        expect(km.resolve(mouse(:scroll_down), contexts: :paging)).to eq(:scroll_down)
+        expect(km.resolve(mouse(:scroll_down, ctrl: true), contexts: :paging)).to eq(:page_down)
+      end
+
+      it "resolves meta mouse bindings separately from unmodified mouse bindings" do
+        km = KeyMap.new
+        km.bind_mouse(context: :paging, button: :scroll_down, action: :scroll_down)
+        km.bind_mouse(context: :paging, button: :scroll_down, meta: true, action: :page_bottom)
+        expect(km.resolve(mouse(:scroll_down), contexts: :paging)).to eq(:scroll_down)
+        expect(km.resolve(mouse(:scroll_down, meta: true), contexts: :paging)).to eq(:page_bottom)
+      end
+
+      it "resolves shift mouse bindings separately from unmodified mouse bindings" do
+        km = KeyMap.new
+        km.bind_mouse(context: :paging, button: :scroll_up, action: :scroll_up)
+        km.bind_mouse(context: :paging, button: :scroll_up, shift: true, action: :page_up)
+        expect(km.resolve(mouse(:scroll_up), contexts: :paging)).to eq(:scroll_up)
+        expect(km.resolve(mouse(:scroll_up, shift: true), contexts: :paging)).to eq(:page_up)
+      end
+
+      it "does not fall back to an unmodified mouse binding when a modified mouse event is unresolved" do
+        km = KeyMap.new
+        km.bind_mouse(context: :paging, button: :scroll_down, action: :scroll_down)
+        expect(km.resolve(mouse(:scroll_down, ctrl: true), contexts: :paging)).to be_nil
+      end
+
+      it "reports mouse bindings across contexts" do
+        km = KeyMap.new
+        km.bind_mouse(context: :paging, button: :scroll_down, ctrl: true, action: :page_down)
+        km.bind_mouse(context: :popup, button: :scroll_down, ctrl: true, action: :popup_page_down)
+        bindings = km.bindings_for(mouse(:scroll_down, ctrl: true))
+        expect(bindings).to eq(
+                              paging: :page_down,
+                              popup: :popup_page_down,
+                            )
+      end
     end
 
     describe "#contexts" do
@@ -153,7 +204,7 @@ module Fatty
             { "context" => "junk", "key" => "enter", "meta" => "true", "action" => "page_up" },
           ]
         allow(Fatty::Config).to receive(:keybindings)
-                                    .and_return(cfg)
+                                  .and_return(cfg)
         km.load_user_config
         expect(km.resolve(ev(:enter), contexts: [:input])).to eq(:submit)
         expect(km.resolve(ev(:enter), contexts: [:paging])).to eq(:page_down)
@@ -205,13 +256,13 @@ module Fatty
       it "skips entries missing key or action with logging" do
         km = KeyMap.new
         allow(Fatty::Config).to receive(:keybindings)
-                                    .and_return(
-                                      [
-                                        { "key" => "a" },                 # missing action
-                                        { "action" => "bol" },            # missing key
-                                        { "key" => "b", "action" => nil }, # missing/invalid action
-                                      ],
-                                    )
+                                  .and_return(
+                                    [
+                                      { "key" => "a" },                 # missing action
+                                      { "action" => "bol" },            # missing key
+                                      { "key" => "b", "action" => nil }, # missing/invalid action
+                                    ],
+                                  )
         allow(Fatty).to receive(:error)
         km.load_user_config
         expect(Fatty).to have_received(:error).at_least(:once)
@@ -220,7 +271,7 @@ module Fatty
       it "logs and continues on Psych::SyntaxError" do
         km = KeyMap.new
         allow(Fatty::Config).to receive(:keybindings)
-                                    .and_raise(Psych::SyntaxError.new("", 0, 0, 0, "", ""))
+                                  .and_raise(Psych::SyntaxError.new("", 0, 0, 0, "", ""))
         allow(Fatty).to receive(:error)
         expect { km.load_user_config }.not_to raise_error
         expect(Fatty).to have_received(:error).with(a_string_matching(/syntax error/i), tag: :keybinding)
@@ -229,12 +280,42 @@ module Fatty
       it "defaults missing context to :input" do
         km = KeyMap.new
         allow(Fatty::Config).to receive(:keybindings)
-                                    .and_return([{ "key" => "a", "ctrl" => true, "action" => "bol" }])
+                                  .and_return([{ "key" => "a", "ctrl" => true, "action" => "bol" }])
 
         km.load_user_config
 
         expect(km.resolve(ev(:a, ctrl: true), contexts: :text)).to eq(:bol)
         expect(km.resolve(ev(:a, ctrl: true), contexts: :paging)).to be_nil
+      end
+
+      it "loads mouse bindings from Config.keybindings" do
+        km = KeyMap.new
+        allow(Fatty::Config)
+          .to receive(:keybindings)
+                .and_return(
+                  [
+                    { "context" => "paging", "button" => "scroll_down", "action" => "scroll_down" },
+                    { "context" => "paging", "button" => "scroll_down", "ctrl" => true, "action" => "page_down" },
+                    { "context" => "paging", "button" => "scroll_up", "meta" => true, "action" => "page_top" },
+                    { "context" => "paging", "button" => "scroll_up", "shift" => true, "action" => "page_up" },
+                  ],
+                )
+        km.load_user_config
+        expect(km.resolve(mouse(:scroll_down), contexts: :paging)).to eq(:scroll_down)
+        expect(km.resolve(mouse(:scroll_down, ctrl: true), contexts: :paging)).to eq(:page_down)
+        expect(km.resolve(mouse(:scroll_up, meta: true), contexts: :paging)).to eq(:page_top)
+        expect(km.resolve(mouse(:scroll_up, shift: true), contexts: :paging)).to eq(:page_up)
+      end
+    end
+
+    describe "mouse event processing" do
+      it "resolves modified mouse bindings" do
+        km = KeyMap.new
+        km.bind_mouse(context: :paging, button: :scroll_up, action: :scroll_up)
+        km.bind_mouse(context: :paging, button: :scroll_up, ctrl: true, action: :page_up)
+
+        expect(km.resolve(mouse(:scroll_up), contexts: :paging)).to eq(:scroll_up)
+        expect(km.resolve(mouse(:scroll_up, ctrl: true), contexts: :paging)).to eq(:page_up)
       end
     end
   end

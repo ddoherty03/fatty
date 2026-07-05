@@ -192,6 +192,8 @@ module Fatty
       # Mouse scrolling in paging
       map.bind_mouse(context: :paging, button: :scroll_up, action: :scroll_up)
       map.bind_mouse(context: :paging, button: :scroll_down, action: :scroll_down)
+      map.bind_mouse(context: :paging, button: :scroll_up, ctrl: true, action: :page_up)
+      map.bind_mouse(context: :paging, button: :scroll_down, ctrl: true, action: :page_down)
 
       # Load the user's keybindings
       map.load_user_config.activate!

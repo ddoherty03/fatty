@@ -160,6 +160,44 @@ module Fatty
 
         expect(update(session, :bogus)).to eq([])
       end
+
+      it "reports an unbound mouse event and records its suggestion" do
+        session = Fatty::KeyTestSession.new
+        init_keytest_session(session)
+        ev = Fatty::MouseEvent.new(button: :scroll_down, ctrl: true, x: 10, y: 3)
+        commands = update(session, :key, event: ev)
+        expect(commands.map(&:action)).to eq([:append, :show])
+        expect(commands.first.target).to eq(session.output_session.id)
+        expect(commands.first.payload[:text]).to include("Mouse report")
+        expect(commands.first.payload[:text]).to include("Suggested keybindings")
+        expect(commands.first.payload[:text]).to include("No action is bound to C-scroll_down")
+        expect(commands.first.payload[:text]).to include("- button: scroll_down")
+        expect(commands.first.payload[:text]).to include("  ctrl: true")
+      end
+
+      it "reports a bound mouse event without a suggestion" do
+        session = Fatty::KeyTestSession.new
+        init_keytest_session(session)
+        allow(Fatty::KeyMap.active)
+          .to receive(:bindings_for)
+                .and_return(paging: :page_down)
+        ev = Fatty::MouseEvent.new(button: :scroll_down, ctrl: true, x: 10, y: 3)
+        commands = update(session, :key, event: ev)
+        expect(commands.map(&:action)).to eq([:append, :show])
+        expect(commands.first.payload[:text]).to include("Mouse report")
+        expect(commands.first.payload[:text]).to include("(BOUND)")
+        expect(commands.first.payload[:text]).to include("bindings:")
+        expect(commands.first.payload[:text]).not_to include("No action is bound")
+      end
+
+      it "does not treat a mouse event as a quit key" do
+        session = Fatty::KeyTestSession.new
+        init_keytest_session(session)
+        ev = Fatty::MouseEvent.new(button: :left_clicked, ctrl: true, x: 10, y: 3)
+        commands = update(session, :key, event: ev)
+        expect(commands.map(&:action)).to eq([:append, :show])
+        expect(commands.map(&:action)).not_to include(:pop_modal)
+      end
     end
 
     describe "#view" do

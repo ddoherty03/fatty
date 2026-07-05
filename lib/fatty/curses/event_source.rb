@@ -23,6 +23,13 @@ module Fatty
         ::Curses::BUTTON3_TRIPLE_CLICKED => :right_triple_clicked
       }.freeze
 
+      SCROLL_UP_BSTATE = ::Curses::BUTTON4_PRESSED
+      SCROLL_DOWN_BSTATE = 0x10000000
+      MOUSE_MODIFIER_MASK =
+        ::Curses::BUTTON_CTRL |
+        ::Curses::BUTTON_ALT |
+        ::Curses::BUTTON_SHIFT
+
       ESCAPE_LOOKAHEAD_MS = 0
 
       BRACKETED_PASTE_START = "[200~"
@@ -203,14 +210,19 @@ module Fatty
       end
 
       def mouse_button_from_bstate(bstate)
-        return :scroll_up   if (bstate & ::Curses::BUTTON4_PRESSED).positive?
-        return :scroll_down if (bstate & ::Curses::BUTTON5_PRESSED).positive?
+        button_state = bstate & ~MOUSE_MODIFIER_MASK
+        return :scroll_up if (button_state & SCROLL_UP_BSTATE).positive?
+        return :scroll_down if (button_state & SCROLL_DOWN_BSTATE).positive?
 
         MOUSE_BSTATE_BUTTON_MAP.each do |mask, button|
-          return button if (bstate & mask).positive?
+          return button if (button_state & mask).positive?
         end
 
         nil
+      end
+
+      def mouse_button_pressed?(button_state, const_name)
+        ::Curses.const_defined?(const_name) && (button_state & ::Curses.const_get(const_name)).positive?
       end
 
       def read_escape_suffix

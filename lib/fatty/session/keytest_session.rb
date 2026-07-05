@@ -221,7 +221,7 @@ module Fatty
 
          Mouse events may also be bound in keybindings.yml, for example:
 
-         - mouse: <BUTTONNAME>
+         - button: <BUTTONNAME>
            context: paging
            action: page_up
 

@@ -8,13 +8,15 @@ module Fatty
       let(:window) { instance_double("window") }
       let(:context) { instance_double(Context, input_win: window) }
       let(:key_decoder) { instance_double(KeyDecoder) }
-
-      it "returns a :cmd paste message when read_raw returns paste data" do
-        source = EventSource.new(
+      let(:source) do
+        EventSource.new(
           context: context,
           key_decoder: key_decoder,
           poll_ms: 10,
         )
+      end
+
+      it "returns a :cmd paste message when read_raw returns paste data" do
         allow(source).to receive(:read_raw).and_return([:paste, "hello\nworld\n"])
         event = source.next_event
         expect(event).to be_a(Command)
@@ -24,11 +26,6 @@ module Fatty
       end
 
       it "converts a resize key into a terminal resize command" do
-        source = EventSource.new(
-          context: context,
-          key_decoder: key_decoder,
-          poll_ms: 10,
-        )
         allow(source).to receive(:read_raw).and_return(::Curses::KEY_RESIZE)
         allow(key_decoder)
           .to receive(:decode)
@@ -48,11 +45,6 @@ module Fatty
           meta: false,
           shift: false,
         )
-        source = EventSource.new(
-          context: context,
-          key_decoder: key_decoder,
-          poll_ms: 10,
-        )
         allow(source).to receive(:read_raw).and_return(mouse)
 
         command = source.next_event
@@ -70,6 +62,70 @@ module Fatty
         expect(ev.shift).to be false
         expect(ev.printable?).to be false
         expect(ev.mouse?).to be true
+      end
+
+      it "decodes ctrl scroll down as a modified mouse event" do
+        mouse = instance_double(
+          "Curses::MouseEvent",
+          bstate: EventSource::SCROLL_DOWN_BSTATE | ::Curses::BUTTON_CTRL,
+          x: 12,
+          y: 5,
+        )
+        event = source.send(:decode_mouse, mouse)
+        expect(event).to be_a(Fatty::MouseEvent)
+        expect(event.button).to eq(:scroll_down)
+        expect(event.ctrl).to be true
+        expect(event.meta).to be false
+        expect(event.shift).to be false
+        expect(event.x).to eq(12)
+        expect(event.y).to eq(5)
+      end
+
+      it "decodes ctrl scroll up as a modified mouse event" do
+        mouse = instance_double(
+          "Curses::MouseEvent",
+          bstate: ::Curses::BUTTON4_PRESSED | ::Curses::BUTTON_CTRL,
+          x: 12,
+          y: 5,
+        )
+        event = source.send(:decode_mouse, mouse)
+        expect(event).to be_a(Fatty::MouseEvent)
+        expect(event.button).to eq(:scroll_up)
+        expect(event.ctrl).to be true
+        expect(event.meta).to be false
+        expect(event.shift).to be false
+      end
+
+      it "decodes meta and shift modifiers on mouse events" do
+        mouse = instance_double(
+          "Curses::MouseEvent",
+          bstate: ::Curses::BUTTON1_CLICKED | ::Curses::BUTTON_ALT | ::Curses::BUTTON_SHIFT,
+          x: 2,
+          y: 8,
+        )
+        event = source.send(:decode_mouse, mouse)
+        expect(event.button).to eq(:left_clicked)
+        expect(event.ctrl).to be false
+        expect(event.meta).to be true
+        expect(event.shift).to be true
+      end
+
+      it "strips mouse modifiers before resolving the wheel button" do
+        bstate = ::Curses::BUTTON4_PRESSED |
+                 ::Curses::BUTTON_CTRL |
+                 ::Curses::BUTTON_ALT |
+                 ::Curses::BUTTON_SHIFT
+
+        expect(source.send(:mouse_button_from_bstate, bstate)).to eq(:scroll_up)
+      end
+
+      it "strips mouse modifiers before resolving the opposite wheel button" do
+        bstate = EventSource::SCROLL_UP_BSTATE |
+                 ::Curses::BUTTON_CTRL |
+                 ::Curses::BUTTON_ALT |
+                 ::Curses::BUTTON_SHIFT
+
+        expect(source.send(:mouse_button_from_bstate, bstate)).to eq(:scroll_up)
       end
     end
   end
