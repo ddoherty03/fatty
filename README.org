@@ -128,10 +128,12 @@ the user with a set of choices to select from.  After running the demo's
 * Quick Start
 
 * Usage
-** Launching a Fatty Terminal with ~on_accept~
+** Launching a Fatty Terminal
+*** =on_accept=
 You can launch a ~Fatty~ terminal session that does arbitrary processing of an
-edited command line and returns a String to be displayed on the output pane,
-as shown in this file that we'll call ~loudrev~:
+edited command line and returns a String to be displayed on the output pane by
+providing an =on_accept= proc as a parameter as shown in this file that we'll
+call ~loudrev~:
 
 #+begin_src ruby :tangle no
   #! /usr/bin/env ruby
@@ -171,13 +173,13 @@ exists:
   + =themes=, a directory of pre-defined theme definitions that you can choose
     from and add to by adding your own themes.
 
-** Parameters to =on_accept=
+**** Parameters to =on_accept=
 The =on_accept= proc passed to an instance of =Fatty::Terminal= can take one
 or two parameters: (1) =line=, the edited line as it exists when the user
 types =RETURN= and (2) an optional callback parameter that you can use to
 access the facilities of =fatty=.
 
-** The =line= parameter to =on_accept=
+**** The =line= parameter to =on_accept=
 =Fatty= does not parse command lines for your application.  When the user
 accepts a =line=, =Fatty= passes the line to =on_accept= as text.  It is up to
 your callback to decide whether to strip whitespace, split words, interpret
@@ -218,7 +220,7 @@ For shell-like parsing, Ruby's standard =Shellwords= library is often useful:
   ).go
 #+end_src
 
-** The callback parameter to =on_accept=
+**** The callback parameter to =on_accept=
 The =on_accept= proc can have a second parameter named whatever you like that
 serves as a callback into certain facilities provided by =fatty=.  In this
 README we use the name =fatty= for the callback parameter since it provides
@@ -245,7 +247,7 @@ so-called status area:
 The callback parameter responds to several methods that allow your
 application to interact with the user.  They are documented below.
 
-** Output Ordering
+**** Output Ordering
 The =on_accept= callback can send text to the output pane in three ways:
 
 1. by returning a value from the callback;
@@ -274,6 +276,56 @@ At the end of the callback, =Fatty= finishes the command and updates the pager
 state.  Output produced with =append_now= may therefore appear during the
 callback, while output from =append=, =markdown=, and the callback's return
 value appears after the callback returns.
+
+**** ANSI Colors in Output
+Text passed to =append=, =append_now=, =status=, and =alert= may contain ANSI
+SGR color/style sequences. Fatty interprets those sequences relative to the
+current theme role, so an ANSI reset returns to the active Fatty role rather
+than to the terminal's physical default colors.  =fatty= includes the nice
+[[https://github.com/ku1ik/rainbow][=Rainbow= gem]] for colorizing text as a convenience.
+
+*** Other parameters to =Terminal.new=
+When building a REPL with =Terminal.new= you can also supply several other
+parameters:
+
+- =prompt:= :: a =String= or a zero-argument callable such as a =Proc= or
+  =lambda= that returns the prompt used for the input line to be edited.
+  Because it can be a callable, it can change after each run of =on_accept=;
+  if not given, it defaults to '> ';
+- =completion_proc= :: a callable that takes the current text of the input
+  field's buffer and returns an =Array= of possible completions at that point
+  in the input; by default, there is no completion proc;
+- =history_path= :: a =String= for the file path where command history is
+  loaded from and saved.  The default, =:default=, uses =history.file= from
+  Fatty's configuration, falling back to =~/.fatty_history= if no history file
+  is configured.  Passing =nil= or =false= disables persistent history and
+  keeps history in memory only.  Passing a string uses that path directly.
+- =history_ctx= :: optional history context used to prefer relevant history
+  entries.  It may be a hash or a callable returning a hash.  The context is
+  stored in the history file with each accepted line and is used by history
+  navigation and history autosuggestions.  Matching context entries are
+  preferred, but history is not strictly partitioned; Fatty can still fall
+  back to other entries.  This is useful when the same application wants
+  different history behavior in different directories, ledgers, projects,
+  modes, or accounts.
+
+For example, the =fatty= demo executable uses the current working directory as
+history context:
+
+#+begin_src ruby :tangle no
+Fatty::Terminal.new(
+history_ctx: -> { { pwd: Dir.pwd } },
+on_accept: ->(line, env) {
+# ...
+},
+).go
+#+end_src
+
+With that setup, commands entered in =~/src/byr= are favored when the terminal
+is again in =~/src/byr=, while commands entered elsewhere remain available as
+fallback history.
+
+
 
 ** The Callback API
 Here are the details on the messages that you can send to the callback
@@ -322,13 +374,6 @@ An alias for =error(text)=
 Display the text in the one-line alert panel just below the input field.  In
 the alert panel, the role only controls the foreground color, not the
 background.
-
-*** ANSI Colors in Output
-Text passed to =append=, =append_now=, =status=, and =alert= may contain ANSI
-SGR color/style sequences. Fatty interprets those sequences relative to the
-current theme role, so an ANSI reset returns to the active Fatty role rather
-than to the terminal's physical default colors.  =fatty= includes the nice
-[[https://github.com/ku1ik/rainbow][=Rainbow= gem]] for colorizing text as a convenience.
 
 *** =prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)=
 Display a popup dialog box that allows the user to type in any string and
@@ -760,7 +805,7 @@ For example, `M-8 M-0 #` will insert 80 '#' characters at the cursor.
 | M-y        | replace last yank with next in kill ring              |
 |            |                                                       |
 | C-u        | universal count argument (time 4 each press)          |
-| M-<digit>  | accumulate count argument                             |
+| M-=digit=  | accumulate count argument                             |
 |            |                                                       |
 | C-p        | replace the line with the prior history item          |
 | :up        | replace the line with the prior history item          |
@@ -782,16 +827,23 @@ By default, `fatty` sends output to the large output pane, and if the output
 is more than one screen long presents a paging environment for viewing and
 searching the environment.
 
-| Key   | Description               |
-|-------+---------------------------|
-| :up   | move output one line up   |
-| k     | move output one line up   |
-| :down | move output one line down |
-| j     | move output one line down |
-|       |                           |
+| Key   | Description                             |
+|-------+-----------------------------------------|
+| :up   | move output one line up                 |
+| k     | move output one line up                 |
+| :down | move output one line down               |
+| j     | move output one line down               |
+| M-s   | toggle between paging and scrolling     |
+| /     | initiate a fixed-string search forward  |
+| ?     | initiate a fixed-string search backward |
+| C-s   | initiate an Isearch session forward     |
+| C-r   | initiate an Isearch session backward    |
+| C-M-s | initiate an Regexp session forward      |
+| C-M-r | initiate an Regexp session backward     |
+| C-/   | initiate an Regexp session forward      |
 
 
-** Paging
+
 ** Markdown
 *** Forced line breaks
 Use ~<br>~ to force a line break.
@@ -806,10 +858,669 @@ will render as
 This line has a forced line break
 and this should appear on the next line.
 #+end_example
-
+** History
+** Completion
+*** From the =completion_proc=
+*** From History
+*** From partial filenames
 
 * Configuration
-** Key Codes
-** Key Bindings
-** Themes
+
+When a Fatty application starts, Fatty installs default configuration files
+under =~/.config/fatty= if they do not already exist.  Fatty does not overwrite
+files that are already there, so you can edit these files directly and keep
+them under version control.
+
+The main files are:
+
+- =config.yml= :: general configuration;
+- =keydefs.yml= :: terminal-specific keycode naming;
+- =keybindings.yml= :: user-defined keybindings;
+- =themes/= :: YAML theme files.
+
+The default user configuration directory follows =XDG_CONFIG_HOME= if it is
+set.  Otherwise it is =~/.config/fatty=.
+
+** General Configuration =config.yml=
+
+=config.yml= controls general behavior such as word movement, ESC handling,
+logging, history, the initial theme, and truecolor rendering.
+
+A small configuration might look like this:
+
+#+begin_src yaml :tangle no
+word_char_re: "[[:alnum:]_.:-]"
+
+esc_meta: false
+esc_delay: 0
+
+history:
+  file: "~/.fatty_history"
+  max: 10000
+
+theme: wordperfect
+
+truecolor: auto
+#+end_src
+
+*** =word_char_re=
+This setting is a Ruby regular expression fragment used to decide what counts
+as a word in the input buffer.  It must be a =String= representing a =Regexp=
+that matches a single character that is meant to be a part of a "word" for
+purposes of cursor movement.  The default setting treats letters, digits, and
+underscore as word characters:
+
+#+begin_src yaml :tangle no
+word_char_re: "[[:alnum:]_]"
+#+end_src
+
+For command-line applications, you may want dashes to be part of a word:
+
+#+begin_src yaml :tangle no
+word_char_re: "[[:alnum:]_-]"
+#+end_src
+
+For Ruby constants, hostnames, or command-like tokens, you may want a broader
+definition:
+
+#+begin_src yaml :tangle no
+word_char_re: "[[:alnum:]_.:-]"
+#+end_src
+
+*** =esc_meta= and =esc_delay=
+The =esc_meta= setting controls whether Fatty treats =ESC= followed by another
+key as a Meta-key chord.  By default this is false, so a bare =ESC= remains a
+responsive cancel key.
+
+#+begin_src yaml :tangle no
+esc_meta: false
+esc_delay: 0
+#+end_src
+
+If you set =esc_meta: true=, =esc_delay= controls how long curses waits after
+receiving =ESC= before deciding whether another key is part of the same
+Meta-key sequence.  The value is in milliseconds.
+
+*** =history=
+**** =file=
+The path to the history file to use, by default =~/.fatty_history=
+
+**** =max=
+The maximim number of lines of history retained, by default 10,000.
+
+*** =theme=
+The =theme= setting names the theme Fatty applies at startup:
+
+#+begin_src yaml :tangle no
+theme: nordic
+#+end_src
+
+*** =truecolor=
+The =truecolor= setting controls whether Fatty uses truecolor escape sequences
+for rendering colors.  The usual setting is =auto=, meaning that =truecolor=
+is enabled if available.  It can be set to =true=, =false=, =on=, =off= or
+=auto=.
+
+#+begin_src yaml :tangle no
+truecolor: auto
+#+end_src
+
+*** =log=
+Logging is configured under =log=:
+
+#+begin_src yaml :tangle no
+log:
+file: "~/log/fatty.log"
+level: debug
+tags:
+- keycode
+- keyevent
+- keybinding
+- action
+- command
+- session
+- render
+- perf
+#+end_src
+
+**** =file=
+The path to the log file to use.
+
+**** =level=
+Can be one of the following
+- =info= :: only informational messages
+- =warn= :: only non-fatal warning messages and =info= messages
+- =error= :: only fatal error messages and =warn= and =info= messages
+- =debug= :: detailed messages to assist debugging =fatty= plus all of the
+  above.
+
+**** =tags=
+
+=log.tags= controls which tagged log messages are written.  Tags are ordinary
+symbolic labels used by Fatty's logging calls; they are not checked against a
+fixed registry.  A tag is useful if Fatty logs messages with that tag.
+
+The special tag =all= enables all tagged log messages except =perf=.
+Performance logging is intentionally noisy and must be enabled explicitly with
+=perf=.
+
+#+begin_src yaml :tangle no
+log:
+tags:
+- keycode
+- keybinding
+- render
+- perf
+#+end_src
+
+** Key code definitions =keydefs.yml=
+Most keys are named correctly by curses.  Some terminal emulators, multiplexers,
+or keyboard modes emit numeric keycodes that curses does not name usefully.
+The =keydefs.yml= file lets you assign names and modifiers to those numeric
+codes.
+
+When Fatty runs inside =tmux=, key definitions are looked up under =tmux=, not
+under the outer terminal emulator.  =tmux= translates the outer terminal's input
+before Fatty sees it, so keycodes observed inside =tmux= may differ from
+keycodes observed directly under GNOME Terminal, Kitty, Alacritty, or another
+terminal.  Use =keytest= in the same environment where the application will
+normally run.  The same comment applies to =screen=.
+
+A key definition is terminal-specific.  For example:
+
+#+begin_src yaml :tangle no
+  tmux:
+    555:
+      key: left
+      meta: true
+    570:
+      key: right
+      meta: true
+    557:
+      key: left
+      ctrl: true
+    572:
+      key: right
+      ctrl: true
+#+end_src
+
+This says that, when Fatty detects that the terminal is =tmux=, curses keycode
+=555= should be treated as =M-left=, keycode =570= as =M-right=, and so on.
+
+The demo executable has a =keytest= command that is useful when building this
+file.  Run =fatty=, use the =keytest= command, press the key you want to
+identify, and add an entry for the numeric code if Fatty does not already know
+what to call it.
+
+Here is what I found running =keytest= on a variety of popular terminals to
+determine how each reported =PageDown=, =C-PageDown=, =M-PageDown=, and
+=C-M-PageDown=:
+
+| Terminal       | Key Pressed | Ctrl? | Meta? |   Code | Status            |
+|----------------+-------------+-------+-------+--------+-------------------|
+| gnome-terminal | PageDown    | no    | no    |    338 | Defined and bound |
+| gnome-terminal | PageDown    | yes   | no    |    559 | Undefined         |
+| gnome-terminal | PageDown    | no    | yes   |    557 | Undefined         |
+| gnome-terminal | PageDown    | yes   | yes   |    561 | Undefined         |
+|----------------+-------------+-------+-------+--------+-------------------|
+| alacritty      | PageDown    | no    | no    |    338 | Defined and bound |
+| alacritty      | PageDown    | yes   | no    |    559 | Undefined         |
+| alacritty      | PageDown    | no    | yes   |    557 | Undefined         |
+| alacritty      | PageDown    | yes   | yes   |    561 | Undefined         |
+|----------------+-------------+-------+-------+--------+-------------------|
+| kitty          | PageDown    | no    | no    |    338 | Defined and bound |
+| kitty          | PageDown    | yes   | no    |    565 | Undefined         |
+| kitty          | PageDown    | no    | yes   |    563 | Undefined         |
+| kitty          | PageDown    | yes   | yes   |    567 | Undefined         |
+|----------------+-------------+-------+-------+--------+-------------------|
+| terminator     | PageDown    | no    | no    |    338 | Defined and bound |
+| terminator     | PageDown    | yes   | no    | <none> | Undefinable       |
+| terminator     | PageDown    | no    | yes   |    557 | Undefined         |
+| terminator     | PageDown    | yes   | yes   |    561 | Undefined         |
+|----------------+-------------+-------+-------+--------+-------------------|
+| ghostty        | PageDown    | no    | no    |    338 | Defined and bound |
+| ghostty        | PageDown    | yes   | no    |    564 | Undefined         |
+| ghostty        | PageDown    | no    | yes   |    562 | Undefined         |
+| ghostty        | PageDown    | yes   | yes   |    566 | Undefined         |
+|----------------+-------------+-------+-------+--------+-------------------|
+| konsole        | PageDown    | no    | no    |    338 | Defined and bound |
+| konsole        | PageDown    | yes   | no    |    559 | Undefined         |
+| konsole        | PageDown    | no    | yes   |    557 | Undefined         |
+| konsole        | PageDown    | yes   | yes   |    561 | Undefined         |
+
+I could turn this into a =keydefs.yml= file that would allow me to define all
+those keys:
+
+#+begin_src yaml :tangle no
+  gnome-terminal:
+    559:
+      key: page_down
+      ctrl: true
+    557:
+      key: page_down
+      meta: true
+    561:
+      key: page_down
+      ctrl: true
+      meta: true
+
+  alacritty:
+    559:
+      key: page_down
+      ctrl: true
+    557:
+      key: page_down
+      meta: true
+    561:
+      key: page_down
+      ctrl: true
+      meta: true
+
+  kitty:
+    565:
+      key: page_down
+      ctrl: true
+    563:
+      key: page_down
+      meta: true
+    567:
+      key: page_down
+      ctrl: true
+      meta: true
+
+  terminator:
+    # 559:
+    #   key: page_down
+    #   ctrl: true
+    557:
+      key: page_down
+      meta: true
+    561:
+      key: page_down
+      ctrl: true
+      meta: true
+
+  ghostty:
+    564:
+      key: page_down
+      ctrl: true
+    562:
+      key: page_down
+      meta: true
+    566:
+      key: page_down
+      ctrl: true
+      meta: true
+
+  konsole:
+    559:
+      key: page_down
+      ctrl: true
+    557:
+      key: page_down
+      meta: true
+    561:
+      key: page_down
+      ctrl: true
+      meta: true
+#+end_src
+
+After installing that keydefs, I find that the PageDown variants are all
+recognized by name and modifiers (except for the strange behavior of
+=terminator= on C-PageDown!).
+
+** Key bindings  =keybindings.yml=
+
+Fatty has built-in Emacs-style bindings for ordinary input editing, history,
+completion, popup navigation, and paging.  The =keybindings.yml= file lets you
+add or override bindings without changing Ruby code.
+
+A keybinding names a key chord, the context in which it applies, and the Fatty
+action to run:
+
+#+begin_src yaml :tangle no
+
+- key: left
+  meta: true
+  action: move_word_left
+
+- key: right
+  meta: true
+  action: move_word_right
+
+- key: space
+  context: paging
+  action: page_down
+
+- key: backspace
+  context: paging
+  action: page_up
+  #+end_src
+
+The default context is =input=.  Other common contexts include =paging= and
+=popup=.
+
+A binding may include these modifiers:
+
+#+begin_src yaml :tangle no
+ctrl: true
+meta: true
+shift: true
+#+end_src
+
+Mouse events can also be bound:
+
+#+begin_src yaml :tangle no
+- button: left_clicked
+  context: popup
+  action: choose
+#+end_src
+
+Recognized mouse button names include:
+
+#+begin_src org :tangle no
+  left_pressed
+  left_released
+  left_clicked
+  left_double_clicked
+  left_triple_clicked
+  middle_pressed
+  middle_released
+  middle_clicked
+  middle_double_clicked
+  middle_triple_clicked
+  right_pressed
+  right_released
+  right_clicked
+  right_double_clicked
+  right_triple_clicked
+  scroll_up
+  scroll_down
+#+end_src
+
+** Themes =themes/=
+
+A Fatty theme is a YAML file in =~/.config/fatty/themes=.  The file name does
+not matter to the renderer, but the theme must have a =name= field, and the
+name is what you put in =config.yml=:
+
+#+begin_src yaml :tangle no
+theme: nordic
+#+end_src
+
+A minimal theme can define only =output= and inherit everything else through
+Fatty's role defaults:
+
+#+begin_src yaml :tangle no
+name: simple_dark
+inherit: null
+
+output:
+fg: white
+bg: black
+#+end_src
+
+A more useful theme defines the main editing, status, search, popup, and
+markdown roles:
+
+#+begin_src yaml :tangle no
+name: example
+inherit: null
+
+output:
+fg: "#d8dee9"
+bg: "#2e3440"
+
+input:
+fg: "#eceff4"
+bg: "#3b4252"
+attrs: [bold]
+
+input_suggestion:
+fg: "#81a1c1"
+bg: "#3b4252"
+
+cursor:
+fg: "#2e3440"
+bg: "#88c0d0"
+
+region:
+fg: "#2e3440"
+bg: "#88c0d0"
+
+info:
+fg: "#d8dee9"
+bg: "#2e3440"
+
+good:
+fg: green
+bg: "#2e3440"
+
+warn:
+fg: "#2e3440"
+bg: "#ebcb8b"
+
+error:
+fg: "#eceff4"
+bg: "#bf616a"
+
+pager_status:
+fg: black
+bg: lightgreen
+
+search_input:
+fg: black
+bg: cyan
+
+match_current:
+fg: black
+bg: yellow
+
+match_other:
+fg: black
+bg: lightgray
+
+popup:
+fg: "#d8dee9"
+bg: "#3b4252"
+
+popup_input:
+fg: "#eceff4"
+bg: "#434c5e"
+
+popup_selection:
+fg: "#2e3440"
+bg: "#88c0d0"
+
+popup_counts:
+fg: "#2e3440"
+bg: white
+
+popup_frame:
+fg: "#81a1c1"
+bg: "#3b4252"
+border: single
+corners: rounded
+#+end_src
+
+Colors may be named colors, =default=, or hex RGB colors:
+
+#+begin_src yaml :tangle no
+fg: white
+bg: default
+fg: "#d8dee9"
+bg: "#2e3440"
+#+end_src
+
+Attributes are listed under =attrs=:
+
+#+begin_src yaml :tangle no
+input:
+fg: white
+bg: navy
+attrs: [bold]
+#+end_src
+
+Common attributes include =bold=, =dim=, =underline=, and =reverse=.
+
+Themes can inherit from other themes:
+
+#+begin_src yaml :tangle no
+name: my_nordic
+inherit: nordic
+
+output:
+fg: "#eeeeee"
+#+end_src
+
+This starts with the =nordic= theme and changes only the roles you specify.
+
+Individual roles can also inherit from another role:
+
+#+begin_src yaml :tangle no
+name: my_theme
+inherit: null
+
+output:
+fg: white
+bg: black
+
+input:
+inherit: output
+attrs: [bold]
+
+popup:
+inherit: output
+
+popup_selection:
+inherit: input
+attrs: [reverse]
+#+end_src
+
+If a role does not specify =inherit=, Fatty uses its built-in role hierarchy.
+For example, =input= inherits from =output=, =input_suggestion= inherits from
+=input=, =popup_selection= inherits from =region=, and =warn= / =error= build
+on the semantic status roles.
+
+The main roles are:
+
+| Role               | Purpose                                      |
+|--------------------+----------------------------------------------|
+| =output=           | ordinary output pane text                    |
+| =input=            | prompt and editable input                    |
+| =input_suggestion= | predictive completion shown after the cursor |
+| =cursor=           | cursor cell                                  |
+| =region=           | selected region in the input field           |
+| =info=             | neutral status text                          |
+| =good=             | affirmative status text                      |
+| =warn=             | warning status text                          |
+| =error=            | error status text                            |
+| =pager_status=     | pager indicator                              |
+| =search_input=     | search prompt                                |
+| =match_current=    | current search match                         |
+| =match_other=      | other search matches                         |
+| =popup=            | popup body                                   |
+| =popup_input=      | popup prompt/input                           |
+| =popup_selection=  | selected popup row                           |
+| =popup_counts=     | popup count display                          |
+| =popup_frame=      | popup border/frame                           |
+| =alert=            | alert pane base style                        |
+
+Fatty synthesizes alert variants from the base =alert= role and the semantic
+roles:
+
+#+begin_src org :tangle no
+alert_info
+alert_good
+alert_warn
+alert_error
+#+end_src
+
+You normally do not need to define those directly.
+
+Markdown rendering uses additional roles.  You can define them directly:
+
+#+begin_src yaml :tangle no
+markdown_h1:
+fg: yellow
+bg: navy
+attrs: [bold]
+
+markdown_code:
+fg: lightgreen
+bg: black
+#+end_src
+
+Or you can group them under =markdown= without the =markdown_= prefix:
+
+#+begin_src yaml :tangle no
+markdown:
+h1:
+fg: yellow
+bg: navy
+attrs: [bold]
+code:
+fg: lightgreen
+bg: black
+link:
+fg: cyan
+bg: navy
+attrs: [underline]
+#+end_src
+
+Useful markdown roles include:
+
+#+begin_src org :tangle no
+markdown_h1
+markdown_h2
+markdown_h3
+markdown_code
+markdown_code_gutter
+markdown_strong
+markdown_emphasis
+markdown_link
+markdown_url
+markdown_quote_gutter
+markdown_highlight
+markdown_table_header
+markdown_table_cell
+markdown_underline
+markdown_hrule
+#+end_src
+
+The =popup_frame= role also accepts border options:
+
+#+begin_src yaml :tangle no
+popup_frame:
+fg: yellow
+bg: navy
+border: single
+corners: rounded
+#+end_src
+
+Available border and corner values are intentionally small and portable.  The
+current built-in themes use:
+
+#+begin_src yaml :tangle no
+border: single
+corners: rounded
+#+end_src
+
+and:
+
+#+begin_src yaml :tangle no
+border: ascii
+corners: square
+#+end_src
+
+Themes can be changed while Fatty is running.  The default Emacs-style bindings
+include:
+
+| Key     | Action                          |
+|---------+---------------------------------|
+| =C-M-t= | cycle to the next loaded theme  |
+| =M-==   | choose a theme from a popup     |
+
+Theme changes update the renderer immediately.
+
 ** Plugins
