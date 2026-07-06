@@ -20,7 +20,7 @@ module Fatty
       end
 
       describe "#decode" do
-        it "returns nil for nil raw" do
+        it "returns nil for nil keydefs config" do
           stub_builtin_map
           allow(Fatty::Config).to receive(:keydefs).and_return(nil)
 
@@ -203,14 +203,10 @@ module Fatty
             .to receive(:keydefs)
                   .and_return(
                     {
-                      terminal: {
                         xterm: {
-                          map: {
                             "260" => { "key" => "right" }, # swap left->right
                           },
                         },
-                      },
-                    },
                   )
           kd = KeyDecoder.new(env: env(:xterm))
           e  = kd.decode(260)
@@ -234,14 +230,10 @@ module Fatty
             .to receive(:keydefs)
                   .and_return(
                     {
-                      terminal: {
                         xterm: {
-                          map: {
                             "999" => { "key" => "home", "shift" => true, "ctrl" => false },
-                          },
                         },
                       },
-                    },
                   )
 
           kd = KeyDecoder.new(env: env(:xterm))
@@ -259,14 +251,10 @@ module Fatty
             .to receive(:keydefs)
                   .and_return(
                     {
-                      terminal: {
                         xterm: {
-                          map: {
                             "260" => { "key" => "left", "ctrl" => true, "shift" => true },
-                          },
                         },
                       },
-                    },
                   )
 
           kd = KeyDecoder.new(env: env(:xterm))
@@ -286,14 +274,10 @@ module Fatty
             .to receive(:keydefs)
                   .and_return(
                     {
-                      terminal: {
                         xterm: {
-                          map: {
                             "9" => { "key" => "right" },
-                          },
                         },
                       },
-                    },
                   )
 
           kd = KeyDecoder.new(env: env(:xterm))

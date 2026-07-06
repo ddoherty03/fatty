@@ -303,12 +303,11 @@ module Fatty
 
         ............>8 snip here 8<....................
         #{terminal_name}:
-          map:
-            #{code}:
-              key: key_name
-              shift: <true/false>
-              ctrl: <true/false>
-              meta: <true/false>
+          #{code}:
+            key: key_name
+            shift: <true/false>
+            ctrl: <true/false>
+            meta: <true/false>
         ............>8 snip here 8<....................
       TEXT
     end

@@ -106,45 +106,35 @@ module Fatty
           File.join(ENV["XDG_CONFIG_HOME"], progname),
           "keydefs",
           <<~YAML,
-            terminal:
-              konsole:
-                map:
-                  556:
-                    key: left
-              kitty:
-                map:
-                  577:
-                    key: right
-              tmux:
-                map:
-                  555:
-                    key: left
-                    meta: true
-                  570:
-                    key: right
-                    meta: true
-                  557:
-                    key: left
-                    ctrl: true
-                  572:
-                    key: right
-                    ctrl: true
+            konsole:
+              556:
+                key: left
+            kitty:
+              577:
+                key: right
+            tmux:
+              555:
+                key: left
+                meta: true
+              570:
+                key: right
+                meta: true
+              557:
+                key: left
+                ctrl: true
+              572:
+                key: right
+                ctrl: true
           YAML
         )
 
         defs = Config.keydefs
         expect(defs).to be_a(Hash)
 
-        terminal = defs[:terminal] || defs["terminal"]
-        expect(terminal).to be_a(Hash)
-
-        tmux = terminal[:tmux] || terminal["tmux"]
+        tmux = defs[:tmux] || defs["tmux"]
         expect(tmux).to be_a(Hash)
 
-        map = tmux[:map] || tmux["map"]
-        expect(map).to be_a(Hash)
-
-        entry = map[555] || map["555"]
+        entry = tmux[555] || tmux["555"]
         expect(entry).to be_a(Hash)
 
         key = entry[:key] || entry["key"]
