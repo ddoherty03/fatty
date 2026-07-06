@@ -119,7 +119,7 @@ module Fatty
       Command.session(
         :status,
         :show,
-        text: "KeyTest — press q, ESC, or C-g to quit  (TERM: #{terminal_name})",
+        text: "KeyTest — press q, ESC, or C-g to quit  (terminal: #{terminal_name})",
         role: :warn,
       )
     end

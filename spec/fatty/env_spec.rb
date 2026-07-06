@@ -23,6 +23,9 @@ module Fatty
         KITTY_WINDOW_ID
         ALACRITTY_LOG
         TERMINATOR_UUID
+        GNOME_TERMINAL_SCREEN
+        GNOME_TERMINAL_SERVICE
+        VTE_VERSION
         SSH_TTY
         SSH_CONNECTION
       ].each { |key| ENV.delete(key) }
@@ -118,6 +121,35 @@ module Fatty
         ENV["TERMINATOR_UUID"] = "abc"
 
         expect(Env.detect.fetch(:terminal)).to eq("terminator")
+      end
+
+      it "detects gnome-terminal by screen environment" do
+        ENV["TERM"] = "xterm-256color"
+        ENV["GNOME_TERMINAL_SCREEN"] = "/org/gnome/Terminal/screen/abc"
+
+        expect(Env.detect.fetch(:terminal)).to eq("gnome-terminal")
+      end
+
+      it "detects gnome-terminal by service environment" do
+        ENV["TERM"] = "xterm-256color"
+        ENV["GNOME_TERMINAL_SERVICE"] = ":1.123"
+
+        expect(Env.detect.fetch(:terminal)).to eq("gnome-terminal")
+      end
+
+      it "detects generic vte when only VTE_VERSION is available" do
+        ENV["TERM"] = "xterm-256color"
+        ENV["VTE_VERSION"] = "7600"
+
+        expect(Env.detect.fetch(:terminal)).to eq("vte")
+      end
+
+      it "prefers gnome-terminal over generic vte" do
+        ENV["TERM"] = "xterm-256color"
+        ENV["VTE_VERSION"] = "7600"
+        ENV["GNOME_TERMINAL_SCREEN"] = "/org/gnome/Terminal/screen/abc"
+
+        expect(Env.detect.fetch(:terminal)).to eq("gnome-terminal")
       end
 
       it "falls back to TERM_PROGRAM downcased" do

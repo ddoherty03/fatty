@@ -63,13 +63,15 @@ module Fatty
       return "ghostty"  if ENV["TERM_PROGRAM"]&.downcase == "ghostty"
       return "alacritty" if ENV.key?("ALACRITTY_LOG")
       return "terminator" if ENV.key?("TERMINATOR_UUID")
+      return "gnome-terminal" if ENV.key?("GNOME_TERMINAL_SCREEN") || ENV.key?("GNOME_TERMINAL_SERVICE")
+      return "vte" if ENV.key?("VTE_VERSION")
 
       if ENV.key?("TERM_PROGRAM")
         ENV["TERM_PROGRAM"]&.downcase
       elsif ENV.key?("TERM")
         ENV["TERM"]&.downcase
       else
-        'unknown'
+        "unknown"
       end
     end
 
