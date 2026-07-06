@@ -145,30 +145,12 @@ module Fatty
       # different terminal programs process keys.
       def load_user_config
         config = Fatty::Config.keydefs
-        Fatty.info("KeyDecode#load_user_config", config: config, tag: :keycode)
-        return unless config
-
-        terminal = @env[:terminal]
-        Fatty.info("KeyDecoder#load_user_config: detected terminal `#{terminal}`")
-        Fatty.info("KeyDecoder#load_user_config: only keydefs for `#{terminal}` will be loaded")
-        section = config.dig(:terminal, terminal.to_sym, :map)
-        section = config.dig(terminal.to_sym, :map) || config.dig(terminal, "map")
-        return unless section
-
-        section.each do |code, spec|
-          @map[Integer(code.to_s)] = KeyEvent.new(**normalize_spec(spec))
-          Fatty.debug("KeyDecoder#load_user_config: user keydef: code: #{code} -> #{spec}")
-        end
-      end
-
-      def load_user_config
-        config = Fatty::Config.keydefs
         return nil unless config
 
         terminal = @env[:terminal]
         Fatty.info("KeyDecoder#load_user_config: detected terminal `#{terminal}`")
         Fatty.info("KeyDecoder#load_user_config: only keydefs for `#{terminal}` will be loaded")
-        section = config[terminal.to_sym] || config[terminal.to_s]
+        section = keydef_section(config, terminal.to_s)
         return unless section
 
         section.each do |code, spec|
@@ -179,6 +161,17 @@ module Fatty
       def register_user_keydef(code, spec)
         @map[Integer(code.to_s)] = KeyEvent.new(**normalize_spec(spec))
         Fatty.debug("KeyDecoder#load_user_config: user keydef: code: #{code} -> #{spec}", tag: :keycode)
+      end
+
+      # Because =fat_config= canonicalizes keys by translating hyphen (-) to
+      # underscore (_) so that the keys are valid ruby varaible names, we need
+      # to look for that variation of the terminal name to get the right
+      # section of the keydefs.yml config Hash.
+      def keydef_section(config, terminal)
+        config[terminal.to_sym] ||
+          config[terminal] ||
+          config[terminal.tr("-", "_").to_sym] ||
+          config[terminal.tr("-", "_")]
       end
 
       # Add to the @map keydefs as assumed by the curses library, defined in the
