@@ -23,7 +23,31 @@ map.bind_mouse(
 With count: nil meaning “do not bake a count into the binding; let the normal
 keyboard prefix count machinery apply.”
 
-* DONE [#A] Fix numbers in search
+* TODO Name Space history and other files
+Allow Fatty::Terminal to take an app_name: argument so that the history path,
+perhaps config, keybindings.
+
+So this
+#+begin_src ruby
+Fatty::Terminal.new(app_name: "byr")
+#+end_src
+would result in a history path of =~/.local/state/fatty/apps/byr/history=.
+
+Use an =apps= directory under the =fatty= directory to prevent name collisions
+with general =fatty= files.
+
+But this
+#+begin_src ruby
+Fatty::Terminal.new(
+  app_name: "byr",
+  history_path: "~/some/special/history.jsonl",
+)
+#+end_src
+still allows the caller to override the app_name-based default.
+
+This could also apply to log files, config files, and perhaps other things.
+
+* DONE Fix numbers in search
 CLOSED: [2026-06-18 Thu 04:04]
 They are getting consumed as counts, I think.  They should be available for narrowing.
 * DONE Theming
