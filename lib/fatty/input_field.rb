@@ -20,7 +20,7 @@ module Fatty
   #
   #   Word-motion and word-deletion semantics are delegated to InputBuffer so
   #   the definition of "word" can be configured in one place (via
-  #   =InputBuffer='s word_chars/word_re).
+  #   =InputBuffer='s word_char_re).
   class InputField
     include Actionable
 
@@ -46,8 +46,8 @@ module Fatty
           buffer
         else
           cfg = Fatty::Config.config
-          word_chars = cfg.dig(:input_buffer, :word_chars) || Fatty::InputBuffer::DEFAULT_WORD_CHARS
-          Fatty::InputBuffer.new(word_chars: word_chars)
+          word_char_re = cfg.dig(:word_char_re) || Fatty::InputBuffer::DEFAULT_WORD_CHAR_RE
+          Fatty::InputBuffer.new(word_char_re: word_char_re)
         end
     end
 

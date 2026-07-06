@@ -3,7 +3,7 @@
 module Fatty
   RSpec.describe InputBuffer do
     let(:b) { InputBuffer.new }
-    let(:bw) { InputBuffer.new(word_chars: "[[:alnum:]_-]") }
+    let(:bw) { InputBuffer.new(word_char_re: "[[:alnum:]_-]") }
 
     it "starts empty with cursor at 0" do
       expect(b.text).to eq("")
@@ -117,7 +117,7 @@ module Fatty
       expect(b.display_width).to be >= 1
     end
 
-    it "moves by words using configurable word_chars" do
+    it "moves by words using configurable word_char_re" do
       bw.replace("foo-bar baz")
       bw.bol
       bw.move_word_right
@@ -197,7 +197,7 @@ module Fatty
       expect(b.cursor).to eq(0)
     end
 
-    it "move_word_left mirrors move_word_right using word_chars" do
+    it "move_word_left mirrors move_word_right using word_char_re" do
       bw.replace("foo-bar baz")
       bw.eol
       bw.move_word_left
@@ -245,7 +245,7 @@ module Fatty
     end
 
     it "handles word_re that matches nothing" do
-      buf = InputBuffer.new(word_re: /$a/) # never matches
+      buf = InputBuffer.new(word_char_re: /$a/) # never matches
       buf.replace("abc def")
       buf.bol
       buf.move_word_right

@@ -35,21 +35,32 @@ module Fatty
     include Actionable
 
     attr_reader :mark, :kill_ring, :undo_stack
-    attr_accessor :text, :cursor, :word_re, :virtual_suffix
+    attr_accessor :text, :cursor, :word_char_re, :virtual_suffix
 
-    DEFAULT_WORD_CHARS = "[[:alnum:]_]"
+    DEFAULT_WORD_CHAR_RE = "[[:alnum:]_]"
 
-    def initialize(word_chars: DEFAULT_WORD_CHARS, word_re: nil, undo_limit: 1_000, kill_ring_max: 60)
+    def initialize(word_char_re: DEFAULT_WORD_CHAR_RE, word_re: nil, undo_limit: 1_000, kill_ring_max: 60)
       @text = +""
       @virtual_suffix = +""
       @cursor = 0
       @mark = nil
-      @word_re =
-        if word_re
-          word_re
+      # word_char_re is a fragment like "[[:alnum:]_]" or "[[:alnum:]_-]"
+      # meant to match a single charachter that should be considered a part of
+      # a word for purposes of cursor movement.
+      @word_char_re =
+        case word_char_re
+        when Regexp
+          word_char_re
+        when String
+          re_str =
+            if (md = word_char_re.match(%r{\A\s*\/([^\/])*\/\z}))
+              md[1]
+            else
+              word_char_re
+            end
+          Regexp.new(re_str)
         else
-          # word_chars is a fragment like "[[:alnum:]_]" or "[[:alnum:]_-]"
-          Regexp.new(word_chars)
+          raise ArgumentError, "InputBuffer word_char_re must be a Regexp or String"
         end
       @undo_limit = undo_limit
       @undo_stack = []
@@ -994,7 +1005,7 @@ module Fatty
     end
 
     def word_char?(ch)
-      @word_re.match?(ch)
+      @word_char_re.match?(ch)
     end
   end
 end

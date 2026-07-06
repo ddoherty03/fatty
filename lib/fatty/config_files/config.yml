@@ -1,17 +1,8 @@
 # What fatty considers a "word" in the input buffer
 
-# # treat dash as part of a word (good for CLI flags / kebab-case)
-# input_buffer:
-#   word_chars: "[[:alnum:]_-]"
-
-# # treat '.' as part of a word (good for fqdn / ruby constants / filenames)
-# input_buffer:
-#   word_chars: "[[:alnum:]_.:-]"
-
-input_buffer:
-  # A Ruby regexp fragment used *inside* /.../ (not including the slashes).
-  # Default if omitted: "[[:alnum:]_]"
-  word_chars: "[[:alnum:]_]"
+# A Ruby regexp fragment used *inside* /.../ (not including the slashes).
+# Default if omitted: "[[:alnum:]_]"
+word_char_re: "[[:alnum:]_]"
 
 
 # Treat ESC followed by another key as Meta-key input.
