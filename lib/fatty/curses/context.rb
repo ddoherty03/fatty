@@ -169,7 +169,7 @@ module Fatty
           "truecolor=#{@truecolor} setting=#{setting.inspect} " \
             "TERM=#{ENV['TERM'].inspect} COLORTERM=#{ENV['COLORTERM'].inspect} " \
             "TERM_PROGRAM=#{ENV['TERM_PROGRAM'].inspect} TMUX=#{ENV.key?('TMUX')}",
-          tag: :themes,
+          tag: :theme,
         )
         @truecolor
       end
@@ -218,7 +218,7 @@ module Fatty
             "ansi_pair_for exhausted next=#{@ansi_next_pair_id.inspect} " \
             "limit=#{@ansi_pair_limit.inspect} fg=#{fg.inspect} bg=#{bg.inspect} " \
             "fallback=#{fallback_pair_id.inspect}",
-            tag: :themes,
+            tag: :theme,
           )
           @ansi_pairs[key] = fallback_pair_id
         else
