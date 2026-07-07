@@ -291,10 +291,14 @@ module Fatty
       return result unless event
 
       gest = gesture_from_event(event)
-
       @bindings.each do |context, map|
         binding = map[gest]
         result[context] = binding if binding
+      end
+      if event.printable?
+        self_insert_contexts.each do |context|
+          result[context] ||= [:self_insert, event.text]
+        end
       end
       result
     end
@@ -302,6 +306,10 @@ module Fatty
     private
 
     # simplecov:disable
+
+    def self_insert_contexts
+      [:text, :pager_input].select { |context| self.class.registered_contexts.include?(context) }
+    end
 
     def gesture_from_event(event)
       case event
