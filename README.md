@@ -1,69 +1,69 @@
-- [Introduction](#orgf26b5cb)
-- [Quick Start](#orgc0ac2d7)
-  - [Installing](#orgbae1c46)
-  - [Trying it Out with the \`fatty\` Demo](#orge7c0f8c)
-    - [Builtin commands](#org2def7af)
-    - [Screenshots](#orgfbd0853)
-- [Usage](#org2f36b8b)
-  - [Launching a Fatty Terminal](#org42a8e02)
-    - [`on_accept`](#org9f76366)
-    - [Other parameters to `Terminal.new`](#org45c1218)
-  - [The Callback API](#org3bdfa4d)
-    - [`append(text, follow: true)`](#org4a59588)
-    - [`append_now(text, follow: true)`](#org534ec87)
-    - [`markdown(text)`](#orgbc2fb8e)
-    - [`status(text, role: :info)`](#org5898273)
-    - [`good(text)`](#org989d3b7)
-    - [`info(text)`](#org101170a)
-    - [`warn(text)`](#org32022ed)
-    - [`error(text)`](#org33479b0)
-    - [`oops(text)`](#org78a2459)
-    - [`alert(text, role: :info)`](#org9c15891)
-    - [`prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)`](#orgca9f3b5)
-    - [`add_progress(label:, total: nil, style: :percent, role: :info, width: 40)`](#org4b8e214)
-    - [`choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#org2a40d91)
-    - [`choose_multi(prompt, choices:, cancel_value: nil)`](#org683abfe)
-    - [`confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)`](#org10d523c)
-    - [`menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#org2acb470)
-    - [`environment`](#orge835338)
-- [Default Interaction](#org557825a)
-  - [Parts of the Screen](#org9706a18)
-    - [Input Field](#org5a1717e)
-    - [Output Pane](#org74335a3)
-    - [Status Area](#orgfba91ad)
-    - [Alert  Area](#org929acb7)
-  - [Command-line Editing](#orgba2a3ae)
-  - [Keybindings](#org9e9b41e)
-    - [Input Context](#org0d5edcc)
-    - [Paging Context](#org982a3f8)
-  - [Markdown](#org43497b2)
-    - [Forced line breaks](#org7ecea4a)
-  - [History](#org322aaf1)
-  - [Completion](#orga8eabb8)
-    - [From the `completion_proc`](#org0e215df)
-    - [From History](#org3171825)
-    - [From partial filenames](#org8c4df65)
-- [Configuration](#org1180ef4)
-  - [General Configuration `config.yml`](#orgc27d399)
-    - [`word_char_re`](#org7038328)
-    - [`esc_delay`](#org9e66002)
-    - [`history`](#org139bcd4)
-    - [`theme`](#org89608cc)
-    - [`truecolor`](#orgb582825)
-    - [`log`](#orge5dfba0)
-  - [Key code definitions `keydefs.yml`](#org796889a)
-  - [Key bindings  `keybindings.yml`](#org1d9422d)
-    - [Key Names](#org44c31bc)
-    - [Mouse Events](#org64c52d9)
-    - [Modifiers](#org57959d4)
-    - [Contexts](#orgd645129)
-    - [Actions](#orgd8945ac)
-  - [Themes `themes/`](#orgba870fd)
-  - [Plugins](#org11571ac)
+- [Introduction](#orgd3b8681)
+- [Quick Start](#org175455e)
+  - [Installing](#org0d5281e)
+  - [Trying it Out with the \`fatty\` Demo](#org31c1ff5)
+    - [Builtin commands](#org3c7ed8c)
+    - [Screenshots](#orgf141468)
+- [Usage](#org2e63965)
+  - [Launching a Fatty Terminal](#org87f2adf)
+    - [`on_accept`](#orga3d55c3)
+    - [Other parameters to `Terminal.new`](#orga4a5a4b)
+  - [The Callback API](#orge53d230)
+    - [`append(text, follow: true)`](#org367b222)
+    - [`append_now(text, follow: true)`](#org00b945a)
+    - [`markdown(text)`](#orgd104290)
+    - [`status(text, role: :info)`](#org424579c)
+    - [`good(text)`](#org7c7c95d)
+    - [`info(text)`](#orgd66074a)
+    - [`warn(text)`](#org61658fe)
+    - [`error(text)`](#org7c6c590)
+    - [`oops(text)`](#org09d95ea)
+    - [`alert(text, role: :info)`](#org9c44df5)
+    - [`prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)`](#orge7f66d3)
+    - [`add_progress(label:, total: nil, style: :percent, role: :info, width: 40)`](#org0e7615b)
+    - [`choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#orgf2eafed)
+    - [`choose_multi(prompt, choices:, cancel_value: nil)`](#org0b861b6)
+    - [`confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)`](#org3adbd8a)
+    - [`menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#orgb83df17)
+    - [`environment`](#org8e6731f)
+- [Default Interaction](#orge4ea716)
+  - [Parts of the Screen](#org34fa71d)
+    - [Input Field](#org509b820)
+    - [Output Pane](#org1ffd5ef)
+    - [Status Area](#orgca746ef)
+    - [Alert  Area](#org816774d)
+  - [Command-line Editing](#orgc3f19b8)
+  - [Keybindings](#org01d61f5)
+    - [Input Context](#org3faa127)
+    - [Paging Context](#orgbc2c1f6)
+  - [Markdown](#org62e72d2)
+    - [Forced line breaks](#org5049213)
+  - [History](#orgb1f4c6e)
+  - [Completion](#org12fde21)
+    - [From the `completion_proc`](#org5696aa3)
+    - [From History](#org51d4ea2)
+    - [From partial filenames](#org81ec137)
+- [Configuration](#org7ce73b2)
+  - [General Configuration `config.yml`](#org8ad6db6)
+    - [`word_char_re`](#orgc8bdbf2)
+    - [`esc_delay`](#orgeab1057)
+    - [`history`](#orge980f9b)
+    - [`theme`](#org45a85be)
+    - [`truecolor`](#org97af4c4)
+    - [`log`](#orgf65fb29)
+  - [Key code definitions `keydefs.yml`](#org7e757df)
+  - [Key bindings  `keybindings.yml`](#orgff79dc4)
+    - [Key Names](#org70bb882)
+    - [Mouse Events](#org7684575)
+    - [Modifiers](#org93cbd66)
+    - [Contexts](#org2d00f05)
+    - [Actions](#orgf109283)
+  - [Themes `themes/`](#org788862b)
+  - [Plugins](#org6ef9577)
 
 
 
-<a id="orgf26b5cb"></a>
+<a id="orgd3b8681"></a>
 
 # Introduction
 
@@ -92,12 +92,12 @@ In other words, fatty allows you to write a terminal-based REPL of your choosing
 `Fatty` is *not* a terminal emulator but runs on top of one.
 
 
-<a id="orgc0ac2d7"></a>
+<a id="org175455e"></a>
 
 # Quick Start
 
 
-<a id="orgbae1c46"></a>
+<a id="org0d5281e"></a>
 
 ## Installing
 
@@ -108,7 +108,7 @@ $ gem install fatty
 ```
 
 
-<a id="orge7c0f8c"></a>
+<a id="org31c1ff5"></a>
 
 ## Trying it Out with the \`fatty\` Demo
 
@@ -117,7 +117,7 @@ Once installed, you can try out `fatty` with the included program called `fatty`
 Once inside `fatty` you will be prompted with a prompt that names your current directory. Type `help` to get a summary of the builtin commands available to you. If you type anything other than a builtin command, `fatty` attempts to run it as a shell command and displays the output.
 
 
-<a id="org2def7af"></a>
+<a id="org3c7ed8c"></a>
 
 ### Builtin commands
 
@@ -150,7 +150,7 @@ Here are the commands builtin to `fatty`
 | colors                       | Display ANSI, 256-color, and X11 color diagnostics                      |
 
 
-<a id="orgfbd0853"></a>
+<a id="orgf141468"></a>
 
 ### Screenshots
 
@@ -179,17 +179,17 @@ Here are the commands builtin to `fatty`
     ![img](images/choose_popup.png "Running the `fatty` demo `choose` command.")
 
 
-<a id="org2f36b8b"></a>
+<a id="org2e63965"></a>
 
 # Usage
 
 
-<a id="org42a8e02"></a>
+<a id="org87f2adf"></a>
 
 ## Launching a Fatty Terminal
 
 
-<a id="org9f76366"></a>
+<a id="orga3d55c3"></a>
 
 ### `on_accept`
 
@@ -314,7 +314,7 @@ When a `fatty` application runs, `fatty` installs a few files if they do not exi
     Text passed to `append`, `append_now`, `status`, and `alert` may contain ANSI SGR color/style sequences. Fatty interprets those sequences relative to the current theme role, so an ANSI reset returns to the active Fatty role rather than to the terminal's physical default colors. `fatty` includes the nice [`Rainbow` gem](https://github.com/ku1ik/rainbow) for colorizing text as a convenience.
 
 
-<a id="org45c1218"></a>
+<a id="orga4a5a4b"></a>
 
 ### Other parameters to `Terminal.new`
 
@@ -339,35 +339,35 @@ on_accept: ->(line, env) {
 With that setup, commands entered in `~/src/byr` are favored when the terminal is again in `~/src/byr`, while commands entered elsewhere remain available as fallback history.
 
 
-<a id="org3bdfa4d"></a>
+<a id="orge53d230"></a>
 
 ## The Callback API
 
 Here are the details on the messages that you can send to the callback parameter to the `on_accept` proc.
 
 
-<a id="org4a59588"></a>
+<a id="org367b222"></a>
 
 ### `append(text, follow: true)`
 
 Add the given text to the output pane. After a full page of output is produced, enter paging mode so the user can view the output at leisure and search the output. If `follow` is true, keep the output pane's viewport covering the last lines of output.
 
 
-<a id="org534ec87"></a>
+<a id="org00b945a"></a>
 
 ### `append_now(text, follow: true)`
 
 Like `append`, but display output as it is produced rather than wait for a full page to be produced.
 
 
-<a id="orgbc2fb8e"></a>
+<a id="orgd104290"></a>
 
 ### `markdown(text)`
 
 Render the given text as markdown source according to the current theme then `append` the result to the output pane.
 
 
-<a id="org5898273"></a>
+<a id="org424579c"></a>
 
 ### `status(text, role: :info)`
 
@@ -379,49 +379,49 @@ Display the text in the "status" area, the lines immediately above the input fie
 -   **:error:** colored something to suggest danger, usually some tone of red.
 
 
-<a id="org989d3b7"></a>
+<a id="org7c7c95d"></a>
 
 ### `good(text)`
 
 Display the text in the status area with the role :good.
 
 
-<a id="org101170a"></a>
+<a id="orgd66074a"></a>
 
 ### `info(text)`
 
 Display the text in the status area with the role :info.
 
 
-<a id="org32022ed"></a>
+<a id="org61658fe"></a>
 
 ### `warn(text)`
 
 Display the text in the status area with the role :warn.
 
 
-<a id="org33479b0"></a>
+<a id="org7c6c590"></a>
 
 ### `error(text)`
 
 Display the text in the status area with the role :error.
 
 
-<a id="org78a2459"></a>
+<a id="org09d95ea"></a>
 
 ### `oops(text)`
 
 An alias for `error(text)`
 
 
-<a id="org9c15891"></a>
+<a id="org9c44df5"></a>
 
 ### `alert(text, role: :info)`
 
 Display the text in the one-line alert panel just below the input field. In the alert panel, the role only controls the foreground color, not the background.
 
 
-<a id="orgca9f3b5"></a>
+<a id="orge7f66d3"></a>
 
 ### `prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)`
 
@@ -451,7 +451,7 @@ The `prompt` input has its own history facility separate from the history in the
 `prompt` returns whatever the user typed and returns `nil` if the user cancels with C-c or C-g unless you specify an alternative `cancel_value`.
 
 
-<a id="org4b8e214"></a>
+<a id="org0e7615b"></a>
 
 ### `add_progress(label:, total: nil, style: :percent, role: :info, width: 40)`
 
@@ -586,7 +586,7 @@ Display a progress widget in the status area to show the user that the system is
     And, if you have occasion, you can clear the Progress by calling `#clear` on the Progress object.
 
 
-<a id="org2a40d91"></a>
+<a id="orgf2eafed"></a>
 
 ### `choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`
 
@@ -652,7 +652,7 @@ Fatty::Terminal.new(
 ```
 
 
-<a id="org683abfe"></a>
+<a id="org0b861b6"></a>
 
 ### `choose_multi(prompt, choices:, cancel_value: nil)`
 
@@ -670,7 +670,7 @@ Present a set of `choices:`, which can either be
 The `prompt` String (by default "Choose Many") can guide the user about the purpose of the choices.
 
 
-<a id="org10d523c"></a>
+<a id="org3adbd8a"></a>
 
 ### `confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)`
 
@@ -681,7 +681,7 @@ Present the user with a simple Yes/No choice using your choice of ways to expres
 `confirm` will return `false` on cancellation with C-c or C-g unless you provide an alternative `cancel_value:`, in which case it returns that.
 
 
-<a id="org2acb470"></a>
+<a id="orgb83df17"></a>
 
 ### `menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`
 
@@ -728,7 +728,7 @@ If you want to set one of the choices as the initial choice, set `initial_choice
 If you want a value associated with the user's cancellation of the chooser with C-c or C-g, set `cancel_value:` to that value.
 
 
-<a id="orge835338"></a>
+<a id="org8e6731f"></a>
 
 ### `environment`
 
@@ -765,57 +765,57 @@ The environment report also includes a nested `:curses` hash:
 | `:can_change_color` | Whether curses can redefine color values             |
 
 
-<a id="org557825a"></a>
+<a id="orge4ea716"></a>
 
 # Default Interaction
 
 
-<a id="org9706a18"></a>
+<a id="org34fa71d"></a>
 
 ## Parts of the Screen
 
 
-<a id="org5a1717e"></a>
+<a id="org509b820"></a>
 
 ### Input Field
 
 Just above the bottom of the screen where all the action takes place: it is a line for editing the input. It displays a prompt followed by an area in which you build the command line using `fatty's` editing facilities.
 
 
-<a id="org74335a3"></a>
+<a id="org1ffd5ef"></a>
 
 ### Output Pane
 
 Most of the top part of the screen is reserved for displaying whatever output is sent to it with the `on_accept` callback to the `Terminal`. It can render colored ANSI-encoded strings and will page long output so you can view it a page at a time and even search the output.
 
 
-<a id="orgfba91ad"></a>
+<a id="orgca746ef"></a>
 
 ### Status Area
 
 The one to four lines just above the Input Field that displays output to the user that is out of band for the Output Pane. Brief messages of confirmation, warning, or error can be displayed there so as to get the user's immediate attention. Progress bars also render there where their visibility is made prominent.
 
 
-<a id="org929acb7"></a>
+<a id="org816774d"></a>
 
 ### Alert  Area
 
 Alerts are short-lived, non-scrolling messages shown below the input field. They are intended for user-visible conditions that require attention. `Fatty` uses this area to warn the user of unrecognized key codes and of unbound key presses.
 
 
-<a id="orgba2a3ae"></a>
+<a id="orgc3f19b8"></a>
 
 ## Command-line Editing
 
 
-<a id="org9e9b41e"></a>
+<a id="org01d61f5"></a>
 
 ## Keybindings
 
 The following tables explain the keybindings available in \`fatty\` in different contexts. Named keys are indicated by \`:name\` and key categories, such as \`<digits>\` are indicated with brackets.
 
 
-<a id="org0d5edcc"></a>
+<a id="org3faa127"></a>
 
 ### Input Context
 
@@ -878,7 +878,7 @@ When editing the input line or text input for widgets like the \`prompt\`, \`fat
 |            |                                                        |
 
 
-<a id="org982a3f8"></a>
+<a id="orgbc2c1f6"></a>
 
 ### Paging Context
 
@@ -899,12 +899,12 @@ By default, \`fatty\` sends output to the large output pane, and if the output i
 | C-/   | initiate an Regexp session forward      |
 
 
-<a id="org43497b2"></a>
+<a id="org62e72d2"></a>
 
 ## Markdown
 
 
-<a id="org7ecea4a"></a>
+<a id="org5049213"></a>
 
 ### Forced line breaks
 
@@ -922,32 +922,32 @@ and this should appear on the next line.
 ```
 
 
-<a id="org322aaf1"></a>
+<a id="orgb1f4c6e"></a>
 
 ## History
 
 
-<a id="orga8eabb8"></a>
+<a id="org12fde21"></a>
 
 ## Completion
 
 
-<a id="org0e215df"></a>
+<a id="org5696aa3"></a>
 
 ### From the `completion_proc`
 
 
-<a id="org3171825"></a>
+<a id="org51d4ea2"></a>
 
 ### From History
 
 
-<a id="org8c4df65"></a>
+<a id="org81ec137"></a>
 
 ### From partial filenames
 
 
-<a id="org1180ef4"></a>
+<a id="org7ce73b2"></a>
 
 # Configuration
 
@@ -963,7 +963,7 @@ The config files are:
 The default user configuration directory follows `XDG_CONFIG_HOME` if it is set. Otherwise it is `~/.config/fatty`.
 
 
-<a id="orgc27d399"></a>
+<a id="org8ad6db6"></a>
 
 ## General Configuration `config.yml`
 
@@ -986,7 +986,7 @@ truecolor: auto
 ```
 
 
-<a id="org7038328"></a>
+<a id="orgc8bdbf2"></a>
 
 ### `word_char_re`
 
@@ -1009,7 +1009,7 @@ word_char_re: "[[:alnum:]_.:-]"
 ```
 
 
-<a id="org9e66002"></a>
+<a id="orgeab1057"></a>
 
 ### `esc_delay`
 
@@ -1020,7 +1020,7 @@ esc_delay: 0
 ```
 
 
-<a id="org139bcd4"></a>
+<a id="orge980f9b"></a>
 
 ### `history`
 
@@ -1033,7 +1033,7 @@ esc_delay: 0
     The maximim number of lines of history retained, by default 10,000.
 
 
-<a id="org89608cc"></a>
+<a id="org45a85be"></a>
 
 ### `theme`
 
@@ -1044,7 +1044,7 @@ theme: nordic
 ```
 
 
-<a id="orgb582825"></a>
+<a id="org97af4c4"></a>
 
 ### `truecolor`
 
@@ -1055,7 +1055,7 @@ truecolor: auto
 ```
 
 
-<a id="orge5dfba0"></a>
+<a id="orgf65fb29"></a>
 
 ### `log`
 
@@ -1105,7 +1105,7 @@ tags:
     ```
 
 
-<a id="org796889a"></a>
+<a id="org7e757df"></a>
 
 ## Key code definitions `keydefs.yml`
 
@@ -1243,7 +1243,7 @@ konsole:
 After installing that keydefs, I find that the PageDown variants are all recognized by name and modifiers (except for the strange failure of `terminator` to recognize `C-PageDown`!).
 
 
-<a id="org1d9422d"></a>
+<a id="orgff79dc4"></a>
 
 ## Key bindings  `keybindings.yml`
 
@@ -1270,7 +1270,7 @@ A keybinding names a key chord, the context in which it applies, and the Fatty a
 ```
 
 
-<a id="org44c31bc"></a>
+<a id="org70bb882"></a>
 
 ### Key Names
 
@@ -1310,6 +1310,7 @@ A keybinding uses the unmodified key name under the `key` field:
     Does this render?
     
     | tab           | f1            | f2             | f3               | f4            | f5           |
+    |------------- |------------- |-------------- |---------------- |------------- |------------ |
     | f8            | f9            | f10            | f11              | f12           | insert       |
     | end           | page\_up      | page\_down     | up               | down          | left         |
     | keypad\_0     | keypad\_1     | keypad\_2      | keypad\_3        | keypad\_4     | keypad\_5    |
@@ -1353,7 +1354,7 @@ A keybinding uses the unmodified key name under the `key` field:
     Fatty does not require custom key names to come from a fixed registry. A custom name only needs to be used consistently between `keydefs.yml` and `keybindings.yml`.
 
 
-<a id="org64c52d9"></a>
+<a id="org7684575"></a>
 
 ### Mouse Events
 
@@ -1388,7 +1389,7 @@ scroll_down
 ```
 
 
-<a id="org57959d4"></a>
+<a id="org93cbd66"></a>
 
 ### Modifiers
 
@@ -1401,19 +1402,19 @@ shift: true
 ```
 
 
-<a id="orgd645129"></a>
+<a id="org2d00f05"></a>
 
 ### Contexts
 
 The default context is `input`. Other common contexts include `paging` and `popup`.
 
 
-<a id="orgd8945ac"></a>
+<a id="orgf109283"></a>
 
 ### Actions
 
 
-<a id="orgba870fd"></a>
+<a id="org788862b"></a>
 
 ## Themes `themes/`
 
@@ -1691,6 +1692,6 @@ Themes can be changed while Fatty is running. The default Emacs-style bindings i
 Theme changes update the renderer immediately.
 
 
-<a id="org11571ac"></a>
+<a id="org6ef9577"></a>
 
 ## Plugins

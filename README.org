@@ -1222,6 +1222,7 @@ YAML might otherwise treat specially or make hard to read, such as =":"=,
 Does this render?
 
 | tab          | f1           | f2            | f3              | f4           | f5          |
+|--------------+--------------+---------------+-----------------+--------------+-------------|
 | f8           | f9           | f10           | f11             | f12          | insert      |
 | end          | page_up      | page_down     | up              | down         | left        |
 | keypad_0     | keypad_1     | keypad_2      | keypad_3        | keypad_4     | keypad_5    |
