@@ -111,7 +111,6 @@ module Fatty
 
       def read_escape_raw(ch)
         nxt = with_window_timeout(escape_lookahead_ms) { window.getch }
-
         return ch if nxt == -1 || !nxt
 
         if csi_prefix?(nxt)
@@ -124,9 +123,20 @@ module Fatty
             push_pending_raw(nxt)
             ch
           end
+        elsif ss3_prefix?(nxt)
+          suffix = with_window_timeout(escape_lookahead_ms) { window.getch }
+          if suffix == -1 || !suffix
+            [ch, nxt]
+          else
+            [ch, nxt, suffix]
+          end
         else
           [ch, nxt]
         end
+      end
+
+      def ss3_prefix?(ch)
+        ch == "O".ord || ch == "O"
       end
 
       def read_pending_raw

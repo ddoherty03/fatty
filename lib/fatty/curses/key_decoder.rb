@@ -9,6 +9,26 @@ module Fatty
     # :ctrl, and :meta, in the KeyEvent so that the KeyMap can assign different
     # actions to the modified keys.
     class KeyDecoder
+      SS3_TO_EVENT = {
+        "j" => KeyEvent.new(key: :keypad_multiply),
+        "k" => KeyEvent.new(key: :keypad_plus),
+        "l" => KeyEvent.new(key: :keypad_comma),
+        "m" => KeyEvent.new(key: :keypad_minus),
+        "n" => KeyEvent.new(key: :keypad_decimal),
+        "o" => KeyEvent.new(key: :keypad_divide),
+        "p" => KeyEvent.new(key: :keypad_0),
+        "q" => KeyEvent.new(key: :keypad_1),
+        "r" => KeyEvent.new(key: :keypad_2),
+        "s" => KeyEvent.new(key: :keypad_3),
+        "t" => KeyEvent.new(key: :keypad_4),
+        "u" => KeyEvent.new(key: :keypad_5),
+        "v" => KeyEvent.new(key: :keypad_6),
+        "w" => KeyEvent.new(key: :keypad_7),
+        "x" => KeyEvent.new(key: :keypad_8),
+        "y" => KeyEvent.new(key: :keypad_9),
+        "M" => KeyEvent.new(key: :keypad_enter),
+      }.freeze
+
       attr_reader :map, :env
 
       def initialize(env: Env.detect)
@@ -26,7 +46,11 @@ module Fatty
         result =
           case raw
           when Array
-            decode_meta(raw)
+            if raw.length == 3 && ss3_sequence?(raw)
+              decode_ss3(raw)
+            else
+              decode_meta(raw)
+            end
           else
             decode_single(raw)
           end
@@ -37,6 +61,30 @@ module Fatty
       private
 
       # simplecov:disable
+
+      def ss3_sequence?(raw)
+        raw[0] == 27 && raw[1] == "O"
+      end
+
+      def decode_ss3(raw)
+        _esc, _prefix, suffix = raw
+        event = SS3_TO_EVENT[raw_char_to_s(suffix)]
+        if event
+          KeyEvent.new(
+            key: event.key,
+            ctrl: event.ctrl?,
+            meta: event.meta?,
+            shift: event.shift?,
+            raw: raw,
+          )
+        else
+          KeyEvent.new(key: raw_char_to_s(suffix).to_sym, raw: raw)
+        end
+      end
+
+      def raw_char_to_s(value)
+        value.is_a?(Integer) ? value.chr : value.to_s
+      end
 
       # Handle the decoding of meta keys which are returned as an Array of the
       # escape code followed by another key, nxt, which can be either a String
