@@ -125,8 +125,6 @@ the user with a set of choices to select from.  After running the demo's
 #+ATTR_HTML: :alt Fatty terminal UI demo screenshot :width 900
 [[file:images/choose_popup.png]]
 
-* Quick Start
-
 * Usage
 ** Launching a Fatty Terminal
 *** =on_accept=
@@ -865,13 +863,12 @@ and this should appear on the next line.
 *** From partial filenames
 
 * Configuration
-
 When a Fatty application starts, Fatty installs default configuration files
 under =~/.config/fatty= if they do not already exist.  Fatty does not overwrite
 files that are already there, so you can edit these files directly and keep
 them under version control.
 
-The main files are:
+The config files are:
 
 - =config.yml= :: general configuration;
 - =keydefs.yml= :: terminal-specific keycode naming;
@@ -891,7 +888,6 @@ A small configuration might look like this:
 #+begin_src yaml :tangle no
 word_char_re: "[[:alnum:]_.:-]"
 
-esc_meta: false
 esc_delay: 0
 
 history:
@@ -927,19 +923,15 @@ definition:
 word_char_re: "[[:alnum:]_.:-]"
 #+end_src
 
-*** =esc_meta= and =esc_delay=
-The =esc_meta= setting controls whether Fatty treats =ESC= followed by another
-key as a Meta-key chord.  By default this is false, so a bare =ESC= remains a
-responsive cancel key.
+*** =esc_delay=
+=esc_delay= controls how long curses waits after receiving =ESC= before
+deciding whether another key is part of the same Meta-key sequence.  The value
+is in milliseconds.
 
 #+begin_src yaml :tangle no
-esc_meta: false
 esc_delay: 0
 #+end_src
 
-If you set =esc_meta: true=, =esc_delay= controls how long curses waits after
-receiving =ESC= before deciding whether another key is part of the same
-Meta-key sequence.  The value is in milliseconds.
 
 *** =history=
 **** =file=
@@ -1166,11 +1158,10 @@ those keys:
 #+end_src
 
 After installing that keydefs, I find that the PageDown variants are all
-recognized by name and modifiers (except for the strange behavior of
-=terminator= on C-PageDown!).
+recognized by name and modifiers (except for the strange failure of
+=terminator= to recognize =C-PageDown=!).
 
 ** Key bindings  =keybindings.yml=
-
 Fatty has built-in Emacs-style bindings for ordinary input editing, history,
 completion, popup navigation, and paging.  The =keybindings.yml= file lets you
 add or override bindings without changing Ruby code.
@@ -1179,7 +1170,6 @@ A keybinding names a key chord, the context in which it applies, and the Fatty
 action to run:
 
 #+begin_src yaml :tangle no
-
 - key: left
   meta: true
   action: move_word_left
@@ -1197,17 +1187,89 @@ action to run:
   action: page_up
   #+end_src
 
-The default context is =input=.  Other common contexts include =paging= and
-=popup=.
-
-A binding may include these modifiers:
-
+*** Key Names
+A keybinding uses the unmodified key name under the =key= field:
 #+begin_src yaml :tangle no
-ctrl: true
-meta: true
-shift: true
+- key: f
+  meta: true
+  context: text
+  action: move_word_right
+  #+end_src
+
+**** Printable Keys
+Most printable keys can be written as the character itself.  Quote keys that
+YAML might otherwise treat specially or make hard to read, such as =":"=,
+="#"=, ="["=, ="]"=, ="{"=, ="}"=, ="\""=, and ="\\"=.
+#+begin_src yaml :tangle no
+  - key: a
+  - key: /
+  - key: .
+  - key: =
+  - key: "\\"
+  - key: "\""
 #+end_src
 
+**** Curses and Fatty Named Keys
+=Fatty= translates codes returned by curses for special keys into names:
+
+| tab          | f1           | f2            | f3              | f4           | f5          | f6             | f7       |
+| f8           | f9           | f10           | f11             | f12          | insert      | delete         | home     |
+| end          | page_up      | page_down     | up              | down         | left        | right          |          |
+| keypad_0     | keypad_1     | keypad_2      | keypad_3        | keypad_4     | keypad_5    | keypad_6       | keypad_7 |
+| keypad_8     | keypad_9     | keypad_divide | keypad_multiply | keypad_minus | keypad_plus | keypad_decimal |          |
+| keypad_enter | keypad_comma |               |                 |              |             |                |          |
+
+Some terminals can report application-keypad sequences such as =keypad_divide=,
+=keypad_multiply=, or =keypad_enter=.  Numeric keypad digits are often not
+distinguishable from ordinary digits when NumLock is on, and are often reported
+as navigation keys such as =end=, =down=, =page_down=, or =left= when NumLock is
+off.  Use =keytest= to see what your terminal actually sends.
+
+=Fatty= also provides convenient names to other keys common keys:
+
+| enter| escape | space |
+
+**** Possibly Invisible Keys
+Some physical keys may never reach Fatty at all.  They may be handled by the
+keyboard firmware, the kernel, the desktop environment, the window manager, or
+the terminal emulator before curses can report them.  Common examples include
+=Print Screen=, =Scroll Lock=, =Pause/Break=, =Caps Lock=, =Num Lock=, =Fn=,
+=Menu/Application=, =Super/Windows=, power/sleep/wake keys, brightness keys,
+volume/media keys, keyboard-backlight keys, airplane-mode keys, and touchpad
+toggle keys.
+
+Use =keytest= to check.  If Fatty sees a key as a raw numeric code, you can
+name it in =keydefs.yml= and bind it.  If =keytest= shows nothing, the key is
+being intercepted before Fatty receives it.
+
+**** Unnamed but Recognized Keys
+Some terminals report modified special keys as distinct numeric keycodes that
+=fatty= and =curses= do not name.  Use =keytest= to discover those codes, then
+assign names to them in =keydefs.yml=.  The name can be one of Fatty's usual
+names, or a new name of your own.
+
+For example, if a keyboard has an extra thumb key and =keytest= reports it as
+an uncoded keycode =601=, you could name it:
+
+#+begin_src yaml :tangle no
+gnome-terminal:
+601:
+key: thumb_left
+#+end_src
+
+Then bind it in =keybindings.yml=:
+
+#+begin_src yaml :tangle no
+- key: thumb_left
+  context: text
+  action: move_word_left
+  #+end_src
+
+Fatty does not require custom key names to come from a fixed registry.  A
+custom name only needs to be used consistently between =keydefs.yml= and
+=keybindings.yml=.
+
+*** Mouse Events
 Mouse events can also be bound:
 
 #+begin_src yaml :tangle no
@@ -1237,6 +1299,21 @@ Recognized mouse button names include:
   scroll_up
   scroll_down
 #+end_src
+
+*** Modifiers
+A binding may include these modifiers:
+
+#+begin_src yaml :tangle no
+ctrl: true
+meta: true
+shift: true
+#+end_src
+
+*** Contexts
+The default context is =input=.  Other common contexts include =paging= and
+=popup=.
+
+*** Actions
 
 ** Themes =themes/=
 
