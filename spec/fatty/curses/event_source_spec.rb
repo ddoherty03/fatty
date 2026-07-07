@@ -110,6 +110,26 @@ module Fatty
         expect(event.shift).to be true
       end
 
+      it "decodes escape followed by a non-CSI key as a meta sequence" do
+        window = instance_double("Window")
+        allow(window).to receive(:getch).and_return(27, "f")
+        allow(window).to receive(:timeout=)
+        context = instance_double("Context", input_win: window)
+        source = EventSource.new(context: context, key_decoder: key_decoder, poll_ms: 10)
+
+        expect(source.send(:read_raw)).to eq([27, "f"])
+      end
+
+      it "returns bare escape when no following key arrives during escape lookahead" do
+        window = instance_double("Window")
+        allow(window).to receive(:getch).and_return(27, -1)
+        allow(window).to receive(:timeout=)
+        context = instance_double("Context", input_win: window)
+        source = EventSource.new(context: context, key_decoder: key_decoder, poll_ms: 10)
+
+        expect(source.send(:read_raw)).to eq(27)
+      end
+
       it "strips mouse modifiers before resolving the wheel button" do
         bstate = ::Curses::BUTTON4_PRESSED |
                  ::Curses::BUTTON_CTRL |

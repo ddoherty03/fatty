@@ -110,14 +110,13 @@ module Fatty
       end
 
       def read_escape_raw(ch)
-        nxt = with_window_timeout(ESCAPE_LOOKAHEAD_MS) { window.getch }
+        nxt = with_window_timeout(escape_lookahead_ms) { window.getch }
 
         return ch if nxt == -1 || !nxt
 
         if csi_prefix?(nxt)
           suffix = read_escape_suffix
           seq = "[" + suffix
-
           if seq == BRACKETED_PASTE_START
             [:paste, read_bracketed_paste]
           else
@@ -125,11 +124,8 @@ module Fatty
             push_pending_raw(nxt)
             ch
           end
-        elsif esc_meta?
-          [ch, nxt]
         else
-          push_pending_raw(nxt)
-          ch
+          [ch, nxt]
         end
       end
 
@@ -145,16 +141,16 @@ module Fatty
         end
       end
 
+      def escape_lookahead_ms
+        Fatty::Config.config.fetch(:esc_delay, ESCAPE_LOOKAHEAD_MS).to_i
+      end
+
       def escape_char?(ch)
         ch.is_a?(Integer) && ch == 27
       end
 
       def csi_prefix?(ch)
         ch == "[".ord || ch == "["
-      end
-
-      def esc_meta?
-        Fatty::Config.config.fetch(:esc_meta, false)
       end
 
       def log_keycode(ch)

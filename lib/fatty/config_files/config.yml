@@ -5,16 +5,11 @@
 word_char_re: "[[:alnum:]_]"
 
 
-# Treat ESC followed by another key as Meta-key input.
-# Disabled by default so ESC is a responsive cancel key.
-esc_meta: false
-
 # This controls how long (in milliseconds) curses waits after receiving ESC
 # for a second key to interpret it as a meta-key sequence.  ncurses defaults
 # to 1000, i.e., a full second, which can make response to a bare ESC key feel
 # really laggy.  You can set it to something more reasonable here or by
-# setting the environment variable ESCDELAY in you shell setup.  It is
-# irrelevant if esc_meta is false.
+# setting the environment variable ESCDELAY in you shell setup.
 esc_delay: 0
 
 # file: sets the location of the log file, by default at
