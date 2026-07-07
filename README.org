@@ -1211,23 +1211,14 @@ YAML might otherwise treat specially or make hard to read, such as =":"=,
 
 **** Curses and Fatty Named Keys
 =Fatty= translates codes returned by curses for special keys into names:
-
+|              |              |               |                 |              |             |                |          |
+|--------------+--------------+---------------+-----------------+--------------+-------------+----------------+----------|
 | tab          | f1           | f2            | f3              | f4           | f5          | f6             | f7       |
 | f8           | f9           | f10           | f11             | f12          | insert      | delete         | home     |
 | end          | page_up      | page_down     | up              | down         | left        | right          |          |
 | keypad_0     | keypad_1     | keypad_2      | keypad_3        | keypad_4     | keypad_5    | keypad_6       | keypad_7 |
 | keypad_8     | keypad_9     | keypad_divide | keypad_multiply | keypad_minus | keypad_plus | keypad_decimal |          |
 | keypad_enter | keypad_comma |               |                 |              |             |                |          |
-
-Does this render?
-
-| tab          | f1           | f2            | f3              | f4           | f5          |
-|--------------+--------------+---------------+-----------------+--------------+-------------|
-| f8           | f9           | f10           | f11             | f12          | insert      |
-| end          | page_up      | page_down     | up              | down         | left        |
-| keypad_0     | keypad_1     | keypad_2      | keypad_3        | keypad_4     | keypad_5    |
-| keypad_8     | keypad_9     | keypad_divide | keypad_multiply | keypad_minus | keypad_plus |
-| keypad_enter | keypad_comma |               |                 |              |             |
 
 Some terminals can report application-keypad sequences such as =keypad_divide=,
 =keypad_multiply=, or =keypad_enter=.  Numeric keypad digits are often not
@@ -1237,7 +1228,9 @@ off.  Use =keytest= to see what your terminal actually sends.
 
 =Fatty= also provides convenient names to other keys common keys:
 
-| enter| escape | space |
+|       |        |       |
+|-------+--------+-------|
+| enter | escape | space |
 
 **** Possibly Invisible Keys
 Some physical keys may never reach Fatty at all.  They may be handled by the
