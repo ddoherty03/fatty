@@ -39,7 +39,7 @@ module Fatty
 
     DEFAULT_WORD_CHAR_RE = "[[:alnum:]_]"
 
-    def initialize(word_char_re: DEFAULT_WORD_CHAR_RE, word_re: nil, undo_limit: 1_000, kill_ring_max: 60)
+    def initialize(word_char_re: DEFAULT_WORD_CHAR_RE, undo_limit: 1_000, kill_ring_max: 60)
       @text = +""
       @virtual_suffix = +""
       @cursor = 0
@@ -47,21 +47,7 @@ module Fatty
       # word_char_re is a fragment like "[[:alnum:]_]" or "[[:alnum:]_-]"
       # meant to match a single charachter that should be considered a part of
       # a word for purposes of cursor movement.
-      @word_char_re =
-        case word_char_re
-        when Regexp
-          word_char_re
-        when String
-          re_str =
-            if (md = word_char_re.match(%r{\A\s*\/([^\/])*\/\z}))
-              md[1]
-            else
-              word_char_re
-            end
-          Regexp.new(re_str)
-        else
-          raise ArgumentError, "InputBuffer word_char_re must be a Regexp or String"
-        end
+      @word_char_re = normalize_word_char_re(word_char_re)
       @undo_limit = undo_limit
       @undo_stack = []
       @redo_stack = []
@@ -719,6 +705,21 @@ module Fatty
     private
 
     # simplecov:disable
+
+    def normalize_word_char_re(value)
+      case value
+      when Regexp
+        value
+      when String
+        value = value.strip
+        if value.start_with?("/") && value.end_with?("/") && value.length >= 2
+          value[1...-1]
+        else
+          value
+        end
+        Regexp.new(value)
+      end
+    end
 
     def move_word_right_once
       break_undo_chain!

@@ -232,8 +232,19 @@ module Fatty
       expect(b.cursor).to eq(1)
     end
 
-    it "supports supplying a custom word_re directly" do
-      buf = InputBuffer.new(word_re: /[[:alpha:]]/)
+    it "uses word_char_re as a Regexp rather than matching against the config string" do
+      buf = InputBuffer.new(word_char_re: "[[:alnum:]_]")
+      expect(buf.word_char_re).to be_a(Regexp)
+      expect(buf.send(:word_char?, "a")).to be true
+      expect(buf.send(:word_char?, "b")).to be true
+      expect(buf.send(:word_char?, "z")).to be true
+      expect(buf.send(:word_char?, "_")).to be true
+      expect(buf.send(:word_char?, "-")).to be false
+      expect(buf.send(:word_char?, " ")).to be false
+    end
+
+    it "supports supplying a custom word_char_re directly" do
+      buf = InputBuffer.new(word_char_re: /[[:alpha:]]/)
       buf.replace("aaBB cc")
       buf.bol
 
@@ -244,12 +255,20 @@ module Fatty
       expect(buf.cursor).to eq(7) # cc
     end
 
-    it "handles word_re that matches nothing" do
+    it "handles word_char_re that matches nothing" do
       buf = InputBuffer.new(word_char_re: /$a/) # never matches
       buf.replace("abc def")
       buf.bol
       buf.move_word_right
       expect(buf.cursor).to eq("abc def".length) # skips all as non-word
+    end
+
+    it "handles word_char_re that matches nothing moving left" do
+      buf = InputBuffer.new(word_char_re: /(?!)/)
+      buf.replace("abc")
+      buf.eol
+      buf.move_word_left
+      expect(buf.cursor).to eq(0)
     end
 
     it "move_word_right can be repeated and clamps at end of text" do
