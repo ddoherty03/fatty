@@ -1,69 +1,69 @@
-- [Introduction](#orgc0da2a2)
-- [Quick Start](#org77f3e4e)
-  - [Installing](#org0011f40)
-  - [Trying it Out with the \`fatty\` Demo](#org0df7fd3)
-    - [Builtin commands](#org783c243)
-    - [Screenshots](#org5c87e42)
-- [Usage](#orgfbc4afd)
-  - [Launching a Fatty Terminal](#org44c1b1d)
-    - [`on_accept`](#org5e94cc1)
-    - [Other parameters to `Terminal.new`](#org6545825)
-  - [The Callback API](#orgea7c0a1)
-    - [`append(text, follow: true)`](#org792f0fa)
-    - [`append_now(text, follow: true)`](#org1cdcd10)
-    - [`markdown(text)`](#org026515d)
-    - [`status(text, role: :info)`](#org8f4c73a)
-    - [`good(text)`](#org06b038d)
-    - [`info(text)`](#orgff95978)
-    - [`warn(text)`](#org62c6db0)
-    - [`error(text)`](#orgc0d8cab)
-    - [`oops(text)`](#org7eff255)
-    - [`alert(text, role: :info)`](#org9181d2e)
-    - [`prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)`](#orgd60c493)
-    - [`add_progress(label:, total: nil, style: :percent, role: :info, width: 40)`](#orgbdf9b24)
-    - [`choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#org149fa82)
-    - [`choose_multi(prompt, choices:, cancel_value: nil)`](#org6795292)
-    - [`confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)`](#org2ea3570)
-    - [`menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#orgf34d6cf)
-    - [`environment`](#org6cdc439)
-- [Default Interaction](#org15e475f)
-  - [Parts of the Screen](#org6a8234e)
-    - [Input Field](#org73fee27)
-    - [Output Pane](#orgc79f4cf)
-    - [Status Area](#orgd3aa0ce)
-    - [Alert  Area](#orgac33e3a)
-  - [Command-line Editing](#orgf702c1f)
-  - [Keybindings](#orgb9294df)
-    - [Input Context](#org407978d)
-    - [Paging Context](#org5deac21)
-  - [Markdown](#org9f2103f)
-    - [Forced line breaks](#orga96dd8b)
-  - [History](#org66fc9ee)
-  - [Completion](#org3907cdc)
-    - [From the `completion_proc`](#org89d3c9d)
-    - [From History](#org346a2a8)
-    - [From partial filenames](#org0fbfa94)
-- [Configuration](#org7c8d486)
-  - [General Configuration `config.yml`](#org5ab3873)
-    - [`word_char_re`](#orga8283b6)
-    - [`esc_delay`](#orge58b1dc)
-    - [`history`](#org8f3812c)
-    - [`theme`](#org9b885c8)
-    - [`truecolor`](#orge8d59f3)
-    - [`log`](#org957e98d)
-  - [Key code definitions `keydefs.yml`](#org9d9f6e5)
-  - [Key bindings  `keybindings.yml`](#orgad9cd9b)
-    - [Key Names](#org6caef98)
-    - [Mouse Events](#orgb74b221)
-    - [Modifiers](#orga1ac1e0)
-    - [Contexts](#org8317f4f)
-    - [Actions](#org59b9bd6)
-  - [Themes `themes/`](#orga78be46)
-  - [Plugins](#orgc72a28f)
+- [Introduction](#orgda1387e)
+- [Quick Start](#org74024f3)
+  - [Installing](#org70d6903)
+  - [Trying it Out with the \`fatty\` Demo](#org3521e53)
+    - [Builtin commands](#orgec7274a)
+    - [Screenshots](#org0647dce)
+- [Usage](#org81a6036)
+  - [Launching a Fatty Terminal](#org1d48a93)
+    - [`on_accept`](#orgf0db7e6)
+    - [Other parameters to `Terminal.new`](#orgfffc721)
+  - [The Callback API](#org88d0db5)
+    - [`append(text, follow: true)`](#org9743670)
+    - [`append_now(text, follow: true)`](#org165b1d5)
+    - [`markdown(text)`](#org88cea2a)
+    - [`status(text, role: :info)`](#org35d5ad0)
+    - [`good(text)`](#orgc11b8b3)
+    - [`info(text)`](#org0880f6a)
+    - [`warn(text)`](#org1945b6c)
+    - [`error(text)`](#org285e854)
+    - [`oops(text)`](#org54cfdf8)
+    - [`alert(text, role: :info)`](#orgfe9a670)
+    - [`prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)`](#org2a0f168)
+    - [`add_progress(label:, total: nil, style: :percent, role: :info, width: 40)`](#org01e70c0)
+    - [`choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#org2b76654)
+    - [`choose_multi(prompt, choices:, cancel_value: nil)`](#orga650495)
+    - [`confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)`](#orge844f03)
+    - [`menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#org42dd21f)
+    - [`environment`](#org7448bd3)
+- [Default Interaction](#orge322fc4)
+  - [Parts of the Screen](#org7055758)
+    - [Input Field](#orgdbb76a8)
+    - [Output Pane](#org3108423)
+    - [Status Area](#org718c2bd)
+    - [Alert  Area](#org8ca9ef9)
+  - [Command-line Editing](#orge717176)
+  - [Keybindings](#org0b23552)
+    - [Input Context](#org7cadef9)
+    - [Paging Context](#orgd8a9039)
+  - [Markdown](#org2c3218f)
+    - [Forced line breaks](#org77baf41)
+  - [History](#org3d4b13a)
+  - [Completion](#org94fcdd2)
+    - [From the `completion_proc`](#orgf0d2338)
+    - [From History](#orga12521a)
+    - [From partial filenames](#org5ca1a2d)
+- [Configuration](#orgbbd1770)
+  - [General Configuration `config.yml`](#orgd9e7304)
+    - [`word_char_re`](#orgda54814)
+    - [`esc_delay`](#orgf4d14aa)
+    - [`history`](#orgafe1290)
+    - [`theme`](#org117081f)
+    - [`truecolor`](#org80a705f)
+    - [`log`](#org4a80e1c)
+  - [Key code definitions `keydefs.yml`](#orgef9cebe)
+  - [Key bindings  `keybindings.yml`](#org7f963ad)
+    - [Key Names](#orgf772402)
+    - [Mouse Events](#orgd596282)
+    - [Modifiers](#orgb06bcc0)
+    - [Contexts](#orgf84fd6a)
+    - [Actions](#orgecf9c47)
+  - [Themes `themes/`](#org69ea759)
+  - [Plugins](#org64abe80)
 
 
 
-<a id="orgc0da2a2"></a>
+<a id="orgda1387e"></a>
 
 # Introduction
 
@@ -92,12 +92,12 @@ In other words, fatty allows you to write a terminal-based REPL of your choosing
 `Fatty` is *not* a terminal emulator but runs on top of one.
 
 
-<a id="org77f3e4e"></a>
+<a id="org74024f3"></a>
 
 # Quick Start
 
 
-<a id="org0011f40"></a>
+<a id="org70d6903"></a>
 
 ## Installing
 
@@ -108,7 +108,7 @@ $ gem install fatty
 ```
 
 
-<a id="org0df7fd3"></a>
+<a id="org3521e53"></a>
 
 ## Trying it Out with the \`fatty\` Demo
 
@@ -117,7 +117,7 @@ Once installed, you can try out `fatty` with the included program called `fatty`
 Once inside `fatty` you will be prompted with a prompt that names your current directory. Type `help` to get a summary of the builtin commands available to you. If you type anything other than a builtin command, `fatty` attempts to run it as a shell command and displays the output.
 
 
-<a id="org783c243"></a>
+<a id="orgec7274a"></a>
 
 ### Builtin commands
 
@@ -150,7 +150,7 @@ Here are the commands builtin to `fatty`
 | colors                       | Display ANSI, 256-color, and X11 color diagnostics                      |
 
 
-<a id="org5c87e42"></a>
+<a id="org0647dce"></a>
 
 ### Screenshots
 
@@ -179,17 +179,17 @@ Here are the commands builtin to `fatty`
     ![img](images/choose_popup.png "Running the `fatty` demo `choose` command.")
 
 
-<a id="orgfbc4afd"></a>
+<a id="org81a6036"></a>
 
 # Usage
 
 
-<a id="org44c1b1d"></a>
+<a id="org1d48a93"></a>
 
 ## Launching a Fatty Terminal
 
 
-<a id="org5e94cc1"></a>
+<a id="orgf0db7e6"></a>
 
 ### `on_accept`
 
@@ -314,7 +314,7 @@ When a `fatty` application runs, `fatty` installs a few files if they do not exi
     Text passed to `append`, `append_now`, `status`, and `alert` may contain ANSI SGR color/style sequences. Fatty interprets those sequences relative to the current theme role, so an ANSI reset returns to the active Fatty role rather than to the terminal's physical default colors. `fatty` includes the nice [`Rainbow` gem](https://github.com/ku1ik/rainbow) for colorizing text as a convenience.
 
 
-<a id="org6545825"></a>
+<a id="orgfffc721"></a>
 
 ### Other parameters to `Terminal.new`
 
@@ -339,35 +339,35 @@ on_accept: ->(line, env) {
 With that setup, commands entered in `~/src/byr` are favored when the terminal is again in `~/src/byr`, while commands entered elsewhere remain available as fallback history.
 
 
-<a id="orgea7c0a1"></a>
+<a id="org88d0db5"></a>
 
 ## The Callback API
 
 Here are the details on the messages that you can send to the callback parameter to the `on_accept` proc.
 
 
-<a id="org792f0fa"></a>
+<a id="org9743670"></a>
 
 ### `append(text, follow: true)`
 
 Add the given text to the output pane. After a full page of output is produced, enter paging mode so the user can view the output at leisure and search the output. If `follow` is true, keep the output pane's viewport covering the last lines of output.
 
 
-<a id="org1cdcd10"></a>
+<a id="org165b1d5"></a>
 
 ### `append_now(text, follow: true)`
 
 Like `append`, but display output as it is produced rather than wait for a full page to be produced.
 
 
-<a id="org026515d"></a>
+<a id="org88cea2a"></a>
 
 ### `markdown(text)`
 
 Render the given text as markdown source according to the current theme then `append` the result to the output pane.
 
 
-<a id="org8f4c73a"></a>
+<a id="org35d5ad0"></a>
 
 ### `status(text, role: :info)`
 
@@ -379,49 +379,49 @@ Display the text in the "status" area, the lines immediately above the input fie
 -   **:error:** colored something to suggest danger, usually some tone of red.
 
 
-<a id="org06b038d"></a>
+<a id="orgc11b8b3"></a>
 
 ### `good(text)`
 
 Display the text in the status area with the role :good.
 
 
-<a id="orgff95978"></a>
+<a id="org0880f6a"></a>
 
 ### `info(text)`
 
 Display the text in the status area with the role :info.
 
 
-<a id="org62c6db0"></a>
+<a id="org1945b6c"></a>
 
 ### `warn(text)`
 
 Display the text in the status area with the role :warn.
 
 
-<a id="orgc0d8cab"></a>
+<a id="org285e854"></a>
 
 ### `error(text)`
 
 Display the text in the status area with the role :error.
 
 
-<a id="org7eff255"></a>
+<a id="org54cfdf8"></a>
 
 ### `oops(text)`
 
 An alias for `error(text)`
 
 
-<a id="org9181d2e"></a>
+<a id="orgfe9a670"></a>
 
 ### `alert(text, role: :info)`
 
 Display the text in the one-line alert panel just below the input field. In the alert panel, the role only controls the foreground color, not the background.
 
 
-<a id="orgd60c493"></a>
+<a id="org2a0f168"></a>
 
 ### `prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)`
 
@@ -451,7 +451,7 @@ The `prompt` input has its own history facility separate from the history in the
 `prompt` returns whatever the user typed and returns `nil` if the user cancels with C-c or C-g unless you specify an alternative `cancel_value`.
 
 
-<a id="orgbdf9b24"></a>
+<a id="org01e70c0"></a>
 
 ### `add_progress(label:, total: nil, style: :percent, role: :info, width: 40)`
 
@@ -586,7 +586,7 @@ Display a progress widget in the status area to show the user that the system is
     And, if you have occasion, you can clear the Progress by calling `#clear` on the Progress object.
 
 
-<a id="org149fa82"></a>
+<a id="org2b76654"></a>
 
 ### `choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`
 
@@ -652,7 +652,7 @@ Fatty::Terminal.new(
 ```
 
 
-<a id="org6795292"></a>
+<a id="orga650495"></a>
 
 ### `choose_multi(prompt, choices:, cancel_value: nil)`
 
@@ -670,7 +670,7 @@ Present a set of `choices:`, which can either be
 The `prompt` String (by default "Choose Many") can guide the user about the purpose of the choices.
 
 
-<a id="org2ea3570"></a>
+<a id="orge844f03"></a>
 
 ### `confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)`
 
@@ -681,7 +681,7 @@ Present the user with a simple Yes/No choice using your choice of ways to expres
 `confirm` will return `false` on cancellation with C-c or C-g unless you provide an alternative `cancel_value:`, in which case it returns that.
 
 
-<a id="orgf34d6cf"></a>
+<a id="org42dd21f"></a>
 
 ### `menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`
 
@@ -728,7 +728,7 @@ If you want to set one of the choices as the initial choice, set `initial_choice
 If you want a value associated with the user's cancellation of the chooser with C-c or C-g, set `cancel_value:` to that value.
 
 
-<a id="org6cdc439"></a>
+<a id="org7448bd3"></a>
 
 ### `environment`
 
@@ -765,57 +765,57 @@ The environment report also includes a nested `:curses` hash:
 | `:can_change_color` | Whether curses can redefine color values             |
 
 
-<a id="org15e475f"></a>
+<a id="orge322fc4"></a>
 
 # Default Interaction
 
 
-<a id="org6a8234e"></a>
+<a id="org7055758"></a>
 
 ## Parts of the Screen
 
 
-<a id="org73fee27"></a>
+<a id="orgdbb76a8"></a>
 
 ### Input Field
 
 Just above the bottom of the screen where all the action takes place: it is a line for editing the input. It displays a prompt followed by an area in which you build the command line using `fatty's` editing facilities.
 
 
-<a id="orgc79f4cf"></a>
+<a id="org3108423"></a>
 
 ### Output Pane
 
 Most of the top part of the screen is reserved for displaying whatever output is sent to it with the `on_accept` callback to the `Terminal`. It can render colored ANSI-encoded strings and will page long output so you can view it a page at a time and even search the output.
 
 
-<a id="orgd3aa0ce"></a>
+<a id="org718c2bd"></a>
 
 ### Status Area
 
 The one to four lines just above the Input Field that displays output to the user that is out of band for the Output Pane. Brief messages of confirmation, warning, or error can be displayed there so as to get the user's immediate attention. Progress bars also render there where their visibility is made prominent.
 
 
-<a id="orgac33e3a"></a>
+<a id="org8ca9ef9"></a>
 
 ### Alert  Area
 
 Alerts are short-lived, non-scrolling messages shown below the input field. They are intended for user-visible conditions that require attention. `Fatty` uses this area to warn the user of unrecognized key codes and of unbound key presses.
 
 
-<a id="orgf702c1f"></a>
+<a id="orge717176"></a>
 
 ## Command-line Editing
 
 
-<a id="orgb9294df"></a>
+<a id="org0b23552"></a>
 
 ## Keybindings
 
 The following tables explain the keybindings available in \`fatty\` in different contexts. Named keys are indicated by \`:name\` and key categories, such as \`<digits>\` are indicated with brackets.
 
 
-<a id="org407978d"></a>
+<a id="org7cadef9"></a>
 
 ### Input Context
 
@@ -878,7 +878,7 @@ When editing the input line or text input for widgets like the \`prompt\`, \`fat
 |            |                                                        |
 
 
-<a id="org5deac21"></a>
+<a id="orgd8a9039"></a>
 
 ### Paging Context
 
@@ -899,12 +899,12 @@ By default, \`fatty\` sends output to the large output pane, and if the output i
 | C-/   | initiate an Regexp session forward      |
 
 
-<a id="org9f2103f"></a>
+<a id="org2c3218f"></a>
 
 ## Markdown
 
 
-<a id="orga96dd8b"></a>
+<a id="org77baf41"></a>
 
 ### Forced line breaks
 
@@ -922,32 +922,32 @@ and this should appear on the next line.
 ```
 
 
-<a id="org66fc9ee"></a>
+<a id="org3d4b13a"></a>
 
 ## History
 
 
-<a id="org3907cdc"></a>
+<a id="org94fcdd2"></a>
 
 ## Completion
 
 
-<a id="org89d3c9d"></a>
+<a id="orgf0d2338"></a>
 
 ### From the `completion_proc`
 
 
-<a id="org346a2a8"></a>
+<a id="orga12521a"></a>
 
 ### From History
 
 
-<a id="org0fbfa94"></a>
+<a id="org5ca1a2d"></a>
 
 ### From partial filenames
 
 
-<a id="org7c8d486"></a>
+<a id="orgbbd1770"></a>
 
 # Configuration
 
@@ -963,7 +963,7 @@ The config files are:
 The default user configuration directory follows `XDG_CONFIG_HOME` if it is set. Otherwise it is `~/.config/fatty`.
 
 
-<a id="org5ab3873"></a>
+<a id="orgd9e7304"></a>
 
 ## General Configuration `config.yml`
 
@@ -986,7 +986,7 @@ truecolor: auto
 ```
 
 
-<a id="orga8283b6"></a>
+<a id="orgda54814"></a>
 
 ### `word_char_re`
 
@@ -1009,7 +1009,7 @@ word_char_re: "[[:alnum:]_.:-]"
 ```
 
 
-<a id="orge58b1dc"></a>
+<a id="orgf4d14aa"></a>
 
 ### `esc_delay`
 
@@ -1020,7 +1020,7 @@ esc_delay: 0
 ```
 
 
-<a id="org8f3812c"></a>
+<a id="orgafe1290"></a>
 
 ### `history`
 
@@ -1033,7 +1033,7 @@ esc_delay: 0
     The maximim number of lines of history retained, by default 10,000.
 
 
-<a id="org9b885c8"></a>
+<a id="org117081f"></a>
 
 ### `theme`
 
@@ -1044,7 +1044,7 @@ theme: nordic
 ```
 
 
-<a id="orge8d59f3"></a>
+<a id="org80a705f"></a>
 
 ### `truecolor`
 
@@ -1055,7 +1055,7 @@ truecolor: auto
 ```
 
 
-<a id="org957e98d"></a>
+<a id="org4a80e1c"></a>
 
 ### `log`
 
@@ -1105,7 +1105,7 @@ tags:
     ```
 
 
-<a id="org9d9f6e5"></a>
+<a id="orgef9cebe"></a>
 
 ## Key code definitions `keydefs.yml`
 
@@ -1243,7 +1243,7 @@ konsole:
 After installing that keydefs, I find that the PageDown variants are all recognized by name and modifiers (except for the strange failure of `terminator` to recognize `C-PageDown`!).
 
 
-<a id="orgad9cd9b"></a>
+<a id="org7f963ad"></a>
 
 ## Key bindings  `keybindings.yml`
 
@@ -1270,7 +1270,7 @@ A keybinding names a key chord, the context in which it applies, and the Fatty a
 ```
 
 
-<a id="org6caef98"></a>
+<a id="orgf772402"></a>
 
 ### Key Names
 
@@ -1347,7 +1347,7 @@ A keybinding uses the unmodified key name under the `key` field:
     Fatty does not require custom key names to come from a fixed registry. A custom name only needs to be used consistently between `keydefs.yml` and `keybindings.yml`.
 
 
-<a id="orgb74b221"></a>
+<a id="orgd596282"></a>
 
 ### Mouse Events
 
@@ -1382,7 +1382,7 @@ scroll_down
 ```
 
 
-<a id="orga1ac1e0"></a>
+<a id="orgb06bcc0"></a>
 
 ### Modifiers
 
@@ -1395,19 +1395,221 @@ shift: true
 ```
 
 
-<a id="org8317f4f"></a>
+<a id="orgf84fd6a"></a>
 
 ### Contexts
 
-The default context is `input`. Other common contexts include `paging` and `popup`.
+In `Fatty`, the key map is partitioned by "contexts" and in different environments the contexts are tried in order from highest priority to lowest and the first binding found wins. The following table lists the contexts associated with each interaction environment:
+
+| Environment        | Contexts High to Low                    |
+|------------------ |--------------------------------------- |
+| Input Field        | :input, :text, :terminal                |
+| Output Paging      | :paging, :terminal                      |
+| Output Scrolling   | :terminal                               |
+| String Search      | :search, :text, :terminal               |
+| Incremental Search | :isearch, :text, :terminal              |
+| Prompt Popup       | :prompt, :text, :terminal               |
+| Popup Choose       | :popup, :text, :terminal                |
+| Popup Multi-Choose | :popup\_multi, :popup, :text, :terminal |
+
+The available contexts are:
+
+| Context        | Meaning                                               |
+|-------------- |----------------------------------------------------- |
+| `:terminal`    | global terminal/session commands                      |
+| `:text`        | ordinary text-editing commands shared by input fields |
+| `:input`       | the main command input field                          |
+| `:paging`      | output pager navigation                               |
+| `:search`      | non-incremental search field                          |
+| `:isearch`     | incremental search field                              |
+| `:prompt`      | prompt popup input                                    |
+| `:popup`       | popup selection/navigation                            |
+| `:popup_multi` | multi-select popup behavior                           |
+
+The \`:terminal\` context is the lowest-priority fallback context for terminal-wide commands. It is where Fatty puts bindings that are not specific to text editing, paging, search, or popup selection, such as theme selection, key testing, and quitting. Because \`:terminal\` is searched last, any more specific context can override a terminal-wide binding.
 
 
-<a id="org59b9bd6"></a>
+<a id="orgecf9c47"></a>
 
 ### Actions
 
+A keybinding connects a key event in a context to an "action." An action is a named Fatty command such as \`move\_left\`, \`delete\_backward\`, \`accept\_line\`, \`page\_down\`, \`choose\_theme\`, or \`quit\`.
 
-<a id="orga78be46"></a>
+A binding entry names the action with the \`action\` field:
+
+```yaml
+- key: left
+  context: text
+  action: move_left
+
+- key: f
+  meta: true
+  context: text
+  action: move_word_right
+
+- key: page_down
+  context: paging
+  action: page_down
+```
+
+Most movement, deletion, history, completion, paging, and popup-navigation actions honor Fatty's numeric count argument. The count is entered before the command, Emacs-style. For example, `M-5 C-f` moves forward five characters if `C-f` is bound to move\_right, and `M-3 C-n` moves down three items if `C-n` is bound to the current environment's `next-item` action.
+
+Use \`keytest\` to check what action is currently bound to a key. If a key is bound, \`keytest\` reports the matching context, action name, arguments, and the object that handles the action.
+
+1.  Input buffer actions
+
+    Input buffer actions edit the contents of a text buffer. These are the ordinary line-editing operations shared by the main input field, search fields, prompt popups, and other text-like interactions. Many of these actions honor the numeric prefix count.
+    
+    Terminology notes:
+    
+    -   **kill ring:** like emacs, `fatty` keeps a "clipboard" of items with the newest item in the current position and older items "before" it but in a "ring" that return to the beginning;
+    -   **yank:** retrieve the most recent item from the kill ring
+    -   **yank pop:** retrieve successively older items from the kill ring
+    -   **delete:** removes text without copying it to the kill ring;
+    -   **kill:** removes text and copies it to the kill ring for later yank;
+    -   **word:** a sequence of contiguous characters that are each matched by the `word_char_re` from the config file or "[[:alnum]\_]" by default;
+    
+    | Action Name            | Count? | Description                                |
+    |---------------------- |------ |------------------------------------------ |
+    | bol                    | No     | Move cursor to beginning of buffer         |
+    | clear                  | No     | Clear the buffer                           |
+    | clear\_mark            | No     | Clear the region mark                      |
+    | copy\_region           | No     | Copy the text in the region to kill ring   |
+    | delete\_char\_backward | Yes    | Delete char to the left of cursor          |
+    | delete\_char\_forward  | Yes    | Delete char to the right of cursor         |
+    | delete\_region         | No     | Delete the text in the region              |
+    | eol                    | No     | Move cursor to end of buffer               |
+    | kill\_region           | No     | Kill the text in the region                |
+    | kill\_to\_bol          | No     | Kill the text from cursor to end           |
+    | kill\_to\_eol          | No     | Kill the text from cursor to beginning     |
+    | kill\_word\_backward   | Yes    | Kill the word to the left of  cursor       |
+    | kill\_word\_forward    | Yes    | Kill the word to the right of  cursor      |
+    | move\_left             | Yes    | Move cursor one char left                  |
+    | move\_right            | Yes    | Move cursor one char right                 |
+    | move\_word\_left       | Yes    | Move cursor one word left                  |
+    | move\_word\_right      | Yes    | Move cursor one word right                 |
+    | redo                   | No     | Redo an undone action                      |
+    | set\_mark              | No     | Set the region mark at cursor              |
+    | transpose\_chars       | Yes    | Switch position of char with prior char    |
+    | transpose\_words       | Yes    | Switch position of word with prior char    |
+    | undo                   | No     | Revert last edit action                    |
+    | yank                   | No     | Copy kill ring to buffer at cursor         |
+    | yank\_pop              | Yes    | Copy next kill ring item and replace prior |
+
+2.  Input field actions
+
+    Input field actions operate on an editable input field. An input field occurs at the main input prompt, but also in things like search-narrowing input, incremental-search, a prompt for text, etc. It is lower level than the shell session input described in the next section. In particular, it can have its own history attached to it depending on its purpose. They handle accepting the current line, moving through history, and receiving pasted text.
+    
+    | Action Name   | Count? | Description                                               |
+    |------------- |------ |--------------------------------------------------------- |
+    | accept\_line  | No     | Accept the current text as the input                      |
+    | history\_prev | No     | Insert the prior relevant history item in the input field |
+    | history\_next | No     | Insert the next relevant history item in the input field  |
+
+3.  Shell session actions
+
+    Shell session actions operate at the session level around the main command input and output area. They submit input, interrupt running work, clear output, start completion, open completion/history popups, and manage numeric prefix entry.
+    
+    | Action Name          | Count? | Description                                                      |
+    |-------------------- |------ |---------------------------------------------------------------- |
+    | submit\_line         | No     | Pass the current text to the on\_accept proc and page output     |
+    | submit\_and\_scroll  | No     | Pass the current text to the on\_accept proc and scroll output   |
+    | interrupt            | No     | End the current session                                          |
+    | interrupt\_if\_empty | No     | End the current session only if the current text is empty        |
+    | clear\_output        | No     | Clear the output pane                                            |
+    | complete             | No     | Suggest the next possible completion as an autosuggestion        |
+    | complete\_previous   | No     | Suggest the prior possible completion as an autosuggestion       |
+    | completion\_popup    | No     | Display all possible completions in a popup for selection        |
+    | history\_search      | No     | Display history item starting with the text-so-far for selection |
+    | count\_digit         | No     | Add a digit to the numeric prefix                                |
+    | universal\_argument  | No     | Set the numeric argument to 4 or multiply the current one by 4   |
+
+4.  Pager actions
+
+    Pager actions navigate output when the output area is in paging mode. They move by line, page, top, bottom, or end of output, handle mouse-wheel scrolling, and switch between paging and scrolling behavior. Most movement actions honor the numeric prefix count.
+    
+    | Action Name           | Count? | Description                                      |
+    |--------------------- |------ |------------------------------------------------ |
+    | page\_up              | Yes    | Move the output view one page up                 |
+    | page\_down            | Yes    | Move the output view one page down               |
+    | end\_of\_output       | No     | Move the output to the end of output and scroll  |
+    | line\_up              | Yes    | Move the output view one line up                 |
+    | line\_down            | Yes    | Move the output view one line down               |
+    | scroll\_up            | Yes    | Move the output view six lines up                |
+    | scroll\_down          | Yes    | Move the output view six lines down              |
+    | page\_top             | No     | Move the output to the beginning of output       |
+    | page\_bottom          | No     | Move the output to the end of output             |
+    | paging\_to\_scrolling | No     | Quit paging and scroll output as it is produced  |
+    | toggle\_paging        | No     | Toggle output mode between paging and scrolling  |
+    | quit\_paging          | No     | Quit paging and return control to the input line |
+
+5.  Pager search actions
+
+    Pager search actions can *initiate* a search session within the pager: a string search, a regular expression search, or an incremental-search. Once a search session is entered, other actions navigate matches in the output. There are also actions to end a search session.
+    
+    While the search session is active, accepting commits the current match and canceling restores the pager to the position it had when the search began. After the search is accepted, `n` and `N` repeat the committed search in the pager; at that point the search session is no longer active.
+    
+    | Action Name                    | Count? | Description                                                         |
+    |------------------------------ |------ |------------------------------------------------------------------- |
+    | pager\_search\_forward         | No     | Initiate a string search forward from current output point          |
+    | pager\_search\_backward        | No     | Initiate a string search backward from current output point         |
+    | pager\_regex\_search\_forward  | No     | Initiate a regex search forward from current output point           |
+    | pager\_regex\_search\_backward | No     | Initiate a regex search backward from current output point          |
+    | pager\_isearch\_forward        | No     | Initiate an incremental search forward from current output point    |
+    | pager\_isearch\_backward       | No     | Initiate an incremental search backward from current output point   |
+    | pager\_search\_next            | No     | Move output to the next search match                                |
+    | pager\_search\_prev            | No     | Move output to the prior search match                               |
+    | search\_toggle\_regex          | No     | Toggle between regex and string search                              |
+    | search\_step\_forward          | No     | Preview the next match using the current search text                |
+    | search\_step\_backward         | No     | Preview the prior match using the current search text               |
+    | isearch\_next                  | No     | Move output to the next isearch match                               |
+    | isearch\_prev                  | No     | Move output to the prior isearch match                              |
+    | search\_accept                 | No     | Commit the current search and close the search session              |
+    | search\_cancel                 | No     | Cancel the active search session and restore its starting point     |
+    | isearch\_accept                | No     | Commit the current incremental search and close the search session  |
+    | isearch\_cancel                | No     | Cancel the active incremental search and restore its starting point |
+
+6.  Popup actions
+
+    Popup actions control selection and narrowing popups such as choose, menu, completion, and history popups. You can narrow the selections presented by typing in the input field presented. You can move through the list, accept or cancel the selection, page through choices, jump to the top or bottom, recenter the selection, and toggle selection in multi-select popups.
+    
+    | Action Name             | Count? | Description                                               |
+    |----------------------- |------ |--------------------------------------------------------- |
+    | popup\_cancel           | No     | Close the popup and return its cancel\_value              |
+    | popup\_accept           | No     | Close the popup and return the selection                  |
+    | popup\_next             | No     | Move the selection cursor to the next item                |
+    | popup\_prev             | No     | Move the selection cursor to the prior item               |
+    | popup\_page\_down       | No     | Move the selection list down one page                     |
+    | popup\_page\_up         | No     | Move the selection list up one page                       |
+    | popup\_top              | No     | Move to the top of the selection list                     |
+    | popup\_bottom           | No     | Move to the bottom of the selection list                  |
+    | popup\_recenter         | No     | Recenter the selection list on the current item           |
+    | popup\_toggle\_selected | No     | In multi-select, toggle the selection of the current item |
+
+7.  Prompt popup actions
+
+    Prompt popup actions control prompt dialogs that collect a string from the user. They accept the prompt, cancel it, or cancel only when the prompt is empty.
+    
+    | Action Name               | Count? | Description                                          |
+    |------------------------- |------ |---------------------------------------------------- |
+    | prompt\_accept            | No     | Close the prompt popup and return the current string |
+    | prompt\_cancel            | No     | Close the prompt popup and return its cancel\_value  |
+    | prompt\_cancel\_if\_empty | No     | Cancel only if the input buffer is empty             |
+
+8.  Utility Actions
+
+    Some actions exist to support `Fatty`'s own input machinery and are not normally useful as ordinary user bindings. For example, `insert`, `replace`, and `paste` need text supplied by code: `paste` is used for bracketed paste events from the terminal and normalizes pasted text for a one-line input field; `self_insert` is selected automatically for printable characters. They are listed her for completeness.
+    
+    | Action Name  | Args | Count? | Description                        |
+    |------------ |---- |------ |---------------------------------- |
+    | insert       | str  | Yes    | Insert the string at point         |
+    | self\_insert |      | Yes    | Insert the bound key at point      |
+    | replace      | str  | No     | Replace the buffer with the string |
+    | set          | str  | No     | Alias for `replace`                |
+    | paste        | str  | No     | Insert pasted text at point        |
+
+
+<a id="org69ea759"></a>
 
 ## Themes `themes/`
 
@@ -1685,6 +1887,6 @@ Themes can be changed while Fatty is running. The default Emacs-style bindings i
 Theme changes update the renderer immediately.
 
 
-<a id="orgc72a28f"></a>
+<a id="org64abe80"></a>
 
 ## Plugins

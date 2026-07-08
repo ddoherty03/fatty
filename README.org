@@ -1315,10 +1315,251 @@ shift: true
 #+end_src
 
 *** Contexts
-The default context is =input=.  Other common contexts include =paging= and
-=popup=.
+In =Fatty=, the key map is partitioned by "contexts" and in different
+environments the contexts are tried in order from highest priority to lowest
+and the first binding found wins. The following table lists the contexts
+associated with each interaction environment:
+
+| Environment        | Contexts High to Low                   |
+|--------------------+----------------------------------------|
+| Input Field        | :input, :text, :terminal               |
+| Output Paging      | :paging, :terminal                     |
+| Output Scrolling   | :terminal                              |
+| String Search      | :search, :text, :terminal              |
+| Incremental Search | :isearch, :text, :terminal             |
+| Prompt Popup       | :prompt, :text, :terminal              |
+| Popup Choose       | :popup, :text, :terminal               |
+| Popup Multi-Choose | :popup_multi, :popup, :text, :terminal |
+
+The available contexts are:
+
+| Context        | Meaning                                               |
+|----------------+-------------------------------------------------------|
+| =:terminal=    | global terminal/session commands                      |
+| =:text=        | ordinary text-editing commands shared by input fields |
+| =:input=       | the main command input field                          |
+| =:paging=      | output pager navigation                               |
+| =:search=      | non-incremental search field                          |
+| =:isearch=     | incremental search field                              |
+| =:prompt=      | prompt popup input                                    |
+| =:popup=       | popup selection/navigation                            |
+| =:popup_multi= | multi-select popup behavior                           |
+
+The `:terminal` context is the lowest-priority fallback context for
+terminal-wide commands. It is where Fatty puts bindings that are not specific
+to text editing, paging, search, or popup selection, such as theme selection,
+key testing, and quitting. Because `:terminal` is searched last, any more
+specific context can override a terminal-wide binding.
 
 *** Actions
+A keybinding connects a key event in a context to an "action." An action is a
+named Fatty command such as `move_left`, `delete_backward`, `accept_line`,
+`page_down`, `choose_theme`, or `quit`.
+
+A binding entry names the action with the `action` field:
+
+#+begin_src yaml :tangle no
+- key: left
+  context: text
+  action: move_left
+
+- key: f
+  meta: true
+  context: text
+  action: move_word_right
+
+- key: page_down
+  context: paging
+  action: page_down
+#+end_src
+
+Most movement, deletion, history, completion, paging, and popup-navigation
+actions honor Fatty's numeric count argument. The count is entered before the
+command, Emacs-style. For example, =M-5 C-f= moves forward five characters if
+=C-f= is bound to move_right, and =M-3 C-n= moves down three items if =C-n= is
+bound to the current environment's =next-item= action.
+
+Use `keytest` to check what action is currently bound to a key. If a key is
+bound, `keytest` reports the matching context, action name, arguments, and the
+object that handles the action.
+
+**** Input buffer actions
+Input buffer actions edit the contents of a text buffer. These are the ordinary
+line-editing operations shared by the main input field, search fields, prompt
+popups, and other text-like interactions. Many of these actions honor the
+numeric prefix count.
+
+Terminology notes:
+- kill ring :: like emacs, =fatty= keeps a "clipboard" of items with the
+  newest item in the current position and older items "before" it but in a
+  "ring" that return to the beginning;
+- yank :: retrieve the most recent item from the kill ring
+- yank pop :: retrieve successively older items from the kill ring
+- delete :: removes text without copying it to the kill ring;
+- kill :: removes text and copies it to the kill ring for later yank;
+- word :: a sequence of contiguous characters that are each matched by the
+  =word_char_re= from the config file or "[[:alnum]_]" by default;
+
+| Action Name          | Count? | Description                                |
+|----------------------+--------+--------------------------------------------|
+| bol                  | No     | Move cursor to beginning of buffer         |
+| clear                | No     | Clear the buffer                           |
+| clear_mark           | No     | Clear the region mark                      |
+| copy_region          | No     | Copy the text in the region to kill ring   |
+| delete_char_backward | Yes    | Delete char to the left of cursor          |
+| delete_char_forward  | Yes    | Delete char to the right of cursor         |
+| delete_region        | No     | Delete the text in the region              |
+| eol                  | No     | Move cursor to end of buffer               |
+| kill_region          | No     | Kill the text in the region                |
+| kill_to_bol          | No     | Kill the text from cursor to end           |
+| kill_to_eol          | No     | Kill the text from cursor to beginning     |
+| kill_word_backward   | Yes    | Kill the word to the left of  cursor       |
+| kill_word_forward    | Yes    | Kill the word to the right of  cursor      |
+| move_left            | Yes    | Move cursor one char left                  |
+| move_right           | Yes    | Move cursor one char right                 |
+| move_word_left       | Yes    | Move cursor one word left                  |
+| move_word_right      | Yes    | Move cursor one word right                 |
+| redo                 | No     | Redo an undone action                      |
+| set_mark             | No     | Set the region mark at cursor              |
+| transpose_chars      | Yes    | Switch position of char with prior char    |
+| transpose_words      | Yes    | Switch position of word with prior char    |
+| undo                 | No     | Revert last edit action                    |
+| yank                 | No     | Copy kill ring to buffer at cursor         |
+| yank_pop             | Yes    | Copy next kill ring item and replace prior |
+
+**** Input field actions
+Input field actions operate on an editable input field. An input field occurs
+at the main input prompt, but also in things like search-narrowing input,
+incremental-search, a prompt for text, etc.  It is lower level than the shell
+session input described in the next section.  In particular, it can have its
+own history attached to it depending on its purpose.  They handle accepting
+the current line, moving through history, and receiving pasted text.
+
+| Action Name  | Count? | Description                                               |
+|--------------+--------+-----------------------------------------------------------|
+| accept_line  | No     | Accept the current text as the input                      |
+| history_prev | No     | Insert the prior relevant history item in the input field |
+| history_next | No     | Insert the next relevant history item in the input field  |
+
+**** Shell session actions
+Shell session actions operate at the session level around the main command
+input and output area. They submit input, interrupt running work, clear output,
+start completion, open completion/history popups, and manage numeric prefix
+entry.
+
+| Action Name        | Count? | Description                                                      |
+|--------------------+--------+------------------------------------------------------------------|
+| submit_line        | No     | Pass the current text to the on_accept proc and page output      |
+| submit_and_scroll  | No     | Pass the current text to the on_accept proc and scroll output    |
+| interrupt          | No     | End the current session                                          |
+| interrupt_if_empty | No     | End the current session only if the current text is empty        |
+| clear_output       | No     | Clear the output pane                                            |
+| complete           | No     | Suggest the next possible completion as an autosuggestion        |
+| complete_previous  | No     | Suggest the prior possible completion as an autosuggestion       |
+| completion_popup   | No     | Display all possible completions in a popup for selection        |
+| history_search     | No     | Display history item starting with the text-so-far for selection |
+| count_digit        | No     | Add a digit to the numeric prefix                                |
+| universal_argument | No     | Set the numeric argument to 4 or multiply the current one by 4   |
+
+**** Pager actions
+Pager actions navigate output when the output area is in paging mode. They move
+by line, page, top, bottom, or end of output, handle mouse-wheel scrolling, and
+switch between paging and scrolling behavior. Most movement actions honor the
+numeric prefix count.
+
+| Action Name         | Count? | Description                                      |
+|---------------------+--------+--------------------------------------------------|
+| page_up             | Yes    | Move the output view one page up                 |
+| page_down           | Yes    | Move the output view one page down               |
+| end_of_output       | No     | Move the output to the end of output and scroll  |
+| line_up             | Yes    | Move the output view one line up                 |
+| line_down           | Yes    | Move the output view one line down               |
+| scroll_up           | Yes    | Move the output view six lines up                |
+| scroll_down         | Yes    | Move the output view six lines down              |
+| page_top            | No     | Move the output to the beginning of output       |
+| page_bottom         | No     | Move the output to the end of output             |
+| paging_to_scrolling | No     | Quit paging and scroll output as it is produced  |
+| toggle_paging       | No     | Toggle output mode between paging and scrolling  |
+| quit_paging         | No     | Quit paging and return control to the input line |
+
+**** Pager search actions
+
+Pager search actions can /initiate/ a search session within the pager: a
+string search, a regular expression search, or an incremental-search.  Once a
+search session is entered, other actions navigate matches in the output.
+There are also actions to end a search session.
+
+While the search session is active, accepting commits the current match and
+canceling restores the pager to the position it had when the search began.
+After the search is accepted, =n= and =N= repeat the committed search in the
+pager; at that point the search session is no longer active.
+
+| Action Name                 | Count? | Description                                                         |
+|-----------------------------+--------+---------------------------------------------------------------------|
+| pager_search_forward        | No     | Initiate a string search forward from current output point          |
+| pager_search_backward       | No     | Initiate a string search backward from current output point         |
+| pager_regex_search_forward  | No     | Initiate a regex search forward from current output point           |
+| pager_regex_search_backward | No     | Initiate a regex search backward from current output point          |
+| pager_isearch_forward       | No     | Initiate an incremental search forward from current output point    |
+| pager_isearch_backward      | No     | Initiate an incremental search backward from current output point   |
+| pager_search_next           | No     | Move output to the next search match                                |
+| pager_search_prev           | No     | Move output to the prior search match                               |
+| search_toggle_regex         | No     | Toggle between regex and string search                              |
+| search_step_forward         | No     | Preview the next match using the current search text                |
+| search_step_backward        | No     | Preview the prior match using the current search text               |
+| isearch_next                | No     | Move output to the next isearch match                               |
+| isearch_prev                | No     | Move output to the prior isearch match                              |
+| search_accept               | No     | Commit the current search and close the search session              |
+| search_cancel               | No     | Cancel the active search session and restore its starting point     |
+| isearch_accept              | No     | Commit the current incremental search and close the search session  |
+| isearch_cancel              | No     | Cancel the active incremental search and restore its starting point |
+
+**** Popup actions
+Popup actions control selection and narrowing popups such as choose, menu,
+completion, and history popups. You can narrow the selections presented by
+typing in the input field presented.  You can move through the list, accept or
+cancel the selection, page through choices, jump to the top or bottom,
+recenter the selection, and toggle selection in multi-select popups.
+
+| Action Name           | Count? | Description                                               |
+|-----------------------+--------+-----------------------------------------------------------|
+| popup_cancel          | No     | Close the popup and return its cancel_value               |
+| popup_accept          | No     | Close the popup and return the selection                  |
+| popup_next            | No     | Move the selection cursor to the next item                |
+| popup_prev            | No     | Move the selection cursor to the prior item               |
+| popup_page_down       | No     | Move the selection list down one page                     |
+| popup_page_up         | No     | Move the selection list up one page                       |
+| popup_top             | No     | Move to the top of the selection list                     |
+| popup_bottom          | No     | Move to the bottom of the selection list                  |
+| popup_recenter        | No     | Recenter the selection list on the current item           |
+| popup_toggle_selected | No     | In multi-select, toggle the selection of the current item |
+
+**** Prompt popup actions
+Prompt popup actions control prompt dialogs that collect a string from the
+user. They accept the prompt, cancel it, or cancel only when the prompt is
+empty.
+
+| Action Name            | Count? | Description                                          |
+|------------------------+--------+------------------------------------------------------|
+| prompt_accept          | No     | Close the prompt popup and return the current string |
+| prompt_cancel          | No     | Close the prompt popup and return its cancel_value   |
+| prompt_cancel_if_empty | No     | Cancel only if the input buffer is empty             |
+
+**** Utility Actions
+Some actions exist to support =Fatty='s own input machinery and are not
+normally useful as ordinary user bindings. For example, =insert=, =replace=,
+and =paste= need text supplied by code: =paste= is used for bracketed paste
+events from the terminal and normalizes pasted text for a one-line input
+field; =self_insert= is selected automatically for printable characters.  They
+are listed her for completeness.
+
+| Action Name | Args | Count? | Description                        |
+|-------------+------+--------+------------------------------------|
+| insert      | str  | Yes    | Insert the string at point         |
+| self_insert |      | Yes    | Insert the bound key at point      |
+| replace     | str  | No     | Replace the buffer with the string |
+| set         | str  | No     | Alias for =replace=                |
+| paste       | str  | No     | Insert pasted text at point        |
 
 ** Themes =themes/=
 
