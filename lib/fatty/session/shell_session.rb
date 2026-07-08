@@ -166,12 +166,6 @@ module Fatty
       Command.session(output_session.id, :clear)
     end
 
-    desc "Add a digit to the current numeric prefix"
-    action :prefix_digit do |digit|
-      counter.push_digit(digit)
-      []
-    end
-
     desc "Complete the current input prefix"
     action :complete do
       with_virtual_suffix_sync do
