@@ -15,6 +15,9 @@ module Fatty
         prompt: "> ",
         current: :top,
         validate_unique_labels: true,
+        history: terminal.history,
+        history_kind: :popup_filter,
+        history_ctx: { kind: :popup_filter, popup: :menu, prompt: prompt.to_s },
       )
       popup.instance_variable_set(
         :@current,

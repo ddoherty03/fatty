@@ -258,6 +258,10 @@ module Fatty
       @restore_cursor_after_render = old_restore_cursor
     end
 
+    def history
+      shell_session&.history || Fatty::History.for_path(@history_path)
+    end
+
     private
 
     # simplecov:disable
@@ -690,10 +694,6 @@ module Fatty
       @session_dirty = true
       @immediate_render = true if %i[status alert].include?(session.id)
       apply_commands(commands)
-    end
-
-    def prompt_history
-      @prompt_history ||= Fatty::History.new(path: :default)
     end
 
     def hide_cursor

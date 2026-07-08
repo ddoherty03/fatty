@@ -58,6 +58,10 @@ module Fatty
           false
         end
 
+        def history
+          @history ||= Fatty::History.new(path: nil)
+        end
+
         private
 
         # simplecov:disable

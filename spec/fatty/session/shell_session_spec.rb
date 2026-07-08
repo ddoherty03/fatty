@@ -452,7 +452,7 @@ module Fatty
         session = Fatty::ShellSession.new
         init_shell_session(session)
 
-        commands = apply_action(session, :prefix_digit, 4)
+        commands = apply_action(session, :count_digit, 4)
 
         expect(commands).to eq([])
         expect(session.counter.digits).to eq("4")

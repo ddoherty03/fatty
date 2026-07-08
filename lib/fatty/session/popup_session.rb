@@ -21,21 +21,25 @@ module Fatty
     # - order: :as_given (default) or :reverse (presentation order).
     # - current: :preserve (default), :top, :bottom (how the current behaves after refresh).
     def initialize(
-      source:,
-      title: nil,
-      message: nil,
-      prompt: "> ",
-      keymap: Keymaps.emacs,
-      matcher: nil,
-      order: :as_given,
-      kind: nil,
-      current: :preserve,
-      initial_query: nil,
-      show_counts: true,
-      show_filter: true,
-      selection_mode: :single,
-      validate_unique_labels: false
-    )
+          source:,
+          title: nil,
+          message: nil,
+          prompt: "> ",
+          keymap: Keymaps.emacs,
+          matcher: nil,
+          order: :as_given,
+          kind: nil,
+          current: :preserve,
+          initial_query: nil,
+          show_counts: true,
+          show_filter: true,
+          selection_mode: :single,
+          history: nil,
+          history_kind: :popup_filter,
+          history_ctx: nil,
+          save_history: true,
+          validate_unique_labels: false
+        )
       super(keymap: keymap)
       @source = source
       @title = title&.to_s
@@ -48,10 +52,16 @@ module Fatty
       @current = nil
       @selection_mode = selection_mode.to_sym
       @show_counts = !!show_counts
+      @history = history
+      @save_history = !!save_history
+      @field = InputField.new(
+        prompt: @prompt,
+        history: @history,
+        history_kind: history_kind,
+        history_ctx: history_ctx,
+      )
       @show_filter = !!show_filter
       @validate_unique_labels = !!validate_unique_labels
-
-      @field = InputField.new(prompt: @prompt)
       text = initial_query.to_s
       @field.buffer.replace(text) unless text.empty?
 
@@ -293,12 +303,16 @@ module Fatty
     end
 
     def accept_selection
+      query = @field.buffer.text.to_s
+      @field.accept_line(save_history: @save_history) unless query.empty?
       if multi_select?
-        payload = popup_payload(selected_result_hash)
+        items = selected_result_hash
+        if items.empty? && selected_item
+          items[item_label(selected_item)] = item_value(selected_item)
+        end
+        payload = popup_payload(items)
       else
         item = selected_item
-        query = @field.buffer.text.to_s
-
         return [] if item.nil? && query.empty?
 
         item = query if item.nil?

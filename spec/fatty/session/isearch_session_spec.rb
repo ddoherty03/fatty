@@ -163,6 +163,29 @@ module Fatty
         expect(session.field.prompt_text).to include("Failing I-search")
       end
 
+      it "records accepted incremental searches in string search history context" do
+        history = Fatty::History.new(path: nil)
+        session = Fatty::ISearchSession.new(direction: :forward, history: history)
+        session.field.buffer.replace("needle")
+
+        update(session, :key, event: key(:enter))
+
+        entry = history.entries.last
+        expect(entry.text).to eq("needle")
+        expect(entry.kind).to eq(:search_string)
+        expect(entry.ctx).to eq({ "kind" => :search, "regex" => false })
+      end
+
+      it "does not record canceled incremental searches" do
+        history = Fatty::History.new(path: nil)
+        session = Fatty::ISearchSession.new(direction: :forward, history: history)
+        session.field.buffer.replace("needle")
+
+        update(session, :key, event: key(:escape))
+
+        expect(history.entries).to be_empty
+      end
+
       it "ignores unknown commands" do
         session = Fatty::ISearchSession.new
 

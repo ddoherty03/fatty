@@ -113,6 +113,42 @@ module Fatty
         expect(session.field.buffer.text).to eq("a")
       end
 
+      it "records accepted string searches in search history context" do
+        history = Fatty::History.new(path: nil)
+        session = Fatty::SearchSession.new(direction: :forward, regex: false, history: history)
+        session.field.buffer.replace("needle")
+
+        update(session, :key, event: key(:enter))
+
+        entry = history.entries.last
+        expect(entry.text).to eq("needle")
+        expect(entry.kind).to eq(:search_string)
+        expect(entry.ctx).to eq({ "kind" => :search, "regex" => false })
+      end
+
+      it "records accepted regex searches in regex search history context" do
+        history = Fatty::History.new(path: nil)
+        session = Fatty::SearchSession.new(direction: :forward, regex: true, history: history)
+        session.field.buffer.replace("foo.*bar")
+
+        update(session, :key, event: key(:enter))
+
+        entry = history.entries.last
+        expect(entry.text).to eq("foo.*bar")
+        expect(entry.kind).to eq(:search_regex)
+        expect(entry.ctx).to eq({ "kind" => :search, "regex" => true })
+      end
+
+      it "does not record canceled searches" do
+        history = Fatty::History.new(path: nil)
+        session = Fatty::SearchSession.new(history: history)
+        session.field.buffer.replace("needle")
+
+        update(session, :key, event: key(:escape))
+
+        expect(history.entries).to be_empty
+      end
+
       it "ignores unknown commands" do
         session = Fatty::SearchSession.new
 

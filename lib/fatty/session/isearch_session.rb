@@ -21,6 +21,7 @@ module Fatty
         prompt: Prompt.new { isearch_prompt },
         history: history,
         history_kind: :search_string,
+        history_ctx: { kind: :search, regex: false },
       )
     end
 

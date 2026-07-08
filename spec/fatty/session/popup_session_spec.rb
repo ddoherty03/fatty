@@ -71,6 +71,19 @@ module Fatty
         expect(popup.filtered).to eq(%w[alpha beta gamma])
       end
 
+      it "returns the current item in multi-select mode when nothing is selected" do
+        session = Fatty::PopUpSession.new(
+          source: ["one", "two", "three"],
+          selection_mode: :multiple,
+          kind: :terminal_choose_multi,
+        )
+
+        commands = session.send(:accept_selection)
+
+        result_command = commands.first.payload[:command]
+        expect(result_command.payload[:items]).to eq({ "one" => "one" })
+      end
+
       it "ignores unknown commands" do
         popup = Fatty::PopUpSession.new(source: %w[alpha beta gamma])
         init_popup_session(popup)

@@ -11,16 +11,15 @@ module Fatty
 
     def initialize(direction: :backward, regex: false, history: nil, prefix: nil)
       super(keymap: Keymaps.emacs)
-
       @direction = direction.to_sym
       @regex = !!regex
-
       prompt = search_prompt(direction: @direction, regex: @regex)
-
+      search_session = self
       @field = Fatty::InputField.new(
         prompt: prompt,
         history: history,
-        history_kind: -> { @regex ? :search_regex : :search_string },
+        history_kind: -> { search_session.regex ? :search_regex : :search_string },
+        history_ctx: -> { { kind: :search, regex: search_session.regex } },
       )
       text = prefix.to_s
       @field.buffer.replace(text) unless text.empty?

@@ -41,6 +41,10 @@ module Fatty
           end
         end
 
+        def history
+          @history ||= Fatty::History.new(path: nil)
+        end
+
         def render_frame; end
 
         def running?

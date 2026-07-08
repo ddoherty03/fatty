@@ -18,6 +18,9 @@ module Fatty
         current: :top,
         show_counts: false,
         validate_unique_labels: true,
+        history: terminal.history,
+        history_kind: :popup_filter,
+        history_ctx: { kind: :popup_filter, popup: :choose, prompt: prompt.to_s },
       )
       popup.instance_variable_set(:@current, initial_choice_idx.to_i.clamp(0, labels.length - 1))
 
@@ -90,8 +93,10 @@ module Fatty
         show_counts: true,
         selection_mode: :multiple,
         validate_unique_labels: true,
+        history: terminal.history,
+        history_kind: :popup_filter,
+        history_ctx: { kind: :popup_filter, popup: :choose_multi, prompt: prompt.to_s },
       )
-
       done = false
       result = nil
 
