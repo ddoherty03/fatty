@@ -152,14 +152,12 @@ module Fatty
 
     # Bind a KeyEvent to an action in the given context.
     def bind(context: DEFAULT_CONTEXT, key:, ctrl: false, meta: false, shift: false, action: nil)
+      context = normalize_binding_symbol(context, field: :context)
+      key = normalize_binding_symbol(key, field: :key)
+      action = normalize_action(action)
+
       bind_str = "#{KeyEvent.key_to_str(key:, ctrl:, meta:, shift:)} -> #{action} in context: #{context}"
       Fatty.info("KeyMap#bind: (#{bind_str})", tag: :keybinding)
-
-      raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
-      raise ArgumentError, "key must be a Symbol" unless key.is_a?(Symbol)
-      unless action.is_a?(Symbol) || (action.is_a?(Array) && action.first.is_a?(Symbol))
-        raise ArgumentError, "action must be a Symbol or [Symbol, *args]"
-      end
 
       self.class.register_context(context)
 
@@ -175,19 +173,17 @@ module Fatty
     end
 
     def bind_mouse(context: DEFAULT_CONTEXT, button:, ctrl: false, meta: false, shift: false, action: nil)
+      context = normalize_binding_symbol(context, field: :context)
+      button = normalize_binding_symbol(button, field: :button)
+      action = normalize_action(action)
+
       bind_str = "#{KeyEvent.key_to_str(key: button, ctrl:, meta:, shift:)} -> #{action} in context: #{context}"
       Fatty.info("KeyMap#bind_mouse(#{bind_str})", tag: :keybinding)
-
-      raise ArgumentError, "context must be a Symbol" unless context.is_a?(Symbol)
-      raise ArgumentError, "button must be a Symbol" unless button.is_a?(Symbol)
-      unless action.is_a?(Symbol) || (action.is_a?(Array) && action.first.is_a?(Symbol))
-        raise ArgumentError, "action must be a Symbol or [Symbol, *args]"
-      end
 
       self.class.register_context(context)
 
       gest = MouseGesture.new(
-        button: button,
+        button:,
         ctrl: truthy?(ctrl),
         meta: truthy?(meta),
         shift: truthy?(shift),
@@ -309,6 +305,38 @@ module Fatty
 
     def self_insert_contexts
       [:text, :pager_input].select { |context| self.class.registered_contexts.include?(context) }
+    end
+
+    def normalize_binding_symbol(value, field:)
+      case value
+      when Symbol
+        value
+      when String
+        normalize_symbol_string(value, field:)
+      else
+        raise ArgumentError, "#{field} must be a Symbol or String"
+      end
+    end
+
+    def normalize_action(action)
+      case action
+      when Symbol, String
+        normalize_binding_symbol(action, field: :action)
+      when Array
+        raise ArgumentError, "action must be a Symbol, String, or [Symbol/String, *args]" if action.empty?
+
+        [normalize_binding_symbol(action.first, field: :action), *action.drop(1)]
+      else
+        raise ArgumentError, "action must be a Symbol, String, or [Symbol/String, *args]"
+      end
+    end
+
+    def normalize_symbol_string(value, field:)
+      str = value.strip
+      str = str.delete_prefix(":")
+      raise ArgumentError, "#{field} must not be empty" if str.empty?
+
+      str.to_sym
     end
 
     def gesture_from_event(event)
