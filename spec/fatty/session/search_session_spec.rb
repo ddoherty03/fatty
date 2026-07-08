@@ -38,7 +38,7 @@ module Fatty
 
         owner_command = commands.first.payload.fetch(:command)
 
-        expect(owner_command.target).to eq(session.id)
+        expect(owner_command.target).to eq(:focused)
         expect(owner_command.action).to eq(:pager_search_set)
         expect(owner_command.payload).to include(pattern: "foo.*bar", direction: :forward, regex: true)
       end
@@ -56,8 +56,11 @@ module Fatty
         session = Fatty::SearchSession.new
 
         commands = update(session, :key, event: key(:escape))
+        expect(commands.map(&:action)).to eq([:send_modal_owner, :pop_modal])
 
-        expect(commands.map(&:action)).to eq([:pop_modal])
+        owner_command = commands.first.payload.fetch(:command)
+        expect(owner_command.target).to eq(:focused)
+        expect(owner_command.action).to eq(:pager_search_cancel)
       end
 
       it "toggles regex mode" do
@@ -72,18 +75,22 @@ module Fatty
       end
 
       it "steps search forward" do
-        session = Fatty::SearchSession.new
+        session = described_class.new(direction: :forward, regex: false)
+        session.field.buffer.replace("zeta")
 
         commands = update(session, :key, event: key(:s, ctrl: true))
 
-        expect(commands.length).to eq(1)
-        expect(commands.first.action).to eq(:send_modal_owner)
+        expect(commands.map(&:action)).to eq([:send_modal_owner])
 
         owner_command = commands.first.payload.fetch(:command)
 
-        expect(owner_command.target).to eq(session.id)
+        expect(owner_command.target).to eq(:focused)
         expect(owner_command.action).to eq(:pager_search_step)
-        expect(owner_command.payload[:direction]).to eq(:forward)
+        expect(owner_command.payload).to include(
+                                           pattern: "zeta",
+                                           regex: false,
+                                           direction: :forward,
+                                         )
       end
 
       it "steps search backward" do

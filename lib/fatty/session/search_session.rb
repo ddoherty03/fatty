@@ -141,7 +141,13 @@ module Fatty
     end
 
     def cancel!
-      [Command.terminal(:pop_modal)]
+      [
+        Command.terminal(
+          :send_modal_owner,
+          command: Command.session(:focused, :pager_search_cancel),
+        ),
+        Command.terminal(:pop_modal),
+      ]
     end
 
     def search_accept
@@ -150,7 +156,7 @@ module Fatty
         Command.terminal(
           :send_modal_owner,
           command: Command.session(
-            id,
+            :focused,
             :pager_search_set,
             pattern: pattern,
             direction: direction,
@@ -165,7 +171,13 @@ module Fatty
       [
         Command.terminal(
           :send_modal_owner,
-          command: Command.session(id, :pager_search_step, direction: dir),
+          command: Command.session(
+            :focused,
+            :pager_search_step,
+            pattern: @field.buffer.text.to_s,
+            regex: regex,
+            direction: dir,
+          ),
         ),
       ]
     end

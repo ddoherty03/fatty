@@ -21,6 +21,8 @@ module Fatty
       @last_nav_dir = nil
       # Search state (used by SearchSession, but owned here so paging repeats and
       # highlighting survive after the SearchSession closes).
+      @isearch_snapshot = nil
+      @search_snapshot = nil
       @search = {
         pattern: nil,
         regex: false,
@@ -341,6 +343,25 @@ module Fatty
       !@search[:re].nil?
     end
 
+    def search_begin!
+      ensure_search_snapshot!
+      nil
+    end
+
+    def search_cancel!
+      if @search_snapshot
+        @viewport.top = @search_snapshot[:viewport_top]
+        @search = @search_snapshot[:search]
+        @search_snapshot = nil
+      end
+      nil
+    end
+
+    def search_commit!
+      @search_snapshot = nil
+      nil
+    end
+
     # Sets the search pattern and moves the viewport to the next match.
     # Returns a result hash:
     #   { status: :moved }
@@ -404,7 +425,7 @@ module Fatty
       start = search_start_position(direction: direction, total: total, initial: initial)
       found = find_next_match(lines, re, start, direction: direction, wrap: false)
 
-      if found
+      if valid_search_match?(found)
         apply_search_match(found)
         @search[:pending_wrap] = nil
         return { status: :moved }
@@ -416,7 +437,7 @@ module Fatty
         found = find_next_match(lines, re, wrap_start, direction: direction, wrap: true)
         @search[:pending_wrap] = nil
 
-        if found
+        if valid_search_match?(found)
           apply_search_match(found)
           return { status: :moved, wrapped: true }
         end
@@ -602,8 +623,10 @@ module Fatty
       "#{arrow} #{prefix}#{pat}"
     end
 
+    # --- ISearch -----------------------------------------------------------
+
     def isearch_update!(pattern:, direction:)
-      ensure_isearch_snapshot!
+      isearch_begin!
       pattern = pattern.to_s
 
       result =
@@ -630,6 +653,16 @@ module Fatty
       { status: :not_found, message: "Invalid regexp: #{e.message}" }
     end
 
+    def isearch_begin!
+      ensure_isearch_snapshot!
+      nil
+    end
+
+    def isearch_commit!
+      @isearch_snapshot = nil
+      nil
+    end
+
     def isearch_step!(direction:)
       ensure_isearch_snapshot!
       search_step!(direction: direction, initial: false, update_origin: false)
@@ -644,19 +677,24 @@ module Fatty
       nil
     end
 
-    def isearch_commit!(pattern:, direction:)
-      ensure_isearch_snapshot!
+    def isearch_accept!(pattern:, direction:)
+      isearch_begin!
+
       pattern = pattern.to_s
       if pattern.strip.empty?
         isearch_cancel!
         return { status: :not_found }
       end
+
       result = isearch_update!(pattern: pattern, direction: direction)
       if result[:status] == :moved
         @search[:original_direction] = direction.to_sym
         @search[:pending_wrap] = nil
+        isearch_commit!
+      else
+        isearch_cancel!
       end
-      @isearch_snapshot = nil
+
       result
     end
 
@@ -679,6 +717,15 @@ module Fatty
     private
 
     # simplecov:disable
+
+    def ensure_search_snapshot!
+      return if @search_snapshot
+
+      @search_snapshot = {
+        viewport_top: @viewport.top,
+        search: @search.dup,
+      }
+    end
 
     def ensure_isearch_snapshot!
       return if @isearch_snapshot
@@ -819,17 +866,27 @@ module Fatty
     end
 
     def apply_search_match(match)
+      unless valid_search_match?(match)
+        raise ArgumentError, "invalid search match: #{match.inspect}"
+      end
+
       @search[:last] = match
       line = match[:line]
-      # Make sure we're in paging mode when navigating search results.
+
       @mode = :paging
       @paused = true
       @last_nav_dir = :down
 
-      # Position the match line near the middle when possible.
       half = (@viewport.height / 2)
       @viewport.top = [line - half, 0].max
       @search[:last_view_top] = @viewport.top
+    end
+
+    def valid_search_match?(match)
+      match.is_a?(Hash) &&
+      match[:line].is_a?(Integer) &&
+      match[:from].is_a?(Integer) &&
+        match[:to].is_a?(Integer)
     end
   end
 end

@@ -251,6 +251,48 @@ RSpec.describe Fatty::OutputSession do
       expect(commands.map(&:action)).to include(:refresh_layout)
     end
 
+    it "restores the pre-search viewport when stepped plain search is cancelled" do
+      session = described_class.new
+      init_output_session(session, rows: 4)
+      update(session, :append, text: "alpha\nbeta\ngamma\ndelta\nepsilon\nzeta", follow: false)
+      update(session, :page_top)
+
+      before = session.viewport.top
+
+      session.pager.search_begin!
+
+      update(
+        session,
+        :pager_search_step,
+        pattern: "zeta",
+        regex: false,
+        direction: :forward,
+      )
+
+      expect(session.viewport.top).not_to eq(before)
+
+      update(session, :pager_search_cancel)
+
+      expect(session.viewport.top).to eq(before)
+    end
+
+    it "restores the pre-isearch viewport when incremental search is cancelled" do
+      session = described_class.new
+      init_output_session(session, rows: 4)
+      update(session, :append, text: "alpha\nbeta\ngamma\ndelta\nepsilon\nzeta", follow: false)
+      update(session, :page_top)
+
+      before = session.viewport.top
+
+      update(session, :pager_isearch_forward)
+      update(session, :pager_isearch_update, pattern: "zeta", direction: :forward)
+      expect(session.viewport.top).not_to eq(before)
+
+      update(session, :pager_isearch_cancel)
+
+      expect(session.viewport.top).to eq(before)
+    end
+
     it "sets regex search highlights" do
       session = Fatty::OutputSession.new
       init_output_session(session, rows: 5)

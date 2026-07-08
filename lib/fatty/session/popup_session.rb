@@ -176,7 +176,7 @@ module Fatty
     end
 
     def keymap_contexts
-      contexts = [:popup, :text]
+      contexts = [:popup, :text, :terminal]
       contexts.unshift(:popup_multi) if multi_select?
       contexts
     end
