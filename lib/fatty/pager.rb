@@ -2,7 +2,7 @@
 
 module Fatty
   class Pager
-    SCROLL_WHEEL_LINES = 3
+    SCROLL_WHEEL_LINES = 6
 
     include Fatty::Actionable
 
