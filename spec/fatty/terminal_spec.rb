@@ -592,6 +592,25 @@ module Fatty
           expect { t.go }.to raise_error(SystemExit)
         }.to output(/at line \d+, column \d+/i).to_stderr
       end
+
+      it "configures app-specific config before preflight reads config" do
+        terminal = Fatty::Terminal.new(
+          app_name: "byr",
+          app_config_dir: "/tmp/byr/fatty",
+        )
+
+        allow(Fatty::Config).to receive(:install_defaults!)
+        allow(Fatty::Config).to receive(:config).and_return({})
+        allow(Fatty::Logger).to receive(:configure)
+        allow(Fatty::Config).to receive(:keydefs).and_return({})
+        allow(Fatty::Config).to receive(:keybindings).and_return([])
+        allow(Fatty::Themes::Manager).to receive(:load!)
+
+        terminal.send(:preflight!)
+
+        expect(Fatty::Config.app_name).to eq("byr")
+        expect(Fatty::Config.app_config_dir).to eq("/tmp/byr/fatty")
+      end
     end
 
     describe "#go default sessions" do

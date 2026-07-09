@@ -10,6 +10,7 @@ module Fatty
           begin
             reg = Registry.new
             Loader.load_dir(Fatty::Config.user_themes_dir, registry: reg)
+            Loader.load_dir(Fatty::Config.app_themes_dir, registry: reg) if Fatty::Config.app_themes_dir
             reg
           end
       end
@@ -17,6 +18,7 @@ module Fatty
       def self.load!
         registry.clear
         Loader.load_dir(Fatty::Config.user_themes_dir, registry: registry)
+        Loader.load_dir(Fatty::Config.app_themes_dir, registry: registry) if Fatty::Config.app_themes_dir
         registry
       end
 

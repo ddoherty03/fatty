@@ -17,13 +17,15 @@ module Fatty
       old_xdg = ENV["XDG_CONFIG_HOME"]
       Config.progname = progname
       Config.dir = nil
+      Config.configure_app
       Dir.mktmpdir("fatty_config") do |tmp|
         ENV["XDG_CONFIG_HOME"] = tmp
         ex.run
       end
-    ensure
-      Config.dir = nil
-      ENV["XDG_CONFIG_HOME"] = old_xdg
+      ensure
+        Config.dir = nil
+        Config.configure_app
+        ENV["XDG_CONFIG_HOME"] = old_xdg
     end
 
     let(:progname) { 'spec_app' }
@@ -98,6 +100,56 @@ module Fatty
         )
         expect { Config.config }.to raise_error(/YAML parse error/i)
       end
+
+      it "overlays app config over global config" do
+        write_cfg(
+          File.join(ENV["XDG_CONFIG_HOME"], progname),
+          "config",
+          <<~YAML,
+            log:
+              level: info
+            theme: terminal
+          YAML
+        )
+        write_cfg(
+          File.join(ENV["XDG_CONFIG_HOME"], progname, "apps", "byr"),
+          "config",
+          <<~YAML,
+            log:
+              tags: [all]
+            theme: wordperfect
+          YAML
+        )
+        Config.app_name = "byr"
+        cfg = Config.config
+        expect(cfg.dig(:log, :level)).to eq("info")
+        expect(cfg.dig(:log, :tags)).to eq(["all"])
+        expect(cfg[:theme]).to eq("wordperfect")
+      end
+
+      it "uses app_config_dir instead of the default app config directory" do
+        default_app_dir = File.join(ENV["XDG_CONFIG_HOME"], progname, "apps", "byr")
+        explicit_app_dir = File.join(ENV["XDG_CONFIG_HOME"], "byr-fatty")
+        write_cfg(
+          default_app_dir,
+          "config",
+          <<~YAML,
+            theme: terminal
+          YAML
+        )
+        write_cfg(
+          explicit_app_dir,
+          "config",
+          <<~YAML,
+            theme: wordperfect
+          YAML
+        )
+
+        Config.app_name = "byr"
+        Config.app_config_dir = explicit_app_dir
+
+        expect(Config.config[:theme]).to eq("wordperfect")
+      end
     end
 
     describe "keydefs.yml" do
@@ -144,6 +196,34 @@ module Fatty
         expect(meta).to be(true)
       end
 
+      it "deep merges app keydefs over global keydefs" do
+        write_cfg(
+          File.join(ENV["XDG_CONFIG_HOME"], progname),
+          "keydefs",
+          <<~YAML,
+            tmux:
+              555:
+                key: left
+                meta: true
+          YAML
+        )
+        write_cfg(
+          File.join(ENV["XDG_CONFIG_HOME"], progname, "apps", "byr"),
+          "keydefs",
+          <<~YAML,
+            tmux:
+              556:
+                key: right
+                meta: true
+          YAML
+        )
+
+        Config.app_name = "byr"
+        tmux = Config.keydefs[:tmux]
+        expect(tmux[555][:key]).to eq("left")
+        expect(tmux[556][:key]).to eq("right")
+      end
+
       it "returns nil or empty when keydefs.yml is missing" do
         defs = Config.keydefs
         expect(defs).to eq({})
@@ -183,6 +263,29 @@ module Fatty
         expect(bindings[1][:key]).to eq("right")
         expect(bindings[1][:meta]).to be false
         expect(bindings[1][:action]).to eq("move_word_right")
+      end
+
+      it "appends app keybindings after global keybindings" do
+        write_cfg(
+          File.join(ENV["XDG_CONFIG_HOME"], progname),
+          "keybindings",
+          <<~YAML,
+            - key: a
+              action: one
+          YAML
+        )
+        write_cfg(
+          File.join(ENV["XDG_CONFIG_HOME"], progname, "apps", "byr"),
+          "keybindings",
+          <<~YAML,
+            - key: b
+              action: two
+          YAML
+        )
+
+        Config.app_name = "byr"
+        bindings = Config.keybindings
+        expect(bindings.map { |binding| binding[:action] }).to eq(%w[one two])
       end
 
       it "returns empty Hash when keybindings.yml is missing" do

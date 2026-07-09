@@ -68,12 +68,16 @@ module Fatty
 
     def initialize(prompt: "> ",
                    on_accept: nil,
+                   app_name: nil,
+                   app_config_dir: nil,
                    completion_proc: nil,
                    history_path: :default,
                    history_ctx: nil,
                    env: nil)
       @prompt = Prompt.ensure(prompt)
       @on_accept = on_accept
+      @app_name = app_name
+      @app_config_dir = app_config_dir
       @completion_proc = completion_proc
       @history_path = history_path
       @history_ctx = history_ctx
@@ -510,6 +514,10 @@ module Fatty
     # installing themes.
     #
     def preflight!
+      Fatty::Config.configure_app(
+        app_name: @app_name,
+        app_config_dir: @app_config_dir,
+      )
       Fatty::Config.install_defaults!
       Fatty::Config.config
       Fatty::Logger.configure
