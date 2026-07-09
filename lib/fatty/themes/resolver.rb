@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+using Fatty::CoreExt::Hash
+
 module Fatty
   module Themes
     class ResolveError < StandardError; end
@@ -133,7 +135,7 @@ module Fatty
               empty_theme
             end
 
-          merged = deep_merge(parent, defn)
+          merged = merge_theme(parent, defn)
           merged[:name] = name
           merged[:inherit] = defn[:inherit]
           merged[:source] = defn[:source]
@@ -178,20 +180,17 @@ module Fatty
               {}
             end
 
-          resolved[name] = deep_merge_hash(parent_spec, spec.reject { |k, _| k == :inherit })
+          resolved[name] = parent_spec.deep_merge(spec).reject { |k, _| k == :inherit }
         end
 
-        def deep_merge(parent, child)
+        def merge_theme(parent, child)
           out = parent.dup
-
-          out[:roles] = deep_merge_hash(parent[:roles] || {}, child[:roles] || {})
-
+          out[:roles] = (parent[:roles] || {}).deep_merge(child[:roles] || {})
           child.each do |key, value|
             next if key == :roles
 
             out[key] = value
           end
-
           out
         end
 
