@@ -1,0 +1,140 @@
+name: capuchin_monk
+inherit: null
+markdown_code_theme: gruvbox_dark
+
+output:
+  fg: "#e8d8b8"
+  bg: "#24160f"
+
+input:
+  fg: "#f5e6c8"
+  bg: "#3a261a"
+  attrs: [bold]
+
+input_suggestion:
+  fg: "#9d8063"
+  bg: "#3a261a"
+  attrs: [dim]
+
+cursor:
+  fg: "#24160f"
+  bg: "#d8a657"
+
+region:
+  fg: "#24160f"
+  bg: "#c98a4a"
+
+good:
+  fg: "#a9b665"
+  bg: "#24160f"
+
+info:
+  fg: "#e8d8b8"
+  bg: "#24160f"
+
+warn:
+  fg: "#24160f"
+  bg: "#d8a657"
+
+error:
+  fg: "#f5e6c8"
+  bg: "#9d3f35"
+
+pager_status:
+  fg: "#24160f"
+  bg: "#a9b665"
+
+search_input:
+  fg: "#24160f"
+  bg: "#d8a657"
+
+match_current:
+  fg: "#24160f"
+  bg: "#d8a657"
+
+match_other:
+  fg: "#24160f"
+  bg: "#b07a4f"
+
+popup:
+  fg: "#e8d8b8"
+  bg: "#3a261a"
+
+popup_input:
+  fg: "#f5e6c8"
+  bg: "#1b100b"
+
+popup_counts:
+  fg: "#24160f"
+  bg: "#e8d8b8"
+
+popup_selection:
+  fg: "#24160f"
+  bg: "#d8a657"
+
+popup_frame:
+  fg: "#c98a4a"
+  bg: "#3a261a"
+  border: single
+  corners: rounded
+
+markdown_h1:
+  fg: "#d8a657"
+  bg: "#24160f"
+  attrs: [bold]
+
+markdown_h2:
+  fg: "#c98a4a"
+  bg: "#24160f"
+  attrs: [bold]
+
+markdown_h3:
+  fg: "#a9b665"
+  bg: "#24160f"
+  attrs: [bold]
+
+markdown_code:
+  fg: "#a9b665"
+  bg: "#3a261a"
+
+markdown_code_gutter:
+  fg: "#9d8063"
+  bg: "#3a261a"
+  attrs: [dim]
+
+markdown_strong:
+  fg: "#f5e6c8"
+  bg: "#24160f"
+  attrs: [bold]
+
+markdown_emphasis:
+  fg: "#e8d8b8"
+  bg: "#24160f"
+  attrs: [italic]
+
+markdown_link:
+  fg: "#d8a657"
+  bg: "#24160f"
+  attrs: [underline]
+
+markdown_url:
+  fg: "#c98a4a"
+  bg: "#24160f"
+
+markdown_quote_gutter:
+  fg: "#9d8063"
+  bg: "#24160f"
+
+markdown_highlight:
+  fg: "#24160f"
+  bg: "#d8a657"
+
+markdown_table_header:
+  fg: "#f5e6c8"
+  bg: "#3a261a"
+  attrs: [bold]
+
+markdown_hrule:
+  fg: "#6f4e37"
+  bg: "#24160f"
+  attrs: [dim]
