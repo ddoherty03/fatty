@@ -290,6 +290,11 @@ parameters:
   =lambda= that returns the prompt used for the input line to be edited.
   Because it can be a callable, it can change after each run of =on_accept=;
   if not given, it defaults to '> ';
+- =app_name= :: the name for the "app" using the =fatty= library; this allows
+  app-specific configuration under =~/.config/fatty/apps/<app_name>= or a
+  different directory specified by =app_config_dir=;
+- =app_config_dir= :: an alternative directory for app-specific configuration
+  instead of the default;
 - =completion_proc= :: a callable that takes the current text of the input
   field's buffer and returns an =Array= of possible completions at that point
   in the input; by default, there is no completion proc;
@@ -322,8 +327,6 @@ on_accept: ->(line, env) {
 With that setup, commands entered in =~/src/byr= are favored when the terminal
 is again in =~/src/byr=, while commands entered elsewhere remain available as
 fallback history.
-
-
 
 ** The Callback API
 Here are the details on the messages that you can send to the callback
@@ -875,8 +878,13 @@ The config files are:
 - =keybindings.yml= :: user-defined keybindings;
 - =themes/= :: YAML theme files.
 
-The default user configuration directory follows =XDG_CONFIG_HOME= if it is
-set.  Otherwise it is =~/.config/fatty=.
+The default user-specific configuration directory follows =XDG_CONFIG_HOME= if
+it is set.  Otherwise it is =~/.config/fatty=.
+
+In addition to the user-specific configuration, fatty will read app-specific
+configuration files from =~/.config/fatty/apps/<app_name>= if =Terminal= was
+given an =app_name= parameter.  It will use a different directory of your
+choosing if =Terminal= was given an =app_config_dir= directory name.
 
 ** General Configuration =config.yml=
 
@@ -1562,131 +1570,54 @@ are listed her for completeness.
 | paste       | str  | No     | Insert pasted text at point        |
 
 ** Themes =themes/=
+*** Distributed Themes
+As distributed, =fatty= comes with the following themes, most of which are
+based on popular themes used in many text editors and IDEs.
 
-A Fatty theme is a YAML file in =~/.config/fatty/themes=.  The file name does
-not matter to the renderer, but the theme must have a =name= field, and the
-name is what you put in =config.yml=:
+Within a =fatty= terminal, themes can be changed interactively.  The
+default Emacs-style bindings include:
+
+| Key     | Action                                  |
+|---------+-----------------------------------------|
+| ~C-M-t~ | cycle to the next loaded theme          |
+| ~M-=~   | preview and choose a theme from a popup |
+
+Here are the builtin themes:
+
+| Name             | Description                                        |
+|------------------+----------------------------------------------------|
+| capuchin_monk    | A tribute to St. Francis of Assisi                 |
+| catppuccin_latte | Pastel theme of the latte flavor                   |
+| catppuccin_mocha | Pastel theme of the mocha flavor                   |
+| cyberpunk        | Brash colorful theme                               |
+| dracula          | Dark theme inspired by the Count                   |
+| everforest_dark  | Dark green-esque theme                             |
+| gruvbox_dark     | Engineered for focus, built for developers         |
+| gruvbox_light    | Engineered for focus, built for developers         |
+| mono             | Minimal black-and-white theme                      |
+| monokai          | Based on https://monokai.pro/history               |
+| nordic           | Shiver me timbers, its northern                    |
+| onedark          | Shameless imitation of Atom editor theme           |
+| solarized_dark   | Ethan Schoonover's famous terminal theme           |
+| solarized_light  | And its light variant                              |
+| terminal         | Use the terminal's color scheme                    |
+| tokyo_night      | Celebrates the neon lights and dark vibes of Tokyo |
+| wordperfect      | Nostalgic nod to the good old word processor       |
+
+*** Custom Themes
+**** Theme Name
+A Fatty theme is a YAML file in the user-specific config directory (normally
+=~/.config/fatty/themes=) or the app-specific config directory (by default
+=~/.config/fatty/apps/<app_name>/themes=).  The file name does not matter to
+the renderer, but the theme must have a =name= field, and the name is what you
+put in =config.yml=:
 
 #+begin_src yaml :tangle no
 theme: nordic
 #+end_src
 
-A minimal theme can define only =output= and inherit everything else through
-Fatty's role defaults:
-
-#+begin_src yaml :tangle no
-name: simple_dark
-inherit: null
-
-output:
-fg: white
-bg: black
-#+end_src
-
-A more useful theme defines the main editing, status, search, popup, and
-markdown roles:
-
-#+begin_src yaml :tangle no
-name: example
-inherit: null
-
-output:
-fg: "#d8dee9"
-bg: "#2e3440"
-
-input:
-fg: "#eceff4"
-bg: "#3b4252"
-attrs: [bold]
-
-input_suggestion:
-fg: "#81a1c1"
-bg: "#3b4252"
-
-cursor:
-fg: "#2e3440"
-bg: "#88c0d0"
-
-region:
-fg: "#2e3440"
-bg: "#88c0d0"
-
-info:
-fg: "#d8dee9"
-bg: "#2e3440"
-
-good:
-fg: green
-bg: "#2e3440"
-
-warn:
-fg: "#2e3440"
-bg: "#ebcb8b"
-
-error:
-fg: "#eceff4"
-bg: "#bf616a"
-
-pager_status:
-fg: black
-bg: lightgreen
-
-search_input:
-fg: black
-bg: cyan
-
-match_current:
-fg: black
-bg: yellow
-
-match_other:
-fg: black
-bg: lightgray
-
-popup:
-fg: "#d8dee9"
-bg: "#3b4252"
-
-popup_input:
-fg: "#eceff4"
-bg: "#434c5e"
-
-popup_selection:
-fg: "#2e3440"
-bg: "#88c0d0"
-
-popup_counts:
-fg: "#2e3440"
-bg: white
-
-popup_frame:
-fg: "#81a1c1"
-bg: "#3b4252"
-border: single
-corners: rounded
-#+end_src
-
-Colors may be named colors, =default=, or hex RGB colors:
-
-#+begin_src yaml :tangle no
-fg: white
-bg: default
-fg: "#d8dee9"
-bg: "#2e3440"
-#+end_src
-
-Attributes are listed under =attrs=:
-
-#+begin_src yaml :tangle no
-input:
-fg: white
-bg: navy
-attrs: [bold]
-#+end_src
-
-Common attributes include =bold=, =dim=, =underline=, and =reverse=.
-
-Themes can inherit from other themes:
+**** Inheritance from Another Theme
+Themes can inherit from other themes with the =inherit:= tag:
 
 #+begin_src yaml :tangle no
 name: my_nordic
@@ -1696,58 +1627,181 @@ output:
 fg: "#eeeeee"
 #+end_src
 
-This starts with the =nordic= theme and changes only the roles you specify.
+This means that all the theme setting from the =nordic= theme apply except to
+the extent changed by the rest of the =my_nordic= theme file.
 
-Individual roles can also inherit from another role:
+**** Inheritance within a Theme
+Not only may one theme inherit from another theme, some roles within a theme
+inherit from other roles.  For example, the =input= role inherits from the
+=output= role.
+
+Thus, a minimal theme can define only =output= and inherit everything else
+through Fatty's role defaults:
 
 #+begin_src yaml :tangle no
-name: my_theme
+name: simple_dark
 inherit: null
 
 output:
-fg: white
-bg: black
-
-input:
-inherit: output
-attrs: [bold]
-
-popup:
-inherit: output
-
-popup_selection:
-inherit: input
-attrs: [reverse]
+  fg: white
+  bg: black
 #+end_src
 
-If a role does not specify =inherit=, Fatty uses its built-in role hierarchy.
-For example, =input= inherits from =output=, =input_suggestion= inherits from
-=input=, =popup_selection= inherits from =region=, and =warn= / =error= build
-on the semantic status roles.
+This means that the input field will have the same coloring and attributes as
+the output pane.
 
-The main roles are:
+**** Theme Roles
+Here is a listing of what roles act as the parent for each of the roles, their
+purpose, and the role, if any, from which they inherit.
 
-| Role               | Purpose                                      |
-|--------------------+----------------------------------------------|
-| =output=           | ordinary output pane text                    |
-| =input=            | prompt and editable input                    |
-| =input_suggestion= | predictive completion shown after the cursor |
-| =cursor=           | cursor cell                                  |
-| =region=           | selected region in the input field           |
-| =info=             | neutral status text                          |
-| =good=             | affirmative status text                      |
-| =warn=             | warning status text                          |
-| =error=            | error status text                            |
-| =pager_status=     | pager indicator                              |
-| =search_input=     | search prompt                                |
-| =match_current=    | current search match                         |
-| =match_other=      | other search matches                         |
-| =popup=            | popup body                                   |
-| =popup_input=      | popup prompt/input                           |
-| =popup_selection=  | selected popup row                           |
-| =popup_counts=     | popup count display                          |
-| =popup_frame=      | popup border/frame                           |
-| =alert=            | alert pane base style                        |
+| Role name              | Used for                                  | Parent Role           |
+|------------------------+-------------------------------------------+-----------------------|
+| output:                | Main output area text.                    | <none>                |
+| input:                 | Main command/input field.                 | :output,              |
+| input_suggestion:      | Autosuggestion or completion suffix text. | :input,               |
+| cursor:                | Cursor cell styling where applicable.     | :input,               |
+| region:                | Selected text / active region.            | :output,              |
+| status:                | Status area base role.                    | :output,              |
+| info:                  | Informational messages.                   | :output,              |
+| good:                  | Success messages.                         | :info,                |
+| warn:                  | Warning messages.                         | :info,                |
+| error:                 | Error messages.                           | :warn,                |
+| alert:                 | Alert panel base role.                    | :output,              |
+| pager_status:          | Pager status / prompt row.                | :status,              |
+| search_input:          | Search input field.                       | :popup,               |
+| match_current:         | Current search match.                     | :region,              |
+| match_other:           | Other search matches.                     | :region,              |
+| popup:                 | Popup body.                               | :output,              |
+| popup_frame:           | Popup border/frame.                       | :popup,               |
+| popup_input:           | Popup filter/input field.                 | :input,               |
+| popup_selection:       | Selected popup item row.                  | :region,              |
+| popup_counts:          | Popup counts/status row.                  | :popup,               |
+| markdown_h1:           | Markdown level-1 headings.                | :output               |
+| markdown_h2:           | Markdown level-2 headings.                | :markdown_h1          |
+| markdown_h3:           | Markdown level-3 headings.                | :markdown_h2          |
+| markdown_code:         | Inline markdown code.                     | :output,              |
+| markdown_code_block:   | Markdown fenced-code block base role.     | :markdown_code,       |
+| markdown_code_gutter:  | Code block gutter/prefix.                 | :markdown_code_block, |
+| markdown_strong:       | Markdown strong/bold text.                | :output,              |
+| markdown_emphasis:     | Markdown emphasized text.                 | :output,              |
+| markdown_link:         | Markdown link text.                       | :output,              |
+| markdown_url:          | Markdown displayed URL text.              | :markdown_link,       |
+| markdown_quote_gutter: | Markdown block quote gutter.              | :output,              |
+| markdown_highlight:    | Markdown highlight / marked text.         | :output,              |
+| markdown_table_header: | Markdown table header cells.              | :markdown_strong,     |
+| markdown_table_cell:   | Markdown table body cells.                | :output,              |
+| markdown_underline:    | Markdown underline text.                  | :output,              |
+| markdown_hrule:        | Markdown horizontal rules.                | :output,              |
+
+**** Role Colors and Attributes and Frame Style
+Each role can have assigned to it a foreground color (=fg:=), a background
+color (=bg:=), and one or more "attributes" (=attrs:=).
+
+***** Colors
+The colors can be a hex string of the form "#RRGGBB", that is a mixture of
+red, green, and blue at level given by three valid hexadecimal numbers RR, GG,
+and BB.  For example "#FF0000" is pure red, "#330044" is a middling mixture of
+red and blue, a shade of purple.  In addition, =fatty= recognizes color names
+defined as 16 ANSI colors, 256 xterm colors, and X11 colors, all of which you
+can see by invoking =fatty='s CLI command =colors=.
+
+The special color =default= means to inherit colors from the underlying terminal
+program.
+
+***** Attributes
+Each role can also have non-color attributes applied by specifying an =attrs=
+list.  Supported attributes are =bold=, =dim=, =italic=, =underline=, and
+=reverse=.  Italic is emitted by the truecolor renderer and by markdown ANSI
+output, but curses terminals may display it inconsistently or not at all.
+
+***** Frame Style
+In addition, one role, =popup_frame:=, in addition to these have two
+attributes for styling the "frame" drawn around popup:
+
+| =border:=  | single or double  |
+| =corners:= | rounded or square |
+
+***** An Example Theme
+
+#+begin_src yaml :tangle no
+  name: example
+  inherit: null
+
+  output:
+    fg: "#d8dee9"
+    bg: "#2e3440"
+
+  input:
+    fg: "#eceff4"
+    bg: "#3b4252"
+    attrs: [bold]
+
+  input_suggestion:
+    fg: "#81a1c1"
+    bg: "#3b4252"
+
+  cursor:
+    fg: "#2e3440"
+    bg: "#88c0d0"
+
+  region:
+    fg: "#2e3440"
+    bg: "#88c0d0"
+
+  info:
+    fg: "#d8dee9"
+    bg: "#2e3440"
+
+  good:
+    fg: green
+    bg: "#2e3440"
+
+  warn:
+    fg: "#2e3440"
+    bg: "#ebcb8b"
+
+  error:
+    fg: "#eceff4"
+    bg: "#bf616a"
+
+  pager_status:
+    fg: black
+    bg: lightgreen
+
+  search_input:
+    fg: black
+    bg: cyan
+
+  match_current:
+    fg: black
+    bg: yellow
+
+  match_other:
+    fg: black
+    bg: lightgray
+
+  popup:
+    fg: "#d8dee9"
+    bg: "#3b4252"
+
+  popup_input:
+    fg: "#eceff4"
+    bg: "#434c5e"
+
+  popup_selection:
+    fg: "#2e3440"
+    bg: "#88c0d0"
+
+  popup_counts:
+    fg: "#2e3440"
+    bg: white
+
+  popup_frame:
+    fg: "#81a1c1"
+    bg: "#3b4252"
+    border: single
+    corners: rounded
+#+end_src
 
 Fatty synthesizes alert variants from the base =alert= role and the semantic
 roles:
@@ -1836,13 +1890,6 @@ border: ascii
 corners: square
 #+end_src
 
-Themes can be changed while Fatty is running.  The default Emacs-style bindings
-include:
-
-| Key     | Action                          |
-|---------+---------------------------------|
-| =C-M-t= | cycle to the next loaded theme  |
-| =M-==   | choose a theme from a popup     |
 
 Theme changes update the renderer immediately.
 
