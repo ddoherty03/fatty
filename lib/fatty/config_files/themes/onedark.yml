@@ -1,0 +1,140 @@
+name: onedark
+inherit: null
+markdown_code_theme: github_dark
+
+output:
+  fg: "#abb2bf"
+  bg: "#282c34"
+
+input:
+  fg: "#abb2bf"
+  bg: "#3a3f4b"
+  attrs: [bold]
+
+input_suggestion:
+  fg: "#5c6370"
+  bg: "#3a3f4b"
+  attrs: [dim]
+
+cursor:
+  fg: "#282c34"
+  bg: "#c678dd"
+
+region:
+  fg: "#282c34"
+  bg: "#61afef"
+
+good:
+  fg: "#98c379"
+  bg: "#282c34"
+
+info:
+  fg: "#abb2bf"
+  bg: "#282c34"
+
+warn:
+  fg: "#282c34"
+  bg: "#e5c07b"
+
+error:
+  fg: "#282c34"
+  bg: "#e06c75"
+
+pager_status:
+  fg: "#282c34"
+  bg: "#98c379"
+
+search_input:
+  fg: "#282c34"
+  bg: "#56b6c2"
+
+match_current:
+  fg: "#282c34"
+  bg: "#e5c07b"
+
+match_other:
+  fg: "#282c34"
+  bg: "#c678dd"
+
+popup:
+  fg: "#abb2bf"
+  bg: "#3a3f4b"
+
+popup_input:
+  fg: "#abb2bf"
+  bg: "#21252b"
+
+popup_counts:
+  fg: "#282c34"
+  bg: "#abb2bf"
+
+popup_selection:
+  fg: "#282c34"
+  bg: "#61afef"
+
+popup_frame:
+  fg: "#56b6c2"
+  bg: "#3a3f4b"
+  border: single
+  corners: rounded
+
+markdown_h1:
+  fg: "#c678dd"
+  bg: "#282c34"
+  attrs: [bold]
+
+markdown_h2:
+  fg: "#61afef"
+  bg: "#282c34"
+  attrs: [bold]
+
+markdown_h3:
+  fg: "#98c379"
+  bg: "#282c34"
+  attrs: [bold]
+
+markdown_code:
+  fg: "#98c379"
+  bg: "#3a3f4b"
+
+markdown_code_gutter:
+  fg: "#5c6370"
+  bg: "#3a3f4b"
+  attrs: [dim]
+
+markdown_strong:
+  fg: "#dcdfe4"
+  bg: "#282c34"
+  attrs: [bold]
+
+markdown_emphasis:
+  fg: "#abb2bf"
+  bg: "#282c34"
+  attrs: [italic]
+
+markdown_link:
+  fg: "#61afef"
+  bg: "#282c34"
+  attrs: [underline]
+
+markdown_url:
+  fg: "#56b6c2"
+  bg: "#282c34"
+
+markdown_quote_gutter:
+  fg: "#5c6370"
+  bg: "#282c34"
+
+markdown_highlight:
+  fg: "#282c34"
+  bg: "#e5c07b"
+
+markdown_table_header:
+  fg: "#dcdfe4"
+  bg: "#3a3f4b"
+  attrs: [bold]
+
+markdown_hrule:
+  fg: "#5c6370"
+  bg: "#282c34"
+  attrs: [dim]

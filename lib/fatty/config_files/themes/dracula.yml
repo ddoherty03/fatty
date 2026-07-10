@@ -1,0 +1,140 @@
+name: dracula
+inherit: null
+markdown_code_theme: monokai
+
+output:
+  fg: "#f8f8f2"
+  bg: "#282a36"
+
+input:
+  fg: "#f8f8f2"
+  bg: "#44475a"
+  attrs: [bold]
+
+input_suggestion:
+  fg: "#6272a4"
+  bg: "#44475a"
+  attrs: [dim]
+
+cursor:
+  fg: "#282a36"
+  bg: "#ff79c6"
+
+region:
+  fg: "#282a36"
+  bg: "#bd93f9"
+
+good:
+  fg: "#50fa7b"
+  bg: "#282a36"
+
+info:
+  fg: "#f8f8f2"
+  bg: "#282a36"
+
+warn:
+  fg: "#282a36"
+  bg: "#f1fa8c"
+
+error:
+  fg: "#f8f8f2"
+  bg: "#ff5555"
+
+pager_status:
+  fg: "#282a36"
+  bg: "#50fa7b"
+
+search_input:
+  fg: "#282a36"
+  bg: "#8be9fd"
+
+match_current:
+  fg: "#282a36"
+  bg: "#f1fa8c"
+
+match_other:
+  fg: "#282a36"
+  bg: "#bd93f9"
+
+popup:
+  fg: "#f8f8f2"
+  bg: "#44475a"
+
+popup_input:
+  fg: "#f8f8f2"
+  bg: "#282a36"
+
+popup_counts:
+  fg: "#282a36"
+  bg: "#f8f8f2"
+
+popup_selection:
+  fg: "#282a36"
+  bg: "#bd93f9"
+
+popup_frame:
+  fg: "#8be9fd"
+  bg: "#44475a"
+  border: single
+  corners: rounded
+
+markdown_h1:
+  fg: "#ff79c6"
+  bg: "#282a36"
+  attrs: [bold]
+
+markdown_h2:
+  fg: "#8be9fd"
+  bg: "#282a36"
+  attrs: [bold]
+
+markdown_h3:
+  fg: "#50fa7b"
+  bg: "#282a36"
+  attrs: [bold]
+
+markdown_code:
+  fg: "#50fa7b"
+  bg: "#44475a"
+
+markdown_code_gutter:
+  fg: "#6272a4"
+  bg: "#44475a"
+  attrs: [dim]
+
+markdown_strong:
+  fg: "#f8f8f2"
+  bg: "#282a36"
+  attrs: [bold]
+
+markdown_emphasis:
+  fg: "#f8f8f2"
+  bg: "#282a36"
+  attrs: [italic]
+
+markdown_link:
+  fg: "#8be9fd"
+  bg: "#282a36"
+  attrs: [underline]
+
+markdown_url:
+  fg: "#bd93f9"
+  bg: "#282a36"
+
+markdown_quote_gutter:
+  fg: "#6272a4"
+  bg: "#282a36"
+
+markdown_highlight:
+  fg: "#282a36"
+  bg: "#f1fa8c"
+
+markdown_table_header:
+  fg: "#f8f8f2"
+  bg: "#44475a"
+  attrs: [bold]
+
+markdown_hrule:
+  fg: "#6272a4"
+  bg: "#282a36"
+  attrs: [dim]

@@ -1,5 +1,6 @@
 name: solarized_dark
 inherit: null
+markdown_code_theme: solarized_dark
 
 output:
   fg: "#839496"

@@ -1,112 +1,106 @@
-name: mono
+name: cyberpunk
 inherit: null
-markdown_code_theme: github_dark
+markdown_code_theme: monokai
 
 output:
-  fg: "#d7d7d7"
+  fg: "#00d7ff"
   bg: "#000000"
 
 input:
-  fg: "#ffffff"
-  bg: "#262626"
+  fg: "#ff00af"
+  bg: "#1a1a1a"
   attrs: [bold]
 
 input_suggestion:
-  fg: "#808080"
-  bg: "#262626"
+  fg: "#5f5f87"
+  bg: "#1a1a1a"
   attrs: [dim]
 
 cursor:
   fg: "#000000"
-  bg: "#ffffff"
+  bg: "#ff00ff"
 
 region:
   fg: "#000000"
-  bg: "#d7d7d7"
+  bg: "#00d7ff"
 
 good:
-  fg: "#ffffff"
+  fg: "#00ff5f"
   bg: "#000000"
-  attrs: [bold]
 
 info:
-  fg: "#d7d7d7"
+  fg: "#00d7ff"
   bg: "#000000"
 
 warn:
   fg: "#000000"
-  bg: "#d7d7d7"
-  attrs: [bold]
+  bg: "#ffff00"
 
 error:
   fg: "#ffffff"
-  bg: "#5f5f5f"
-  attrs: [bold]
+  bg: "#ff005f"
 
 pager_status:
   fg: "#000000"
-  bg: "#d7d7d7"
-  attrs: [bold]
+  bg: "#00ff5f"
 
 search_input:
   fg: "#000000"
-  bg: "#ffffff"
+  bg: "#00d7ff"
 
 match_current:
   fg: "#000000"
-  bg: "#ffffff"
-  attrs: [bold]
+  bg: "#ffff00"
 
 match_other:
   fg: "#ffffff"
-  bg: "#5f5f5f"
+  bg: "#8700ff"
 
 popup:
-  fg: "#d7d7d7"
-  bg: "#262626"
+  fg: "#00d7ff"
+  bg: "#1a1a1a"
 
 popup_input:
-  fg: "#ffffff"
+  fg: "#ff00af"
   bg: "#000000"
   attrs: [bold]
 
 popup_counts:
   fg: "#000000"
-  bg: "#d7d7d7"
-  attrs: [bold]
+  bg: "#ff00ff"
 
 popup_selection:
   fg: "#000000"
-  bg: "#ffffff"
+  bg: "#00d7ff"
 
 popup_frame:
-  fg: "#d7d7d7"
-  bg: "#262626"
-  border: single
-  corners: square
+  fg: "#ff00ff"
+  bg: "#1a1a1a"
+  border: double
+  corners: rounded
 
 markdown_h1:
-  fg: "#ffffff"
+  fg: "#ff00ff"
   bg: "#000000"
   attrs: [bold]
 
 markdown_h2:
-  fg: "#ffffff"
+  fg: "#00d7ff"
   bg: "#000000"
   attrs: [bold]
 
 markdown_h3:
-  fg: "#d7d7d7"
+  fg: "#00ff5f"
   bg: "#000000"
   attrs: [bold]
 
 markdown_code:
-  fg: "#ffffff"
-  bg: "#262626"
+  fg: "#00ff5f"
+  bg: "#1a1a1a"
 
 markdown_code_gutter:
-  fg: "#808080"
-  bg: "#262626"
+  fg: "#ff00ff"
+  bg: "#1a1a1a"
   attrs: [dim]
 
 markdown_strong:
@@ -115,34 +109,33 @@ markdown_strong:
   attrs: [bold]
 
 markdown_emphasis:
-  fg: "#d7d7d7"
+  fg: "#ff00af"
   bg: "#000000"
   attrs: [italic]
 
 markdown_link:
-  fg: "#ffffff"
+  fg: "#00d7ff"
   bg: "#000000"
   attrs: [underline]
 
 markdown_url:
-  fg: "#d7d7d7"
+  fg: "#ff00ff"
   bg: "#000000"
-  attrs: [underline]
 
 markdown_quote_gutter:
-  fg: "#808080"
+  fg: "#8700ff"
   bg: "#000000"
 
 markdown_highlight:
   fg: "#000000"
-  bg: "#ffffff"
+  bg: "#ffff00"
 
 markdown_table_header:
-  fg: "#ffffff"
-  bg: "#262626"
+  fg: "#ff00ff"
+  bg: "#1a1a1a"
   attrs: [bold]
 
 markdown_hrule:
-  fg: "#808080"
+  fg: "#005f87"
   bg: "#000000"
   attrs: [dim]

@@ -1,0 +1,140 @@
+name: gruvbox_light
+inherit: null
+markdown_code_theme: gruvbox_light
+
+output:
+  fg: "#3c3836"
+  bg: "#fbf1c7"
+
+input:
+  fg: "#282828"
+  bg: "#ebdbb2"
+  attrs: [bold]
+
+input_suggestion:
+  fg: "#928374"
+  bg: "#ebdbb2"
+  attrs: [dim]
+
+cursor:
+  fg: "#fbf1c7"
+  bg: "#af3a03"
+
+region:
+  fg: "#fbf1c7"
+  bg: "#af3a03"
+
+good:
+  fg: "#79740e"
+  bg: "#fbf1c7"
+
+info:
+  fg: "#3c3836"
+  bg: "#fbf1c7"
+
+warn:
+  fg: "#282828"
+  bg: "#d79921"
+
+error:
+  fg: "#fbf1c7"
+  bg: "#cc241d"
+
+pager_status:
+  fg: "#fbf1c7"
+  bg: "#79740e"
+
+search_input:
+  fg: "#fbf1c7"
+  bg: "#076678"
+
+match_current:
+  fg: "#282828"
+  bg: "#d79921"
+
+match_other:
+  fg: "#282828"
+  bg: "#bdae93"
+
+popup:
+  fg: "#3c3836"
+  bg: "#ebdbb2"
+
+popup_input:
+  fg: "#282828"
+  bg: "#fbf1c7"
+
+popup_counts:
+  fg: "#fbf1c7"
+  bg: "#665c54"
+
+popup_selection:
+  fg: "#fbf1c7"
+  bg: "#af3a03"
+
+popup_frame:
+  fg: "#076678"
+  bg: "#ebdbb2"
+  border: single
+  corners: rounded
+
+markdown_h1:
+  fg: "#af3a03"
+  bg: "#fbf1c7"
+  attrs: [bold]
+
+markdown_h2:
+  fg: "#076678"
+  bg: "#fbf1c7"
+  attrs: [bold]
+
+markdown_h3:
+  fg: "#79740e"
+  bg: "#fbf1c7"
+  attrs: [bold]
+
+markdown_code:
+  fg: "#79740e"
+  bg: "#ebdbb2"
+
+markdown_code_gutter:
+  fg: "#928374"
+  bg: "#ebdbb2"
+  attrs: [dim]
+
+markdown_strong:
+  fg: "#282828"
+  bg: "#fbf1c7"
+  attrs: [bold]
+
+markdown_emphasis:
+  fg: "#3c3836"
+  bg: "#fbf1c7"
+  attrs: [italic]
+
+markdown_link:
+  fg: "#076678"
+  bg: "#fbf1c7"
+  attrs: [underline]
+
+markdown_url:
+  fg: "#427b58"
+  bg: "#fbf1c7"
+
+markdown_quote_gutter:
+  fg: "#928374"
+  bg: "#fbf1c7"
+
+markdown_highlight:
+  fg: "#282828"
+  bg: "#d79921"
+
+markdown_table_header:
+  fg: "#282828"
+  bg: "#ebdbb2"
+  attrs: [bold]
+
+markdown_hrule:
+  fg: "#bdae93"
+  bg: "#fbf1c7"
+  attrs: [dim]

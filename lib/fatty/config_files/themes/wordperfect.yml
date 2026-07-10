@@ -1,5 +1,6 @@
 name: wordperfect
 inherit: null
+markdown_code_theme: github_dark
 
 output:
   fg: white
@@ -11,8 +12,9 @@ input:
   attrs: [bold]
 
 input_suggestion:
-  fg: lightgray
+  fg: lightblue
   bg: navy
+  attrs: [dim]
 
 cursor:
   fg: white
@@ -23,35 +25,40 @@ region:
   bg: yellow
 
 good:
-  fg: green
-  bg: lightblue
+  fg: lightgreen
+  bg: navy
+  attrs: [bold]
 
 info:
   fg: white
   bg: navy
 
 warn:
-  fg: yellow
-  bg: magenta
+  fg: orange
+  bg: navy
+  attrs: [bold]
 
 error:
   fg: white
   bg: red
+  attrs: [bold]
 
 pager_status:
   fg: black
   bg: lightgreen
+  attrs: [bold]
 
 search_input:
   fg: black
   bg: cyan
 
 match_current:
-  fg: black
+  fg: white
   bg: red
+  attrs: [bold]
 
 match_other:
-  fg: grey
+  fg: black
   bg: pink
 
 popup:
@@ -61,17 +68,81 @@ popup:
 popup_input:
   fg: white
   bg: navy
+  attrs: [bold]
 
 popup_counts:
   fg: navy
   bg: red
+  attrs: [bold]
 
 popup_selection:
   fg: navy
   bg: yellow
+  attrs: [bold]
 
 popup_frame:
-  fg: navy
-  bg: yellow
+  fg: yellow
+  bg: navy
   border: single
   corners: rounded
+
+markdown_h1:
+  fg: red
+  bg: yellow
+  attrs: [bold]
+
+markdown_h2:
+  fg: black
+  bg: pink
+  attrs: [bold]
+
+markdown_h3:
+  fg: lightgreen
+  bg: navy
+  attrs: [bold]
+
+markdown_code:
+  fg: orange
+  bg: navy
+
+markdown_code_gutter:
+  fg: lightblue
+  bg: navy
+  attrs: [dim]
+
+markdown_strong:
+  fg: white
+  bg: navy
+  attrs: [bold]
+
+markdown_emphasis:
+  fg: white
+  bg: navy
+  attrs: [underline]
+
+markdown_link:
+  fg: cyan
+  bg: navy
+  attrs: [underline]
+
+markdown_url:
+  fg: lightblue
+  bg: navy
+
+markdown_quote_gutter:
+  fg: bisque
+  bg: navy
+
+markdown_highlight:
+  fg: navy
+  bg: yellow
+
+markdown_table_header:
+  fg: navy
+  bg: yellow
+  attrs: [bold]
+
+markdown_hrule:
+  fg: lightblue
+  bg: navy
+  attrs: [dim]

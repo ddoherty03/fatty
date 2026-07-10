@@ -1,5 +1,6 @@
 name: nordic
 inherit: null
+markdown_code_theme: monokai
 
 output:
   fg: "#d8dee9"

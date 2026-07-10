@@ -1,4 +1,6 @@
 # lib/fatty/config_files/themes/terminal.yml
+
+# This theme is meant to inherit whatever color scheme the invoking terminal uses.
 name: terminal
 inherit: null
 
@@ -88,3 +90,68 @@ popup_counts:
   fg: default
   bg: default
   attrs: [bold]
+
+markdown_h1:
+  fg: default
+  bg: default
+  attrs: [bold]
+
+markdown_h2:
+  fg: default
+  bg: default
+  attrs: [bold]
+
+markdown_h3:
+  fg: default
+  bg: default
+  attrs: [bold]
+
+markdown_code:
+  fg: default
+  bg: default
+  attrs: [reverse]
+
+markdown_code_gutter:
+  fg: default
+  bg: default
+  attrs: [dim]
+
+markdown_strong:
+  fg: default
+  bg: default
+  attrs: [bold]
+
+markdown_emphasis:
+  fg: default
+  bg: default
+  attrs: [italic]
+
+markdown_link:
+  fg: default
+  bg: default
+  attrs: [underline]
+
+markdown_url:
+  fg: default
+  bg: default
+  attrs: [underline]
+
+markdown_quote_gutter:
+  fg: default
+  bg: default
+  attrs: [dim]
+
+markdown_highlight:
+  fg: default
+  bg: default
+  attrs: [reverse]
+
+markdown_table_header:
+  fg: default
+  bg: default
+  attrs: [bold]
+
+markdown_hrule:
+  fg: default
+  bg: default
+  attrs: [dim]
