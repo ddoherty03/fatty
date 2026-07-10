@@ -114,7 +114,6 @@ module Fatty
       # focused session. Even when the overlay's own state has not changed, the
       # underlying session may have redrawn the area beneath it. Skipping the overlay
       # render would let the underlying frame erase or visually punch through it.
-
       def render_popup(session:)
         win = session.win
         return unless win
@@ -376,29 +375,52 @@ module Fatty
         return unless win
 
         items = session.displayed
-        sel = session.current
+        selected = session.current
         start = session.scroll_start(list_h: layout.height)
-        row = layout.row
 
-        (0...layout.height).each do |i|
-          idx = start + i
-          selected = idx == sel
-          role = selected ? :popup_selection : :popup
-          line = ""
-          if idx < items.length
-            item = items[idx]
-            gutter = session.gutter_for(item: item, selected: selected)
-            avail = [layout.width - gutter.length, 0].max
-            line = (gutter + item.to_s[0, avail])[0, layout.width]
-          end
+        (0...layout.height).each do |offset|
+          item_index = start + offset
+          item_selected = item_index == selected
+          role = item_selected ? :popup_selection : :popup
+
+          line = popup_item_text(
+            session,
+            items: items,
+            item_index: item_index,
+            selected: item_selected,
+            width: layout.width,
+          )
+
+          queue_ansi_popup_fill_row(
+            win: win,
+            inner_row: layout.row + offset,
+            width: layout.width,
+            role: role,
+          )
+
           queue_ansi_popup_line(
             win: win,
-            inner_row: row + i,
+            inner_row: layout.row + offset,
             width: layout.width,
             text: line,
             role: role,
           )
         end
+      end
+
+      def popup_item_text(session, items:, item_index:, selected:, width:)
+        line = ""
+
+        if item_index < items.length
+          item = items[item_index]
+          gutter = session.gutter_for(item: item, selected: selected)
+          text = Fatty::Ansi.strip(item.to_s).tr("\r\n", " ")
+          available = [width - Fatty::Ansi.visible_length(gutter), 0].max
+          text = Fatty::Ansi.truncate_visible(text, available)
+          line = Fatty::Ansi.truncate_visible(gutter + text, width)
+        end
+
+        line
       end
 
       def render_popup_counts(session:, layout:)
@@ -422,6 +444,14 @@ module Fatty
 
         row = win.origin[0] + 1 + layout.row
         col = win.origin[1] + 1
+
+        queue_ansi_popup_fill_row(
+          win: win,
+          inner_row: layout.row,
+          width: layout.width,
+          role: :popup_input,
+        )
+
         queue_ansi_segments_line(
           row: row,
           col: col,
@@ -434,6 +464,7 @@ module Fatty
           ),
           fill_role: :popup_input,
         )
+
         cursor_x = session.field.cursor_x.to_i.clamp(0, [layout.width - 1, 0].max)
         queue_ansi_cursor(row: row, col: col + cursor_x)
       end
@@ -578,6 +609,17 @@ module Fatty
           fill_role: fill_role,
         }
         nil
+      end
+
+      def queue_ansi_popup_fill_row(win:, inner_row:, inner_col: 0, width:, role:)
+        queue_ansi_popup_line(
+          win: win,
+          inner_row: inner_row,
+          inner_col: inner_col,
+          width: width,
+          text: " " * width,
+          role: role,
+        )
       end
 
       def queue_ansi_line(row:, col:, width:, text:, role: nil)

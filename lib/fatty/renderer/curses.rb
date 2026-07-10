@@ -174,7 +174,6 @@ module Fatty
       # focused session. Even when the overlay's own state has not changed, the
       # underlying session may have redrawn the area beneath it. Skipping the overlay
       # render would let the underlying frame erase or visually punch through it.
-
       def render_popup(session:)
         win = session.win
         return unless win
@@ -193,16 +192,8 @@ module Fatty
 
         win.attrset(frame_attr)
         draw_popup_frame(win, width: width, height: height)
+        render_popup_title(win, session: session, width: width)
 
-        if session.title && !session.title.empty?
-          title = Fatty::Ansi.strip(session.title.to_s).tr("\r\n", " ")
-          title = Fatty::Ansi.truncate_visible(" #{title} ", [width - 4, 0].max)
-
-          unless title.empty?
-            win.setpos(0, 2)
-            win.addstr(title)
-          end
-        end
         inner_h = height - 2
         inner_w = width - 2
         return if inner_h <= 0 || inner_w <= 0
@@ -211,28 +202,17 @@ module Fatty
         inner.bkgdset(popup_attr) if inner.respond_to?(:bkgdset)
         inner.erase
 
-        row = 0
-
-        if session.message && !session.message.empty?
-          message = Fatty::Ansi.strip(session.message.to_s).tr("\r\n", " ")
-          message = Fatty::Ansi.truncate_visible(message, inner_w)
-
-          inner.attrset(popup_attr)
-          inner.setpos(row, 0)
-          inner.addstr(message.ljust(inner_w))
-          row += 1
-        end
+        row = render_popup_message(inner, session: session, row: 0, width: inner_w, attr: popup_attr)
 
         counts_present = session.counts_present?
         filter_present = session.filter_present?
-        input_row =
-          if filter_present
-            inner_h - 1
-          end
+
+        input_row = inner_h - 1 if filter_present
         counts_row =
           if counts_present
             filter_present ? input_row - 1 : inner_h - 1
           end
+
         list_row = row
         list_end =
           if counts_present
@@ -242,50 +222,34 @@ module Fatty
           else
             inner_h
           end
+
         list_h = [list_end - list_row, 0].max
 
-        items = session.displayed
-        selected = session.current
-        start = session.scroll_start(list_h: list_h)
+        render_popup_items(
+          inner,
+          session: session,
+          row: list_row,
+          height: list_h,
+          width: inner_w,
+          popup_attr: popup_attr,
+          selected_attr: selected_attr,
+        )
 
-        (0...list_h).each do |offset|
-          item_index = start + offset
-          item_selected = item_index == selected
-          attr = item_selected ? selected_attr : popup_attr
+        render_popup_counts(
+          inner,
+          session: session,
+          row: counts_row,
+          width: inner_w,
+          attr: counts_attr,
+        )
 
-          line = ""
-          if item_index < items.length
-            item = items[item_index]
-            gutter = session.gutter_for(item: item, selected: item_selected)
-            text = Fatty::Ansi.strip(item.to_s).tr("\r\n", " ")
-            available = [inner_w - Fatty::Ansi.visible_length(gutter), 0].max
-            text = Fatty::Ansi.truncate_visible(text, available)
-            line = Fatty::Ansi.truncate_visible(gutter + text, inner_w)
-          end
-
-          inner.attrset(attr)
-          inner.setpos(list_row + offset, 0)
-          inner.addstr(line.ljust(inner_w))
-        end
-
-        if counts_present && counts_row && counts_row >= 0
-          counts_text = Fatty::Ansi.truncate_visible(popup_counts_text(session), inner_w)
-
-          inner.attrset(counts_attr)
-          inner.setpos(counts_row, 0)
-          inner.addstr(counts_text.ljust(inner_w))
-        end
-
-        if session.filter_present?
-          render_field_into(
-            win: inner,
-            field: session.field,
+        if filter_present
+          render_popup_filter(
+            inner,
+            session: session,
             row: input_row,
             width: inner_w,
-            base_role: :popup_input,
-            base_attr: input_attr,
-            region_attr: pair_attr(:region, fallback: ::Curses::A_REVERSE),
-            suggestion_attr: pair_attr(:input_suggestion, fallback: input_attr),
+            attr: input_attr,
           )
           cursor_x = session.field.cursor_x.to_i.clamp(0, [inner_w - 1, 0].max)
           win.setpos(1 + input_row, 1 + cursor_x)
@@ -418,6 +382,94 @@ module Fatty
       private
 
       # simplecov:disable
+
+      def render_popup_title(win, session:, width:)
+        return unless session.title && !session.title.empty?
+
+        title = Fatty::Ansi.strip(session.title.to_s).tr("\r\n", " ")
+        title = Fatty::Ansi.truncate_visible(" #{title} ", [width - 4, 0].max)
+        return if title.empty?
+
+        win.setpos(0, 2)
+        win.addstr(title)
+      end
+
+      def render_popup_message(win, session:, row:, width:, attr:)
+        return row unless session.message && !session.message.empty?
+
+        message = Fatty::Ansi.strip(session.message.to_s).tr("\r\n", " ")
+        message = Fatty::Ansi.truncate_visible(message, width)
+        render_popup_plain_row(win, row: row, width: width, text: message, attr: attr)
+
+        row + 1
+      end
+
+      def render_popup_items(win, session:, row:, height:, width:, popup_attr:, selected_attr:)
+        items = session.displayed
+        selected = session.current
+        start = session.scroll_start(list_h: height)
+
+        (0...height).each do |offset|
+          item_index = start + offset
+          item_selected = item_index == selected
+          attr = item_selected ? selected_attr : popup_attr
+          text = popup_item_text(session, items: items, item_index: item_index, selected: item_selected, width: width)
+
+          render_popup_plain_row(
+            win,
+            row: row + offset,
+            width: width,
+            text: text,
+            attr: attr,
+          )
+        end
+      end
+
+      def popup_item_text(session, items:, item_index:, selected:, width:)
+        line = ""
+
+        if item_index < items.length
+          item = items[item_index]
+          gutter = session.gutter_for(item: item, selected: selected)
+          text = Fatty::Ansi.strip(item.to_s).tr("\r\n", " ")
+          available = [width - Fatty::Ansi.visible_length(gutter), 0].max
+          text = Fatty::Ansi.truncate_visible(text, available)
+          line = Fatty::Ansi.truncate_visible(gutter + text, width)
+        end
+
+        line
+      end
+
+      def render_popup_counts(win, session:, row:, width:, attr:)
+        return unless row && row >= 0
+
+        text = Fatty::Ansi.truncate_visible(popup_counts_text(session), width)
+        render_popup_plain_row(win, row: row, width: width, text: text, attr: attr)
+      end
+
+      def render_popup_filter(win, session:, row:, width:, attr:)
+        render_popup_plain_row(win, row: row, width: width, text: "", attr: attr)
+
+        render_field_into(
+          win: win,
+          field: session.field,
+          row: row,
+          width: width,
+          base_role: :popup_input,
+          base_attr: attr,
+          region_attr: pair_attr(:region, fallback: ::Curses::A_REVERSE),
+          suggestion_attr: pair_attr(:input_suggestion, fallback: attr),
+        )
+      end
+
+      def render_popup_plain_row(win, row:, width:, text:, attr:)
+        line = Fatty::Ansi.truncate_visible(text.to_s, width)
+        line = line.ljust(width)
+
+        win.attrset(attr)
+        win.setpos(row, 0)
+        win.addstr(line)
+      end
 
       def available_colors
         ::Curses.colors
