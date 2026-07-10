@@ -44,6 +44,7 @@ module Fatty
         next unless File.file?(src)
 
         dst = File.join(user_config_dir, File.basename(src))
+        Fatty.info("Copying config file #{src} to #{dst}", tag: :config)
         FileUtils.cp(src, dst) unless File.exist?(dst)
       end
 
@@ -56,7 +57,10 @@ module Fatty
 
       Dir.glob(File.join(dist_themes_dir, "*.yml")).each do |src|
         dst = File.join(user_themes_dir, File.basename(src))
-        FileUtils.cp(src, dst) unless File.exist?(dst)
+        unless File.exist?(dst)
+          Fatty.info("Copying theme file #{src} to #{dst}", tag: :theme)
+          FileUtils.cp(src, dst)
+        end
       end
       nil
     end
