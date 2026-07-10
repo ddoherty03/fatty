@@ -7,15 +7,17 @@ module Fatty
   class AnsiRenderer < Redcarpet::Render::Base
     HARD_BREAK = "\uE000"
 
-    def initialize(width: 80, palette: nil)
+    def initialize(width: 80, palette: nil, theme: nil, truecolor: false)
       super()
       @width = width.to_i
       @palette = palette || {}
+      @theme = theme || {}
+      @truecolor = truecolor
     end
 
     def block_code(code, language)
       lexer = rouge_lexer(language.to_s, code.to_s)
-      formatter = Rouge::Formatters::Terminal256.new
+      formatter = rouge_formatter
       gutter = md("│ ", :markdown_code_gutter)
 
       highlighted = formatter.format(lexer.lex(code.to_s))
@@ -338,18 +340,28 @@ module Fatty
       codes << 4 if attrs.include?(:underline)
       codes << 7 if attrs.include?(:reverse)
 
-      if (fg_rgb = spec[:fg_rgb] || spec["fg_rgb"])
+      fg_rgb = spec[:fg_rgb] || spec["fg_rgb"]
+      bg_rgb = spec[:bg_rgb] || spec["bg_rgb"]
+      fg = spec[:fg] || spec["fg"]
+      bg = spec[:bg] || spec["bg"]
+
+      if fg_rgb
         codes.push(38, 2, *fg_rgb)
-      elsif (fg = spec[:fg] || spec["fg"])
+      elsif !default_color?(fg)
         codes.concat(color_codes(fg, foreground: true))
       end
 
-      if (bg_rgb = spec[:bg_rgb] || spec["bg_rgb"])
+      if bg_rgb
         codes.push(48, 2, *bg_rgb)
-      elsif (bg = spec[:bg] || spec["bg"])
+      elsif !default_color?(bg)
         codes.concat(color_codes(bg, foreground: false))
       end
+
       codes
+    end
+
+    def default_color?(color)
+      color.nil? || color.to_i == Fatty::Color::DEFAULT_INDEX
     end
 
     def color_codes(color, foreground:)
@@ -370,6 +382,61 @@ module Fatty
       else
         [48, 5, color]
       end
+    end
+
+    def rouge_theme
+      case markdown_code_theme
+      when :solarized_light
+        Rouge::Themes::Base16::Solarized.mode(:light).new
+      when :solarized_dark
+        Rouge::Themes::Base16::Solarized.mode(:dark).new
+      when :base16
+        Rouge::Themes::Base16.new
+      when :base16_monokai
+        Rouge::Themes::Base16::Monokai.mode(:dark).new
+      when :monokai
+        Rouge::Themes::Monokai.new
+      when :monokai_sublime
+        Rouge::Themes::MonokaiSublime.new
+      when :gruvbox_light
+        Rouge::Themes::Gruvbox.mode(:light).new
+      when :gruvbox_dark
+        Rouge::Themes::Gruvbox.mode(:dark).new
+      when :github
+        Rouge::Themes::Github.mode(:light).new
+      when :github_dark
+        Rouge::Themes::Github.mode(:dark).new
+      when :molokai
+        Rouge::Themes::Molokai.new
+      when :colorful
+        Rouge::Themes::Colorful.new
+      when :bw
+        Rouge::Themes::BW.new
+      when :pastie
+        Rouge::Themes::Pastie.new
+      when :tulip
+        Rouge::Themes::Tulip.new
+      when :igor_pro
+        Rouge::Themes::IgorPro.new
+      when :magritte
+        Rouge::Themes::Magritte.new
+      else
+        Rouge::Themes::ThankfulEyes.new
+      end
+    end
+
+    def markdown_code_theme
+      value = @theme[:markdown_code_theme] if @theme.respond_to?(:[])
+      value.to_s.tr("-", "_").to_sym
+    end
+
+    def rouge_formatter
+      formatter_class = truecolor? ? Rouge::Formatters::TerminalTruecolor : Rouge::Formatters::Terminal256
+      formatter_class.new(rouge_theme)
+    end
+
+    def truecolor?
+      @truecolor
     end
   end
 end

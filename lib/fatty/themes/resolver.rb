@@ -82,7 +82,8 @@ module Fatty
           markdown_h3: :markdown_h2,
 
           markdown_code: :output,
-          markdown_code_gutter: :markdown_code,
+          markdown_code_block: :markdown_code,
+          markdown_code_gutter: :markdown_code_block,
 
           markdown_strong: :output,
           markdown_emphasis: :output,

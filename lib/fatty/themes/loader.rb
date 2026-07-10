@@ -5,7 +5,7 @@ require "yaml"
 module Fatty
   module Themes
     module Loader
-      RESERVED_KEYS = %i[name inherit markdown].freeze
+      RESERVED_KEYS = %i[name inherit markdown markdown_code_theme].freeze
 
       ROLE_ALIASES = {
         status_good: :good,
@@ -19,6 +19,7 @@ module Fatty
       }.freeze
 
       def self.load_dir(path, registry:)
+        Fatty.info("Loading theme directory #{path}", tag: :theme)
         Dir.glob(File.join(path.to_s, "*.{yml,yaml}")).sort.each do |file|
           load_file(file, registry: registry)
         end
@@ -26,6 +27,7 @@ module Fatty
       end
 
       def self.load_file(path, registry:)
+        Fatty.info("Loading theme #{path}", tag: :theme)
         data = YAML.safe_load_file(
           path,
           permitted_classes: [Symbol],
@@ -51,15 +53,13 @@ module Fatty
         nil
       end
 
-      private_class_method
-
       def self.normalize(data)
         out = {
           name: normalize_optional_symbol(data[:name]),
           inherit: normalize_optional_symbol(data[:inherit]),
+          markdown_code_theme: normalize_optional_symbol(data[:markdown_code_theme]),
           roles: {},
         }
-
         data.each do |key, value|
           k = key.to_sym
           next if RESERVED_KEYS.include?(k)

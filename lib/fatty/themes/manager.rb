@@ -40,6 +40,8 @@ module Fatty
       end
 
       def self.set(theme)
+        return current unless theme
+
         t = theme.to_sym
         if theme_names.include?(t)
           @current = t

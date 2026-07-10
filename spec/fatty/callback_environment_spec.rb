@@ -30,6 +30,10 @@ module Fatty
           .to receive(:render)
                 .with("**hi**", palette: nil)
                 .and_return("rendered")
+        allow(Fatty::Markdown)
+          .to receive(:render)
+                .with("**hi**", palette: nil, theme: anything, truecolor: false)
+                .and_return("rendered")
 
         result = env.markdown("**hi**")
 

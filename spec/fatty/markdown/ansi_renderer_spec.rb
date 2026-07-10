@@ -50,6 +50,46 @@ module Fatty
       end
     end
 
+    describe "default colors" do
+      it "does not emit invalid 256-color ANSI for default foreground and background" do
+        renderer = Fatty::AnsiRenderer.new(
+          width: 80,
+          palette: {
+            markdown_strong: {
+              fg: Fatty::Color::DEFAULT_INDEX,
+              bg: Fatty::Color::DEFAULT_INDEX,
+              fg_rgb: nil,
+              bg_rgb: nil,
+              attrs: [:bold],
+            },
+          },
+        )
+
+        rendered = renderer.double_emphasis("bold")
+
+        expect(rendered).to include("\e[1m")
+        expect(rendered).not_to include("38;5;-1")
+        expect(rendered).not_to include("48;5;-1")
+        expect(rendered).not_to include("-1")
+      end
+    end
+
+    describe "#block_code" do
+      it "uses the selected Rouge theme for code blocks" do
+        renderer = Fatty::AnsiRenderer.new(
+          theme: { markdown_code_theme: :solarized_light },
+          truecolor: true,
+        )
+
+        expect(Rouge::Formatters::TerminalTruecolor)
+          .to receive(:new)
+                .with(Rouge::Themes::Base16::Solarized.mode(:light))
+                .and_call_original
+
+        renderer.block_code("puts 'hi'\n", "ruby")
+      end
+    end
+
     describe "#paragraph" do
       it "preserves hard break sentinels" do
         renderer = AnsiRenderer.new(width: 80)

@@ -81,8 +81,8 @@ module Fatty
       term_program = ENV["TERM_PROGRAM"].to_s
 
       colorterm.match?(/truecolor|24bit/i) ||
-      term.match?(/truecolor|24bit|direct/i) ||
-      term.match?(/kitty|wezterm|alacritty|ghostty|foot/i) ||
+        term.match?(/truecolor|24bit|direct/i) ||
+        term.match?(/kitty|wezterm|alacritty|ghostty|foot/i) ||
         term_program.match?(/kitty|wezterm|alacritty|ghostty|iTerm/i)
     end
 

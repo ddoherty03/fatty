@@ -94,8 +94,17 @@ module Fatty
       it "renders markdown, queues the rendered output, and returns nil" do
         allow(Fatty::Markdown)
           .to receive(:render)
-          .with("**hello**", palette: :palette)
-          .and_return("rendered")
+                .with("**hello**", palette: :palette)
+                .and_return("rendered")
+        allow(Fatty::Markdown)
+          .to receive(:render)
+                .with(
+                  "**hello**",
+                  palette: :palette,
+                  theme: anything,
+                  truecolor: false,
+                )
+                .and_return("rendered")
 
         result = env.markdown("**hello**")
 

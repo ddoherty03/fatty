@@ -141,5 +141,35 @@ RSpec.describe Fatty::Themes::Resolver do
         Fatty::Themes::Resolver.resolve(registry, :theme)
       }.to raise_error(Fatty::Themes::InheritanceCycleError)
     end
+
+    it "preserves markdown_code_theme as theme metadata" do
+      registry = Fatty::Themes::Registry.new
+
+      registry.add(
+        {
+          name: :base,
+          inherit: nil,
+          markdown_code_theme: :solarized_light,
+          roles: {
+            output: { fg: "black", bg: "white" },
+          },
+          markdown: {},
+        },
+      )
+
+      registry.add(
+        {
+          name: :child,
+          inherit: :base,
+          roles: {},
+          markdown: {},
+        },
+      )
+
+      theme = Fatty::Themes::Resolver.resolve(registry, :child)
+
+      expect(theme[:markdown_code_theme]).to eq(:solarized_light)
+      expect(theme[:roles]).not_to have_key(:markdown_code_theme)
+    end
   end
 end
