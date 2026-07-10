@@ -411,7 +411,7 @@ module Fatty
       when :colorful
         Rouge::Themes::Colorful.new
       when :bw
-        Rouge::Themes::BW.new
+        Rouge::Themes::BlackWhiteTheme.new
       when :pastie
         Rouge::Themes::Pastie.new
       when :tulip
