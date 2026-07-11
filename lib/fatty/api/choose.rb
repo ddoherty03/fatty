@@ -14,7 +14,7 @@ module Fatty
         kind: :terminal_choose,
         title: "Choose",
         message: prompt,
-        prompt: "> ",
+        prompt: "Narrow: ",
         current: :top,
         show_counts: false,
         validate_unique_labels: true,

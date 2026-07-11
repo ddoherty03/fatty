@@ -24,7 +24,7 @@ module Fatty
           source:,
           title: nil,
           message: nil,
-          prompt: "> ",
+          prompt: "Narrow: ",
           keymap: Keymaps.emacs,
           matcher: nil,
           order: :as_given,

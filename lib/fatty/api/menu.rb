@@ -12,7 +12,7 @@ module Fatty
         kind: :terminal_menu,
         title: "Menu",
         message: prompt,
-        prompt: "> ",
+        prompt: "Narrow: ",
         current: :top,
         validate_unique_labels: true,
         history: terminal.history,

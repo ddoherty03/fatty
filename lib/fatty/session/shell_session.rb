@@ -217,7 +217,7 @@ module Fatty
           source: src,
           kind: :history_search,
           title: "History",
-          prompt: "I-search: ",
+          prompt: "Narrow: ",
           order: :as_given,
           current: :bottom,
           initial_query: @field.buffer.text,
@@ -226,7 +226,7 @@ module Fatty
           history_ctx: {
             kind: :popup_filter,
             popup: :history_search,
-            prompt: "I-search: ",
+            prompt: "Narrow: ",
           },
         )
       Command.terminal(:push_modal, session: hist_searcher)
