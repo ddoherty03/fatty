@@ -278,8 +278,10 @@ on_accept_proc = lambda do |line, env|
   when 'help'
     env.markdown(Fatty::Help.text)
   else
-    out, _ = Open3.capture2e(line)
-    out
+    unless line.match?(/\A\s*\z/)
+      out, _ = Open3.capture2e(line)
+      out
+    end
   end
   rescue Errno::ENOENT
     env.alert("Command not found (#{line})", role: :error)
