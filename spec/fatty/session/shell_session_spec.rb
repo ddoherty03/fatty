@@ -100,13 +100,13 @@ module Fatty
       end
 
       it "saves accepted history search filter text to popup filter history" do
-        session = Fatty::ShellSession.new
+        session = Fatty::ShellSession.new(history_path: nil)
 
         commands = apply_action(session, :history_search)
         popup = commands.first.payload.fetch(:session)
 
         popup.field.buffer.replace("tty")
-        update(popup, :popup_accept)
+        apply_action(popup, :popup_accept)
 
         expect(session.history.previous_for(
                  :popup_filter,
@@ -114,7 +114,7 @@ module Fatty
                  ctx: {
                    kind: :popup_filter,
                    popup: :history_search,
-                   prompt: "I-search: ",
+                   prompt: "Narrow: ",
                  },
                )).to eq("tty")
       end
@@ -500,7 +500,25 @@ module Fatty
         expect(session.field.autosuggestion).to eq("git status")
       end
 
-      it "shows the next completion as a virtual suffix" do
+      it "shows the next completion as a virtual suffix when there are multiple candidates" do
+        Dir.mktmpdir("fatty_shell_history") do |dir|
+          history_path = File.join(dir, "history.jsonl")
+          session = Fatty::ShellSession.new(
+            completion_proc: ->(_buffer) { ["fold", "form"] },
+            history_path: history_path,
+          )
+
+          session.field.buffer.replace("fo")
+
+          result = apply_action(session, :complete)
+
+          expect(result).to eq([])
+          expect(session.field.buffer.text).to eq("fo")
+          expect(session.field.state[3]).to eq("ld")
+        end
+      end
+
+      it "commits a sole completion candidate" do
         Dir.mktmpdir("fatty_shell_history") do |dir|
           history_path = File.join(dir, "history.jsonl")
           session = Fatty::ShellSession.new(
@@ -513,8 +531,8 @@ module Fatty
           result = apply_action(session, :complete)
 
           expect(result).to eq([])
-          expect(session.field.buffer.text).to eq("fo")
-          expect(session.field.state[3]).to eq("ld")
+          expect(session.field.buffer.text).to eq("fold")
+          expect(session.field.state[3]).to eq("")
         end
       end
 
@@ -547,6 +565,43 @@ module Fatty
 
         expect(commands).to eq([])
         expect(session.field.buffer.text).to eq("clear ")
+      end
+
+      it "commits a sole completion candidate" do
+        Dir.mktmpdir("fatty_shell_history") do |dir|
+          history_path = File.join(dir, "history.jsonl")
+          session = Fatty::ShellSession.new(
+            completion_proc: ->(_buffer) { ["fold"] },
+            history_path: history_path,
+          )
+          init_shell_session(session)
+
+          session.field.buffer.replace("fo")
+
+          result = apply_action(session, :complete)
+
+          expect(result).to eq([])
+          expect(session.field.buffer.text).to eq("fold")
+          expect(session.field.state[3]).to eq("")
+        end
+      end
+
+      it "commits a sole directory path completion with a trailing slash" do
+        Dir.mktmpdir("fatty_path_completion") do |dir|
+          FileUtils.mkdir_p(File.join(dir, "Downloads", "tmp"))
+          allow(Dir).to receive(:home).and_return(dir)
+
+          session = Fatty::ShellSession.new
+          init_shell_session(session)
+
+          session.field.buffer.replace("~/Down")
+
+          result = apply_action(session, :complete)
+
+          expect(result).to eq([])
+          expect(session.field.buffer.text).to eq("~/Downloads/")
+          expect(session.field.state[3]).to eq("")
+        end
       end
 
       it "does nothing for completion popup with no candidates" do

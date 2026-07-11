@@ -75,6 +75,44 @@ module Fatty
       ]
     end
 
+    # :category: Actions
+
+    desc "Accept the current line, add to history, and clear the buffer"
+    action :accept_line do |save_history: true|
+      line = buffer.text.dup
+      if save_history && history && !line.empty?
+        history.add(
+          line,
+          kind: resolve_history_kind,
+          ctx: resolve_history_ctx,
+        )
+      end
+      buffer.clear
+      line
+    end
+
+    desc "Replace buffer with the previous history entry"
+    action :history_prev do
+      return unless history
+
+      buffer.replace(history.previous_for(resolve_history_kind, current: buffer.text, ctx: resolve_history_ctx))
+    end
+
+    desc "Replace buffer with the next history entry"
+    action :history_next do
+      return unless history
+
+      buffer.replace(history.next_for(resolve_history_kind, ctx: resolve_history_ctx))
+    end
+
+    desc "Paste text into the field, normalizing to one line"
+    action :paste do |str|
+      s = str.to_s
+      s = s.gsub(/\r\n?/, "\n")
+      s = s.tr("\n", " ")
+      buffer.insert(s)
+    end
+
     def autosuggestion
       active = active_completion_autosuggestion
       return active if active
@@ -85,9 +123,19 @@ module Fatty
       autosuggestion_candidates.first
     end
 
+    def complete!(direction: 1)
+      candidates = tab_completion_candidates
+
+      if candidates.length == 1
+        accept_completion_line(candidates.first)
+      else
+        cycle_completion!(direction: direction)
+      end
+    end
+
     def cycle_completion!(direction: 1)
       text = buffer.text.to_s
-      candidates = autosuggestion_candidates
+      candidates = tab_completion_candidates
       result = nil
 
       if candidates.empty?
@@ -182,47 +230,18 @@ module Fatty
       @prompt = Prompt.ensure(prompt)
     end
 
-    # :category: Actions
-
-    desc "Accept the current line, add to history, and clear the buffer"
-    action :accept_line do |save_history: true|
-      line = buffer.text.dup
-      if save_history && history && !line.empty?
-        history.add(
-          line,
-          kind: resolve_history_kind,
-          ctx: resolve_history_ctx,
-        )
-      end
-      buffer.clear
-      line
-    end
-
-    desc "Replace buffer with the previous history entry"
-    action :history_prev do
-      return unless history
-
-      buffer.replace(history.previous_for(resolve_history_kind, current: buffer.text, ctx: resolve_history_ctx))
-    end
-
-    desc "Replace buffer with the next history entry"
-    action :history_next do
-      return unless history
-
-      buffer.replace(history.next_for(resolve_history_kind, ctx: resolve_history_ctx))
-    end
-
-    desc "Paste text into the field, normalizing to one line"
-    action :paste do |str|
-      s = str.to_s
-      s = s.gsub(/\r\n?/, "\n")
-      s = s.tr("\n", " ")
-      buffer.insert(s)
-    end
-
     private
 
     # simplecov:disable
+
+    def accept_completion_line(line)
+      return unless line
+
+      buffer.replace(line)
+      reset_completion_state!
+      buffer.virtual_suffix = ""
+      line
+    end
 
     # The prompt might use coloring, so we use the visible length stripped of
     # ANSI controls.
@@ -263,6 +282,17 @@ module Fatty
         .select { |candidate| candidate.start_with?(base) }
         .reject { |candidate| candidate == buffer.text.to_s }
         .uniq
+    end
+
+    def tab_completion_candidates
+      path = path_completion_candidates
+      if path.any?
+        path.map { |candidate| build_line_with_completion(candidate, range: path_completion_range) }
+          .reject { |line| line == buffer.text.to_s }
+          .uniq
+      else
+        autosuggestion_candidates
+      end
     end
 
     def default_completion_autosuggestion
