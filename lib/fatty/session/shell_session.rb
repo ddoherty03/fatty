@@ -194,17 +194,25 @@ module Fatty
         else
           @completion_range = @field.popup_completion_range
           # NOTE: we don't pass a matcher so that the default_matcher is used.
-          popup = PopUpSession.new(
-            source: candidates,
-            kind: :completion,
-            title: "Completions",
-            prompt: "Complete: ",
-            order: :as_given,
-            current: :top,
-            initial_query: @field.popup_completion_query.to_s,
-          )
-          [[:terminal, :push_modal, popup]]
-          Command.terminal(:push_modal, session: popup)
+          completion =
+            Fatty::PopUpSession.new(
+              source: candidates,
+              kind: :completion,
+              title: "Completions",
+              prompt: "Complete: ",
+              order: :as_given,
+              current: :top,
+              initial_query: @field.popup_completion_query.to_s,
+              history: @history,
+              history_kind: :popup_filter,
+              history_ctx: {
+                kind: :popup_filter,
+                popup: :completion,
+                prompt: "Complete: ",
+              },
+            )
+          [[:terminal, :push_modal, completion]]
+          Command.terminal(:push_modal, session: completion)
         end
       end
     end
