@@ -221,6 +221,13 @@ module Fatty
           order: :as_given,
           current: :bottom,
           initial_query: @field.buffer.text,
+          history: @history,
+          history_kind: :popup_filter,
+          history_ctx: {
+            kind: :popup_filter,
+            popup: :history_search,
+            prompt: "I-search: ",
+          },
         )
       Command.terminal(:push_modal, session: hist_searcher)
     end

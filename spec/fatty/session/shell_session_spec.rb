@@ -99,16 +99,25 @@ module Fatty
         expect(commands.first.payload[:event]).to be(ev)
       end
 
-      # it "handles resize keys" do
-      #   session = Fatty::ShellSession.new
-      #   init_shell_session(session)
+      it "saves accepted history search filter text to popup filter history" do
+        session = Fatty::ShellSession.new
 
-      #   commands = update(session, :key, event: key(:resize))
+        commands = apply_action(session, :history_search)
+        popup = commands.first.payload.fetch(:session)
 
-      #   expect(commands.length).to eq(1)
-      #   expect(commands.first.target).to eq(:terminal)
-      #   expect(commands.first.action).to eq(:resize)
-      # end
+        popup.field.buffer.replace("tty")
+        update(popup, :popup_accept)
+
+        expect(session.history.previous_for(
+                 :popup_filter,
+                 current: "",
+                 ctx: {
+                   kind: :popup_filter,
+                   popup: :history_search,
+                   prompt: "I-search: ",
+                 },
+               )).to eq("tty")
+      end
 
       it "handles enter by submitting the current line" do
         session = Fatty::ShellSession.new
