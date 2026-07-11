@@ -467,6 +467,40 @@ module Fatty
         expect(b.cursor).to eq(3)
       end
 
+      it "delete_char_forward kills the active region" do
+        b = Fatty::InputBuffer.new
+        b.insert("abcdef")
+        b.bol
+        b.move_right(count: 2)
+        b.set_mark
+        b.move_right(count: 3)
+
+        deleted = b.delete_char_forward
+
+        expect(deleted).to eq("cde")
+        expect(b.text).to eq("abf")
+        expect(b.cursor).to eq(2)
+        expect(b.kill_ring.first).to eq("cde")
+        expect(b.region_active?).to be(false)
+      end
+
+      it "delete_char_backward kills the active region" do
+        b = Fatty::InputBuffer.new
+        b.insert("abcdef")
+        b.bol
+        b.move_right(count: 2)
+        b.set_mark
+        b.move_right(count: 3)
+
+        deleted = b.delete_char_backward
+
+        expect(deleted).to eq("cde")
+        expect(b.text).to eq("abf")
+        expect(b.cursor).to eq(2)
+        expect(b.kill_ring.first).to eq("cde")
+        expect(b.region_active?).to be(false)
+      end
+
       it "copy_region does not delete but is yankable" do
         b.replace("abcdef")
         b.bol

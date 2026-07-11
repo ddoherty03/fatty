@@ -286,7 +286,7 @@ module Fatty
     desc "Delete the character before the cursor"
     action :delete_char_backward do |count: 1|
       if region_active?
-        delete_region
+        kill_region
       else
         n = normalize_count(count)
         return if @cursor.zero?
@@ -306,7 +306,7 @@ module Fatty
     desc "Delete count characters after the cursor"
     action :delete_char_forward do |count: 1|
       if region_active?
-        delete_region
+        kill_region
       else
         n = normalize_count(count)
         return if @cursor == text.length
@@ -349,56 +349,66 @@ module Fatty
       killed
     end
 
-    desc "Kill count words after the cursor and return the deleted string"
+    desc "Kill count words after the cursor, or kill the active region"
     action :kill_word_forward do |count: 1|
-      n = normalize_count(count)
-      return "" if eol?
+      if region_active?
+        kill_region
+      else
+        n = normalize_count(count)
+        return "" if eol?
 
-      deleted = ""
-      with_undo do
-        start = cursor
-        finish = start
-        repeat(n) do
-          break if finish >= text.length
+        deleted = ""
+        with_undo do
+          start = cursor
+          finish = start
 
-          span = word_span_forward(finish)
-          break if span.begin == span.end
+          repeat(n) do
+            break if finish >= text.length
 
-          finish = span.end
+            span = word_span_forward(finish)
+            break if span.begin == span.end
+
+            finish = span.end
+          end
+
+          deleted = delete_range(start...finish)
+          @cursor = start
+          push_kill(deleted)
+          @last_action = :kill
         end
 
-        deleted = delete_range(start...finish)
-        @cursor = start
-        push_kill(deleted)
-        @last_action = :kill
+        deleted
       end
-      deleted
     end
 
     desc "Kill count words before the cursor and return the deleted string"
     action :kill_word_backward do |count: 1|
-      n = normalize_count(count)
-      return "" if bol?
+      if region_active?
+        kill_region
+      else
+        n = normalize_count(count)
+        return "" if bol?
 
-      deleted = ""
-      with_undo do
-        finish = cursor
-        start = finish
-        repeat(n) do
-          break if start <= 0
+        deleted = ""
+        with_undo do
+          finish = cursor
+          start = finish
+          repeat(n) do
+            break if start <= 0
 
-          span = word_span_backward(start)
-          break if span.begin == span.end
+            span = word_span_backward(start)
+            break if span.begin == span.end
 
-          start = span.begin
+            start = span.begin
+          end
+
+          deleted = delete_range(start...finish)
+          @cursor = start
+          push_kill(deleted)
+          @last_action = :kill
         end
-
-        deleted = delete_range(start...finish)
-        @cursor = start
-        push_kill(deleted)
-        @last_action = :kill
+        deleted
       end
-      deleted
     end
 
     desc "Transpose the two characters around point."
