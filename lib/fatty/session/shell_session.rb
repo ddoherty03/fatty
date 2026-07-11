@@ -283,8 +283,13 @@ module Fatty
         elsif event&.respond_to?(:mouse)
           event.mouse.inspect
         end
+
       Fatty.debug("ShellSession#apply_action: #{which}", tag: :keymap)
-      @field.reset_completion_state! unless action.to_sym == :complete
+
+      unless completion_action?(action)
+        @field.reset_completion_state!
+      end
+
       env = action_env(event: event)
       defn = Fatty::Actions.lookup(action)
       result = Fatty::Actions.call(action, env, *args)
@@ -367,11 +372,15 @@ module Fatty
     # Completion
     #########################################################################################
 
+    def completion_action?(action)
+      [:complete, :complete_previous].include?(action.to_sym)
+    end
+
     def completion_candidates
       path_candidates = @field.path_completion_candidates
       return path_candidates if path_candidates.any?
 
-      return [] unless @completion_proc
+      return [] unless @completion_pr
 
       prefix = completion_prefix
       Array(@completion_proc.call(@field.buffer))

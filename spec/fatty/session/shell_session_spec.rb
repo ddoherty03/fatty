@@ -536,6 +536,27 @@ module Fatty
         end
       end
 
+      it "cycles backward from the current completion" do
+        session = Fatty::ShellSession.new(
+          completion_proc: ->(_buffer) { %w[status stash stage] },
+        )
+        init_shell_session(session)
+
+        session.field.buffer.replace("git st")
+
+        apply_action(session, :complete)
+        expect(session.field.autosuggestion).to eq("git status")
+
+        apply_action(session, :complete)
+        expect(session.field.autosuggestion).to eq("git stash")
+
+        commands = apply_action(session, :complete_previous)
+
+        expect(commands).to eq([])
+        expect(session.field.buffer.text).to eq("git st")
+        expect(session.field.autosuggestion).to eq("git status")
+      end
+
       it "opens completion popup for multiple candidates" do
         session = Fatty::ShellSession.new(
           completion_proc: ->(_buffer) { %w[clear cd] },
