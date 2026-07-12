@@ -182,14 +182,21 @@ module Fatty
     action :completion_popup do
       with_virtual_suffix_sync do
         candidates = @field.popup_completion_candidates
+        completion_path = @field.popup_completion_path?
 
         if candidates.empty?
           []
         elsif candidates.length == 1
-          apply_completion(candidates.first, range: @field.popup_completion_range)
+          apply_completion(
+            candidates.first,
+            range: @field.popup_completion_range,
+            append_space: !completion_path,
+          )
         else
-          @completion_range = @field.popup_completion_range
           # NOTE: we don't pass a matcher so that the default_matcher is used.
+          @completion_range = @field.popup_completion_range
+          @completion_path = completion_path
+
           completion =
             Fatty::PopUpSession.new(
               source: candidates,
@@ -207,7 +214,7 @@ module Fatty
                 prompt: "Complete: ",
               },
             )
-          [[:terminal, :push_modal, completion]]
+
           Command.terminal(:push_modal, session: completion)
         end
       end
@@ -310,8 +317,13 @@ module Fatty
           Fatty::Actions.call(:replace, env, item)
         end
       when :completion
-        apply_completion(payload.fetch(:item, "").to_s, range: @completion_range)
+        apply_completion(
+          payload.fetch(:item, "").to_s,
+          range: @completion_range,
+          append_space: !@completion_path,
+        )
         @completion_range = nil
+        @completion_path = nil
       end
       commands
     end
@@ -429,7 +441,7 @@ module Fatty
       commands
     end
 
-    def apply_completion(candidate, range: nil)
+    def apply_completion(candidate, range: nil, append_space: true)
       candidate = candidate.to_s
       return [] if candidate.empty?
 
@@ -437,11 +449,15 @@ module Fatty
       target = range || buffer.completion_replace_range
       old_text = buffer.text.dup
       old_end = target.end
-      append_space =
+
+      should_append_space =
+        append_space &&
         !candidate.match?(/\s\z/) &&
         (old_end >= old_text.length || old_text[old_end]&.match?(/\s/))
-      inserted = append_space ? "#{candidate} " : candidate
+
+      inserted = should_append_space ? "#{candidate} " : candidate
       buffer.replace_range(target, inserted)
+      buffer.virtual_suffix = ""
       []
     end
 

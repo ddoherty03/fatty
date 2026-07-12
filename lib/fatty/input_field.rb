@@ -185,6 +185,10 @@ module Fatty
       path_completion_prefix || buffer.completion_prefix
     end
 
+    def popup_completion_path?
+      !!popup_path_completion_prefix
+    end
+
     def reset_completion_state!
       @completion_state = nil
     end

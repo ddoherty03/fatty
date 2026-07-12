@@ -574,6 +574,50 @@ module Fatty
         expect(popup).to be_a(Fatty::PopUpSession)
       end
 
+      it "does not append a space when accepting a path completion from the popup" do
+        Dir.mktmpdir("fatty_popup_path") do |dir|
+          FileUtils.mkdir_p(File.join(dir, "Downloads", "tmp"))
+          FileUtils.mkdir_p(File.join(dir, "Downloads", "work"))
+          allow(Dir).to receive(:home).and_return(dir)
+
+          session = Fatty::ShellSession.new
+          init_shell_session(session)
+
+          session.field.buffer.replace("ls -l ~/Downloads/")
+          commands = apply_action(session, :completion_popup)
+          popup = commands.first.payload.fetch(:session)
+
+          item = popup.displayed.find { |candidate| candidate.end_with?("tmp/") }
+
+          result = update(
+            session,
+            :popup_result,
+            kind: :completion,
+            item: item,
+          )
+
+          expect(result).to eq([])
+          expect(session.field.buffer.text).to eq("ls -l ~/Downloads/tmp/")
+        end
+      end
+
+      it "does not append a space for a single path completion candidate" do
+        Dir.mktmpdir("fatty_popup_path") do |dir|
+          FileUtils.mkdir_p(File.join(dir, "Downloads"))
+          allow(Dir).to receive(:home).and_return(dir)
+
+          session = Fatty::ShellSession.new
+          init_shell_session(session)
+
+          session.field.buffer.replace("ls -l ~/Down")
+
+          result = apply_action(session, :completion_popup)
+
+          expect(result).to eq([])
+          expect(session.field.buffer.text).to eq("ls -l ~/Downloads/")
+        end
+      end
+
       it "applies completion directly for a single candidate" do
         session = Fatty::ShellSession.new(
           completion_proc: ->(_buffer) { %w[clear] },
