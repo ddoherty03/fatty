@@ -169,6 +169,10 @@ module Fatty
       map.bind(context: :paging, key: :s, meta: true, ctrl: true, action: :pager_regex_search_forward)
       map.bind(context: :paging, key: :r, meta: true, ctrl: true, action: :pager_regex_search_backward)
 
+      # Repeat last search (no minibuffer)
+      map.bind(context: :paging, key: :n, action: :pager_search_next)
+      map.bind(context: :paging, key: :N, action: :pager_search_prev)
+
       # I-search controls (within ISearchSession)
       map.bind(context: :isearch, key: :enter, action: :isearch_accept)
       map.bind(context: :isearch, key: :return, action: :isearch_accept)
@@ -182,10 +186,6 @@ module Fatty
       map.bind(context: :isearch, key: :c, ctrl: true, action: :isearch_cancel)
       map.bind(context: :isearch, key: :g, ctrl: true, action: :isearch_cancel)
       map.bind(context: :isearch, key: :escape, action: :isearch_cancel)
-
-      # Repeat last search (no minibuffer)
-      map.bind(context: :paging, key: :n, action: :pager_search_next)
-      map.bind(context: :paging, key: :N, action: :pager_search_prev)
 
       # Search controls (within SearchSession)
       map.bind(context: :search, key: :enter, action: :search_accept)
