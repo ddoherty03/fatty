@@ -125,6 +125,24 @@ module Fatty
 
         expect(popup.instance_variable_get(:@current)).to eq(0)
       end
+
+      it "notifies the owner when tab is pressed in a completion popup" do
+        popup = Fatty::PopUpSession.new(
+          source: %w[alpha beta],
+          kind: :completion,
+        )
+        init_popup_session(popup)
+
+        commands = apply_action(popup, :popup_tab)
+
+        owner_command = commands.first.payload.fetch(:command)
+
+        expect(commands.first.action).to eq(:send_modal_owner)
+        expect(owner_command.action).to eq(:popup_tab)
+        expect(owner_command.payload[:kind]).to eq(:completion)
+        expect(owner_command.payload[:item]).to eq("alpha")
+        expect(owner_command.payload[:session]).to be(popup)
+      end
     end
 
     describe "renderer-facing public helpers" do

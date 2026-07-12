@@ -173,6 +173,12 @@ module Fatty
       rendered_path_candidates(prefix)
     end
 
+    def path_completion_candidates_for(prefix)
+      return [] if prefix.nil? || prefix.empty?
+
+      rendered_path_candidates(prefix)
+    end
+
     def popup_completion_range
       if popup_path_completion_prefix
         path_completion_range

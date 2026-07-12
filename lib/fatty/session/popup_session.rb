@@ -177,37 +177,26 @@ module Fatty
       end
     end
 
-    private
-
-    # simplecov:disable
-
-    def selected_labels
-      @selected_labels.keys
+    # During path completion update the popup's candidates.
+    def replace_query(text)
+      @field.buffer.replace(text.to_s)
+      refresh_items
+      ensure_scroll_visible
+      notify_owner(:popup_changed)
     end
 
-    def keymap_contexts
-      contexts = [:popup, :text, :terminal]
-      contexts.unshift(:popup_multi) if multi_select?
-      contexts
-    end
+    def replace_source(source:, title: nil, message: nil, query: "", current: :top)
+      @source = source
+      @title = title.to_s if title
+      @message = message.to_s if message
+      @current_policy = current.to_sym
+      @field.buffer.replace(query.to_s)
+      @last_query = nil
+      @scroll_start = 0
 
-    # Return the outer width and height of the window for this modal,
-    # including any padding and borders.
-    def geometry(cols:, rows:)
-      max_w = max_width(cols: cols, margin: MARGIN, min_width: 10)
-      max_h = max_height(rows: rows, margin: MARGIN, min_height: 5)
-
-      desired_list_h = @filtered.length.clamp(MIN_LIST_H, MAX_LIST_H)
-      height = clamp_height(
-        desired_list_h + popup_extra_rows,
-        max_height: max_h,
-        min_height: 6,
-      )
-      width = clamp_width(
-        MAX_WIDTH,
-        max_width: max_w,
-      )
-      [width, height]
+      refresh_items
+      ensure_scroll_visible
+      notify_owner(:popup_changed)
     end
 
     ############################################################################################
@@ -275,6 +264,55 @@ module Fatty
       else
         []
       end
+    end
+
+    action :popup_tab do
+      if @kind == :completion
+        notify_owner(:popup_tab)
+      else
+        accept_selection
+      end
+    end
+
+    action :popup_backtab do
+      if @kind == :completion
+        notify_owner(:popup_backtab)
+      else
+        []
+      end
+    end
+
+    private
+
+    # simplecov:disable
+
+    def selected_labels
+      @selected_labels.keys
+    end
+
+    def keymap_contexts
+      contexts = [:popup, :text, :terminal]
+      contexts.unshift(:popup_multi) if multi_select?
+      contexts
+    end
+
+    # Return the outer width and height of the window for this modal,
+    # including any padding and borders.
+    def geometry(cols:, rows:)
+      max_w = max_width(cols: cols, margin: MARGIN, min_width: 10)
+      max_h = max_height(rows: rows, margin: MARGIN, min_height: 5)
+
+      desired_list_h = @filtered.length.clamp(MIN_LIST_H, MAX_LIST_H)
+      height = clamp_height(
+        desired_list_h + popup_extra_rows,
+        max_height: max_h,
+        min_height: 6,
+      )
+      width = clamp_width(
+        MAX_WIDTH,
+        max_width: max_w,
+      )
+      [width, height]
     end
 
     def apply_action(action, args, event:)
@@ -463,7 +501,7 @@ module Fatty
       [
         Command.terminal(
           :send_modal_owner,
-          command: Command.session(:self, name, **popup_payload),
+          command: Command.session(:self, name, **popup_payload, session: self),
         ),
       ]
     end

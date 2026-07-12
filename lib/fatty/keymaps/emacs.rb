@@ -77,7 +77,6 @@ module Fatty
       map.bind(context: :popup, key: :g, ctrl: true, action: :popup_cancel)
       map.bind(context: :popup, key: :escape, action: :popup_cancel)
       map.bind(context: :popup, key: :enter, action: :popup_accept)
-      map.bind(context: :popup, key: :tab, action: :popup_accept)
       map.bind(context: :popup, key: :return, action: :popup_accept)
       map.bind(context: :popup, key: :up, action: :popup_prev)
       map.bind(context: :popup, key: :down, action: :popup_next)
@@ -94,6 +93,10 @@ module Fatty
       map.bind(context: :popup, key: :'<', meta: true, action: :popup_top)
       map.bind(context: :popup, key: :'>', meta: true, action: :popup_bottom)
       map.bind(context: :popup, key: :l, ctrl: true, action: :popup_recenter)
+      map.bind(context: :popup, key: :tab, action: :popup_tab)
+      map.bind(context: :popup, key: :tab, shift: true, action: :popup_backtab)
+      map.bind(context: :popup, key: :right, action: :popup_tab)
+      map.bind(context: :popup, key: :left, action: :popup_backtab)
 
       # Popups that present multiple items for selection have a special
       # context that steals the SPACE key for toggling selection

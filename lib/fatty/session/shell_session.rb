@@ -25,6 +25,9 @@ module Fatty
       )
       @on_accept = on_accept
       @completion_proc = completion_proc
+      @completion_range = nil
+      @completion_path = nil
+      @completion_popup_prefix = nil
     end
 
     #########################################################################################
@@ -54,6 +57,10 @@ module Fatty
           env = action_env(event: nil)
           field.act_on(:paste, text, env: env)
           []
+        when :popup_tab
+          apply_completion_popup_tab(command.payload)
+        when :popup_backtab
+          apply_completion_popup_backtab(command.payload)
         when :key
           ev = command.payload.fetch(:event)
           if output_session.pager_active?
@@ -196,12 +203,13 @@ module Fatty
           # NOTE: we don't pass a matcher so that the default_matcher is used.
           @completion_range = @field.popup_completion_range
           @completion_path = completion_path
+          @completion_popup_prefix = completion_path ? @field.popup_completion_query.to_s : nil
 
           completion =
             Fatty::PopUpSession.new(
               source: candidates,
               kind: :completion,
-              title: "Completions",
+              title: completion_popup_title(@completion_popup_prefix),
               prompt: "Complete: ",
               order: :as_given,
               current: :top,
@@ -324,6 +332,7 @@ module Fatty
         )
         @completion_range = nil
         @completion_path = nil
+        @completion_popup_prefix = nil
       end
       commands
     end
@@ -441,6 +450,24 @@ module Fatty
       commands
     end
 
+    def completion_path_item?(item)
+      item.to_s.end_with?("/")
+    end
+
+    def parent_completion_path(path)
+      s = path.to_s
+      return if s.empty?
+
+      s = s[0...-1] if s.end_with?("/") && s.length > 1
+      slash = s.rindex("/")
+      return unless slash
+
+      parent = s[0..slash]
+      return if parent == path
+
+      parent
+    end
+
     def apply_completion(candidate, range: nil, append_space: true)
       candidate = candidate.to_s
       return [] if candidate.empty?
@@ -459,6 +486,54 @@ module Fatty
       buffer.replace_range(target, inserted)
       buffer.virtual_suffix = ""
       []
+    end
+
+    def apply_completion_popup_tab(payload)
+      return [] unless @completion_path
+
+      popup = payload[:session]
+      item = payload[:item].to_s
+      return [] unless popup
+      return [] unless completion_path_item?(item)
+
+      replace_completion_popup_path(popup, item)
+    end
+
+    def apply_completion_popup_backtab(payload)
+      return [] unless @completion_path
+
+      popup = payload[:session]
+      return [] unless popup
+
+      path = @completion_popup_prefix || payload[:query].to_s
+      path = payload[:item].to_s if path.empty?
+
+      parent = parent_completion_path(path)
+      return [] unless parent
+
+      replace_completion_popup_path(popup, parent)
+    end
+
+    def replace_completion_popup_path(popup, prefix)
+      @completion_popup_prefix = prefix.to_s
+      candidates = @field.path_completion_candidates_for(@completion_popup_prefix)
+
+      popup.replace_source(
+        source: candidates,
+        title: completion_popup_title(@completion_popup_prefix),
+        query: "",
+        current: :top,
+      )
+
+      []
+    end
+
+    def completion_popup_title(prefix = nil)
+      if prefix && !prefix.empty?
+        "Completions: #{prefix}"
+      else
+        "Completions"
+      end
     end
 
     def with_virtual_suffix_sync

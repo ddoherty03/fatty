@@ -144,6 +144,103 @@ module Fatty
         expect(commands.first.action).to eq(:quit)
       end
 
+      it "descends into a selected directory in a path completion popup" do
+        Dir.mktmpdir("fatty_popup_path") do |dir|
+          FileUtils.mkdir_p(File.join(dir, "usr", "bin"))
+          FileUtils.mkdir_p(File.join(dir, "usr", "lib"))
+          File.write(File.join(dir, "usr", "bin", "ruby"), "x")
+
+          session = Fatty::ShellSession.new
+          init_shell_session(session)
+
+          session.field.buffer.replace("#{dir}/usr/")
+          commands = apply_action(session, :completion_popup)
+          popup = commands.first.payload.fetch(:session)
+
+          item = popup.displayed.find { |candidate| candidate.end_with?("/bin/") }
+
+          result = update(
+            session,
+            :popup_tab,
+            kind: :completion,
+            item: item,
+            query: popup.field.buffer.text,
+            session: popup,
+          )
+
+          expect(result).to eq([])
+          expect(popup.field.buffer.text).to eq("")
+          expect(popup.displayed).to include("#{dir}/usr/bin/ruby")
+          expect(popup.title).to include("#{dir}/usr/bin/")
+        end
+      end
+
+      it "ascends to the parent directory in a path completion popup" do
+        Dir.mktmpdir("fatty_popup_path") do |dir|
+          FileUtils.mkdir_p(File.join(dir, "usr", "bin"))
+          FileUtils.mkdir_p(File.join(dir, "usr", "lib"))
+          File.write(File.join(dir, "usr", "bin", "ruby"), "x")
+          File.write(File.join(dir, "usr", "bin", "rake"), "x")
+          File.write(File.join(dir, "usr", "lib", "libfoo.so"), "x")
+
+          session = Fatty::ShellSession.new
+          init_shell_session(session)
+
+          session.field.buffer.replace("#{dir}/usr/bin/")
+          commands = apply_action(session, :completion_popup)
+          popup = commands.first.payload.fetch(:session)
+
+          result = update(
+            session,
+            :popup_backtab,
+            kind: :completion,
+            item: "#{dir}/usr/bin/",
+            query: "",
+            session: popup,
+          )
+
+          expect(result).to eq([])
+          expect(popup.field.buffer.text).to eq("")
+          expect(popup.displayed).to include("#{dir}/usr/lib/")
+          expect(popup.title).to include("#{dir}/usr/")
+        end
+      end
+
+      it "accepts a path from a navigated completion popup without appending a space" do
+        Dir.mktmpdir("fatty_popup_path") do |dir|
+          FileUtils.mkdir_p(File.join(dir, "usr", "bin"))
+          FileUtils.mkdir_p(File.join(dir, "usr", "lib"))
+          File.write(File.join(dir, "usr", "bin", "ruby"), "x")
+          File.write(File.join(dir, "usr", "bin", "rake"), "x")
+
+          session = Fatty::ShellSession.new
+          init_shell_session(session)
+
+          session.field.buffer.replace("#{dir}/usr/")
+          commands = apply_action(session, :completion_popup)
+          popup = commands.first.payload.fetch(:session)
+
+          update(
+            session,
+            :popup_tab,
+            kind: :completion,
+            item: "#{dir}/usr/bin/",
+            query: "",
+            session: popup,
+          )
+
+          result = update(
+            session,
+            :popup_result,
+            kind: :completion,
+            item: "#{dir}/usr/bin/ruby",
+          )
+
+          expect(result).to eq([])
+          expect(session.field.buffer.text).to eq("#{dir}/usr/bin/ruby")
+        end
+      end
+
       it "alerts for an unbound key" do
         session = Fatty::ShellSession.new
         init_shell_session(session)
