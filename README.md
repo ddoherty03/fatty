@@ -1,71 +1,63 @@
-- [Introduction](#orgb68fb47)
-- [Quick Start](#org50e1cc4)
-  - [Installing](#org0a7054b)
-  - [Trying it Out with the \`fatty\` Demo](#org15bd3b0)
-    - [Builtin commands](#orgb57e388)
-    - [Screenshots](#orgda569a2)
-- [Usage](#orgac624f0)
-  - [Launching a Fatty Terminal](#org3d4daaf)
-    - [`on_accept`](#org6de319c)
-    - [Other parameters to `Terminal.new`](#orga944390)
-  - [The Callback API](#orgaf2b2a8)
-    - [`append(text, follow: true)`](#orgffeedd8)
-    - [`append_now(text, follow: true)`](#org6ef8df0)
-    - [`markdown(text)`](#org8c667db)
-    - [`status(text, role: :info)`](#orge943a9a)
-    - [`good(text)`](#org92b4405)
-    - [`info(text)`](#orga373bc9)
-    - [`warn(text)`](#orga812595)
-    - [`error(text)`](#orge27e09a)
-    - [`oops(text)`](#org9fba7ce)
-    - [`alert(text, role: :info)`](#orgf558347)
-    - [`prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)`](#org9dfef73)
-    - [`add_progress(label:, total: nil, style: :percent, role: :info, width: 40)`](#orge6891ad)
-    - [`choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#orga9c88fe)
-    - [`choose_multi(prompt, choices:, cancel_value: nil)`](#org8ae4976)
-    - [`confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)`](#org560df15)
-    - [`menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#org64d2c3d)
-    - [`environment`](#orge474630)
-- [Default Interaction](#org6404575)
-  - [Parts of the Screen](#org1abaacf)
-    - [Input Field](#orgbb0692f)
-    - [Output Pane](#org401bb99)
-    - [Status Area](#orgc26e524)
-    - [Alert  Area](#org2d2fa91)
-  - [Command-line Editing](#org7090550)
-  - [Keybindings](#org5b9771f)
-    - [Input Context](#org44ce39d)
-    - [Paging Context](#org04b24c6)
-  - [Markdown](#org4a236fa)
-    - [Forced line breaks](#org546d253)
-  - [History](#org378aeb8)
-  - [Completion](#org54f6da5)
-    - [From the `completion_proc`](#org99dcd04)
-    - [From History](#orge274370)
-    - [From partial filenames](#orgf1d41e6)
-- [Configuration](#orgb04a838)
-  - [General Configuration `config.yml`](#orga6c6d2d)
-    - [`word_char_re`](#orgc790827)
-    - [`esc_delay`](#org6413a1c)
-    - [`history`](#org1dfa5e0)
-    - [`theme`](#org3c40aca)
-    - [`truecolor`](#orgd68b975)
-    - [`log`](#org61e33b0)
-  - [Key code definitions `keydefs.yml`](#orgc8a783a)
-  - [Key bindings  `keybindings.yml`](#orgf938edb)
-    - [Key Names](#orgca2c4fd)
-    - [Mouse Events](#org58b466e)
-    - [Modifiers](#org11be0fd)
-    - [Contexts](#org178df34)
-    - [Actions](#orgcb0c617)
-  - [Themes `themes/`](#orgb3fbff4)
-    - [Distributed Themes](#org490854a)
-    - [Custom Themes](#orga1c6598)
-  - [Plugins](#orga5dda0b)
+- [Introduction](#org653dcd1)
+- [Quick Start](#org0ab185d)
+  - [Installing](#orgfd37e70)
+  - [Trying it Out with the \`fatty\` Demo](#org49bb956)
+    - [Builtin commands](#org4669a33)
+    - [Screenshots](#org15af301)
+- [Usage](#org6e49957)
+  - [Launching a Fatty Terminal](#orgb776f7e)
+    - [`on_accept`](#orgd9fe163)
+    - [Other parameters to `Terminal.new`](#org848d1cb)
+  - [The Callback API](#orgb994674)
+    - [`append(text, follow: true)`](#org2cf36e1)
+    - [`append_now(text, follow: true)`](#org73f4794)
+    - [`markdown(text)`](#orgd058ef3)
+    - [`status(text, role: :info)`](#org1be1be1)
+    - [`good(text)`](#orgc8964de)
+    - [`info(text)`](#orgadeea27)
+    - [`warn(text)`](#orgc901397)
+    - [`error(text)`](#orga814d2f)
+    - [`oops(text)`](#org4bef940)
+    - [`alert(text, role: :info)`](#orga720f4d)
+    - [`prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)`](#org8ab2c34)
+    - [`add_progress(label:, total: nil, style: :percent, role: :info, width: 40)`](#org823bff4)
+    - [`choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#orgc3cdb12)
+    - [`choose_multi(prompt, choices:, cancel_value: nil)`](#org4105be6)
+    - [`confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)`](#orgbc1fec6)
+    - [`menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`](#org738b17c)
+    - [`environment`](#org80f9876)
+- [Default Interaction](#org1adf712)
+  - [Parts of the Screen](#orgffe64ec)
+    - [Input Field](#org10e055a)
+    - [Output Pane](#org5f5ea3b)
+    - [Status Area](#org7a49a24)
+    - [Alert  Area](#org664f6ae)
+  - [Command-line Editing](#org8eebcca)
+    - [Input Context](#orgf361f9a)
+    - [Paging Context](#orgcfb019c)
+    - [Searching Output](#orgf9afb64)
+- [Configuration](#org9da0d69)
+  - [General Configuration `config.yml`](#orgfa9b08f)
+    - [`word_char_re`](#orgaaedfe4)
+    - [`esc_delay`](#orgd86cd16)
+    - [`history`](#orge6960ba)
+    - [`theme`](#org0c27c09)
+    - [`truecolor`](#org18b8c7a)
+    - [`log`](#org9e988a4)
+  - [Key code definitions `keydefs.yml`](#orgbfc6d23)
+  - [Key bindings  `keybindings.yml`](#orgcd23526)
+    - [Key Names](#org58c6c90)
+    - [Mouse Events](#org9ccafe3)
+    - [Modifiers](#orgad9e646)
+    - [Contexts](#org6d5be10)
+    - [Actions](#org44fda9b)
+  - [Themes `themes/`](#orgb7a8215)
+    - [Distributed Themes](#org5e625af)
+    - [Custom Themes](#org5176834)
 
 
 
-<a id="orgb68fb47"></a>
+<a id="org653dcd1"></a>
 
 # Introduction
 
@@ -94,12 +86,12 @@ In other words, fatty allows you to write a terminal-based REPL of your choosing
 `Fatty` is *not* a terminal emulator but runs on top of one.
 
 
-<a id="org50e1cc4"></a>
+<a id="org0ab185d"></a>
 
 # Quick Start
 
 
-<a id="org0a7054b"></a>
+<a id="orgfd37e70"></a>
 
 ## Installing
 
@@ -110,7 +102,7 @@ $ gem install fatty
 ```
 
 
-<a id="org15bd3b0"></a>
+<a id="org49bb956"></a>
 
 ## Trying it Out with the \`fatty\` Demo
 
@@ -119,7 +111,7 @@ Once installed, you can try out `fatty` with the included program called `fatty`
 Once inside `fatty` you will be prompted with a prompt that names your current directory. Type `help` to get a summary of the builtin commands available to you. If you type anything other than a builtin command, `fatty` attempts to run it as a shell command and displays the output.
 
 
-<a id="orgb57e388"></a>
+<a id="org4669a33"></a>
 
 ### Builtin commands
 
@@ -152,7 +144,7 @@ Here are the commands builtin to `fatty`
 | colors                       | Display ANSI, 256-color, and X11 color diagnostics                      |
 
 
-<a id="orgda569a2"></a>
+<a id="org15af301"></a>
 
 ### Screenshots
 
@@ -181,17 +173,17 @@ Here are the commands builtin to `fatty`
     ![img](images/choose_popup.png "Running the `fatty` demo `choose` command.")
 
 
-<a id="orgac624f0"></a>
+<a id="org6e49957"></a>
 
 # Usage
 
 
-<a id="org3d4daaf"></a>
+<a id="orgb776f7e"></a>
 
 ## Launching a Fatty Terminal
 
 
-<a id="org6de319c"></a>
+<a id="orgd9fe163"></a>
 
 ### `on_accept`
 
@@ -316,7 +308,7 @@ When a `fatty` application runs, `fatty` installs a few files if they do not exi
     Text passed to `append`, `append_now`, `status`, and `alert` may contain ANSI SGR color/style sequences. Fatty interprets those sequences relative to the current theme role, so an ANSI reset returns to the active Fatty role rather than to the terminal's physical default colors. `fatty` includes the nice [`Rainbow` gem](https://github.com/ku1ik/rainbow) for colorizing text as a convenience.
 
 
-<a id="orga944390"></a>
+<a id="org848d1cb"></a>
 
 ### Other parameters to `Terminal.new`
 
@@ -343,35 +335,48 @@ on_accept: ->(line, env) {
 With that setup, commands entered in `~/src/byr` are favored when the terminal is again in `~/src/byr`, while commands entered elsewhere remain available as fallback history.
 
 
-<a id="orgaf2b2a8"></a>
+<a id="orgb994674"></a>
 
 ## The Callback API
 
 Here are the details on the messages that you can send to the callback parameter to the `on_accept` proc.
 
 
-<a id="orgffeedd8"></a>
+<a id="org2cf36e1"></a>
 
 ### `append(text, follow: true)`
 
 Add the given text to the output pane. After a full page of output is produced, enter paging mode so the user can view the output at leisure and search the output. If `follow` is true, keep the output pane's viewport covering the last lines of output.
 
 
-<a id="org6ef8df0"></a>
+<a id="org73f4794"></a>
 
 ### `append_now(text, follow: true)`
 
 Like `append`, but display output as it is produced rather than wait for a full page to be produced.
 
 
-<a id="org8c667db"></a>
+<a id="orgd058ef3"></a>
 
 ### `markdown(text)`
 
 Render the given text as markdown source according to the current theme then `append` the result to the output pane.
 
+We will not rehearse here how to compose markdown, but one thing that is a bit special with `fatty` is forcing a line break: you should use `<br>` to force a line break in the middle of a line.
 
-<a id="orge943a9a"></a>
+```
+This line has a forced line break <br> and this should appear on the next line.
+```
+
+will render as
+
+```
+This line has a forced line break
+and this should appear on the next line.
+```
+
+
+<a id="org1be1be1"></a>
 
 ### `status(text, role: :info)`
 
@@ -383,49 +388,49 @@ Display the text in the "status" area, the lines immediately above the input fie
 -   **:error:** colored something to suggest danger, usually some tone of red.
 
 
-<a id="org92b4405"></a>
+<a id="orgc8964de"></a>
 
 ### `good(text)`
 
 Display the text in the status area with the role :good.
 
 
-<a id="orga373bc9"></a>
+<a id="orgadeea27"></a>
 
 ### `info(text)`
 
 Display the text in the status area with the role :info.
 
 
-<a id="orga812595"></a>
+<a id="orgc901397"></a>
 
 ### `warn(text)`
 
 Display the text in the status area with the role :warn.
 
 
-<a id="orge27e09a"></a>
+<a id="orga814d2f"></a>
 
 ### `error(text)`
 
 Display the text in the status area with the role :error.
 
 
-<a id="org9fba7ce"></a>
+<a id="org4bef940"></a>
 
 ### `oops(text)`
 
 An alias for `error(text)`
 
 
-<a id="orgf558347"></a>
+<a id="orga720f4d"></a>
 
 ### `alert(text, role: :info)`
 
 Display the text in the one-line alert panel just below the input field. In the alert panel, the role only controls the foreground color, not the background.
 
 
-<a id="org9dfef73"></a>
+<a id="org8ab2c34"></a>
 
 ### `prompt(prompt, initial: "", cancel_value: nil, history_key: nil, save_history: true)`
 
@@ -455,7 +460,7 @@ The `prompt` input has its own history facility separate from the history in the
 `prompt` returns whatever the user typed and returns `nil` if the user cancels with C-c or C-g unless you specify an alternative `cancel_value`.
 
 
-<a id="orge6891ad"></a>
+<a id="org823bff4"></a>
 
 ### `add_progress(label:, total: nil, style: :percent, role: :info, width: 40)`
 
@@ -590,7 +595,7 @@ Display a progress widget in the status area to show the user that the system is
     And, if you have occasion, you can clear the Progress by calling `#clear` on the Progress object.
 
 
-<a id="orga9c88fe"></a>
+<a id="orgc3cdb12"></a>
 
 ### `choose(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`
 
@@ -656,7 +661,7 @@ Fatty::Terminal.new(
 ```
 
 
-<a id="org8ae4976"></a>
+<a id="org4105be6"></a>
 
 ### `choose_multi(prompt, choices:, cancel_value: nil)`
 
@@ -674,7 +679,7 @@ Present a set of `choices:`, which can either be
 The `prompt` String (by default "Choose Many") can guide the user about the purpose of the choices.
 
 
-<a id="org560df15"></a>
+<a id="orgbc1fec6"></a>
 
 ### `confirm(prompt, yes_label: "Yes", no_label: "No", cancel_value: false)`
 
@@ -685,7 +690,7 @@ Present the user with a simple Yes/No choice using your choice of ways to expres
 `confirm` will return `false` on cancellation with C-c or C-g unless you provide an alternative `cancel_value:`, in which case it returns that.
 
 
-<a id="org64d2c3d"></a>
+<a id="org738b17c"></a>
 
 ### `menu(prompt, choices:, initial_choice_idx: 0, cancel_value: nil)`
 
@@ -732,7 +737,7 @@ If you want to set one of the choices as the initial choice, set `initial_choice
 If you want a value associated with the user's cancellation of the chooser with C-c or C-g, set `cancel_value:` to that value.
 
 
-<a id="orge474630"></a>
+<a id="org80f9876"></a>
 
 ### `environment`
 
@@ -769,189 +774,287 @@ The environment report also includes a nested `:curses` hash:
 | `:can_change_color` | Whether curses can redefine color values             |
 
 
-<a id="org6404575"></a>
+<a id="org1adf712"></a>
 
 # Default Interaction
 
 
-<a id="org1abaacf"></a>
+<a id="orgffe64ec"></a>
 
 ## Parts of the Screen
 
 
-<a id="orgbb0692f"></a>
+<a id="org10e055a"></a>
 
 ### Input Field
 
 Just above the bottom of the screen where all the action takes place: it is a line for editing the input. It displays a prompt followed by an area in which you build the command line using `fatty's` editing facilities.
 
 
-<a id="org401bb99"></a>
+<a id="org5f5ea3b"></a>
 
 ### Output Pane
 
 Most of the top part of the screen is reserved for displaying whatever output is sent to it with the `on_accept` callback to the `Terminal`. It can render colored ANSI-encoded strings and will page long output so you can view it a page at a time and even search the output.
 
 
-<a id="orgc26e524"></a>
+<a id="org7a49a24"></a>
 
 ### Status Area
 
 The one to four lines just above the Input Field that displays output to the user that is out of band for the Output Pane. Brief messages of confirmation, warning, or error can be displayed there so as to get the user's immediate attention. Progress bars also render there where their visibility is made prominent.
 
 
-<a id="org2d2fa91"></a>
+<a id="org664f6ae"></a>
 
 ### Alert  Area
 
 Alerts are short-lived, non-scrolling messages shown below the input field. They are intended for user-visible conditions that require attention. `Fatty` uses this area to warn the user of unrecognized key codes and of unbound key presses.
 
 
-<a id="org7090550"></a>
+<a id="org8eebcca"></a>
 
 ## Command-line Editing
 
-
-<a id="org5b9771f"></a>
-
-## Keybindings
-
-The following tables explain the keybindings available in \`fatty\` in different contexts. Named keys are indicated by \`:name\` and key categories, such as \`<digits>\` are indicated with brackets.
+`fatty` aims to have a full-featured command-line editor for editing a single line of text that is sent to the `on_accept` proc for the `Terminal`. The default keybindings are based on Emacs keybindings, but they are fully customizable. Implementing `vim`-like keybindings is not you possible because `fatty` has no notion of editing "modes" as would be required for any kind of a modal editor&#x2014;at least not yet. Maybe some day.
 
 
-<a id="org44ce39d"></a>
+<a id="orgf361f9a"></a>
 
 ### Input Context
 
 When editing the input line or text input for widgets like the \`prompt\`, \`fatty\` provides emacs-like editing keybindings by default. Many of these commands can take a count prefix argument to repeat the command count times. For example, \`M-8 M-0 #\` will insert 80 '#' characters at the cursor.
 
-| Key        | Description                                            |
-|---------- |------------------------------------------------------ |
-| C-a        | move to the beginning of the line                      |
-| :home      | move to the beginning of the line                      |
-| C-e        | move to the end of the line                            |
-| :end       | move to the end of the line                            |
-| C-f        | move cursor right one character                        |
-| :right     | move cursor right one character                        |
-| C-b        | move cursor left one character                         |
-| :left      | move cursor left one character                         |
-| M-f        | move cursor right one word                             |
-| M-:right   | move cursor right one word                             |
-| C-:right   | move cursor right one word                             |
-| M-b        | move cursor left one word                              |
-| M-:left    | move cursor left one word                              |
-| C-:left    | move cursor left one word                              |
-| C-t        | transpose characters                                   |
-| M-t        | transpose words                                        |
-|            |                                                        |
-| C-d        | delete character at cursor                             |
-| :delete    | delete character at cursor                             |
-| :backspace | delete character before cursor                         |
-| M-d        | kill word at cursor                                    |
-| C-w        | kill word before cursor                                |
-| C-k        | kill to end of line                                    |
-|            |                                                        |
-| C-/        | undo                                                   |
-| C-\_       | undo                                                   |
-| C-M-/      | redo                                                   |
-| M-/        | redo                                                   |
-|            |                                                        |
-| C-:space   | set the mark at the current cursor position            |
-| C-@        | set the mark at the current cursor position            |
-| C-g        | clear the mark                                         |
-| C-w        | kill the region                                        |
-| M-w        | copy the region                                        |
-|            |                                                        |
-| C-y        | yank last kill at cursor                               |
-| M-y        | replace last yank with next in kill ring               |
-|            |                                                        |
-| C-u        | universal count argument (time 4 each press)           |
-| M-`digit`  | accumulate count argument                              |
-|            |                                                        |
-| C-p        | replace the line with the prior history item           |
-| :up        | replace the line with the prior history item           |
-| C-n        | replace the line with the next history item            |
-| :down      | replace the line with the next history item            |
-| C-r        | search the history in a popup                          |
-|            |                                                        |
-| :enter     | feed the line to the on\_accept proc and page output   |
-| M-:enter   | feed the line to the on\_accept proc and scroll output |
-| C-c        | quit \`fatty\`                                         |
-| C-d        | quit \`fatty\` only if the input line is empty         |
-| C-l        | clear the output pane                                  |
-|            |                                                        |
+1.  Cursor Motion
+
+    `Fatty` implements all the expected actions for moving the cursor around the input buffer. You can move by characters or words or to the beginning or end of the buffer.
+    
+    | Key      | Description                       |
+    |-------- |--------------------------------- |
+    | C-a      | move to the beginning of the line |
+    | :home    | move to the beginning of the line |
+    | C-e      | move to the end of the line       |
+    | :end     | move to the end of the line       |
+    | C-f      | move cursor right one character   |
+    | :right   | move cursor right one character   |
+    | C-b      | move cursor left one character    |
+    | :left    | move cursor left one character    |
+    | M-f      | move cursor right one word        |
+    | M-:right | move cursor right one word        |
+    | C-:right | move cursor right one word        |
+    | M-b      | move cursor left one word         |
+    | M-:left  | move cursor left one word         |
+    | C-:left  | move cursor left one word         |
+
+2.  Clearing
+
+    This is one action that does not affect the input buffer but the output pane. It clears it.
+    
+    | Key | Description           |
+    |--- |--------------------- |
+    | C-l | clear the output pane |
+
+3.  Undo and Redo
+
+    `Fatty` keeps a stack of buffer-modifying actions, recording the buffer contents before any change is made. The undo-redo facility allows you to traverse that stack, `undo` travels backward to an earlier buffer state, and, once at an earlier state, `redo` travels forward to a more recent buffer state.
+    
+    | Key   | Description |
+    |----- |----------- |
+    | C-/   | undo        |
+    | C-\_  | undo        |
+    | C-M-/ | redo        |
+    | M-/   | redo        |
+
+4.  Deletion and Killing
+
+    `Fatty` implements the emacs-esque notion of "killing" text by deleting it but also adding it to the "kill ring", a circular structure of all prior kills. It is circular in that successive "yanks", or pastes, traverse the kill ring and return to the beginning after reaching the end. By contrast a "deletion" merely removes text from the buffer without adding it to the kill ring.
+    
+    When the region is active, destructive editing commands kill the region rather than deleting characters or words.
+    
+    | Key        | Description                    |
+    |---------- |------------------------------ |
+    | C-d        | delete character at cursor     |
+    | :delete    | delete character at cursor     |
+    | :backspace | delete character before cursor |
+    | M-d        | kill word at cursor            |
+    | C-w        | kill word before cursor        |
+    | C-k        | kill to end of line            |
+    | C-t        | transpose characters           |
+    | M-t        | transpose words                |
+
+5.  Yanking, Mark, and Region
+
+    Text that has been killed can be "yanked" into the buffer at the cursor position with the "yank" action. That text can be replaced by successive entries in the kill ring with the yank\_pop action.
+    
+    In addition, `fatty` allows you to define a "region" by setting a mark and moving the cursor. The text between the mark and the cursor is the region. The region can be killed or copied, that is deleted and added to the kill ring or just added to the kill ring.
+    
+    Notice that commands that normally delete characters or word, kill the region if the region is active.
+    
+    | Key        | Description                                       |
+    |---------- |------------------------------------------------- |
+    | C-y        | yank last kill at the cursor                      |
+    | M-y        | replace last yank with next item in the kill ring |
+    |            |                                                   |
+    | C-d        | when region active, kill the region               |
+    | :delete    | when region active, kill the region               |
+    | :backspace | when region active, kill the region               |
+    | M-d        | when region active, kill the region               |
+    | C-w        | when region active, kill the region               |
+    |            |                                                   |
+    | C-:space   | set the mark at the current cursor position       |
+    | C-@        | set the mark at the current cursor position       |
+    | C-g        | clear the mark                                    |
+    | C-w        | kill the region                                   |
+    | M-w        | copy the region                                   |
+
+6.  Count Prefix
+
+    By default each action acts on one item, so the default count is 1. But for certain commands that operate on characters or words, you can modify the count by typing `M-<digit>` keys before the command. For example, if you want to insert exactly 80 '#' characters into the buffer, `M-8 M-0 #` will do the trick.
+    
+    Fatty follows the emacs convention of making `C-u` multiply the count prefix by 4 with each press. So you can insert 64 '#' characters with `C-u C-u C-u #`.
+    
+    | Key       | Description                                        |
+    |--------- |-------------------------------------------------- |
+    | C-u       | universal count argument (times 4 with each press) |
+    | M-<digit> | accumulate a count argument                        |
+
+7.  History Navigation
+
+    `Fatty` sports a rather sophisticated history system. It not only records each completed item of input but can also be made to note the kind of items and the "context" in which it was entered.
+    
+    History is essentially partitioned into separate "kinds" of history so that the command line can occupy one part of history and search strings a different part of history. That way, the history is made relevant to the current input buffer that you are working on.
+    
+    In addition, each history item can note its "context". This is less strict than "kinds" of history but allows the history mechanism to favor history items from the same "context" as the current context. For example, in the `fatty` demo, any line that is not a builtin command is treated as a shell command to execute. It uses the current working directory as the context, so if you traverse history items, you will be shown command executed from the directory you are in before other history items. It still will give you items from other contexts, it just pushes items from the current context to the front of the list.
+    
+    You can navigate history items with the `up` and `down` keys as you would expect. But you can also have the history items presented in a popup that shows all history items then allows you to narrow the items displayed by typing text into its narrowing input field. Bonus: the narrowing input field itself has a history that you can access with `M-p` and `M-n`. History on history.
+    
+    | Key   | Description                                  |
+    |----- |-------------------------------------------- |
+    | C-p   | replace the line with the prior history item |
+    | :up   | replace the line with the prior history item |
+    | C-n   | replace the line with the next history item  |
+    | :down | replace the line with the next history item  |
+    | C-r   | search the history in a popup                |
+
+8.  Completion
+
+    `Fatty` also provides a completion facility that makes entering input easier.
+    
+    1.  Input Completion
+    
+        As you type a command-line, `fatty` will auto-suggest ways to complete the line with dimmed text to the right of the cursor:
+        
+        ![img](images/auto_suggest.png)
+        
+        After typing 'ec' `fatty` suggests a command-line pulled from history using the dimmed text to the right of the cursor. The suggestion can be accepted by moving the cursor into the suggestion, and any text then to the left of the cursor becomes part of the input buffer.
+        
+        `fatty` may have several completions suggested by the text-so-far and you can cycle through them by hitting the `tab` key. And if you want, you can see all the suggestions in a popup with `M-tab`. That allows narrowing by the text of the completions and the narrowing filter has its own history.
+        
+        ![img](images/completion_popup.png)
+    
+    2.  Sources for Input Completion
+    
+        For input completion, `fatty` uses two sources:
+        
+        1.  The input history.
+        2.  The candidates returned by the `Terminal#completion_proc`.
+        
+        History completion is always available when the terminal has history enabled. It lets the user complete from lines they have previously accepted. This is especially useful for command shells, REPL-style interfaces, and applications where users often repeat or slightly modify earlier input.
+        
+        Application completion is supplied by the optional `completion_proc` passed to `Fatty::Terminal.new`. The proc is called with the input buffer's text-so-far and returns candidate strings. This is where an application can offer completions for commands, file names, account names, option names, object identifiers, or anything else meaningful to the application.
+        
+        The two sources are combined before they are presented to the user. Fatty deduplicates candidates and then offers the result through the normal completion interface. `TAB` cycles through completions inline. `M-TAB` opens a completion popup, where the user can narrow the candidate list by typing in the `Complete:` field.
+        
+        Application candidates are offered first. History candidates fill in behind them. This gives the host application priority for current, domain-specific completions while still letting users recover earlier accepted input.
+        
+        The completion popup is still a popup filter. Its narrowing text has its own history, separate from command input history and from other popup filters. Use `M-p` and `M-n` inside the completion popup to recall previous completion filters.
+    
+    3.  File Name Completion
+    
+        Apart from command-line completion, `fatty` offers completion of file names if the cursor is at the end of a string that looks like a file name: that is, it tarts with './', '../', '~/' or '/'.
+        
+        1.  If the string-so-far matches only one directory or file name, it inserts that into the input buffer and continues completion from there.
+        2.  If the string-so-far matches multiple files or directories it auto-suggests the first and `TAB` cycles through each of the candidates which you can accept by moving the cursor past the suggestion. Likewise `S-TAB` cycles backwards through the list of candidates.
+        3.  If the string-so-far matches no files, completion does nothing.
+        
+        Just as with command line completion, you can invoke a popup of completions with `M-TAB` and popup of possible file names will appear within which you may filter the candidates down by narrowing. Unlike other forms of completion, the file name completion popup allows you to fill out the path by navigating directories within the popup by hitting `TAB` or `right` to descend into a sub-directory or `S-TAB` or `left` to ascend to the parent directory. The popup title shows the path so far.
+
+9.  Accept or Cancel
+
+    Finally, when the command-line is to your satisfaction, you can submit the line to the `on_accept` proc which determines how your app responds to it.
+    
+    You can end a `fatty` session with `C-c` at the command line, or (only if the buffer is empty) with `C-d`.
+    
+    | Key      | Description                                            |
+    |-------- |------------------------------------------------------ |
+    | :enter   | feed the line to the on\_accept proc and page output   |
+    | M-:enter | feed the line to the on\_accept proc and scroll output |
+    | C-c      | quit \`fatty\`                                         |
+    | C-d      | quit \`fatty\` only if the input line is empty         |
 
 
-<a id="org04b24c6"></a>
+<a id="orgcfb019c"></a>
 
 ### Paging Context
 
-By default, \`fatty\` sends output to the large output pane, and if the output is more than one screen long presents a paging environment for viewing and searching the environment.
+Once the command-line is accepted, \`fatty\` sends output to the large output pane, and if the output is more than one screen long presents a paging environment for viewing and searching the environment. From there, `fatty` offers the expected navigation aids for examining the output:
 
-| Key   | Description                             |
-|----- |--------------------------------------- |
-| :up   | move output one line up                 |
-| k     | move output one line up                 |
-| :down | move output one line down               |
-| j     | move output one line down               |
-| M-s   | toggle between paging and scrolling     |
-| ?     | initiate a fixed-string search backward |
-| C-s   | initiate an Isearch session forward     |
-| C-r   | initiate an Isearch session backward    |
-| C-M-s | initiate an Regexp session forward      |
-| C-M-r | initiate an Regexp session backward     |
-| C-/   | initiate an Regexp session forward      |
+| Key         | Count? | Description                                      |
+|----------- |------ |------------------------------------------------ |
+| `up`        | Yes    | move output one line up                          |
+| `k`         | Yes    | move output one line up                          |
+| `down`      | Yes    | move output one line down                        |
+| `j`         | Yes    | move output one line down                        |
+| `page_up`   | Yes    | move back one page                               |
+| `b`         | Yes    | move back one page                               |
+| `u`         | Yes    | move back one page                               |
+| `M-v`       | Yes    | move back one page                               |
+| `backspace` | Yes    | move back one page                               |
+| `page_down` | Yes    | move forward one page                            |
+| `f`         | Yes    | move forward one page                            |
+| `d`         | Yes    | move forward one page                            |
+| `space`     | Yes    | move forward one page                            |
+| `C-v`       | Yes    | move forward one page                            |
+| `home`      | No     | move to the beginning of output                  |
+| `M-<`       | No     | move to the beginning of output                  |
+| `g`         | No     | move to the beginning of output                  |
+| `end`       | No     | move to the end of output                        |
+| `M->`       | No     | move to the end of output                        |
+| `G`         | No     | move to the end of output                        |
+| `M-s`       | No     | toggle between paging and scrolling              |
+| `/`         | No     | initiate a fixed-string search forward           |
+| `?`         | No     | initiate a fixed-string search backward          |
+| `C-s`       | No     | initiate an Isearch session forward              |
+| `C-r`       | No     | initiate an Isearch session backward             |
+| `C-M-s`     | No     | initiate an Regexp session forward               |
+| `C-M-r`     | No     | initiate an Regexp session backward              |
+| `C-/`       | No     | initiate an Regexp session forward               |
+| `C-c`       | No     | quit paging                                      |
+| `q`         | No     | quit paging                                      |
+| `C-g`       | No     | quit paging                                      |
+| `escape`    | No     | quit paging                                      |
+| `n`         | Yes    | move to the next instance of the current search  |
+| `N`         | Yes    | move to the prior instance of the current search |
 
+As you can see, `fatty` tries to accommodate a number of finger habits besides `emacs`, including `vim` and `Emacs Info`, by offering several alternative ways to invoke navigation actions.
 
-<a id="org4a236fa"></a>
-
-## Markdown
-
-
-<a id="org546d253"></a>
-
-### Forced line breaks
-
-Use `<br>` to force a line break.
-
-```
-This line has a forced line break <br> and this should appear on the next line.
-```
-
-will render as
-
-```
-This line has a forced line break
-and this should appear on the next line.
-```
-
-
-<a id="org378aeb8"></a>
-
-## History
-
-
-<a id="org54f6da5"></a>
-
-## Completion
+One unusual action is invoked by `M-s` which toggles the output between scrolling mode without pause and paging mode. It can be invoked while doing either to enter the other mode.
 
 
-<a id="org99dcd04"></a>
+<a id="orgf9afb64"></a>
 
-### From the `completion_proc`
+### Searching Output
 
+While paging, you can initiate a search of the output as indicated in the above key bindings for paging. Once a search session is initiated, `fatty` presents an input line for entering search terms.
 
-<a id="orge274370"></a>
+After a search session has ended, `fatty` returns to paging but remembers the last search term and allows navigation among them with `n` and `N`: `n` searches in the direction of the last search and `N` searches in the opposite direction. Notice that the current search term and direction are added to the paging bar after the information on your location within the output.
 
-### From History
+1.  String and Regex Search
 
-
-<a id="orgf1d41e6"></a>
-
-### From partial filenames
+2.  Incremental Search
 
 
-<a id="orgb04a838"></a>
+<a id="org9da0d69"></a>
 
 # Configuration
 
@@ -969,7 +1072,7 @@ The default user-specific configuration directory follows `XDG_CONFIG_HOME` if i
 In addition to the user-specific configuration, fatty will read app-specific configuration files from `~/.config/fatty/apps/<app_name>` if `Terminal` was given an `app_name` parameter. It will use a different directory of your choosing if `Terminal` was given an `app_config_dir` directory name.
 
 
-<a id="orga6c6d2d"></a>
+<a id="orgfa9b08f"></a>
 
 ## General Configuration `config.yml`
 
@@ -992,7 +1095,7 @@ truecolor: auto
 ```
 
 
-<a id="orgc790827"></a>
+<a id="orgaaedfe4"></a>
 
 ### `word_char_re`
 
@@ -1015,7 +1118,7 @@ word_char_re: "[[:alnum:]_.:-]"
 ```
 
 
-<a id="org6413a1c"></a>
+<a id="orgd86cd16"></a>
 
 ### `esc_delay`
 
@@ -1026,7 +1129,7 @@ esc_delay: 0
 ```
 
 
-<a id="org1dfa5e0"></a>
+<a id="orge6960ba"></a>
 
 ### `history`
 
@@ -1039,7 +1142,7 @@ esc_delay: 0
     The maximim number of lines of history retained, by default 10,000.
 
 
-<a id="org3c40aca"></a>
+<a id="org0c27c09"></a>
 
 ### `theme`
 
@@ -1050,7 +1153,7 @@ theme: nordic
 ```
 
 
-<a id="orgd68b975"></a>
+<a id="org18b8c7a"></a>
 
 ### `truecolor`
 
@@ -1061,7 +1164,7 @@ truecolor: auto
 ```
 
 
-<a id="org61e33b0"></a>
+<a id="org9e988a4"></a>
 
 ### `log`
 
@@ -1111,7 +1214,7 @@ tags:
     ```
 
 
-<a id="orgc8a783a"></a>
+<a id="orgbfc6d23"></a>
 
 ## Key code definitions `keydefs.yml`
 
@@ -1249,7 +1352,7 @@ konsole:
 After installing that keydefs, I find that the PageDown variants are all recognized by name and modifiers (except for the strange failure of `terminator` to recognize `C-PageDown`!).
 
 
-<a id="orgf938edb"></a>
+<a id="orgcd23526"></a>
 
 ## Key bindings  `keybindings.yml`
 
@@ -1276,7 +1379,7 @@ A keybinding names a key chord, the context in which it applies, and the Fatty a
 ```
 
 
-<a id="orgca2c4fd"></a>
+<a id="org58c6c90"></a>
 
 ### Key Names
 
@@ -1353,7 +1456,7 @@ A keybinding uses the unmodified key name under the `key` field:
     Fatty does not require custom key names to come from a fixed registry. A custom name only needs to be used consistently between `keydefs.yml` and `keybindings.yml`.
 
 
-<a id="org58b466e"></a>
+<a id="org9ccafe3"></a>
 
 ### Mouse Events
 
@@ -1388,7 +1491,7 @@ scroll_down
 ```
 
 
-<a id="org11be0fd"></a>
+<a id="orgad9e646"></a>
 
 ### Modifiers
 
@@ -1401,7 +1504,7 @@ shift: true
 ```
 
 
-<a id="org178df34"></a>
+<a id="org6d5be10"></a>
 
 ### Contexts
 
@@ -1435,7 +1538,7 @@ The available contexts are:
 The \`:terminal\` context is the lowest-priority fallback context for terminal-wide commands. It is where Fatty puts bindings that are not specific to text editing, paging, search, or popup selection, such as theme selection, key testing, and quitting. Because \`:terminal\` is searched last, any more specific context can override a terminal-wide binding.
 
 
-<a id="orgcb0c617"></a>
+<a id="org44fda9b"></a>
 
 ### Actions
 
@@ -1615,12 +1718,12 @@ Use \`keytest\` to check what action is currently bound to a key. If a key is bo
     | paste        | str  | No     | Insert pasted text at point        |
 
 
-<a id="orgb3fbff4"></a>
+<a id="orgb7a8215"></a>
 
 ## Themes `themes/`
 
 
-<a id="org490854a"></a>
+<a id="org5e625af"></a>
 
 ### Distributed Themes
 
@@ -1656,7 +1759,7 @@ Here are the builtin themes:
 | wordperfect       | Nostalgic nod to the good old word processor       |
 
 
-<a id="orga1c6598"></a>
+<a id="org5176834"></a>
 
 ### Custom Themes
 
@@ -1760,8 +1863,8 @@ Here are the builtin themes:
     
         In addition, one role, `popup_frame:`, in addition to these have two attributes for styling the "frame" drawn around popup:
         
-        | `border:`  | single or double  |
-        | `corners:` | rounded or square |
+        | `border:`  | single, double, or ascii |
+        | `corners:` | rounded or square        |
     
     4.  An Example Theme
     
@@ -1845,94 +1948,19 @@ Here are the builtin themes:
           corners: rounded
         ```
         
-        Fatty synthesizes alert variants from the base `alert` role and the semantic roles:
-        
-        ```org
-        alert_info
-        alert_good
-        alert_warn
-        alert_error
-        ```
-        
-        You normally do not need to define those directly.
-        
-        Markdown rendering uses additional roles. You can define them directly:
-        
-        ```yaml
-        markdown_h1:
-        fg: yellow
-        bg: navy
-        attrs: [bold]
-        
-        markdown_code:
-        fg: lightgreen
-        bg: black
-        ```
-        
         Or you can group them under `markdown` without the `markdown_` prefix:
         
         ```yaml
         markdown:
-        h1:
-        fg: yellow
-        bg: navy
-        attrs: [bold]
-        code:
-        fg: lightgreen
-        bg: black
-        link:
-        fg: cyan
-        bg: navy
-        attrs: [underline]
+          h1:
+            fg: yellow
+            bg: navy
+            attrs: [bold]
+          code:
+            fg: lightgreen
+            bg: black
+          link:
+            fg: cyan
+            bg: navy
+            attrs: [underline]
         ```
-        
-        Useful markdown roles include:
-        
-        ```org
-        markdown_h1
-        markdown_h2
-        markdown_h3
-        markdown_code
-        markdown_code_gutter
-        markdown_strong
-        markdown_emphasis
-        markdown_link
-        markdown_url
-        markdown_quote_gutter
-        markdown_highlight
-        markdown_table_header
-        markdown_table_cell
-        markdown_underline
-        markdown_hrule
-        ```
-        
-        The `popup_frame` role also accepts border options:
-        
-        ```yaml
-        popup_frame:
-        fg: yellow
-        bg: navy
-        border: single
-        corners: rounded
-        ```
-        
-        Available border and corner values are intentionally small and portable. The current built-in themes use:
-        
-        ```yaml
-        border: single
-        corners: rounded
-        ```
-        
-        and:
-        
-        ```yaml
-        border: ascii
-        corners: square
-        ```
-        
-        Theme changes update the renderer immediately.
-
-
-<a id="orga5dda0b"></a>
-
-## Plugins

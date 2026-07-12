@@ -346,6 +346,21 @@ full page to be produced.
 Render the given text as markdown source according to the current theme then
 =append= the result to the output pane.
 
+We will not rehearse here how to compose markdown, but one thing that is a bit
+special with =fatty= is forcing a line break: you should use =<br>= to force a
+line break in the middle of a line.
+
+#+begin_example
+This line has a forced line break <br> and this should appear on the next line.
+#+end_example
+
+will render as
+
+#+begin_example
+This line has a forced line break
+and this should appear on the next line.
+#+end_example
+
 *** =status(text, role: :info)=
 Display the text in the "status" area, the lines immediately above the input
 field, using one of the following "roles":
@@ -752,18 +767,23 @@ uses this area to warn the user of unrecognized key codes and of unbound key
 presses.
 
 ** Command-line Editing
-** Keybindings
-
-The following tables explain the keybindings available in `fatty` in different
-contexts.  Named keys are indicated by `:name` and key categories, such as
-`<digits>` are indicated with brackets.
+=fatty= aims to have a full-featured command-line editor for editing a single
+line of text that is sent to the =on_accept= proc for the =Terminal=.  The
+default keybindings are based on Emacs keybindings, but they are fully
+customizable. Implementing =vim=-like keybindings is not you possible because
+=fatty= has no notion of editing "modes" as would be required for any kind of
+a modal editor---at least not yet.  Maybe some day.
 
 *** Input Context
-
 When editing the input line or text input for widgets like the `prompt`,
 `fatty` provides emacs-like editing keybindings by default.  Many of these
 commands can take a count prefix argument to repeat the command count times.
 For example, `M-8 M-0 #` will insert 80 '#' characters at the cursor.
+
+**** Cursor Motion
+=Fatty= implements all the expected actions for moving the cursor around the
+input buffer.  You can move by characters or words or to the beginning or end
+of the buffer.
 
 | Key        | Description                                           |
 |------------+-------------------------------------------------------|
@@ -781,89 +801,291 @@ For example, `M-8 M-0 #` will insert 80 '#' characters at the cursor.
 | M-b        | move cursor left one word                             |
 | M-:left    | move cursor left one word                             |
 | C-:left    | move cursor left one word                             |
-| C-t        | transpose characters                                  |
-| M-t        | transpose words                                       |
-|            |                                                       |
+
+
+**** Clearing
+This is one action that does not affect the input buffer but the output pane.
+It clears it.
+
+| Key        | Description                                           |
+|------------+-------------------------------------------------------|
+| C-l        | clear the output pane                                 |
+
+**** Undo and Redo
+=Fatty= keeps a stack of buffer-modifying actions, recording the buffer
+contents before any change is made.  The undo-redo facility allows you to
+traverse that stack, =undo= travels backward to an earlier buffer state, and,
+once at an earlier state, =redo= travels forward to a more recent buffer
+state.
+
+| Key        | Description                                           |
+|------------+-------------------------------------------------------|
+| C-/        | undo                                                  |
+| C-_        | undo                                                  |
+| C-M-/      | redo                                                  |
+| M-/        | redo                                                  |
+
+**** Deletion and Killing
+=Fatty= implements the emacs-esque notion of "killing" text by deleting it but
+also adding it to the "kill ring", a circular structure of all prior kills.
+It is circular in that successive "yanks", or pastes, traverse the kill ring
+and return to the beginning after reaching the end.  By contrast a "deletion"
+merely removes text from the buffer without adding it to the kill ring.
+
+When the region is active, destructive editing commands kill the region rather
+than deleting characters or words.
+
+| Key        | Description                                           |
+|------------+-------------------------------------------------------|
 | C-d        | delete character at cursor                            |
 | :delete    | delete character at cursor                            |
 | :backspace | delete character before cursor                        |
 | M-d        | kill word at cursor                                   |
 | C-w        | kill word before cursor                               |
 | C-k        | kill to end of line                                   |
-|            |                                                       |
-| C-/        | undo                                                  |
-| C-_        | undo                                                  |
-| C-M-/      | redo                                                  |
-| M-/        | redo                                                  |
-|            |                                                       |
-| C-:space   | set the mark at the current cursor position           |
-| C-@        | set the mark at the current cursor position           |
-| C-g        | clear the mark                                        |
-| C-w        | kill the region                                       |
-| M-w        | copy the region                                       |
-|            |                                                       |
-| C-y        | yank last kill at cursor                              |
-| M-y        | replace last yank with next in kill ring              |
-|            |                                                       |
-| C-u        | universal count argument (time 4 each press)          |
-| M-=digit=  | accumulate count argument                             |
-|            |                                                       |
+| C-t        | transpose characters                                  |
+| M-t        | transpose words                                       |
+
+**** Yanking, Mark, and Region
+Text that has been killed can be "yanked" into the buffer at the cursor
+position with the "yank" action.  That text can be replaced by successive
+entries in the kill ring with the yank_pop action.
+
+In addition, =fatty= allows you to define a "region" by setting a mark and
+moving the cursor.  The text between the mark and the cursor is the region.
+The region can be killed or copied, that is deleted and added to the kill ring or
+just added to the kill ring.
+
+Notice that commands that normally delete characters or word, kill the region
+if the region is active.
+
+| Key        | Description                                       |
+|------------+---------------------------------------------------|
+| C-y        | yank last kill at the cursor                      |
+| M-y        | replace last yank with next item in the kill ring |
+|            |                                                   |
+| C-d        | when region active, kill the region               |
+| :delete    | when region active, kill the region               |
+| :backspace | when region active, kill the region               |
+| M-d        | when region active, kill the region               |
+| C-w        | when region active, kill the region               |
+|            |                                                   |
+| C-:space   | set the mark at the current cursor position       |
+| C-@        | set the mark at the current cursor position       |
+| C-g        | clear the mark                                    |
+| C-w        | kill the region                                   |
+| M-w        | copy the region                                   |
+
+**** Count Prefix
+By default each action acts on one item, so the default count is 1.  But for
+certain commands that operate on characters or words, you can modify the count
+by typing =M-<digit>= keys before the command.  For example, if you want to
+insert exactly 80 '#' characters into the buffer, =M-8 M-0 #= will do the
+trick.
+
+Fatty follows the emacs convention of making =C-u= multiply the count prefix
+by 4 with each press.  So you can insert 64 '#' characters with =C-u C-u C-u
+#=.
+
+| Key       | Description                                        |
+|-----------+----------------------------------------------------|
+| C-u       | universal count argument (times 4 with each press) |
+| M-<digit> | accumulate a count argument                        |
+
+**** History Navigation
+=Fatty= sports a rather sophisticated history system.  It not only records
+each completed item of input but can also be made to note the kind of items
+and the "context" in which it was entered.
+
+History is essentially partitioned into separate "kinds" of history so that
+the command line can occupy one part of history and search strings a different
+part of history.  That way, the history is made relevant to the current input
+buffer that you are working on.
+
+In addition, each history item can note its "context".  This is less strict
+than "kinds" of history but allows the history mechanism to favor history
+items from the same "context" as the current context.  For example, in the
+=fatty= demo, any line that is not a builtin command is treated as a shell
+command to execute.  It uses the current working directory as the context, so
+if you traverse history items, you will be shown command executed from the
+directory you are in before other history items.  It still will give you items
+from other contexts, it just pushes items from the current context to the
+front of the list.
+
+You can navigate history items with the =up= and =down= keys as you would
+expect.  But you can also have the history items presented in a popup that
+shows all history items then allows you to narrow the items displayed by
+typing text into its narrowing input field.  Bonus: the narrowing input field
+itself has a history that you can access with =M-p= and =M-n=.  History on
+history.
+
+| Key        | Description                                           |
+|------------+-------------------------------------------------------|
 | C-p        | replace the line with the prior history item          |
 | :up        | replace the line with the prior history item          |
 | C-n        | replace the line with the next history item           |
 | :down      | replace the line with the next history item           |
 | C-r        | search the history in a popup                         |
-|            |                                                       |
-| :enter     | feed the line to the on_accept proc and page output   |
-| M-:enter   | feed the line to the on_accept proc and scroll output |
-| C-c        | quit `fatty`                                          |
-| C-d        | quit `fatty` only if the input line is empty          |
-| C-l        | clear the output pane                                 |
-|            |                                                       |
 
+**** Completion
+=Fatty= also provides a completion facility that makes entering input easier.
+***** Input Completion
+As you type a command-line, =fatty= will auto-suggest ways to complete the
+line with dimmed text to the right of the cursor:
+
+#+CAPTION: Input editing showing region and predictive completion.
+#+ATTR_HTML: :alt Fatty command line screenshot :width 900
+
+[[file:images/auto_suggest.png]]
+
+After typing 'ec' =fatty= suggests a command-line pulled from history using
+the dimmed text to the right of the cursor.  The suggestion can be accepted by
+moving the cursor into the suggestion, and any text then to the left of the
+cursor becomes part of the input buffer.
+
+=fatty= may have several completions suggested by the text-so-far and you can
+cycle through them by hitting the =tab= key.  And if you want, you can see all
+the suggestions in a popup with =M-tab=.  That allows narrowing by the text of
+the completions and the narrowing filter has its own history.
+
+#+CAPTION: Completion popup with narrowing.
+#+ATTR_HTML: :alt Fatty command line screenshot :width 900
+
+[[file:images/completion_popup.png]]
+
+***** Sources for Input Completion
+For input completion, =fatty= uses two sources:
+
+1. The input history.
+2. The candidates returned by the =Terminal#completion_proc=.
+
+History completion is always available when the terminal has history enabled.
+It lets the user complete from lines they have previously accepted.  This is
+especially useful for command shells, REPL-style interfaces, and applications
+where users often repeat or slightly modify earlier input.
+
+Application completion is supplied by the optional =completion_proc= passed to
+=Fatty::Terminal.new=.  The proc is called with the input buffer's text-so-far
+and returns candidate strings.  This is where an application can offer
+completions for commands, file names, account names, option names, object
+identifiers, or anything else meaningful to the application.
+
+The two sources are combined before they are presented to the user.  Fatty
+deduplicates candidates and then offers the result through the normal completion
+interface.  =TAB= cycles through completions inline.  =M-TAB= opens a completion
+popup, where the user can narrow the candidate list by typing in the
+=Complete:= field.
+
+Application candidates are offered first.  History candidates fill in behind
+them.  This gives the host application priority for current, domain-specific
+completions while still letting users recover earlier accepted input.
+
+The completion popup is still a popup filter.  Its narrowing text has its own
+history, separate from command input history and from other popup filters.  Use
+=M-p= and =M-n= inside the completion popup to recall previous completion
+filters.
+
+***** File Name Completion
+Apart from command-line completion, =fatty= offers completion of file names if
+the cursor is at the end of a string that looks like a file name: that is, it
+tarts with './', '../', '~/' or '/'.
+
+1. If the string-so-far matches only one directory or file name, it inserts
+   that into the input buffer and continues completion from there.
+2. If the string-so-far matches multiple files or directories it auto-suggests
+   the first and =TAB= cycles through each of the candidates which you can
+   accept by moving the cursor past the suggestion.  Likewise =S-TAB= cycles
+   backwards through the list of candidates.
+3. If the string-so-far matches no files, completion does nothing.
+
+Just as with command line completion, you can invoke a popup of completions
+with =M-TAB= and popup of possible file names will appear within which you may
+filter the candidates down by narrowing.  Unlike other forms of completion,
+the file name completion popup allows you to fill out the path by navigating
+directories within the popup by hitting =TAB= or =right= to descend into a
+sub-directory or =S-TAB= or =left= to ascend to the parent directory.  The
+popup title shows the path so far.
+
+**** Accept or Cancel
+Finally, when the command-line is to your satisfaction, you can submit the
+line to the =on_accept= proc which determines how your app responds to it.
+
+You can end a =fatty= session with =C-c= at the command line, or (only if the
+buffer is empty) with =C-d=.
+
+| Key      | Description                                           |
+|----------+-------------------------------------------------------|
+| :enter   | feed the line to the on_accept proc and page output   |
+| M-:enter | feed the line to the on_accept proc and scroll output |
+| C-c      | quit `fatty`                                          |
+| C-d      | quit `fatty` only if the input line is empty          |
 
 *** Paging Context
+Once the command-line is accepted, `fatty` sends output to the large output
+pane, and if the output is more than one screen long presents a paging
+environment for viewing and searching the environment.  From there, =fatty=
+offers the expected navigation aids for examining the output:
 
-By default, `fatty` sends output to the large output pane, and if the output
-is more than one screen long presents a paging environment for viewing and
-searching the environment.
+| Key         | Count? | Description                                      |
+|-------------+--------+--------------------------------------------------|
+| =up=        | Yes    | move output one line up                          |
+| =k=         | Yes    | move output one line up                          |
+| =down=      | Yes    | move output one line down                        |
+| =j=         | Yes    | move output one line down                        |
+| =page_up=   | Yes    | move back one page                               |
+| =b=         | Yes    | move back one page                               |
+| =u=         | Yes    | move back one page                               |
+| =M-v=       | Yes    | move back one page                               |
+| =backspace= | Yes    | move back one page                               |
+| =page_down= | Yes    | move forward one page                            |
+| =f=         | Yes    | move forward one page                            |
+| =d=         | Yes    | move forward one page                            |
+| =space=     | Yes    | move forward one page                            |
+| =C-v=       | Yes    | move forward one page                            |
+| =home=      | No     | move to the beginning of output                  |
+| =M-<=       | No     | move to the beginning of output                  |
+| =g=         | No     | move to the beginning of output                  |
+| =end=       | No     | move to the end of output                        |
+| =M->=       | No     | move to the end of output                        |
+| =G=         | No     | move to the end of output                        |
+| =M-s=       | No     | toggle between paging and scrolling              |
+| =/=         | No     | initiate a fixed-string search forward           |
+| =?=         | No     | initiate a fixed-string search backward          |
+| =C-s=       | No     | initiate an Isearch session forward              |
+| =C-r=       | No     | initiate an Isearch session backward             |
+| =C-M-s=     | No     | initiate an Regexp session forward               |
+| =C-M-r=     | No     | initiate an Regexp session backward              |
+| =C-/=       | No     | initiate an Regexp session forward               |
+| =C-c=       | No     | quit paging                                      |
+| =q=         | No     | quit paging                                      |
+| =C-g=       | No     | quit paging                                      |
+| =escape=    | No     | quit paging                                      |
+| =n=         | Yes    | move to the next instance of the current search  |
+| =N=         | Yes    | move to the prior instance of the current search |
+#+TBLFM: $1=up
 
-| Key   | Description                             |
-|-------+-----------------------------------------|
-| :up   | move output one line up                 |
-| k     | move output one line up                 |
-| :down | move output one line down               |
-| j     | move output one line down               |
-| M-s   | toggle between paging and scrolling     |
-| /     | initiate a fixed-string search forward  |
-| ?     | initiate a fixed-string search backward |
-| C-s   | initiate an Isearch session forward     |
-| C-r   | initiate an Isearch session backward    |
-| C-M-s | initiate an Regexp session forward      |
-| C-M-r | initiate an Regexp session backward     |
-| C-/   | initiate an Regexp session forward      |
+As you can see, =fatty= tries to accommodate a number of finger habits besides
+=emacs=, including =vim= and =Emacs Info=, by offering several alternative
+ways to invoke navigation actions.
 
+One unusual action is invoked by =M-s= which toggles the output between
+scrolling mode without pause and paging mode.  It can be invoked while doing
+either to enter the other mode.
 
+*** Searching Output
+While paging, you can initiate a search of the output as indicated in the
+above key bindings for paging.  Once a search session is initiated, =fatty=
+presents an input line for entering search terms.
 
-** Markdown
-*** Forced line breaks
-Use ~<br>~ to force a line break.
+After a search session has ended, =fatty= returns to paging but remembers the
+last search term and allows navigation among them with =n= and =N=: =n=
+searches in the direction of the last search and =N= searches in the opposite
+direction.  Notice that the current search term and direction are added to the
+paging bar after the information on your location within the output.
 
-#+begin_example
-This line has a forced line break <br> and this should appear on the next line.
-#+end_example
+**** String and Regex Search
 
-will render as
-
-#+begin_example
-This line has a forced line break
-and this should appear on the next line.
-#+end_example
-** History
-** Completion
-*** From the =completion_proc=
-*** From History
-*** From partial filenames
+**** Incremental Search
 
 * Configuration
 When a Fatty application starts, Fatty installs default configuration files
@@ -1718,8 +1940,8 @@ output, but curses terminals may display it inconsistently or not at all.
 In addition, one role, =popup_frame:=, in addition to these have two
 attributes for styling the "frame" drawn around popup:
 
-| =border:=  | single or double  |
-| =corners:= | rounded or square |
+| =border:=  | single, double, or ascii |
+| =corners:= | rounded or square        |
 
 ***** An Example Theme
 
@@ -1803,94 +2025,20 @@ attributes for styling the "frame" drawn around popup:
     corners: rounded
 #+end_src
 
-Fatty synthesizes alert variants from the base =alert= role and the semantic
-roles:
-
-#+begin_src org :tangle no
-alert_info
-alert_good
-alert_warn
-alert_error
-#+end_src
-
-You normally do not need to define those directly.
-
-Markdown rendering uses additional roles.  You can define them directly:
-
-#+begin_src yaml :tangle no
-markdown_h1:
-fg: yellow
-bg: navy
-attrs: [bold]
-
-markdown_code:
-fg: lightgreen
-bg: black
-#+end_src
 
 Or you can group them under =markdown= without the =markdown_= prefix:
 
 #+begin_src yaml :tangle no
-markdown:
-h1:
-fg: yellow
-bg: navy
-attrs: [bold]
-code:
-fg: lightgreen
-bg: black
-link:
-fg: cyan
-bg: navy
-attrs: [underline]
+  markdown:
+    h1:
+      fg: yellow
+      bg: navy
+      attrs: [bold]
+    code:
+      fg: lightgreen
+      bg: black
+    link:
+      fg: cyan
+      bg: navy
+      attrs: [underline]
 #+end_src
-
-Useful markdown roles include:
-
-#+begin_src org :tangle no
-markdown_h1
-markdown_h2
-markdown_h3
-markdown_code
-markdown_code_gutter
-markdown_strong
-markdown_emphasis
-markdown_link
-markdown_url
-markdown_quote_gutter
-markdown_highlight
-markdown_table_header
-markdown_table_cell
-markdown_underline
-markdown_hrule
-#+end_src
-
-The =popup_frame= role also accepts border options:
-
-#+begin_src yaml :tangle no
-popup_frame:
-fg: yellow
-bg: navy
-border: single
-corners: rounded
-#+end_src
-
-Available border and corner values are intentionally small and portable.  The
-current built-in themes use:
-
-#+begin_src yaml :tangle no
-border: single
-corners: rounded
-#+end_src
-
-and:
-
-#+begin_src yaml :tangle no
-border: ascii
-corners: square
-#+end_src
-
-
-Theme changes update the renderer immediately.
-
-** Plugins
