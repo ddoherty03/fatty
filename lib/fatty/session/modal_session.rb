@@ -35,7 +35,8 @@ module Fatty
       rows = ::Curses.lines
       width, height = geometry(cols: cols, rows: rows)
       x = (cols - width) / 2
-      y = (rows - height) / 2
+      input_row = renderer.screen.input_rect.row
+      y = [input_row - height - 1, 0].max
       self.win = ::Curses::Window.new(height, width, y, x)
       nil
     end
