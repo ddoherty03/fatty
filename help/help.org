@@ -10,34 +10,34 @@ recognize is handed off to the shell.
 
 Here are the commands builtin to =fatty=
 
-| Command                     | Description                                                                |
-|-----------------------------+----------------------------------------------------------------------------|
-| cd                          | Change the current directory used by the shell                             |
-| colors                      | Display all available colors, names and rgb codes                          |
-| choose                      | Present a series of choices in a popup window                              |
-| choose_multi                | Present choices with a "checkbox" for selecting multiple values            |
-| choosevals                  | Also present choices in a popup window but return an associated value      |
-| choosevals_multi            | Also present a checkbox but return associated values                       |
-| environment                 | Print out the environment detected by Fatty                                |
-| good                        | Display a "good" message colored to indicate success                       |
-| help                        | Display this file on the output pane                                       |
-| info                        | Display an "info" message on the status line                               |
-| keytest                     | Enter key diagnostic mode report keycodes, key names, and bindings         |
-| markdown <file.md>          | Render the markdown file to the output pane; defaults to a demo file       |
-| markdown_org                | Render the markdown file exported from org mode with ofx-gfm package       |
-| menu                        | Present a menu of labeled routines to run                                  |
-| oops                        | Display an "oops" message colored to indicate failure                      |
-| progress bar                | Show progress by a filling bar using ASCII characters                      |
-| progress braille_bar        | Same, but using braille characters                                         |
-| progress count <N>          | Display an animated progress indicator counting up to 40 or the given N    |
-| progress percent <N>        | Same but also show the percent complete                                    |
-| progress simple_percent <N> | Same but show only the percent complete                                    |
-| progress spinner            | Animate a "spinner" showing a busy state                                   |
-| progress trail              | Show progress by displaying an "indicator" character for each step         |
-| progress unicode_bar        | Same, but using unicode characters                                         |
-| prompt                      | Popup a text box for entering a value in response to a prompt              |
-| <shell_command>             | Anything else is treated as a shell command, run, and its output displayed |
-| warn                        | Display a "warn" message colored to indicate caution                       |
+| Command                    | Description                                                                |
+|----------------------------+----------------------------------------------------------------------------|
+| cd                         | Change the current directory used by the shell                             |
+| colors                     | Display all available colors, names and rgb codes                          |
+| choose                     | Present a series of choices in a popup window                              |
+| choose_multi               | Present choices with a "checkbox" for selecting multiple values            |
+| choosevals                 | Also present choices in a popup window but return an associated value      |
+| choosevals_multi           | Also present a checkbox but return associated values                       |
+| environment                | Print out the environment detected by Fatty                                |
+| good                       | Display a "good" message colored to indicate success                       |
+| help                       | Display this file on the output pane                                       |
+| info                       | Display an "info" message on the status line                               |
+| keytest                    | Enter key diagnostic mode report keycodes, key names, and bindings         |
+| markdown <file.md>         | Render the markdown file to the output pane; defaults to a demo file       |
+| markdown_org               | Render the markdown file exported from org mode with ofx-gfm package       |
+| menu                       | Present a menu of labeled routines to run                                  |
+| oops                       | Display an "oops" message colored to indicate failure                      |
+| progress bar               | Show progress by a filling bar using ASCII characters                      |
+| progress braille_bar       | Same, but using braille characters                                         |
+| progress count <N>         | Display an animated progress indicator counting up to 40 or the given N    |
+| progress percent <N>       | Same but also show the percent complete                                    |
+| progress count_percent <N> | Same but show both the count and the percent complete                      |
+| progress spinner           | Animate a "spinner" showing a busy state                                   |
+| progress trail             | Show progress by displaying an "indicator" character for each step         |
+| progress unicode_bar       | Same, but using unicode characters                                         |
+| prompt                     | Popup a text box for entering a value in response to a prompt              |
+| <shell_command>            | Anything else is treated as a shell command, run, and its output displayed |
+| warn                       | Display a "warn" message colored to indicate caution                       |
 
 ** Keybindings
 

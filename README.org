@@ -21,17 +21,16 @@
 11. a way to define new themes,
 12. processing completed command lines with a callback procedure of your
     choosing,
-13. several user-interface widgets such a selection popups, text prompts,
-    menus, progress bars, etc.,
-14. a set of progress indicators you can use to display to the end user,
-15. a way to render markdown to the output pane,
+13. several user-interface widgets such as selection popups, text prompts,
+    menus, and progress indicators,
+14. a way to render markdown to the output pane,
 
 In other words, fatty allows you to write a terminal-based REPL of your choosing but takes
 care of all the difficult parts.
 
 ~Fatty~ is written entirely in Ruby and was born from my frustrations at the
-limitations of libraries like ~readline~ and ~reline~.  It relies on ~curses~
-and ~truecolor~ for low-level rendering and is surprisingly snappy.
+limitations of libraries like ~readline~ and ~reline~.  It uses ~curses~ and
+~truecolor~ sequences for low-level rendering and is surprisingly snappy.
 
 ~Fatty~ is /not/ a terminal emulator but runs on top of one.
 
@@ -57,31 +56,31 @@ run it as a shell command and displays the output.
 *** Builtin commands
 Here are the commands builtin to =fatty=
 
-| Command                     | Description                                                             |
-|-----------------------------+-------------------------------------------------------------------------|
-| help                        | Display this file on the output pane                                    |
-| cd                          | Change the current directory used by the shell                          |
-| choose                      | Present a series of choices in a popup window                           |
-| choosevals                  | Also present choices in a popup window but return an associated value   |
-| choose_multi                | Present choices with a "checkbox" for selecting multiple values         |
-| choosevals_multi            | Also present a checkbox but return associated values                    |
-| menu                        | Present a menu of labeled routines to run                               |
-| info                        | Display an "info" message on the status line                            |
-| good                        | Display a "good" message colored to indicate success                    |
-| warn                        | Display a "warn" message colored to indicate caution                    |
-| oops                        | Display an "oops" message colored to indicate failure                   |
-| prompt                      | Popup a text box for entering a value in response to a prompt           |
-| progress count <N>          | Display an animated progress indicator counting up to 40 or the given N |
-| progress percent <N>        | Same but also show the percent complete                                 |
-| progress simple_percent <N> | Same but show only the percent complete                                 |
-| progress trail              | Show progress by displaying an "indicator" character for each step      |
-| progress bar                | Show progress by a filling bar using ASCII characters                   |
-| progress unicode_bar        | Same, but using unicode characters                                      |
-| progress braille_bar        | Same, but using braille characters                                      |
-| progress spinner            | Animate a "spinner" showing a busy state                                |
-| markdown <file.md>          | Render the markdown file to the output pane; defaults to a demo file    |
-| keytest                     | Enter key diagnostic mode report keycodes, key names, and bindings      |
-| colors                      | Display ANSI, 256-color, and X11 color diagnostics                      |
+| Command                    | Description                                                             |
+|----------------------------+-------------------------------------------------------------------------|
+| help                       | Display this file on the output pane                                    |
+| cd                         | Change the current directory used by the shell                          |
+| choose                     | Present a series of choices in a popup window                           |
+| choosevals                 | Also present choices in a popup window but return an associated value   |
+| choose_multi               | Present choices with a "checkbox" for selecting multiple values         |
+| choosevals_multi           | Also present a checkbox but return associated values                    |
+| menu                       | Present a menu of labeled routines to run                               |
+| info                       | Display an "info" message on the status line                            |
+| good                       | Display a "good" message colored to indicate success                    |
+| warn                       | Display a "warn" message colored to indicate caution                    |
+| oops                       | Display an "oops" message colored to indicate failure                   |
+| prompt                     | Popup a text box for entering a value in response to a prompt           |
+| progress count <N>         | Display an animated progress indicator counting up to 40 or the given N |
+| progress percent <N>       | Same but also show the percent complete                                 |
+| progress count_percent <N> | Same but show both count and the percent complete                       |
+| progress trail             | Show progress by displaying an "indicator" character for each step      |
+| progress bar               | Show progress by a filling bar using ASCII characters                   |
+| progress unicode_bar       | Same, but using unicode characters                                      |
+| progress braille_bar       | Same, but using braille characters                                      |
+| progress spinner           | Animate a "spinner" showing a busy state                                |
+| markdown <file.md>         | Render the markdown file to the output pane; defaults to a demo file    |
+| keytest                    | Enter key diagnostic mode to report keycodes, key names, and bindings   |
+| colors                     | Display ANSI, 256-color, and X11 color diagnostics                      |
 
 *** Screenshots
 
@@ -152,14 +151,8 @@ Now you have an interactive application that allows you to type text and see
 what it looks like when written backwards in uppercase letters. It's as easy
 as that!
 
-Text passed to the output pane, the status area, and the alert pane may
-contain ANSI SGR color/style sequences. Fatty interprets those sequences
-relative to the current theme and role, so an ANSI reset returns to the active
-Fatty role rather than to the terminal's physical default colors.  =fatty=
-includes the nice [[https://github.com/ku1ik/rainbow][=Rainbow= gem]] for colorizing text as a convenience.
-
 When a =fatty= application runs, =fatty= installs a few files if they do not
-exists:
+exist:
 
 - a history file at =~/.fatty_history=
 - a config directory at =~/.config/fatty= that contains
@@ -316,12 +309,12 @@ For example, the =fatty= demo executable uses the current working directory as
 history context:
 
 #+begin_src ruby :tangle no
-Fatty::Terminal.new(
-history_ctx: -> { { pwd: Dir.pwd } },
-on_accept: ->(line, env) {
-# ...
-},
-).go
+  Fatty::Terminal.new(
+    history_ctx: -> { { pwd: Dir.pwd } },
+    on_accept: ->(line, env) {
+      # ...
+    },
+  ).go
 #+end_src
 
 With that setup, commands entered in =~/src/byr= are favored when the terminal
@@ -338,9 +331,12 @@ produced, enter paging mode so the user can view the output at leisure and
 search the output. If =follow= is true, keep the output pane's viewport
 covering the last lines of output.
 
-*** =append_now(text, follow: true)=
+*** =append_now(text, follow: true, mode: nil)=
 Like =append=, but display output as it is produced rather than wait for a
 full page to be produced.
+
+Setting the mode to =:scrolling= or =:paging= determines whether the output is
+scrolled continuously or paused on each page of output.
 
 *** =markdown(text)=
 Render the given text as markdown source according to the current theme then
@@ -364,7 +360,7 @@ and this should appear on the next line.
 *** =status(text, role: :info)=
 Display the text in the "status" area, the lines immediately above the input
 field, using one of the following "roles":
-- :good :: colored according something affirming according to the theme,
+- :good :: colored to indicate something affirming according to the theme,
   usually something greenish;
 - :info :: colored something neutral simply for informational purposes;
 - :warn :: colored something to suggest caution, usually something in the
@@ -505,59 +501,59 @@ Suppose, for example, you wanted to print a trail in which the last digit of
 the prime is displayed to indicate progress and colored so it stands out:
 
 #+begin_src ruby :tangle no
-#! /usr/bin/env -S ruby -Ilib
-# -*- mode: ruby -*-
+  #! /usr/bin/env -S ruby -Ilib
+  # -*- mode: ruby -*-
 
-require 'fatty'
-require 'prime'
-require "rainbow/refinement"
+  require 'fatty'
+  require 'prime'
+  require "rainbow/refinement"
 
-using Rainbow
+  using Rainbow
 
-primer = lambda do |input, fatty|
-  if input.match?(/\A[1-9]\d*\z/)
-    k = input.to_i
-    prog = fatty.add_progress(label: "Thinking...", total: k, style: :trail, width: 100)
-    out_line = +""
-    num_primes = 0
-    Prime.each do |p|
-      num_primes += 1
-      out = "#{p} "
+  primer = lambda do |input, fatty|
+    if input.match?(/\A[1-9]\d*\z/)
+      k = input.to_i
+      prog = fatty.add_progress(label: "Thinking...", total: k, style: :trail, width: 100)
+      out_line = +""
+      num_primes = 0
+      Prime.each do |p|
+        num_primes += 1
+        out = "#{p} "
 
-      if out_line.length + out.length > 100
-        fatty.append_now("#{out_line}\n", mode: :scrolling)
-        out_line.clear
-      end
-
-      out_line << out
-      last_dig = p.to_s.split('').last
-      sig =
-        case last_dig
-        when '1'
-          last_dig.red
-        when '3'
-          last_dig.blue
-        when '7'
-          last_dig.green
-        when '9'
-          last_dig.yellow
-        else
-          '!'
+        if out_line.length + out.length > 100
+          fatty.append_now("#{out_line}\n", mode: :scrolling)
+          out_line.clear
         end
-      prog.update(current: num_primes, indicator: sig)
-      break if num_primes >= k
-    end
-    fatty.append_now("#{out_line}\n", mode: :scrolling) unless out_line.empty?
-  else
-    fatty.alert "Give me a positive integer", role: :error
-  end
-  prog.finish("Done")
-end
 
-Fatty::Terminal.new(
-  on_accept: primer,
-  prompt: 'How many primes? ',
-).go
+        out_line << out
+        last_dig = p.to_s.split('').last
+        sig =
+          case last_dig
+          when '1'
+            last_dig.red
+          when '3'
+            last_dig.blue
+          when '7'
+            last_dig.green
+          when '9'
+            last_dig.yellow
+          else
+            '!'
+          end
+        prog.update(current: num_primes, indicator: sig)
+        break if num_primes >= k
+      end
+      fatty.append_now("#{out_line}\n", mode: :scrolling) unless out_line.empty?
+      prog.finish("Done")
+    else
+      fatty.alert "Give me a positive integer", role: :error
+    end
+  end
+
+  Fatty::Terminal.new(
+    on_accept: primer,
+    prompt: 'How many primes? ',
+  ).go
 #+end_src
 
 **** Finish
@@ -760,7 +756,7 @@ warning, or error can be displayed there so as to get the user's immediate
 attention.  Progress bars also render there where their visibility is made
 prominent.
 
-*** Alert  Area
+*** Alert Area
 Alerts are short-lived, non-scrolling messages shown below the input field.
 They are intended for user-visible conditions that require attention.  =Fatty=
 uses this area to warn the user of unrecognized key codes and of unbound key
@@ -770,9 +766,9 @@ presses.
 =fatty= aims to have a full-featured command-line editor for editing a single
 line of text that is sent to the =on_accept= proc for the =Terminal=.  The
 default keybindings are based on Emacs keybindings, but they are fully
-customizable. Implementing =vim=-like keybindings is not you possible because
-=fatty= has no notion of editing "modes" as would be required for any kind of
-a modal editor---at least not yet.  Maybe some day.
+customizable. Implementing =vim=-like keybindings is not currently possible
+because =fatty= has no notion of editing "modes" as would be required for any
+kind of a modal editor---at least not yet.  Maybe some day.
 
 *** Input Context
 When editing the input line or text input for widgets like the `prompt`,
@@ -856,7 +852,7 @@ moving the cursor.  The text between the mark and the cursor is the region.
 The region can be killed or copied, that is deleted and added to the kill ring or
 just added to the kill ring.
 
-Notice that commands that normally delete characters or word, kill the region
+Notice that commands that normally delete characters or words, kill the region
 if the region is active.
 
 | Key        | Description                                       |
@@ -906,7 +902,7 @@ In addition, each history item can note its "context".  This is less strict
 than "kinds" of history but allows the history mechanism to favor history
 items from the same "context" as the current context.  For example, in the
 =fatty= demo, any line that is not a builtin command is treated as a shell
-command to execute.  It uses the current working directory as the context, so
+
 if you traverse history items, you will be shown command executed from the
 directory you are in before other history items.  It still will give you items
 from other contexts, it just pushes items from the current context to the
@@ -988,7 +984,7 @@ filters.
 ***** File Name Completion
 Apart from command-line completion, =fatty= offers completion of file names if
 the cursor is at the end of a string that looks like a file name: that is, it
-tarts with './', '../', '~/' or '/'.
+starts with './', '../', '~/' or '/'.
 
 1. If the string-so-far matches only one directory or file name, it inserts
    that into the input buffer and continues completion from there.
@@ -999,12 +995,12 @@ tarts with './', '../', '~/' or '/'.
 3. If the string-so-far matches no files, completion does nothing.
 
 Just as with command line completion, you can invoke a popup of completions
-with =M-TAB= and popup of possible file names will appear within which you may
-filter the candidates down by narrowing.  Unlike other forms of completion,
-the file name completion popup allows you to fill out the path by navigating
-directories within the popup by hitting =TAB= or =right= to descend into a
-sub-directory or =S-TAB= or =left= to ascend to the parent directory.  The
-popup title shows the path so far.
+with =M-TAB= and a popup of possible file names will appear within which you
+may filter the candidates down by narrowing.  Unlike other forms of
+completion, the file name completion popup allows you to fill out the path by
+navigating directories within the popup by hitting =TAB= or =right= to descend
+into a sub-directory or =S-TAB= or =left= to ascend to the parent directory.
+The popup title shows the path so far.
 
 **** Accept or Cancel
 Finally, when the command-line is to your satisfaction, you can submit the
@@ -1023,47 +1019,53 @@ buffer is empty) with =C-d=.
 *** Paging Context
 Once the command-line is accepted, `fatty` sends output to the large output
 pane, and if the output is more than one screen long presents a paging
-environment for viewing and searching the environment.  From there, =fatty=
-offers the expected navigation aids for examining the output:
+environment for viewing and searching the output.  From there, =fatty= offers
+the expected navigation aids for examining the output:
 
-| Key         | Count? | Description                                      |
-|-------------+--------+--------------------------------------------------|
-| =up=        | Yes    | move output one line up                          |
-| =k=         | Yes    | move output one line up                          |
-| =down=      | Yes    | move output one line down                        |
-| =j=         | Yes    | move output one line down                        |
-| =page_up=   | Yes    | move back one page                               |
-| =b=         | Yes    | move back one page                               |
-| =u=         | Yes    | move back one page                               |
-| =M-v=       | Yes    | move back one page                               |
-| =backspace= | Yes    | move back one page                               |
-| =page_down= | Yes    | move forward one page                            |
-| =f=         | Yes    | move forward one page                            |
-| =d=         | Yes    | move forward one page                            |
-| =space=     | Yes    | move forward one page                            |
-| =C-v=       | Yes    | move forward one page                            |
-| =home=      | No     | move to the beginning of output                  |
-| =M-<=       | No     | move to the beginning of output                  |
-| =g=         | No     | move to the beginning of output                  |
-| =end=       | No     | move to the end of output                        |
-| =M->=       | No     | move to the end of output                        |
-| =G=         | No     | move to the end of output                        |
-| ~=~         | No     | toggle the display of line numbers               |
-| =M-s=       | No     | toggle between paging and scrolling              |
-| =/=         | No     | initiate a fixed-string search forward           |
-| =?=         | No     | initiate a fixed-string search backward          |
-| =C-s=       | No     | initiate an Isearch session forward              |
-| =C-r=       | No     | initiate an Isearch session backward             |
-| =C-M-s=     | No     | initiate an Regexp session forward               |
-| =C-M-r=     | No     | initiate an Regexp session backward              |
-| =C-/=       | No     | initiate an Regexp session forward               |
-| =C-c=       | No     | quit paging                                      |
-| =q=         | No     | quit paging                                      |
-| =C-g=       | No     | quit paging                                      |
-| =escape=    | No     | quit paging                                      |
-| =n=         | Yes    | move to the next instance of the current search  |
-| =N=         | Yes    | move to the prior instance of the current search |
-#+TBLFM: $1=up
+| Key         | Count? | Description                                         |
+|-------------+--------+-----------------------------------------------------|
+| =up=        | Yes    | move output one line up                             |
+| =k=         | Yes    | move output one line up                             |
+| =down=      | Yes    | move output one line down                           |
+| =j=         | Yes    | move output one line down                           |
+| =page_up=   | Yes    | move back one page                                  |
+| =b=         | Yes    | move back one page                                  |
+| =u=         | Yes    | move back one page                                  |
+| =M-v=       | Yes    | move back one page                                  |
+| =backspace= | Yes    | move back one page                                  |
+| =page_down= | Yes    | move forward one page                               |
+| =f=         | Yes    | move forward one page                               |
+| =d=         | Yes    | move forward one page                               |
+| =space=     | Yes    | move forward one page                               |
+| =C-v=       | Yes    | move forward one page                               |
+| =home=      | No     | move to the top of output                           |
+| =M-<=       | No     | move to the top of output                           |
+| =g=         | Yes    | move to the top, or to the counted original line*   |
+| =end=       | No     | move to the end of output                           |
+| =M->=       | No     | move to the end of output                           |
+| =G=         | No     | move to the end of output                           |
+| ~=~         | No     | toggle the display of line numbers                  |
+| =M-s=       | No     | toggle between paging and scrolling                 |
+| =/=         | No     | initiate a fixed-string search forward              |
+| =?=         | No     | initiate a fixed-string search backward             |
+| =C-s=       | No     | initiate an Isearch session forward                 |
+| =C-r=       | No     | initiate an Isearch session backward                |
+| =C-M-s=     | No     | initiate an Regexp session forward                  |
+| =C-M-r=     | No     | initiate an Regexp session backward                 |
+| =C-/=       | No     | initiate an Regexp session forward                  |
+| =<=         | No     | narrow output to lines containing all entered terms |
+| =>=         | No     | widen output by clearing the narrowing              |
+| =C-c=       | No     | quit paging                                         |
+| =q=         | No     | quit paging                                         |
+| =C-g=       | No     | quit paging                                         |
+| =escape=    | No     | quit paging                                         |
+| =n=         | Yes    | move to the next instance of the current search     |
+| =N=         | Yes    | move to the prior instance of the current search    |
+
+=*= Without a count, =g= moves to the beginning of output.  With a numeric
+prefix, it moves to that original output line; for example, =M-1 M-0 M-0 M-0
+g= moves to line 1000.  It uses the original line numbers even when output is
+narrowed.
 
 As you can see, =fatty= tries to accommodate a number of finger habits besides
 =emacs=, including =vim= and =Emacs Info=, by offering several alternative
@@ -1074,6 +1076,10 @@ scrolling mode without pause and paging mode.  It can be invoked while doing
 either to enter the other mode.
 
 You can add line numbers to the display while paging by using the ~=~ key.
+
+You can also "narrow" the output with =<=, which will prompt you for one or
+more terms to match.  The output will then show only lines that match all the
+terms typed.  To return to the full output, "widen" with =>=.
 
 *** Searching Output
 While paging, you can initiate a search of the output as indicated in the
@@ -1087,8 +1093,16 @@ direction.  Notice that the current search term and direction are added to the
 paging bar after the information on your location within the output.
 
 **** String and Regex Search
+=/= and =?= prompt for a fixed string and search forward or backward.  =C-M-s=
+(or =C-/=) and =C-M-r= (or =C-?=) perform the corresponding regular-expression
+searches.  Accepting the search leaves the selected match active for later
+navigation with =n= and =N=.
 
 **** Incremental Search
+=C-s= and =C-r= begin forward or backward incremental search.  The output
+moves to matching text as the search term is edited.  Accepting commits the
+match; canceling restores the output position from before the search began.
+
 
 * Configuration
 When a Fatty application starts, Fatty installs default configuration files
@@ -1171,7 +1185,7 @@ esc_delay: 0
 The path to the history file to use, by default =~/.fatty_history=
 
 **** =max=
-The maximim number of lines of history retained, by default 10,000.
+The maximum number of lines of history retained, by default 10,000.
 
 *** =theme=
 The =theme= setting names the theme Fatty applies at startup:
@@ -1194,18 +1208,18 @@ truecolor: auto
 Logging is configured under =log=:
 
 #+begin_src yaml :tangle no
-log:
-file: "~/log/fatty.log"
-level: debug
-tags:
-- keycode
-- keyevent
-- keybinding
-- action
-- command
-- session
-- render
-- perf
+    log:
+    file: "~/log/fatty.log"
+    level: debug
+    tags:
+      - keycode
+      - keyevent
+      - keybinding
+      - action
+      - command
+      - session
+      - render
+      - perf
 #+end_src
 
 **** =file=
@@ -1461,11 +1475,11 @@ and are often reported as navigation keys such as =end=, =down=, =page_down=,
 or =left= when NumLock is off.  Use =keytest= to see what your terminal
 actually sends.
 
-=Fatty= also provides convenient names to other keys common keys:
+=Fatty= also provides convenient names to other common keys:
 
-|         |          |         |
-|---------+----------+---------|
-| =enter= | =escape= | =space= |
+- =enter=,
+- =escape=, and
+- =space=
 
 **** Possibly Invisible Keys
 Some physical keys may never reach Fatty at all.  They may be handled by the
@@ -1491,8 +1505,8 @@ an uncoded keycode =601=, you could name it:
 
 #+begin_src yaml :tangle no
 gnome-terminal:
-601:
-key: thumb_left
+  601:
+    key: thumb_left
 #+end_src
 
 Then bind it in =keybindings.yml=:
@@ -1644,8 +1658,8 @@ Terminology notes:
 | delete_region        | No     | Delete the text in the region              |
 | eol                  | No     | Move cursor to end of buffer               |
 | kill_region          | No     | Kill the text in the region                |
-| kill_to_bol          | No     | Kill the text from cursor to end           |
-| kill_to_eol          | No     | Kill the text from cursor to beginning     |
+| kill_to_bol          | No     | Kill the text from cursor to beginning     |
+| kill_to_eol          | No     | Kill the text from cursor to end           |
 | kill_word_backward   | Yes    | Kill the word to the left of  cursor       |
 | kill_word_forward    | Yes    | Kill the word to the right of  cursor      |
 | move_left            | Yes    | Move cursor one char left                  |
@@ -1709,7 +1723,7 @@ numeric prefix count.
 | line_down           | Yes    | Move the output view one line down               |
 | scroll_up           | Yes    | Move the output view six lines up                |
 | scroll_down         | Yes    | Move the output view six lines down              |
-| page_top            | No     | Move the output to the beginning of output       |
+| page_top            | Yes    | Move to the beginning, or to the counted line    |
 | page_bottom         | No     | Move the output to the end of output             |
 | paging_to_scrolling | No     | Quit paging and scroll output as it is produced  |
 | toggle_paging       | No     | Toggle output mode between paging and scrolling  |
@@ -1784,7 +1798,7 @@ normally useful as ordinary user bindings. For example, =insert=, =replace=,
 and =paste= need text supplied by code: =paste= is used for bracketed paste
 events from the terminal and normalizes pasted text for a one-line input
 field; =self_insert= is selected automatically for printable characters.  They
-are listed her for completeness.
+are listed here for completeness.
 
 | Action Name | Args | Count? | Description                        |
 |-------------+------+--------+------------------------------------|
@@ -1821,7 +1835,7 @@ Here are the builtin themes:
 | gruvbox_light    | Engineered for focus, built for developers         |
 | mono             | Minimal black-and-white theme                      |
 | monokai          | Based on https://monokai.pro/history               |
-| nordic           | Shiver me timbers, its northern                    |
+| nordic           | Shiver me timbers, it's northern                   |
 | onedark          | Shameless imitation of Atom editor theme           |
 | solarized_dark   | Ethan Schoonover's famous terminal theme           |
 | solarized_light  | And its light variant                              |
@@ -1833,12 +1847,11 @@ Here are the builtin themes:
 **** Theme Name
 A Fatty theme is a YAML file in the user-specific config directory (normally
 =~/.config/fatty/themes=) or the app-specific config directory (by default
-=~/.config/fatty/apps/<app_name>/themes=).  The file name does not matter to
-the renderer, but the theme must have a =name= field, and the name is what you
-put in =config.yml=:
+=~/.config/fatty/apps/<app_name>/themes=).  The filename does not determine
+the theme name: the theme file must have a =name= field to set the name:
 
 #+begin_src yaml :tangle no
-theme: nordic
+name: nordic
 #+end_src
 
 **** Inheritance from Another Theme
@@ -1879,45 +1892,45 @@ the output pane.
 Here is a listing of what roles act as the parent for each of the roles, their
 purpose, and the role, if any, from which they inherit.
 
-| Role name              | Used for                                  | Parent Role           |
-|------------------------+-------------------------------------------+-----------------------|
-| output:                | Main output area text.                    | <none>                |
-| input:                 | Main command/input field.                 | :output,              |
-| input_suggestion:      | Autosuggestion or completion suffix text. | :input,               |
-| cursor:                | Cursor cell styling where applicable.     | :input,               |
-| region:                | Selected text / active region.            | :output,              |
-| status:                | Status area base role.                    | :output,              |
-| info:                  | Informational messages.                   | :output,              |
-| good:                  | Success messages.                         | :info,                |
-| warn:                  | Warning messages.                         | :info,                |
-| error:                 | Error messages.                           | :warn,                |
-| alert:                 | Alert panel base role.                    | :output,              |
-| pager_status:          | Pager status / prompt row.                | :status,              |
-| line_number:           | Line numbers when toggled on              | :output               |
-| search_input:          | Search input field.                       | :popup,               |
-| match_current:         | Current search match.                     | :region,              |
-| match_other:           | Other search matches.                     | :region,              |
-| popup:                 | Popup body.                               | :output,              |
-| popup_frame:           | Popup border/frame.                       | :popup,               |
-| popup_input:           | Popup filter/input field.                 | :input,               |
-| popup_selection:       | Selected popup item row.                  | :region,              |
-| popup_counts:          | Popup counts/status row.                  | :popup,               |
-| markdown_h1:           | Markdown level-1 headings.                | :output               |
-| markdown_h2:           | Markdown level-2 headings.                | :markdown_h1          |
-| markdown_h3:           | Markdown level-3 headings.                | :markdown_h2          |
-| markdown_code:         | Inline markdown code.                     | :output,              |
-| markdown_code_block:   | Markdown fenced-code block base role.     | :markdown_code,       |
-| markdown_code_gutter:  | Code block gutter/prefix.                 | :markdown_code_block, |
-| markdown_strong:       | Markdown strong/bold text.                | :output,              |
-| markdown_emphasis:     | Markdown emphasized text.                 | :output,              |
-| markdown_link:         | Markdown link text.                       | :output,              |
-| markdown_url:          | Markdown displayed URL text.              | :markdown_link,       |
-| markdown_quote_gutter: | Markdown block quote gutter.              | :output,              |
-| markdown_highlight:    | Markdown highlight / marked text.         | :output,              |
-| markdown_table_header: | Markdown table header cells.              | :markdown_strong,     |
-| markdown_table_cell:   | Markdown table body cells.                | :output,              |
-| markdown_underline:    | Markdown underline text.                  | :output,              |
-| markdown_hrule:        | Markdown horizontal rules.                | :output,              |
+| Role name               | Used for                                  | Parent Role           |
+|-------------------------+-------------------------------------------+-----------------------|
+| =output=                | Main output area text.                    | <none>                |
+| =input=                 | Main command/input field.                 | =output=              |
+| =input_suggestion=      | Autosuggestion or completion suffix text. | =input=               |
+| =cursor=                | Cursor cell styling where applicable.     | =input=               |
+| =region=                | Selected text / active region.            | =output=              |
+| =status=                | Status area base role.                    | =output=              |
+| =info=                  | Informational messages.                   | =output=              |
+| =good=                  | Success messages.                         | =info=                |
+| =warn=                  | Warning messages.                         | =info=                |
+| =error=                 | Error messages.                           | =warn=                |
+| =alert=                 | Alert panel base role.                    | =output=              |
+| =pager_status=          | Pager status / prompt row.                | =status=              |
+| =line_number=           | Line numbers when toggled on              | =output=              |
+| =search_input=          | Search input field.                       | =popup=               |
+| =match_current=         | Current search match.                     | =region=              |
+| =match_other=           | Other search matches.                     | =region=              |
+| =popup=                 | Popup body.                               | =output=              |
+| =popup_frame=           | Popup border/frame.                       | =popup=               |
+| =popup_input=           | Popup filter/input field.                 | =input=               |
+| =popup_selection=       | Selected popup item row.                  | =region=              |
+| =popup_counts=          | Popup counts/status row.                  | =popup=               |
+| =markdown_h1=           | Markdown level-1 headings.                | =output=              |
+| =markdown_h2=           | Markdown level-2 headings.                | =markdown_h1=         |
+| =markdown_h3=           | Markdown level-3 headings.                | =markdown_h2=         |
+| =markdown_code=         | Inline markdown code.                     | =output=              |
+| =markdown_code_block=   | Markdown fenced-code block base role.     | =markdown_code=       |
+| =markdown_code_gutter=  | Code block gutter/prefix.                 | =markdown_code_block= |
+| =markdown_strong=       | Markdown strong/bold text.                | =output=              |
+| =markdown_emphasis=     | Markdown emphasized text.                 | =output=              |
+| =markdown_link=         | Markdown link text.                       | =output=              |
+| =markdown_url=          | Markdown displayed URL text.              | =markdown_link=       |
+| =markdown_quote_gutter= | Markdown block quote gutter.              | =output=              |
+| =markdown_highlight=    | Markdown highlight / marked text.         | =output=              |
+| =markdown_table_header= | Markdown table header cells.              | =markdown_strong=     |
+| =markdown_table_cell=   | Markdown table body cells.                | =output=              |
+| =markdown_underline=    | Markdown underline text.                  | =output=              |
+| =markdown_hrule=        | Markdown horizontal rules.                | =output=              |
 
 **** Role Colors and Attributes and Frame Style
 Each role can have assigned to it a foreground color (=fg:=), a background

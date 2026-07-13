@@ -41,10 +41,10 @@ primer = lambda do |input, fatty|
       break if num_primes >= k
     end
     fatty.append_now("#{out_line}\n", mode: :scrolling) unless out_line.empty?
+    prog.finish("Done")
   else
     fatty.alert "Give me a positive integer", role: :error
   end
-  prog.finish("Done")
 end
 
 Fatty::Terminal.new(
