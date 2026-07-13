@@ -215,12 +215,16 @@ module Fatty
       clamp_to_page!
     end
 
-    desc "Page top"
-    action :page_top do
+    desc "Page top or go to an output line"
+    action :page_top do |count: nil|
       @mode = :paging
       @paused = true
       @last_nav_dir = :up
-      page_top!
+      if count
+        go_to_line!(count)
+      else
+        page_top!
+      end
     end
 
     desc "Page bottom"
@@ -715,6 +719,20 @@ module Fatty
     private
 
     # simplecov:disable
+
+    def go_to_line!(number)
+      target = [number.to_i, 1].max
+      current_lines = lines
+      index =
+        if current_lines.first.respond_to?(:number)
+          current_lines.bsearch_index { |line| line.number >= target }
+        else
+          target - 1
+        end
+      index ||= current_lines.length - 1
+      @viewport.top = [index, 0].max
+      clamp_to_page!
+    end
 
     def lines
       @lines.call

@@ -6,14 +6,46 @@ require "spec_helper"
 
 module Fatty
   RSpec.describe PromptSession do
+    let(:input_rect) do
+      instance_double(
+        Fatty::Screen::Rect,
+        row: 22,
+        col: 0,
+        rows: 1,
+        cols: 80,
+      )
+    end
+
     before do
       allow(::Curses).to receive(:curs_set)
     end
 
     def init_prompt_session(session, rows: 24, cols: 80)
-      screen = instance_double(Fatty::Screen, rows: rows, cols: cols)
-      renderer = instance_double(Fatty::Renderer, screen: screen)
-      terminal = instance_double(Fatty::Terminal, screen: screen, renderer: renderer)
+      input_rect =
+        instance_double(
+          Fatty::Screen::Rect,
+          row: 22,
+          col: 0,
+          rows: 1,
+          cols: 80,
+        )
+      screen =
+        instance_double(
+          Fatty::Screen,
+          rows: 24,
+          cols: 80,
+          input_rect: input_rect,
+        )
+      renderer =
+        instance_double(
+          Fatty::Renderer,
+          screen: screen,
+        )
+      terminal =
+        instance_double(
+          Fatty::Terminal,
+          renderer: renderer,
+        )
 
       stub_curses_window(rows: rows, cols: cols)
       session.init(terminal: terminal)
@@ -161,8 +193,8 @@ module Fatty
             "draft",
             0,
             "",
-            20,
-            70,
+            24,
+            80,
           ],
         )
       end

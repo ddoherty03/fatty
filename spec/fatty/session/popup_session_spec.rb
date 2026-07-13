@@ -15,6 +15,40 @@ module Fatty
       session
     end
 
+    def init_popup_session(session, rows: 24, cols: 80)
+      input_rect =
+        instance_double(
+          Fatty::Screen::Rect,
+          row: rows - 2,
+          col: 0,
+          rows: 1,
+          cols: cols,
+        )
+      screen =
+        instance_double(
+          Fatty::Screen,
+          rows: rows,
+          cols: cols,
+          input_rect: input_rect,
+        )
+      renderer =
+        instance_double(
+          Fatty::Renderer,
+          screen: screen,
+        )
+      terminal =
+        instance_double(
+          Fatty::Terminal,
+          screen: screen,
+          renderer: renderer,
+        )
+
+      stub_curses_window(rows: rows, cols: cols)
+
+      session.init(terminal: terminal)
+      session
+    end
+
     describe 'initialization' do
       it "initializes from a static source" do
         session = PopUpSession.new(

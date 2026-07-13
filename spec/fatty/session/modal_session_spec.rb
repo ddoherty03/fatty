@@ -15,6 +15,42 @@ module Fatty
     end
 
     let(:session) { TestModalSession.new }
+    let(:input_rect) do
+      instance_double(
+        Fatty::Screen::Rect,
+        row: 22,
+        col: 0,
+        rows: 1,
+        cols: 80,
+      )
+    end
+
+    let(:screen) do
+      instance_double(
+        Fatty::Screen,
+        rows: 24,
+        cols: 80,
+        input_rect: input_rect,
+      )
+    end
+
+    let(:renderer) do
+      instance_double(
+        Fatty::Renderer,
+        screen: screen,
+      )
+    end
+
+    let(:terminal) do
+      instance_double(
+        Fatty::Terminal,
+        renderer: renderer,
+      )
+    end
+
+    before do
+      session.init(terminal: terminal)
+    end
 
     describe "#geometry" do
       it "raises NotImplementedError in the base class" do
@@ -60,7 +96,7 @@ module Fatty
       it "creates a centered window using geometry" do
         session.send(:rebuild_windows!)
 
-        expect(::Curses::Window).to have_received(:new).with(6, 20, 9, 30)
+        expect(::Curses::Window).to have_received(:new).with(6, 20, 15, 30)
         expect(session.win).to be(new_win)
       end
 

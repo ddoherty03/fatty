@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require "fatty/keymaps/emacs"
 
 # frozen_string_literal: true
 
@@ -177,6 +178,17 @@ module Fatty
                               paging: :page_down,
                               popup: :popup_page_down,
                             )
+      end
+
+      it "binds  meta digits as count digits in paging context" do
+        keymap = Fatty::Keymaps.emacs
+
+        (0..9).each do |number|
+          event = Fatty::KeyEvent.new(key: number.to_s.to_sym, meta: true)
+
+          expect(keymap.resolve(event, contexts: [:paging]))
+            .to eq([:count_digit, number])
+        end
       end
     end
 
