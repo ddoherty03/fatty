@@ -41,5 +41,28 @@ module Fatty
       expect(res[:status]).to eq(:moved)
       expect(pager.search_last_match[:line]).to eq(0)
     end
+
+    it "goes to the counted original output line" do
+      lines =
+        (1..2_000).map do |number|
+          Fatty::OutputSession::VisibleLine.new(number: number, text: "line #{number}")
+        end
+      output = Fatty::OutputBuffer.new
+      viewport = Fatty::Viewport.new(height: 20)
+      pager = Fatty::Pager.new(
+        output: output,
+        viewport: viewport,
+        lines: -> { lines },
+      )
+      counter = Fatty::Counter.new
+      counter.set(1_050)
+      session = instance_double(Fatty::Session, id: :output, terminal: nil)
+      env = Fatty::ActionEnvironment.new(session: session, pager: pager, counter: counter)
+
+      pager.act_on(:page_top, env: env)
+
+      expect(viewport.top).to eq(1_049)
+      expect(counter).not_to be_active
+    end
   end
 end
