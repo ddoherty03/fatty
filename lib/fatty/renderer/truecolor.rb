@@ -519,7 +519,7 @@ module Fatty
             number_text = visible_line.number.to_s.rjust(line_number_width, "0")
             segments << {
               text: "#{number_text}: ",
-              role: :output,
+              role: :line_number,
             }
           end
 

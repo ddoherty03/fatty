@@ -29,6 +29,7 @@ module Fatty
       SEARCH_HIGHLIGHT = 21
       SEARCH_HIGHLIGHT_SECONDARY = 22
       PAGER_STATUS = 23
+      LINE_NUMBER = 24
 
       POPUP           = 30
       POPUP_SELECTION = 31
@@ -61,6 +62,7 @@ module Fatty
         search_input: SEARCH,
 
         pager_status: PAGER_STATUS,
+        line_number: LINE_NUMBER,
 
         popup: POPUP,
         popup_selection: POPUP_SELECTION,

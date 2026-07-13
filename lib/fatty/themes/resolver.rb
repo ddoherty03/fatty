@@ -48,6 +48,7 @@ module Fatty
           markdown_table_cell: {},
           markdown_underline: { attrs: [:underline] },
           markdown_hrule: { attrs: [:dim] },
+          line_number: { attrs: [:dim] },
         }.freeze
 
         ROLE_PARENTS = {
@@ -76,6 +77,7 @@ module Fatty
           error: :warn,
 
           pager_status: :status,
+          line_number: :output,
 
           markdown_h1: :output,
           markdown_h2: :markdown_h1,

@@ -638,6 +638,7 @@ module Fatty
         win.setpos(y, 0)
         win.attrset(base_attr)
 
+        line_number_attr = pair_attr(:line_number, fallback: base_attr | ::Curses::A_DIM)
         if line_number && line_number_width
           number_text = line_number.to_s.rjust(line_number_width, "0")
           win.attrset(line_number_attr)
