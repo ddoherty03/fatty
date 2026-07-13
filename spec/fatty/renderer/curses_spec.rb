@@ -20,6 +20,7 @@ class CursesRendererSpecWindow
   def attrset(attr) = @writes << [:attrset, attr]
   def addstr(text) = @writes << [:addstr, text]
   def noutrefresh = @writes << [:noutrefresh]
+  def clrtoeol = @writes << [:clrtoeol]
 end
 
 class CursesRendererSpecPopupWindow < CursesRendererSpecWindow
@@ -45,6 +46,10 @@ end
 
 module Fatty
   RSpec.describe Renderer::Curses do
+    let(:output_win) do
+      CursesRendererSpecWindow.new(maxx: 20, maxy: 6)
+    end
+
     let(:status_rect) do
       instance_double(
         Screen::Rect,
@@ -64,16 +69,32 @@ module Fatty
       )
     end
 
-    let(:palette) { {} }
+    let(:palette) do
+      {
+        output: {
+          pair: Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(:output),
+          attrs: [],
+        },
+        line_number: {
+          pair: Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(:line_number),
+          attrs: [],
+        },
+      }
+    end
+
     let(:input_win) { CursesRendererSpecWindow.new(maxx: 5) }
+
     let(:curses_context) do
       instance_double(
         Curses::Context,
         palette: palette,
         status_win: status_win,
         input_win: input_win,
+        output_win: output_win,
+        reset_ansi_pairs!: nil,
       )
     end
+
     let(:status_win) { CursesRendererSpecWindow.new(maxx: 20) }
 
     subject(:renderer) do
@@ -200,6 +221,133 @@ module Fatty
                 nil,
                 fallback_pair_id: Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(:input),
               )
+    end
+
+    it "renders original zero-padded line numbers for narrowed visible lines" do
+      visible_lines = [
+        Fatty::OutputSession::VisibleLine.new(number: 2, text: "second"),
+        Fatty::OutputSession::VisibleLine.new(number: 117, text: "later"),
+      ]
+      output = instance_double(
+        Fatty::OutputBuffer,
+        lines: Array.new(120, ""),
+      )
+      viewport = Fatty::Viewport.new(height: 6)
+      session = instance_double(
+        Fatty::OutputSession,
+        visible_lines: visible_lines,
+        output: output,
+        viewport: viewport,
+        highlights: nil,
+        line_numbers?: true,
+        incrementally_scrollable_from?: false,
+      )
+      allow(session).to receive(:state) do |viewport:|
+        [
+          viewport.state,
+          viewport.slice(visible_lines),
+          6,
+          20,
+          nil,
+          renderer.theme_version,
+          true,
+        ]
+      end
+      allow(::Curses).to receive(:color_pair) { |pair| pair }
+
+      renderer.render_output(session)
+
+      added = output_win.writes
+                .select { |operation, _value| operation == :addstr }
+                .map { |_operation, value| value }
+
+      expect(added).to include("002: ")
+      expect(added).to include("117: ")
+      expect(added.join).to include("second")
+      expect(added.join).to include("later")
+    end
+
+    it "uses the line_number color pair for the output gutter" do
+      visible_lines = [
+        Fatty::OutputSession::VisibleLine.new(number: 1, text: "output"),
+      ]
+      output = instance_double(
+        Fatty::OutputBuffer,
+        lines: ["output"],
+      )
+      viewport = Fatty::Viewport.new(height: 6)
+      session = instance_double(
+        Fatty::OutputSession,
+        visible_lines: visible_lines,
+        output: output,
+        viewport: viewport,
+        highlights: nil,
+        line_numbers?: true,
+        incrementally_scrollable_from?: false,
+      )
+      allow(session).to receive(:state) do |viewport:|
+        [
+          viewport.state,
+          viewport.slice(visible_lines),
+          6,
+          20,
+          nil,
+          renderer.theme_version,
+          true,
+        ]
+      end
+      allow(::Curses).to receive(:color_pair) { |pair| pair }
+
+      renderer.render_output(session)
+
+      line_number_pair =
+        Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(:line_number)
+
+      gutter_index = output_win.writes.index([:addstr, "1: "])
+      expect(gutter_index).not_to be_nil
+      expect(output_win.writes[0...gutter_index])
+        .to include([:attrset, line_number_pair])
+    end
+
+    it "does not render a gutter when line numbers are disabled" do
+      visible_lines = [
+        Fatty::OutputSession::VisibleLine.new(number: 117, text: "output"),
+      ]
+      output = instance_double(
+        Fatty::OutputBuffer,
+        lines: Array.new(120, ""),
+      )
+      viewport = Fatty::Viewport.new(height: 6)
+      session = instance_double(
+        Fatty::OutputSession,
+        visible_lines: visible_lines,
+        output: output,
+        viewport: viewport,
+        highlights: nil,
+        line_numbers?: false,
+        incrementally_scrollable_from?: false,
+      )
+      allow(session).to receive(:state) do |viewport:|
+        [
+          viewport.state,
+          viewport.slice(visible_lines),
+          6,
+          20,
+          nil,
+          renderer.theme_version,
+          false,
+        ]
+      end
+      allow(::Curses).to receive(:color_pair) { |pair| pair }
+
+      renderer.render_output(session)
+
+      added = output_win.writes
+                .select { |operation, _value| operation == :addstr }
+                .map { |_operation, value| value }
+
+      expect(added.join).to include("output")
+      expect(added).not_to include("117: ")
     end
 
     it "clamps restored input cursor position to the input window width" do

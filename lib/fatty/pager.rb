@@ -9,9 +9,10 @@ module Fatty
     action_on :pager
     attr_reader :mode
 
-    def initialize(output:, viewport: Viewport.new, mode: :paging)
+    def initialize(output:, viewport: Viewport.new, mode: :paging, lines: nil)
       @output   = output
       @viewport = viewport
+      @lines = lines || -> { @output.lines }
       # @mode can be :paging, or :scrolling
       # - paging: the viewport displays one page worth of output at a time,
       # - scrolling: the viewport displays output continuously as it is produced.
@@ -70,7 +71,7 @@ module Fatty
         @paused = true
         @autoscroll = false
         @anchor = nil
-        @viewport.clamp!(@output.lines)
+        @viewport.clamp!(lines)
     end
 
     def active?
@@ -97,15 +98,15 @@ module Fatty
     # Called by OutputSession after new text is appended.
     def on_append(ntrim:)
       @viewport.adjust_for_trim(ntrim)
-      lines = @output.lines
-      total = lines.size
+      current_lines = lines
+      total = current_lines.size
       case @mode
       when :scrolling
         # In scrolling mode, the viewport is allowed to move continuously.
         # Autoscroll animation (after switching from paging -> scrolling) is
         # driven by #autoscroll_step? in ShellSession#tick, not by incremental
         # scroll deltas during append.
-        @viewport.clamp!(lines)
+        @viewport.clamp!(current_lines)
       when :paging
         if @anchor
           produced = total - @anchor
@@ -132,7 +133,7 @@ module Fatty
           @viewport.page_top
         end
         # Otherwise user is not at bottom; don't force movement.
-        @viewport.clamp!(lines)
+        @viewport.clamp!(current_lines)
       end
     end
 
@@ -175,7 +176,7 @@ module Fatty
       @last_nav_dir = :down
       @anchor = nil
       @autoscroll = false
-      @viewport.page_bottom(@output.lines)
+      @viewport.page_bottom(lines)
     end
 
     desc "One line up"
@@ -237,7 +238,7 @@ module Fatty
       @anchor = nil
       @last_nav_dir = :down
       @autoscroll = true
-      @viewport.clamp!(@output.lines)
+      @viewport.clamp!(lines)
       # Make it visibly start immediately, even if no further appends happen.
       autoscroll_step?(max_lines: @viewport.height)
     end
@@ -275,14 +276,14 @@ module Fatty
     end
 
     def max_page_top
-      [@output.lines.size - page_height, 0].max
+      [lines.size - page_height, 0].max
     end
 
     def clamp!
       if paused?
         clamp_to_page!
       else
-        @viewport.clamp!(@output.lines)
+        @viewport.clamp!(lines)
       end
     end
 
@@ -299,10 +300,10 @@ module Fatty
 
     def finish_command!
       @anchor = nil
-      if @mode == :scrolling && @output.lines.length > page_height
+      if @mode == :scrolling && lines.length > page_height
         set_to_paging
         @viewport.top = max_page_top
-      elsif @mode == :paging && @output.lines.length > page_height
+      elsif @mode == :paging && lines.length > page_height
         @paused = true
         clamp_to_page!
       end
@@ -316,7 +317,6 @@ module Fatty
     end
 
     def autoscroll_step?(max_lines: 200)
-      lines = @output.lines
       total = lines.length
       moved = false
       if total > 0
@@ -418,7 +418,6 @@ module Fatty
       end
       return { status: :not_found } unless re
 
-      lines = @output.lines
       total = lines.length
       return { status: :not_found } if total.zero?
 
@@ -489,7 +488,6 @@ module Fatty
       return unless @search[:re]
       return unless active?
 
-      lines = @output.lines
       total = lines.length
       return if total.zero?
 
@@ -707,7 +705,7 @@ module Fatty
     end
 
     def preserve_after_resize!(was_at_bottom:)
-      if @mode == :paging && @output.lines.any? && was_at_bottom
+      if @mode == :paging && lines.any? && was_at_bottom
         page_bottom!
       else
         clamp!
@@ -717,6 +715,10 @@ module Fatty
     private
 
     # simplecov:disable
+
+    def lines
+      @lines.call
+    end
 
     def ensure_search_snapshot!
       return if @search_snapshot
@@ -778,7 +780,7 @@ module Fatty
     end
 
     def search_start_col_for(line_index)
-      line = @output.lines[line_index]
+      line = lines[line_index]
       # Use end-of-line as the backward scan upper bound so the starting line
       # is included. +1 avoids edge weirdness when match ends exactly at len.
       if line

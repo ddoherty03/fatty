@@ -176,6 +176,10 @@ module Fatty
       # Line numbers
       map.bind(context: :paging, key: :'=', action: :toggle_line_numbers)
 
+      # Narrowing
+      map.bind(context: :paging, key: :'<', action: :narrow_output)
+      map.bind(context: :paging, key: :'>', action: :widen_output)
+
       # I-search controls (within ISearchSession)
       map.bind(context: :isearch, key: :enter, action: :isearch_accept)
       map.bind(context: :isearch, key: :return, action: :isearch_accept)

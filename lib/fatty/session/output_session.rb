@@ -2,7 +2,11 @@
 
 module Fatty
   class OutputSession < Session
-    VisibleLine = Data.define(:number, :text)
+    VisibleLine = Data.define(:number, :text) do
+      def to_s
+        text.to_s
+      end
+    end
 
     action_on :session
 
@@ -14,9 +18,10 @@ module Fatty
       @viewport = Fatty::Viewport.new(height: 10)
       @history = history || Fatty::History.for_path(:default)
       @line_numbers = false
+      @narrow_query = nil
       mode = Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
       @default_output_mode = mode
-      @pager = Fatty::Pager.new(output: @output, viewport: @viewport, mode: mode)
+      @pager = Fatty::Pager.new(output: @output, viewport: @viewport, mode: mode, lines: -> { visible_lines })
       @pager_field = Fatty::InputField.new(prompt: -> { pager_status_prompt })
     end
 
@@ -98,6 +103,10 @@ module Fatty
           [Command.session(:isearch, :isearch_set_failed, failed: false)]
         when :pager_isearch_commit
           update_pager_isearch_commit(payload)
+        when :prompt_result
+          apply_prompt_result(payload)
+        when :prompt_cancelled
+          []
         else
           []
         end
@@ -195,6 +204,24 @@ module Fatty
       []
     end
 
+    desc "Narrow output to matching lines"
+    action :narrow_output do
+      prompt = Fatty::PromptSession.new(
+        prompt: "Narrow: ",
+        title: "Narrow Output",
+        kind: :narrow_output,
+        history: @history,
+        history_ctx: :output_narrow,
+      )
+      Command.terminal(:push_modal, session: prompt, owner: self)
+    end
+
+    desc "Widen output"
+    action :widen_output do
+      clear_narrowing!
+      []
+    end
+
     #########################################################################################
     # Other public API methods
     #########################################################################################
@@ -205,7 +232,7 @@ module Fatty
     def state(viewport: @viewport)
       [
         viewport.state,
-        viewport.slice(output.lines),
+        viewport.slice(visible_lines),
         renderer.screen.output_rect.rows,
         renderer.screen.output_rect.cols,
         highlights,
@@ -215,9 +242,45 @@ module Fatty
     end
 
     def visible_lines
+      terms = narrow_query.to_s.split
       output.lines.each_with_index.filter_map do |text, index|
-        VisibleLine.new(number: index + 1, text: text)
+        visible_text = visible_output_text(text)
+        if terms.empty? || terms.all? { |term| visible_text.include?(term) }
+          VisibleLine.new(number: index + 1, text: text)
+        end
       end
+    end
+
+    def visible_output_text(text)
+      Fatty::Ansi.segment(text.to_s).map(&:first).join
+    end
+
+    def narrow_query
+      @narrow_query
+    end
+
+    def narrowed?
+      !@narrow_query.nil?
+    end
+
+    def apply_prompt_result(payload)
+      return [] unless payload[:kind].to_sym == :narrow_output
+
+      query = payload.fetch(:text, "").to_s
+      if query.empty?
+        clear_narrowing!
+      else
+        @narrow_query = query
+        viewport.top = 0
+        pager.clamp!
+      end
+      []
+    end
+
+    def clear_narrowing!
+      @narrow_query = nil
+      viewport.top = 0
+      pager.clamp!
     end
 
     def line_numbers?
@@ -407,6 +470,7 @@ module Fatty
 
     def reset_for_command!
       reset_output!
+      @narrow_query = nil
       mode = @default_output_mode # Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
       @pager.reset!(mode: mode)
     end
@@ -423,24 +487,30 @@ module Fatty
     end
 
     def pager_status_prompt
-      total = @output.lines.length
-      visible_h = pager_active? ? pager.page_height : @viewport.height
-      bottom = [@viewport.top + visible_h, total].min
+      visible_total = visible_lines.length
+      original_total = output.lines.length
+      visible_h = pager_active? ? pager.page_height : viewport.height
+      bottom = [viewport.top + visible_h, visible_total].min
 
-      # if pager.scrolling? && pager.autoscroll?
-      #   "--Follow--"
       if pager.scrolling?
         "--Scrolling--"
       else
         search = pager.search_label
         pct =
-          if total.positive?
-            ((bottom * 100.0) / total).round
+          if visible_total.positive?
+            ((bottom * 100.0) / visible_total).round
           end
+        narrow =
+          if narrowed?
+            " narrowed #{visible_total}/#{original_total}"
+          else
+            ""
+          end
+
         if pct
-          "  #{pager.nav_arrow} --More--  #{bottom}/#{total} (#{pct}%)#{search} "
+          "  #{pager.nav_arrow} --More--  #{bottom}/#{visible_total} (#{pct}%)#{narrow}#{search} "
         else
-          "  #{pager.nav_arrow} --More--  #{bottom}#{search} "
+          "  #{pager.nav_arrow} --More--  #{bottom}#{narrow}#{search} "
         end
       end
     end
