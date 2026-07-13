@@ -1048,6 +1048,7 @@ offers the expected navigation aids for examining the output:
 | =end=       | No     | move to the end of output                        |
 | =M->=       | No     | move to the end of output                        |
 | =G=         | No     | move to the end of output                        |
+| ~=~         | No     | toggle the display of line numbers               |
 | =M-s=       | No     | toggle between paging and scrolling              |
 | =/=         | No     | initiate a fixed-string search forward           |
 | =?=         | No     | initiate a fixed-string search backward          |
@@ -1071,6 +1072,8 @@ ways to invoke navigation actions.
 One unusual action is invoked by =M-s= which toggles the output between
 scrolling mode without pause and paging mode.  It can be invoked while doing
 either to enter the other mode.
+
+You can add line numbers to the display while paging by using the ~=~ key.
 
 *** Searching Output
 While paging, you can initiate a search of the output as indicated in the
@@ -1890,6 +1893,7 @@ purpose, and the role, if any, from which they inherit.
 | error:                 | Error messages.                           | :warn,                |
 | alert:                 | Alert panel base role.                    | :output,              |
 | pager_status:          | Pager status / prompt row.                | :status,              |
+| line_number:           | Line numbers when toggled on              | :output               |
 | search_input:          | Search input field.                       | :popup,               |
 | match_current:         | Current search match.                     | :region,              |
 | match_other:           | Other search matches.                     | :region,              |
