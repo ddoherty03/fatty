@@ -670,6 +670,21 @@ module Fatty
       end
     end
 
+    def visible_lines
+      @visible_lines ||=
+        begin
+          terms = narrow_query.to_s.split
+
+          output.lines.each_with_index.filter_map do |text, index|
+        visible_text = visible_output_text(text)
+
+        if terms.empty? || terms.all? { |term| visible_text.include?(term) }
+          VisibleLine.new(number: index + 1, text: text)
+        end
+      end
+        end
+    end
+
     describe "#tick" do
       it "returns false when autoscroll is inactive" do
         session = Fatty::OutputSession.new

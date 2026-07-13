@@ -19,6 +19,7 @@ module Fatty
       @history = history || Fatty::History.for_path(:default)
       @line_numbers = false
       @narrow_query = nil
+      @visible_lines = nil
       mode = Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
       @default_output_mode = mode
       @pager = Fatty::Pager.new(output: @output, viewport: @viewport, mode: mode, lines: -> { visible_lines })
@@ -242,13 +243,21 @@ module Fatty
     end
 
     def visible_lines
-      terms = narrow_query.to_s.split
-      output.lines.each_with_index.filter_map do |text, index|
-        visible_text = visible_output_text(text)
-        if terms.empty? || terms.all? { |term| visible_text.include?(term) }
-          VisibleLine.new(number: index + 1, text: text)
+      @visible_lines ||=
+        if narrowed?
+          terms = narrow_query.split
+
+          output.lines.each_with_index.filter_map do |text, index|
+            visible_text = visible_output_text(text)
+            next unless terms.all? { |term| visible_text.include?(term) }
+
+            VisibleLine.new(number: index + 1, text: text)
+          end
+        else
+          output.lines.each_with_index.map do |text, index|
+            VisibleLine.new(number: index + 1, text: text)
+          end
         end
-      end
     end
 
     def visible_output_text(text)
@@ -271,6 +280,7 @@ module Fatty
         clear_narrowing!
       else
         @narrow_query = query
+        invalidate_visible_lines!
         viewport.top = 0
         pager.clamp!
       end
@@ -279,6 +289,7 @@ module Fatty
 
     def clear_narrowing!
       @narrow_query = nil
+      invalidate_visible_lines!
       viewport.top = 0
       pager.clamp!
     end
@@ -323,6 +334,10 @@ module Fatty
 
     # simplecov:disable
 
+    def invalidate_visible_lines!
+      @visible_lines = nil
+    end
+
     def keymap_contexts
       if pager.active?
         [:paging, :terminal]
@@ -364,6 +379,7 @@ module Fatty
 
     def append_output(text, follow: true)
       ntrim = @output.append(text.to_s)
+      invalidate_visible_lines!
       @pager.on_append(ntrim: ntrim)
 
       # When callers request follow behavior (scrolling mode),
@@ -459,6 +475,7 @@ module Fatty
 
     def reset_output!
       @output.lines.clear
+      invalidate_visible_lines!
       @viewport.reset
     end
 
