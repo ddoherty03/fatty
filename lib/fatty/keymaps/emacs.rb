@@ -173,6 +173,9 @@ module Fatty
       map.bind(context: :paging, key: :n, action: :pager_search_next)
       map.bind(context: :paging, key: :N, action: :pager_search_prev)
 
+      # Line numbers
+      map.bind(context: :paging, key: :'=', action: :toggle_line_numbers)
+
       # I-search controls (within ISearchSession)
       map.bind(context: :isearch, key: :enter, action: :isearch_accept)
       map.bind(context: :isearch, key: :return, action: :isearch_accept)

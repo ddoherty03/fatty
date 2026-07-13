@@ -20,14 +20,18 @@ module Fatty
       end
 
       def render_output(output_session, viewport: output_session.viewport)
-        outbuf = output_session.output
-        lines = viewport.slice(outbuf.lines)
+        lines = viewport.slice(output_session.visible_lines)
         normalized = normalized_highlights(output_session.highlights)
+        line_number_width =
+          if output_session.line_numbers?
+            output_session.output.lines.length.to_s.length
+          end
 
         curr = output_state(output_session, viewport: viewport)
         prev = @last_output_state
 
         if prev &&
+           !output_session.line_numbers? &&
            !ansi_lines?(lines) &&
            output_session.incrementally_scrollable_from?(prev, curr)
           scroll_output_window_delta!(
@@ -37,8 +41,14 @@ module Fatty
             highlights: normalized,
           )
         else
-          draw_output_lines(lines, viewport: viewport, highlights: normalized)
+          draw_output_lines(
+            lines,
+            viewport: viewport,
+            highlights: normalized,
+            line_number_width: line_number_width,
+          )
         end
+        @last_pager_field_state = nil
         @last_output_state = curr
       end
 
@@ -594,7 +604,7 @@ module Fatty
         end
       end
 
-      def draw_output_lines(lines, viewport:, highlights: nil)
+      def draw_output_lines(lines, viewport:, highlights: nil, line_number_width: nil)
         context.reset_ansi_pairs!
 
         win = context.output_win
@@ -604,40 +614,47 @@ module Fatty
         win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
         win.erase
 
-        lines.each_with_index do |line, y|
-          abs_line = viewport.top + y
+        lines.each_with_index do |visible_line, y|
           draw_output_row(
             win,
-            line: line,
+            line: visible_line.text,
             y: y,
-            abs_line: abs_line,
+            abs_line: visible_line.number - 1,
             highlights: highlights,
+            line_number: visible_line.number,
+            line_number_width: line_number_width,
           )
         end
         stage_window(win)
       end
 
-      def draw_output_row(win, line:, y:, abs_line:, highlights:)
+      def draw_output_row(win, line:, y:, abs_line:, highlights:, line_number: nil, line_number_width: nil)
         base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
+        line_number_attr = base_attr | ::Curses::A_DIM
         hi_attr = pair_attr(:match_current, fallback: ::Curses::A_REVERSE)
         hi2_attr = pair_attr(:match_other, fallback: hi_attr)
 
         semantic_ranges = highlight_ranges_for_line(highlights, abs_line)
         win.setpos(y, 0)
         win.attrset(base_attr)
+
+        if line_number && line_number_width
+          number_text = line_number.to_s.rjust(line_number_width, "0")
+          win.attrset(line_number_attr)
+          win.addstr("#{number_text}: ")
+          win.attrset(base_attr)
+        end
+
         curses_ranges =
           Array(semantic_ranges).map do |from, to, role|
-            attr =
-              case role
-              when :secondary then hi2_attr
-              else hi_attr
-              end
-            [from.to_i, to.to_i, attr]
-          end
-        # plain = Fatty::Ansi.plain_text(line.to_s)
-        # slices = build_line_slices(plain, ranges: curses_ranges) do |_style|
-        #   base_attr
-        # end
+          attr =
+            case role
+            when :secondary then hi2_attr
+            else hi_attr
+            end
+          [from.to_i, to.to_i, attr]
+        end
+
         slices = build_line_slices(line.to_s, ranges: curses_ranges) do |style|
           ansi_style_attr(style, fallback: base_attr)
         end

@@ -40,14 +40,23 @@ module Fatty
       end
 
       def render_output(output_session, viewport: output_session.viewport)
-        out_buffer = output_session.output
-        lines = viewport.slice(out_buffer.lines)
+        lines = viewport.slice(output_session.visible_lines)
         normalized = normalized_highlights(output_session.highlights)
+        line_number_width =
+          if output_session.line_numbers?
+            output_session.output.lines.length.to_s.length
+          end
 
         curr = output_state(output_session, viewport: viewport)
         return if curr == @last_output_state
 
-        draw_output_lines(lines, viewport: viewport, highlights: normalized)
+        draw_output_lines(
+          lines,
+          viewport: viewport,
+          highlights: normalized,
+          line_number_width: line_number_width,
+        )
+        @last_pager_field_state = nil
         @last_output_state = curr
       end
 
@@ -496,19 +505,30 @@ module Fatty
         }
       end
 
-      def draw_output_lines(lines, viewport:, highlights: nil)
+      def draw_output_lines(lines, viewport:, highlights: nil, line_number_width: nil)
         rect = screen.output_rect
 
         rect.rows.times do |y|
-          line = lines[y].to_s
-          abs_line = viewport.top + y
+          visible_line = lines[y]
+          text = visible_line&.text.to_s
+          abs_line = visible_line ? visible_line.number - 1 : nil
           ranges = highlight_ranges_for_line(highlights, abs_line)
+          segments = []
 
+          if visible_line && line_number_width
+            number_text = visible_line.number.to_s.rjust(line_number_width, "0")
+            segments << {
+              text: "#{number_text}: ",
+              role: :output,
+            }
+          end
+
+          segments.concat(output_segments(text, ranges: ranges))
           queue_ansi_segments_line(
             row: rect.row + y,
             col: rect.col,
             width: rect.cols,
-            segments: output_segments(line, ranges: ranges),
+            segments: segments,
             fill_role: :output,
           )
         end

@@ -2,6 +2,8 @@
 
 module Fatty
   class OutputSession < Session
+    VisibleLine = Data.define(:number, :text)
+
     action_on :session
 
     attr_reader :output, :viewport, :pager, :pager_field
@@ -11,6 +13,7 @@ module Fatty
       @output   = Fatty::OutputBuffer.new(max_lines: 500_000)
       @viewport = Fatty::Viewport.new(height: 10)
       @history = history || Fatty::History.for_path(:default)
+      @line_numbers = false
       mode = Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
       @default_output_mode = mode
       @pager = Fatty::Pager.new(output: @output, viewport: @viewport, mode: mode)
@@ -186,6 +189,12 @@ module Fatty
       handle_search_result(pager.search_repeat_prev!)
     end
 
+    desc "Toggle output line numbers"
+    action :toggle_line_numbers do
+      @line_numbers = !@line_numbers
+      []
+    end
+
     #########################################################################################
     # Other public API methods
     #########################################################################################
@@ -201,7 +210,18 @@ module Fatty
         renderer.screen.output_rect.cols,
         highlights,
         renderer.theme_version,
+        line_numbers?,
       ]
+    end
+
+    def visible_lines
+      output.lines.each_with_index.filter_map do |text, index|
+        VisibleLine.new(number: index + 1, text: text)
+      end
+    end
+
+    def line_numbers?
+      @line_numbers
     end
 
     def incrementally_scrollable_from?(prev_state, curr_state)
