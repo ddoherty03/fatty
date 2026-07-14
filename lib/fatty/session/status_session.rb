@@ -2,7 +2,7 @@
 
 module Fatty
   class StatusSession < Session
-    DEFAULT_MAX_ROWS = 4
+    DEFAULT_MAX_ROWS = 6
 
     attr_reader :text, :role
 
@@ -101,8 +101,35 @@ module Fatty
     end
 
     def set(payload)
-      @text = chomp_text(payload.fetch(:text))
-      @role = payload[:role] || :info
+      new_text = chomp_text(payload.fetch(:text))
+      new_role = payload[:role] || :info
+
+      if payload[:append] && visible?
+        @text = status_parts(@text, role)
+                  .push(
+                    "\n",
+                    {
+                      text: new_text,
+                      role: new_role,
+                    },
+                  )
+      else
+        @text = new_text
+        @role = new_role
+      end
+    end
+
+    def status_parts(text, role)
+      if text.is_a?(Array)
+        text.dup
+      else
+        [
+          {
+            text: text,
+            role: role,
+          },
+        ]
+      end
     end
 
     def chomp_text(text)

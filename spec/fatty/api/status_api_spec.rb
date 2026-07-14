@@ -21,6 +21,8 @@ module Fatty
       allow(terminal).to receive(:apply_command) do |command|
         applied_commands << command
       end
+      allow(terminal).to receive(:without_cursor_restore).and_yield
+      allow(terminal).to receive(:render_frame)
     end
 
     describe "#status" do
@@ -33,6 +35,29 @@ module Fatty
         expect(applied_commands.first.target).to eq(:status)
         expect(applied_commands.first.action).to eq(:show)
         expect(applied_commands.first.payload).to eq(text: "Working", role: :good)
+      end
+
+      it "renders status immediately by default" do
+        result = env.status("Working")
+
+        expect(result).to be_nil
+        expect(applied_commands.length).to eq(1)
+        expect(applied_commands.first.target).to eq(:status)
+        expect(applied_commands.first.action).to eq(:show)
+        expect(applied_commands.first.payload).to eq(
+                                                    text: "Working",
+                                                    role: :info,
+                                                  )
+        expect(terminal).to have_received(:without_cursor_restore)
+        expect(terminal).to have_received(:render_frame)
+      end
+
+      it "can defer status rendering" do
+        env.status("Working", render: false)
+
+        expect(applied_commands.length).to eq(1)
+        expect(terminal).not_to have_received(:without_cursor_restore)
+        expect(terminal).not_to have_received(:render_frame)
       end
     end
 
