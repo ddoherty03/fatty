@@ -136,9 +136,11 @@ module Fatty
           interrupted = true
         end
 
-        commands.concat(env.commands)
+        if interrupted
+          finish_interrupted_command(env)
+        else
+          commands.concat(env.commands)
 
-        unless interrupted
           if result.is_a?(String)
             commands << Command.session(
               output_session.id,
@@ -158,9 +160,10 @@ module Fatty
               follow: true,
             )
           end
+
+          commands << Command.session(output_session.id, :finish_command)
+          commands
         end
-        commands << Command.session(output_session.id, :finish_command)
-        commands
       end
     end
 
@@ -409,6 +412,16 @@ module Fatty
           ev: ev,
         )
       end
+    end
+
+    def finish_interrupted_command(env)
+      env.commands.each do |command|
+        terminal.apply_command(command)
+      end
+      terminal.apply_command(Command.session(output_session.id, :finish_command))
+      terminal.apply_command(Command.session(output_session.id, :quit_paging))
+      terminal.render_frame
+      []
     end
 
     #########################################################################################

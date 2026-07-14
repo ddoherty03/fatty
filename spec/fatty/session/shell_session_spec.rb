@@ -20,6 +20,7 @@ module Fatty
         modal_active?: modal_active,
       )
       allow(terminal).to receive(:apply_command)
+      allow(terminal).to receive(:render_frame)
       session.init(terminal: terminal)
       session
     end
@@ -839,6 +840,36 @@ module Fatty
           expect(popup).to be_a(Fatty::PopUpSession)
           expect(popup.send(:call_source, nil)).to eq(%w[ls pwd])
         end
+      end
+
+      it "restores shell input immediately when the accept callback is interrupted" do
+        callback = lambda do |_line, env|
+          env.append("partial output\n")
+          raise Fatty::Interrupt
+        end
+
+        session = Fatty::ShellSession.new(on_accept: callback)
+        init_shell_session(session)
+        session.field.buffer.replace("checkup")
+
+        commands = apply_action(session, :submit_line)
+        expect(commands).to eq([])
+
+        applied = []
+        expect(session.terminal)
+          .to have_received(:apply_command)
+                .at_least(:once) do |command|
+          applied << command
+        end
+        expect(applied.map(&:action))
+          .to include(
+                :begin_command,
+                :append,
+                :finish_command,
+                :quit_paging,
+                :clear,
+              )
+        expect(session.terminal).to have_received(:render_frame).once
       end
     end
   end
