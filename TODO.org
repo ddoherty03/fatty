@@ -1,6 +1,18 @@
+* TODO Bottom-aligned output
+Render short output at the bottom of the output pane and let it grow upward,
+so Fatty feels more like a conventional terminal.
+
+This would require coordinated changes to both Renderer::Truecolor and
+Renderer::Curses, especially the curses incremental-scroll path.
+
+Reconsider at the same time whether Renderer::Curses is still worth
+maintaining.  Truecolor works over SSH when forced on, but automatic detection
+can be conservative in environments such as TERM=tmux-256color without
+COLORTERM.
+
 * TODO Horizontal Scrolling
 * TODO Add modes for vi-like keybindings
-- will require changing keybindongs.yml format to include a mode qualifier
+- will require changing keybindings.yml format to include a mode qualifier
 - for advanced two-step actions, e.g. dw, will require an action-pending
   capability
 * TODO Add Dynamic help
@@ -23,7 +35,8 @@ map.bind_mouse(
 With count: nil meaning “do not bake a count into the binding; let the normal
 keyboard prefix count machinery apply.”
 
-* TODO Name Space history and other files
+* DONE Name Space history and other files
+CLOSED: [2026-07-14 Tue 05:30]
 Allow Fatty::Terminal to take an app_name: argument so that the history path,
 perhaps config, keybindings.
 
