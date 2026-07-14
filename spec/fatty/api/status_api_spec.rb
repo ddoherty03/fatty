@@ -34,8 +34,8 @@ module Fatty
         expect(applied_commands.length).to eq(1)
         expect(applied_commands.first.target).to eq(:status)
         expect(applied_commands.first.action).to eq(:show)
-        expect(applied_commands.first.payload).to eq(text: "Working", role: :good)
-      end
+        expect(applied_commands.first.payload).to eq(text: "Working", role: :good, append: true)
+       end
 
       it "renders status immediately by default" do
         result = env.status("Working")
@@ -44,10 +44,7 @@ module Fatty
         expect(applied_commands.length).to eq(1)
         expect(applied_commands.first.target).to eq(:status)
         expect(applied_commands.first.action).to eq(:show)
-        expect(applied_commands.first.payload).to eq(
-                                                    text: "Working",
-                                                    role: :info,
-                                                  )
+        expect(applied_commands.first.payload).to eq(text: "Working", role: :info, append: true)
         expect(terminal).to have_received(:without_cursor_restore)
         expect(terminal).to have_received(:render_frame)
       end
@@ -65,25 +62,25 @@ module Fatty
       it "maps info to role info" do
         env.info("Info")
 
-        expect(applied_commands.last.payload).to eq(text: "Info", role: :info)
+        expect(applied_commands.last.payload).to eq(text: "Info", role: :info, append: true)
       end
 
       it "maps good to role good" do
         env.good("Good")
 
-        expect(applied_commands.last.payload).to eq(text: "Good", role: :good)
+        expect(applied_commands.last.payload).to eq(text: "Good", role: :good, append: true)
       end
 
       it "maps warn to role warn" do
         env.warn("Warn")
 
-        expect(applied_commands.last.payload).to eq(text: "Warn", role: :warn)
+        expect(applied_commands.last.payload).to eq(text: "Warn", role: :warn, append: true)
       end
 
       it "maps oops to role error" do
         env.oops("Oops")
 
-        expect(applied_commands.last.payload).to eq(text: "Oops", role: :error)
+        expect(applied_commands.last.payload).to eq(text: "Oops", role: :error, append: true)
       end
     end
   end

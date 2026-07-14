@@ -175,12 +175,15 @@ module Fatty
           expect(source.interrupt_pending?).to be true
         end
 
-        it "recognizes Escape" do
+        it "does not recognize Escape as an interrupt" do
+          command = key_command(:escape)
+
           allow(source).to receive(:read_event)
                              .with(timeout_ms: 0)
-                             .and_return(key_command(:escape))
+                             .and_return(command)
 
-          expect(source.interrupt_pending?).to be true
+          expect(source.interrupt_pending?).to be false
+          expect(source.next_event).to be(command)
         end
 
         it "preserves a non-interrupt event for the normal event loop" do

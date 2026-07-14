@@ -12,6 +12,14 @@ module Fatty
     }
     let(:env) { Fatty::CallbackEnvironment.new(terminal: terminal, output_id: :output) }
 
+    before do
+      allow(terminal).to receive(:interrupt_pending?).and_return(false)
+      allow(terminal).to receive(:apply_command)
+      allow(terminal).to receive(:without_cursor_restore).and_yield
+      allow(terminal).to receive(:render_frame)
+      allow(env).to receive(:monotonic_time).and_return(10.0)
+    end
+
     describe "#append" do
       it "queues an output append command and returns nil" do
         result = env.append("hello", follow: false)
@@ -53,7 +61,7 @@ module Fatty
         expect(terminal).to have_received(:apply_command) do |command|
           expect(command.target).to eq(:status)
           expect(command.action).to eq(:show)
-          expect(command.payload).to eq(text: "Working", role: :good)
+          expect(command.payload).to eq(text: "Working", role: :good, append: true)
         end
       end
     end
@@ -84,11 +92,6 @@ module Fatty
     end
 
     describe "#check_interrupt!" do
-      before do
-        allow(terminal).to receive(:interrupt_pending?).and_return(false)
-        allow(env).to receive(:monotonic_time).and_return(10.0)
-      end
-
       it "polls for an interrupt" do
         expect(env.check_interrupt!).to be_nil
 

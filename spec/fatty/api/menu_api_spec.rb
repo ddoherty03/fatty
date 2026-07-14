@@ -50,6 +50,10 @@ module Fatty
 
         def render_frame; end
 
+        def without_cursor_restore
+          yield
+        end
+
         def running?
           @running
         end
@@ -103,18 +107,6 @@ module Fatty
     end
 
     describe "#menu" do
-      # let(:env) { env_for(terminal_selecting("One")) }
-      # let(:env_cancelling) { env_for(terminal_cancelling) }
-      # let(:menu) {
-      #   env.menu("Choose",
-      #     choices: {
-      #       "One" => ->(_fatty, _label) { :one },
-      #       "Two" => ->(_fatty, _label) { :two },
-      #     },
-      #     cancel_value: :quit
-      #   )
-      # }
-
       it "pushes a popup modal" do
         terminal = terminal_selecting("One")
         env = env_for(terminal)
@@ -223,7 +215,7 @@ module Fatty
         status_command = terminal.applied_commands.find do |command|
           command.target == :status && command.action == :show
         end
-        expect(status_command.payload).to eq(text: "working", role: :good)
+        expect(status_command.payload).to eq(text: "working", role: :good, append: true)
         expect(env.commands.length).to eq(1)
         expect(env.commands.first.payload.fetch(:text)).to eq("hello")
       end
