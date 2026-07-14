@@ -218,6 +218,37 @@ on_accept_proc = lambda do |line, env|
     file = File.expand_path("../examples/markdown/ox-gfm-markdown.md", __dir__)
     text = File.read(File.expand_path(file))
     env.markdown(text)
+  when "interrupt"
+    seconds =
+      if args.first&.match?(/\A\d+\z/)
+        Integer(args.first)
+      else
+        120
+      end
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + seconds
+    last_remaining = nil
+    begin
+      loop do
+      now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      remaining = (deadline - now).ceil
+      break if remaining <= 0
+
+      if remaining != last_remaining
+        env.status(
+          "Interrupt demo: #{remaining} seconds remaining — press C-c or C-g",
+          replace: true,
+        )
+        last_remaining = remaining
+      end
+      env.check_interrupt!
+      sleep 0.1
+    end
+    rescue Fatty::Interrupt
+      env.warn("Interrupt demo interrupted.", replace: true)
+      raise
+    else
+      env.good("Interrupt demo completed.", replace: true)
+    end
   when "colors"
     environment = env.environment
     available = environment.dig(:curses, :colors).to_i
@@ -360,8 +391,10 @@ builtins = %w[
   choosevals
   choose_multi
   choosevals_multi
+  colors
   help
   info
+  interrupt
   good
   keytest
   markdown

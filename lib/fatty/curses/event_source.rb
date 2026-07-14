@@ -45,7 +45,23 @@ module Fatty
       end
 
       def next_event
-        raw = read_raw
+        pending_events.shift || read_event
+      end
+
+      def interrupt_pending?
+        command = read_event(timeout_ms: 0)
+        interrupted = interrupt_command?(command)
+
+        pending_events << command if command && !interrupted
+        interrupted
+      end
+
+      private
+
+      # simplecov:disable
+
+      def read_event(timeout_ms: @poll_ms)
+        raw = read_raw(timeout_ms:)
         return unless raw
 
         if raw.is_a?(Fatty::MouseEvent)
@@ -67,9 +83,18 @@ module Fatty
         end
       end
 
-      private
+      def interrupt_command?(command)
+        return false unless command&.action == :key
 
-      # simplecov:disable
+        event = command.payload[:event]
+        return false unless event.is_a?(Fatty::KeyEvent)
+
+        event.ctrl? && [:c, :g].include?(event.key)
+      end
+
+      def pending_events
+        @pending_events ||= []
+      end
 
       def window
         context.input_win
@@ -84,13 +109,13 @@ module Fatty
         win.timeout = @poll_ms if win.respond_to?(:timeout=)
       end
 
-      def read_raw
+      def read_raw(timeout_ms: @poll_ms)
         return unless window
 
         pending = read_pending_raw
         return pending if pending
 
-        window.timeout = @poll_ms if window.respond_to?(:timeout=)
+        window.timeout = timeout_ms if window.respond_to?(:timeout=)
 
         ch = window.getch
         return if ch == -1

@@ -18,6 +18,8 @@
 # update it with `env.progress.update`.
 module Fatty
   class CallbackEnvironment
+    INTERRUPT_POLL_INTERVAL = 1.0
+
     include OutputApi
     include MenuApi
     include ProgressApi
@@ -35,6 +37,7 @@ module Fatty
       @output_id = output_id
       @label = label
       @commands = []
+      @last_interrupt_check_at = nil
     end
 
     def queue(command)
@@ -42,7 +45,27 @@ module Fatty
       command
     end
 
+    def check_interrupt!
+      now = monotonic_time
+
+      if interrupt_check_due?(now)
+        @last_interrupt_check_at = now
+        raise Fatty::Interrupt if terminal.interrupt_pending?
+      end
+
+      nil
+    end
+
     private
+
+    def interrupt_check_due?(now)
+      @last_interrupt_check_at.nil? ||
+        now - @last_interrupt_check_at >= INTERRUPT_POLL_INTERVAL
+    end
+
+    def monotonic_time
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
 
     # simplecov:disable
 

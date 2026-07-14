@@ -82,5 +82,34 @@ module Fatty
         expect(env.commands).to eq([command])
       end
     end
+
+    describe "#check_interrupt!" do
+      before do
+        allow(terminal).to receive(:interrupt_pending?).and_return(false)
+        allow(env).to receive(:monotonic_time).and_return(10.0)
+      end
+
+      it "polls for an interrupt" do
+        expect(env.check_interrupt!).to be_nil
+
+        expect(terminal).to have_received(:interrupt_pending?).once
+      end
+
+      it "raises Fatty::Interrupt when an interrupt is pending" do
+        allow(terminal).to receive(:interrupt_pending?).and_return(true)
+
+        expect { env.check_interrupt! }.to raise_error(Fatty::Interrupt)
+      end
+
+      it "throttles repeated polling" do
+        allow(env).to receive(:monotonic_time).and_return(10.0, 10.5, 11.0)
+
+        env.check_interrupt!
+        env.check_interrupt!
+        env.check_interrupt!
+
+        expect(terminal).to have_received(:interrupt_pending?).twice
+      end
+    end
   end
 end

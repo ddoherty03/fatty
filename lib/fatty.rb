@@ -79,4 +79,5 @@ module Fatty
   require_relative "fatty/callback_environment"
 
   class Error < StandardError; end
+  class Interrupt < StandardError; end
 end

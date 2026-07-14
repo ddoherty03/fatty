@@ -122,23 +122,45 @@ module Fatty
         commands = []
         env = accept_env
         terminal.apply_command(Command.session(output_session.id, :begin_command))
-        result =
-          if @on_accept
-            @on_accept.call(line, env)
-          else
-            run_default_command(line)
-          end
+        result = nil
+        interrupted = false
+
+        begin
+          result =
+            if @on_accept
+              @on_accept.call(line, env)
+            else
+              run_default_command(line)
+            end
+        rescue Fatty::Interrupt
+          interrupted = true
+        end
+
         commands.concat(env.commands)
-        if result.is_a?(String)
-          commands << Command.session(output_session.id, :append, text: result, follow: true)
-        elsif result.is_a?(Fatty::Command)
-          commands << result
-        elsif result.is_a?(Array)
-          commands.concat(result.grep(Fatty::Command))
-        elsif result
-          commands << Command.session(output_session.id, :append, text: result.to_s, follow: true)
+
+        unless interrupted
+          if result.is_a?(String)
+            commands << Command.session(
+              output_session.id,
+              :append,
+              text: result,
+              follow: true,
+            )
+          elsif result.is_a?(Fatty::Command)
+            commands << result
+          elsif result.is_a?(Array)
+            commands.concat(result.grep(Fatty::Command))
+          elsif result
+            commands << Command.session(
+              output_session.id,
+              :append,
+              text: result.to_s,
+              follow: true,
+            )
+          end
         end
         commands << Command.session(output_session.id, :finish_command)
+        commands
       end
     end
 

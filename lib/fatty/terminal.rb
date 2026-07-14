@@ -222,6 +222,10 @@ module Fatty
       end
     end
 
+    def interrupt_pending?
+      event_source.interrupt_pending?
+    end
+
     def modal_active?
       @modal_stack.any?
     end
