@@ -941,6 +941,10 @@ by typing =M-<digit>= keys before the command.  For example, if you want to
 insert exactly 80 '#' characters into the buffer, =M-8 M-0 #= will do the
 trick.
 
+There is one command, however, for which the count is not used as a repeat
+count: for =page_top= (bound in paging to =g=) the count is used as a line
+number to navigate to.
+
 Fatty follows the emacs convention of making =C-u= multiply the count prefix
 by 4 with each press.  So you can insert 64 '#' characters with =C-u C-u C-u
 #=.
@@ -949,6 +953,7 @@ by 4 with each press.  So you can insert 64 '#' characters with =C-u C-u C-u
 |-----------+----------------------------------------------------|
 | C-u       | universal count argument (times 4 with each press) |
 | M-<digit> | accumulate a count argument                        |
+
 
 **** History Navigation
 =Fatty= sports a rather sophisticated history system.  It not only records
