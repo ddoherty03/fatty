@@ -69,6 +69,7 @@ Here are the commands builtin to =fatty=
 | good                       | Display a "good" message colored to indicate success                    |
 | warn                       | Display a "warn" message colored to indicate caution                    |
 | oops                       | Display an "oops" message colored to indicate failure                   |
+| interrupt                  | Test fatty's interrupt handling                                          |
 | prompt                     | Popup a text box for entering a value in response to a prompt           |
 | progress count <N>         | Display an animated progress indicator counting up to 40 or the given N |
 | progress percent <N>       | Same but also show the percent complete                                 |
@@ -238,7 +239,7 @@ so-called status area:
 The callback parameter responds to several methods that allow your
 application to interact with the user.  They are documented below.
 
-**** Output Ordering
+**** Output ordering
 The =on_accept= callback can send text to the output pane in three ways:
 
 1. by returning a value from the callback;
@@ -268,7 +269,55 @@ state.  Output produced with =append_now= may therefore appear during the
 callback, while output from =append=, =markdown=, and the callback's return
 value appears after the callback returns.
 
-**** ANSI Colors in Output
+**** Long-running callbacks and interruption
+The =on_accept= callback runs synchronously.  While it is running, control does
+not return to Fatty's normal event loop.  A callback that performs lengthy work
+should therefore provide explicit safe points at which the user may interrupt
+it:
+
+#+begin_src ruby :tangle no
+  runner = lambda do |_line, fatty|
+    records.find_each do |record|
+      process(record)
+      fatty.check_interrupt!
+    end
+    fatty.good("Processing complete.")
+  end
+#+end_src
+
+The =check_interrupt!= method performs a throttled, nonblocking input check.  If
+the user has typed C-c or C-g, it raises =Fatty::Interrupt=.  Fatty catches that
+exception at the callback boundary, finishes the current command cleanly, and
+returns to the normal input loop.
+
+Calls to =check_interrupt!= should be placed only at points where it is safe to
+stop the application work.  For example, they can go between records, batches,
+files, or other complete units of work.  Fatty does not interrupt callbacks
+asynchronously and does not stop threads or raise exceptions at arbitrary
+instructions.
+
+Fast callbacks do not need to call =check_interrupt!=.  Long-running callbacks
+that already update a shared progress facility can often place the check there
+so that individual commands do not need separate interruption logic.
+
+Code that needs to report interruption before allowing Fatty to perform its
+normal cleanup may rescue and re-raise the exception:
+
+#+begin_src ruby :tangle no
+  begin
+    items.each do |item|
+      process(item)
+      fatty.check_interrupt!
+    end
+  rescue Fatty::Interrupt
+    fatty.warn("Processing interrupted.", replace: true)
+    raise
+  else
+    fatty.good("Processing complete.", replace: true)
+  end
+#+end_src
+
+**** ANSI colors in output
 Text passed to =append=, =append_now=, =status=, and =alert= may contain ANSI
 SGR color/style sequences. Fatty interprets those sequences relative to the
 current theme role, so an ANSI reset returns to the active Fatty role rather
@@ -367,19 +416,19 @@ field, using one of the following "roles":
   orange to yellow range;
 - :error :: colored something to suggest danger, usually some tone of red.
 
-*** =good(text)=
+*** =good(text, replace: false, render: true)=
 Display the text in the status area with the role :good.
 
-*** =info(text)=
+*** =info(text, replace: false, render: true)=
 Display the text in the status area with the role :info.
 
-*** =warn(text)=
+*** =warn(text, replace: false, render: true)=
 Display the text in the status area with the role :warn.
 
-*** =error(text)=
+*** =error(text, replace: false, render: true)=
 Display the text in the status area with the role :error.
 
-*** =oops(text)=
+*** =oops(text, replace: false, render: true)=
 An alias for =error(text)=
 
 *** =alert(text, role: :info)=
@@ -418,6 +467,18 @@ the main input command line.  You can turn it off by setting =save_history= to
 
 =prompt= returns whatever the user typed and returns =nil= if the user cancels
 with C-c or C-g unless you specify an alternative =cancel_value=.
+
+*** =check_interrupt!=
+Provide a cooperative interruption point during a long-running =on_accept=
+callback.  Fatty periodically performs a nonblocking input check and raises
+=Fatty::Interrupt= if the user has typed C-c or C-g.
+
+The polling is throttled, so =check_interrupt!= may be called frequently.  It
+should nevertheless be called only at points where the callback can safely
+stop its work.
+
+Fatty catches =Fatty::Interrupt= at the callback boundary, finishes the current
+command, restores the terminal state, and resumes the normal input loop.
 
 *** =add_progress(label:, total: nil, style: :percent, role: :info, width: 40)=
 Display a progress widget in the status area to show the user that the system
