@@ -39,17 +39,17 @@ module Fatty
     # the Config for "warn," i.e., short of an error but not complete
     # success either.
     def warn(text, replace: false, render: true)
-      status(text, role: :warn, replace:, render)
+      status(text, role: :warn, replace:, render:)
     end
 
     # Display a message to the user in the status line, colored according to
     # the Config for "oops," i.e., a soft failure.
     def error(text, replace: false, render: true)
-      status(text, role: :error, replace:, render)
+      status(text, role: :error, replace:, render:)
     end
 
     def oops(text, replace: false, render: true)
-      status(text, role: :error, replace:, render)
+      status(text, role: :error, replace:, render:)
     end
   end
 end
