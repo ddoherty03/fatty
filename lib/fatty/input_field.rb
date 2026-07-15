@@ -125,9 +125,14 @@ module Fatty
 
     def complete!(direction: 1)
       candidates = tab_completion_candidates
+      common_prefix = common_completion_prefix(candidates)
 
       if candidates.length == 1
         accept_completion_line(candidates.first)
+      elsif direction.positive? &&
+            common_prefix &&
+            common_prefix.length > buffer.text.length
+        accept_completion_line(common_prefix)
       else
         cycle_completion!(direction: direction)
       end
@@ -269,6 +274,17 @@ module Fatty
         .map(&:to_s)
         .reject(&:empty?)
         .uniq
+    end
+
+    def common_completion_prefix(candidates)
+      return if candidates.empty?
+
+      first, last = candidates.minmax
+      length = 0
+      limit = [first.length, last.length].min
+
+      length += 1 while length < limit && first[length] == last[length]
+      first[0...length]
     end
 
     def completion_suggestions

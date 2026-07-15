@@ -576,7 +576,7 @@ module Fatty
         commands = apply_action(session, :complete)
 
         expect(commands).to eq([])
-        expect(session.field.buffer.text).to eq("git st")
+        expect(session.field.buffer.text).to eq("git sta")
         expect(session.field.autosuggestion).to eq("git status")
       end
 
@@ -594,8 +594,8 @@ module Fatty
         commands = apply_action(session, :complete_previous)
 
         expect(commands).to eq([])
-        expect(session.field.buffer.text).to eq("git st")
-        expect(session.field.autosuggestion).to eq("git status")
+        expect(session.field.buffer.text).to eq("git sta")
+        expect(session.field.autosuggestion).to eq("git stash")
       end
 
       it "shows the next completion as a virtual suffix when there are multiple candidates" do
@@ -643,6 +643,10 @@ module Fatty
         session.field.buffer.replace("git st")
 
         apply_action(session, :complete)
+        expect(session.field.buffer.text).to eq("git sta")
+        expect(session.field.autosuggestion).to eq("git status")
+
+        apply_action(session, :complete)
         expect(session.field.autosuggestion).to eq("git status")
 
         apply_action(session, :complete)
@@ -651,7 +655,8 @@ module Fatty
         commands = apply_action(session, :complete_previous)
 
         expect(commands).to eq([])
-        expect(session.field.buffer.text).to eq("git st")
+        expect(session.field.buffer.text).to eq("git sta")
+        expect(session.field.state[3]).to eq("tus")
         expect(session.field.autosuggestion).to eq("git status")
       end
 
@@ -867,7 +872,6 @@ module Fatty
                 :append,
                 :finish_command,
                 :quit_paging,
-                :clear,
               )
         expect(session.terminal).to have_received(:render_frame).once
       end

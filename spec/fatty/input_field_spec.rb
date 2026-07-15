@@ -157,6 +157,45 @@ module Fatty
         expect(field.cycle_completion!).to eq("fold")
       end
 
+      it "inserts the common prefix of multiple completion candidates" do
+        field = field_with(
+          "ch",
+          completion_proc: ->(_buffer) { ["check", "checkout", "checkup"] },
+        )
+
+        result = field.complete!
+
+        expect(result).to eq("check")
+        expect(field.buffer.text).to eq("check")
+        expect(field.state[3]).to eq("")
+      end
+
+      it "cycles candidates when their common prefix does not extend the buffer" do
+        field = field_with(
+          "check",
+          completion_proc: ->(_buffer) { ["check", "checkout", "checkup"] },
+        )
+
+        result = field.complete!
+
+        expect(result).to eq("checkout")
+        expect(field.buffer.text).to eq("check")
+        expect(field.state[3]).to eq("out")
+      end
+
+      it "does not insert the common prefix when completing backward" do
+        field = field_with(
+          "ch",
+          completion_proc: ->(_buffer) { ["check", "checkout", "checkup"] },
+        )
+
+        result = field.complete!(direction: -1)
+
+        expect(result).to eq("check")
+        expect(field.buffer.text).to eq("ch")
+        expect(field.state[3]).to eq("eck")
+      end
+
       it "resets completion cycling" do
         field = field_with(
           "fo",
