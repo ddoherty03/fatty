@@ -69,15 +69,14 @@ module Fatty
         }.to raise_error(ArgumentError, /unknown progress style/)
       end
 
-      it "rejects a malformed total" do
-        expect {
-          Progress.new(
+      it "uses 1 for a malformed total" do
+        p = Progress.new(
             terminal: terminal,
             label: "Importing",
             total: "ten",
             style: :percent,
           )
-        }.to raise_error(ArgumentError, /positive integer total/)
+        expect(p.total).to eq(1)
       end
 
       it "uses the default width for a nonpositive width" do
@@ -89,6 +88,32 @@ module Fatty
           width: 0,
         )
         expect(progress.width).to eq(40)
+      end
+    end
+
+    describe "#normalize_total" do
+      it "preserves nil" do
+        progress = Fatty::Progress.new(terminal: terminal, total: nil, style: :spinner)
+
+        expect(progress.total).to be_nil
+      end
+
+      it "normalizes zero to one" do
+        progress = Fatty::Progress.new(terminal: terminal, total: 0)
+
+        expect(progress.total).to eq(1)
+      end
+
+      it "normalizes negative totals to one" do
+        progress = Fatty::Progress.new(terminal: terminal, total: -5)
+
+        expect(progress.total).to eq(1)
+      end
+
+      it "normalizes invalid totals to one" do
+        progress = Fatty::Progress.new(terminal: terminal, total: "nonsense")
+
+        expect(progress.total).to eq(1)
       end
     end
 

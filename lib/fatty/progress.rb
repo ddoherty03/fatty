@@ -109,7 +109,9 @@ module Fatty
     def normalize_total(value)
       return if value.nil?
 
-      [1, Integer(value, exception: false)].max
+      val = Integer(value, exception: false)
+      val = 1 unless val
+      [1, val].max
     end
 
     def normalize_style(value)
