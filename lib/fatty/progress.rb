@@ -104,10 +104,12 @@ module Fatty
       text.empty? ? DEFAULT_LABEL : text
     end
 
+    # Return the total but not less than 1 to avoid division-by-zero errors
+    # when calculating percentages.
     def normalize_total(value)
       return if value.nil?
 
-      Integer(value, exception: false)
+      [1, Integer(value, exception: false)].max
     end
 
     def normalize_style(value)
