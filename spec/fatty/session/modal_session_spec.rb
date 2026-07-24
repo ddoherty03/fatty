@@ -96,7 +96,7 @@ module Fatty
       it "creates a centered window using geometry" do
         session.send(:rebuild_windows!)
 
-        expect(::Curses::Window).to have_received(:new).with(6, 20, 15, 30)
+        expect(::Curses::Window).to have_received(:new).with(6, 20, 9, 30)
         expect(session.win).to be(new_win)
       end
 

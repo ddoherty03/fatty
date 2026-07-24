@@ -34,9 +34,18 @@ module Fatty
       cols = ::Curses.cols
       rows = ::Curses.lines
       width, height = geometry(cols: cols, rows: rows)
+
+      # Center the popup horizontally
       x = (cols - width) / 2
+
+      # Put the bottom of the popup window one row above the top of the status
+      # area.
       input_row = renderer.screen.input_rect.row
-      y = [input_row - height - 1, 0].max
+      status_rows =
+        Fatty::Config.config.dig(:status, :max_rows)&.to_i ||
+        StatusSession::DEFAULT_MAX_ROWS
+      y = [input_row - status_rows - height - 1, 0].max
+
       self.win = ::Curses::Window.new(height, width, y, x)
       nil
     end
