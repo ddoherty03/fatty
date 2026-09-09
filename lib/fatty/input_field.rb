@@ -519,9 +519,13 @@ module Fatty
     end
 
     def autosuggestion_suffix
-      return "" unless autosuggestion_visible?
+      suggestion = autosuggestion.to_s
+      text = buffer.text.to_s
+      return "" if suggestion.empty?
+      return "" unless suggestion.start_with?(text)
+      return "" if suggestion == text
 
-      autosuggestion.to_s.delete_prefix(buffer.text.to_s)
+      suggestion.delete_prefix(text)
     end
 
     def accept_autosuggestion!
