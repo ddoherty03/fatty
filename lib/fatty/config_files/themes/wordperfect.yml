@@ -26,21 +26,17 @@ region:
 
 good:
   fg: lightgreen
-  bg: navy
   attrs: [bold]
 
 info:
   fg: white
-  bg: navy
 
 warn:
   fg: orange
-  bg: navy
   attrs: [bold]
 
 error:
-  fg: white
-  bg: red
+  fg: red
   attrs: [bold]
 
 pager_status:

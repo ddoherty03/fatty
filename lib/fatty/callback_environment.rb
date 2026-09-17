@@ -29,6 +29,7 @@ module Fatty
     include AlertApi
     include KeytestApi
     include EnvironmentApi
+    include SuspendApi
 
     attr_reader :label, :payload, :commands, :terminal, :progress
 

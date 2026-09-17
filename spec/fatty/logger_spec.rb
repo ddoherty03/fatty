@@ -147,13 +147,13 @@ module Fatty
         expect(logger.formatter).to be_a(Fatty::Logger::TextFormatter)
       end
 
-      it "formats as: <iso8601> <SEV> <progname> <msg>\\n" do
+      it "formats as: <iso8601(local time)> <SEV> <progname> <msg>\\n" do
         fmt = Logger::TextFormatter.new
-        t   = Time.utc(2026, 2, 3, 12, 34, 56, 123_456) # stable
+        t   = Time.local(2026, 2, 3, 12, 34, 56, 123_456) # stable
 
         line = fmt.call("INFO", t, "fatty_spec", "hello")
 
-        expect(line).to start_with("2026-02-03T12:34:56.123456Z INFO fatty_spec hello")
+        expect(line).to start_with("2026-02-03T12:34:56.123456-06:00 INFO fatty_spec hello")
         expect(line).to end_with("\n")
       end
 

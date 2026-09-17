@@ -27,8 +27,7 @@ module Fatty
   module Logger
     class TextFormatter < ::Logger::Formatter
       def call(level, time, progname, msg)
-        ts = time.utc.iso8601(6)
-
+        ts = time.getlocal.iso8601(6)
         body =
           case msg
           when Hash

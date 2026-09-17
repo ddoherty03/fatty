@@ -13,7 +13,13 @@ module Fatty
         spec = palette&.[](role.to_sym)
         return text.to_s unless spec
 
-        "#{sgr_for_spec(spec)}#{text}#{reset}"
+        text.to_s.split(/(\n)/).map do |part|
+          if part == "\n"
+            part
+          else
+            "#{sgr_for_spec(spec)}#{part}#{reset}"
+          end
+        end.join
       end
 
       def render_line(row:, col:, width:, text:, role:, palette:)
@@ -154,13 +160,17 @@ module Fatty
         fg = rgb_for_style_color(style.fg, fallback: fallback_spec[:fg_rgb])
         bg = rgb_for_style_color(style.bg, fallback: fallback_spec[:bg_rgb])
 
-        codes = []
-        codes << "1" if style.bold
-        codes << "3" if style.italic
-        codes << "4" if style.underline
-        codes << "9" if style.strike
+        attrs = Array(fallback_spec[:attrs]).map(&:to_sym)
 
-        if style.reverse
+        codes = []
+        codes << "1" if attrs.include?(:bold) || style.bold
+        codes << "2" if attrs.include?(:dim)
+        codes << "3" if attrs.include?(:italic) || style.italic
+        codes << "4" if attrs.include?(:underline) || style.underline
+        codes << "9" if attrs.include?(:strike) || style.strike
+
+        reverse = attrs.include?(:reverse) || style.reverse
+        if reverse
           if fg && bg
             fg, bg = bg, fg
           else

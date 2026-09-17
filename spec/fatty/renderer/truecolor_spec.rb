@@ -111,6 +111,165 @@ module Fatty
         $stdout = original_stdout
     end
 
+    it "renders output using its semantic role" do
+      visible_lines = [
+        Fatty::OutputSession::VisibleLine.new(
+          number: 1,
+          text: "Good news",
+          fragments: [
+            Fatty::OutputBuffer::Fragment.new(
+              text: "Good news",
+              role: :good,
+            ),
+          ],
+        ),
+      ]
+      output = instance_double(
+        Fatty::OutputBuffer,
+        lines: ["Good news"],
+      )
+      viewport = Fatty::Viewport.new(height: screen.output_rect.rows)
+      session = instance_double(
+        Fatty::OutputSession,
+        visible_lines: visible_lines,
+        output: output,
+        viewport: viewport,
+        highlights: nil,
+        line_numbers?: false,
+      )
+      allow(session).to receive(:state) do |viewport:|
+        [
+          viewport.state,
+          viewport.slice(visible_lines),
+          screen.output_rect.rows,
+          screen.output_rect.cols,
+          nil,
+          renderer.theme_version,
+          false,
+        ]
+      end
+
+      out = StringIO.new
+      original_stdout = $stdout
+      $stdout = out
+
+      renderer.begin_frame
+      renderer.render_output(session)
+      renderer.finish_frame
+
+      expect(out.string).to include("Good news")
+      expect(out.string).to include("38;2;0;0;0")
+      expect(out.string).to include("48;2;240;248;255")
+      ensure
+        $stdout = original_stdout
+    end
+
+    it "renders output using semantic role attributes" do
+      palette[:good][:attrs] = [:bold]
+
+      visible_lines = [
+        Fatty::OutputSession::VisibleLine.new(
+          number: 1,
+          text: "Good news",
+          fragments: [
+            Fatty::OutputBuffer::Fragment.new(
+              text: "Good news",
+              role: :good,
+            ),
+          ],
+        ),
+      ]
+      output = instance_double(
+        Fatty::OutputBuffer,
+        lines: ["Good news"],
+      )
+      viewport = Fatty::Viewport.new(height: screen.output_rect.rows)
+      session = instance_double(
+        Fatty::OutputSession,
+        visible_lines: visible_lines,
+        output: output,
+        viewport: viewport,
+        highlights: nil,
+        line_numbers?: false,
+      )
+      allow(session).to receive(:state) do |viewport:|
+        [
+          viewport.state,
+          viewport.slice(visible_lines),
+          screen.output_rect.rows,
+          screen.output_rect.cols,
+          nil,
+          renderer.theme_version,
+          false,
+        ]
+      end
+
+      out = StringIO.new
+      original_stdout = $stdout
+      $stdout = out
+
+      renderer.begin_frame
+      renderer.render_output(session)
+      renderer.finish_frame
+
+      expect(out.string).to include("Good news")
+      expect(out.string).to include("\e[1;")
+      ensure
+        $stdout = original_stdout
+    end
+
+    it "renders output with an unknown semantic role using the output role" do
+      visible_lines = [
+        Fatty::OutputSession::VisibleLine.new(
+          number: 1,
+          text: "Visible",
+          fragments: [
+            Fatty::OutputBuffer::Fragment.new(
+              text: "Visible",
+              role: :missing,
+            ),
+          ],
+        ),
+      ]
+      output = instance_double(
+        Fatty::OutputBuffer,
+        lines: ["Visible"],
+      )
+      viewport = Fatty::Viewport.new(height: screen.output_rect.rows)
+      session = instance_double(
+        Fatty::OutputSession,
+        visible_lines: visible_lines,
+        output: output,
+        viewport: viewport,
+        highlights: nil,
+        line_numbers?: false,
+      )
+      allow(session).to receive(:state) do |viewport:|
+        [
+          viewport.state,
+          viewport.slice(visible_lines),
+          screen.output_rect.rows,
+          screen.output_rect.cols,
+          nil,
+          renderer.theme_version,
+          false,
+        ]
+      end
+
+      out = StringIO.new
+      original_stdout = $stdout
+      $stdout = out
+
+      renderer.begin_frame
+      renderer.render_output(session)
+      renderer.finish_frame
+
+      expect(out.string).to include("Visible")
+      expect(out.string).to include("38;2;220;220;220")
+      ensure
+        $stdout = original_stdout
+    end
+
     it "renders original zero-padded line numbers for narrowed visible lines" do
       visible_lines = [
         Fatty::OutputSession::VisibleLine.new(number: 2, text: "second match"),

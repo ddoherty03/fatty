@@ -4,19 +4,21 @@ module Fatty
   module OutputApi
     def append(text, follow: true, role: nil)
       payload = {
-        text: output_text(text, role: role),
+        text: text.to_s,
         follow: follow,
       }
+      payload[:role] = role if role
       queue(Command.session(output_id, :append, **payload))
       nil
     end
 
     def append_now(text, follow: true, mode: nil, role: nil)
       payload = {
-        text: output_text(text, role: role),
+        text: text.to_s,
         follow: follow,
       }
       payload[:mode] = mode if mode
+      payload[:role] = role if role
 
       terminal.apply_command(Command.session(output_id, :append, **payload))
       terminal.render_frame
@@ -36,19 +38,6 @@ module Fatty
     end
 
     private
-
-    def output_text(text, role:)
-      text = text.to_s
-      if role
-        Fatty::Ansi::Renderer.new.style(
-          text,
-          role: role,
-          palette: markdown_palette,
-        )
-      else
-        text
-      end
-    end
 
     def markdown_palette
       terminal.renderer.palette if terminal.respond_to?(:renderer) && terminal.renderer

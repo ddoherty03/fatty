@@ -50,6 +50,8 @@ module Fatty
         when :terminal_paste
           field.act_on(:paste, command.payload.fetch(:text, ""), env: action_env(event: nil))
           []
+        when :resize
+          Command.session(output_session.id, :resize)
         when :popup_result
           apply_popup_result(command.payload)
         when :paste

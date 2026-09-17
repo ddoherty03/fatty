@@ -3,7 +3,13 @@
 module Fatty
   module Themes
     module Manager
+      attr_reader :warning
+
       FALLBACK_THEME = :terminal
+
+      def self.warning
+        @warning
+      end
 
       def self.registry
         @registry ||=
@@ -16,6 +22,7 @@ module Fatty
       end
 
       def self.load!
+        @warning = nil
         registry.clear
         Loader.load_dir(Fatty::Config.user_themes_dir, registry: registry)
         Loader.load_dir(Fatty::Config.app_themes_dir, registry: registry) if Fatty::Config.app_themes_dir
@@ -30,10 +37,9 @@ module Fatty
         return @current if @current
 
         theme = Fatty::Config.config[:theme]
-
         @current =
           if theme && !theme.to_s.strip.empty?
-            theme.to_sym
+            set(theme)
           else
             FALLBACK_THEME
           end
@@ -43,10 +49,15 @@ module Fatty
         return current unless theme
 
         t = theme.to_sym
+
         if theme_names.include?(t)
+          @warning = nil
           @current = t
+          Fatty::Config.set_preference(:theme, t)
+          @current
         else
-          Fatty.warn("Unknown theme: #{theme}, falling back to #{FALLBACK_THEME}", tag: :theme)
+          @warning = "Unknown theme in config: '#{theme}'; using '#{FALLBACK_THEME}'"
+          Fatty.warn(@warning, tag: :theme)
           @current = FALLBACK_THEME
         end
       end

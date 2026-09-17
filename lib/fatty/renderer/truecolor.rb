@@ -523,7 +523,13 @@ module Fatty
             }
           end
 
-          segments.concat(output_segments(text, ranges: ranges))
+          segments.concat(
+            output_segments(
+              text,
+              fragments: visible_line&.fragments,
+              ranges: ranges,
+            ),
+          )
           queue_ansi_segments_line(
             row: rect.row + y,
             col: rect.col,
@@ -549,18 +555,48 @@ module Fatty
         end
       end
 
-      def output_segments(line, ranges:)
-        plain = Fatty::Ansi.plain_text(line.to_s)
+      def output_segments(line, fragments:, ranges:)
+        fragments = Array(fragments)
         base_segments = []
 
-        Fatty::Ansi.segment(line.to_s).each do |text, style|
-          base_segments << {
-            text: text.to_s,
-            role: :output,
-            style: style,
-          }
+        if fragments.empty?
+          Fatty.debug(
+            "output fragment role=:output spec=#{palette[:output].inspect}",
+            tag: :render,
+          )
+          Fatty::Ansi.segment(line.to_s).each do |text, style|
+            base_segments << {
+              text: text.to_s,
+              role: :output,
+              style: style,
+            }
+          end
+        else
+          fragments.each do |fragment|
+            role = fragment.role
+            role = :output unless role && palette[role]
+
+            Fatty.debug(
+              "output fragment role=#{role.inspect} spec=#{palette[role].inspect}",
+              tag: :render,
+            )
+            Fatty::Ansi.segment(fragment.text.to_s).each do |text, style|
+              base_segments << {
+                text: text.to_s,
+                role: role,
+                style: style,
+              }
+            end
+          end
         end
-        apply_highlight_ranges_to_segments(base_segments, plain:, ranges:)
+
+        plain = base_segments.map { |segment| segment[:text] }.join
+
+        apply_highlight_ranges_to_segments(
+          base_segments,
+          plain: plain,
+          ranges: ranges,
+        )
       end
 
       def apply_highlight_ranges_to_segments(segments, plain:, ranges:)

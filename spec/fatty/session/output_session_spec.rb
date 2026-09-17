@@ -104,11 +104,13 @@ module Fatty
         session = Fatty::OutputSession.new
         init_output_session(session)
         append_lines(session, 3)
+        allow(session.renderer).to receive(:clear_physical_screen!)
 
         update(session, :clear)
 
         expect(session.output.lines).to be_empty
         expect(session.viewport.top).to eq(0)
+        expect(session.renderer).to have_received(:clear_physical_screen!)
       end
 
       it "handles :resize" do
@@ -131,6 +133,29 @@ module Fatty
         expect(session).to be_pager_active
         expect(session.state[OutputSession::STATE_LINES].map(&:text))
           .to eq(["cmd 1", "cmd 2", "cmd 3", "cmd 4"])
+      end
+
+      it "preserves prior output when a command produces no output" do
+        session = Fatty::OutputSession.new
+        init_output_session(session)
+        update(session, :append, text: "prior output\n", follow: false)
+
+        update(session, :begin_command)
+        update(session, :finish_command)
+
+        expect(session.output.lines).to eq(["prior output"])
+      end
+
+      it "clears prior output when a command produces output" do
+        session = Fatty::OutputSession.new
+        init_output_session(session)
+        update(session, :append, text: "prior output\n", follow: false)
+
+        update(session, :begin_command)
+        update(session, :append, text: "new output\n", follow: false)
+        update(session, :finish_command)
+
+        expect(session.output.lines).to eq(["new output"])
       end
 
       it "handles :quit_paging" do
@@ -595,14 +620,8 @@ module Fatty
         init_output_session(session)
         update(session, :append, text: "alpha\nbeta\ngamma", follow: false)
 
-        expect(session.visible_lines)
-          .to eq(
-                [
-                  Fatty::OutputSession::VisibleLine.new(number: 1, text: "alpha"),
-                  Fatty::OutputSession::VisibleLine.new(number: 2, text: "beta"),
-                  Fatty::OutputSession::VisibleLine.new(number: 3, text: "gamma"),
-                ],
-              )
+        expect(session.visible_lines.map { |line| [line.number, line.text] })
+          .to eq([[1, "alpha"], [2, "beta"], [3, "gamma"],])
       end
 
       it "returns only matching lines while retaining original line numbers" do
@@ -617,14 +636,56 @@ module Fatty
 
         apply_narrowing(session, "alpha")
 
-        expect(session.visible_lines)
-          .to eq(
-                [
-                  Fatty::OutputSession::VisibleLine.new(number: 1, text: "alpha"),
-                  Fatty::OutputSession::VisibleLine.new(number: 2, text: "beta alpha"),
-                  Fatty::OutputSession::VisibleLine.new(number: 4, text: "alpha delta"),
-                ],
-              )
+        expect(session.visible_lines.map { |line| [line.number, line.text] })
+          .to eq([[1, "alpha"], [2, "beta alpha"], [4, "alpha delta"],])
+      end
+
+      it "preserves output role fragments in visible lines" do
+        session = Fatty::OutputSession.new
+        session.update(
+          Fatty::Command.session(
+            session.id,
+            :append,
+            text: "hello\nworld",
+            role: :good,
+          ),
+        )
+
+        expect(session.visible_lines.map(&:text)).to eq(["hello", "world"])
+        expect(
+          session.visible_lines.map { |line| line.fragments.map(&:role) },
+        ).to eq([[:good], [:good]])
+      end
+
+      it "preserves different roles within a partially appended line" do
+        session = Fatty::OutputSession.new
+        session.update(
+          Fatty::Command.session(
+            session.id,
+            :append,
+            text: "ordinary ",
+          ),
+        )
+        session.update(
+          Fatty::Command.session(
+            session.id,
+            :append,
+            text: "good\n",
+            role: :good,
+          ),
+        )
+
+        line = session.visible_lines.first
+
+        expect(line.text).to eq("ordinary good")
+        expect(
+          line.fragments.map { |fragment| [fragment.text, fragment.role] },
+        ).to eq(
+               [
+                 ["ordinary ", nil],
+                 ["good", :good],
+               ],
+             )
       end
 
       it "requires all narrowing terms but permits them in any order" do
@@ -668,21 +729,24 @@ module Fatty
         expect(session.visible_lines.map(&:number)).to eq([1])
         expect(session.visible_lines.map(&:text)).to eq(["\e[31malpha\e[0m"])
       end
-    end
 
-    def visible_lines
-      @visible_lines ||=
-        begin
-          terms = narrow_query.to_s.split
+      it "narrows output case-insensitively" do
+        session = Fatty::OutputSession.new
+        session.update(
+          Fatty::Command.session(
+            session.id,
+            :append,
+            text: "Alpha Bravo\ncharlie delta\n",
+          ),
+        )
 
-          output.lines.each_with_index.filter_map do |text, index|
-        visible_text = visible_output_text(text)
+        session.apply_prompt_result(
+          kind: :narrow_output,
+          text: "alpha BRAVO",
+        )
 
-        if terms.empty? || terms.all? { |term| visible_text.include?(term) }
-          VisibleLine.new(number: index + 1, text: text)
-        end
+        expect(session.visible_lines.map(&:text)).to eq(["Alpha Bravo"])
       end
-        end
     end
 
     describe "#tick" do

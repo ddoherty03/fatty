@@ -101,6 +101,10 @@ module Fatty
       raise NotImplementedError, "#{self.class} must implement #render_alert"
     end
 
+    def clear_physical_screen!
+      self
+    end
+
     def invalidate!
       @last_output_state = nil
       @last_input_state = nil

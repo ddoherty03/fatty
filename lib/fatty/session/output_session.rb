@@ -2,7 +2,11 @@
 
 module Fatty
   class OutputSession < Session
-    VisibleLine = Data.define(:number, :text) do
+    VisibleLine = Data.define(:number, :text, :fragments) do
+      def initialize(number:, text:, fragments: [])
+        super
+      end
+
       def to_s
         text.to_s
       end
@@ -20,6 +24,7 @@ module Fatty
       @line_numbers = false
       @narrow_query = nil
       @visible_lines = nil
+      @pending_command_reset = false
       mode = Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
       @default_output_mode = mode
       @pager = Fatty::Pager.new(output: @output, viewport: @viewport, mode: mode, lines: -> { visible_lines })
@@ -48,6 +53,7 @@ module Fatty
             []
           end
         when :append
+          prepare_for_command_output!
           case payload[:mode]
           when :scrolling
             pager.toggle_paging_mode if pager.mode == :paging
@@ -55,9 +61,14 @@ module Fatty
             pager.toggle_paging_mode if pager.mode == :scrolling
           end
           before = output.lines.length
+          Fatty.debug(
+            "output append role=#{payload[:role].inspect} text=#{payload[:text].inspect}",
+            tag: :session,
+          )
           append_output(
             payload.fetch(:text, ""),
             follow: payload.fetch(:follow, true),
+            role: payload[:role],
           )
           reveal_appended_block(before) if payload[:scroll]
           []
@@ -71,16 +82,21 @@ module Fatty
           []
         when :clear
           reset_output!
+          renderer.clear_physical_screen!
           []
         when :resize
           resize_output!
           []
         when :begin_command
-          reset_for_command!
-          pager.begin_command!(anchor: output.lines.length)
+          @narrow_query = nil
+          invalidate_visible_lines!
+          @pending_command_reset = true
           []
         when :finish_command
-          pager.finish_command!
+          unless @pending_command_reset
+            pager.finish_command!
+          end
+          @pending_command_reset = false
           []
         when :quit_paging
           pager.quit
@@ -245,17 +261,24 @@ module Fatty
     def visible_lines
       @visible_lines ||=
         if narrowed?
-          terms = narrow_query.split
-
+          terms = narrow_query.downcase.split
           output.lines.each_with_index.filter_map do |text, index|
-            visible_text = visible_output_text(text)
+            visible_text = visible_output_text(text).downcase
             next unless terms.all? { |term| visible_text.include?(term) }
 
-            VisibleLine.new(number: index + 1, text: text)
+            VisibleLine.new(
+              number: index + 1,
+              text: text,
+              fragments: output.fragments_for(index),
+            )
           end
         else
           output.lines.each_with_index.map do |text, index|
-            VisibleLine.new(number: index + 1, text: text)
+            VisibleLine.new(
+              number: index + 1,
+              text: text,
+              fragments: output.fragments_for(index),
+            )
           end
         end
     end
@@ -377,8 +400,8 @@ module Fatty
       vp
     end
 
-    def append_output(text, follow: true)
-      ntrim = @output.append(text.to_s)
+    def append_output(text, follow: true, role: nil)
+      ntrim = @output.append(text.to_s, role: role)
       invalidate_visible_lines!
       @pager.on_append(ntrim: ntrim)
 
@@ -474,7 +497,7 @@ module Fatty
     end
 
     def reset_output!
-      @output.lines.clear
+      @output.clear
       invalidate_visible_lines!
       @viewport.reset
     end
@@ -490,6 +513,14 @@ module Fatty
       @narrow_query = nil
       mode = @default_output_mode # Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
       @pager.reset!(mode: mode)
+    end
+
+    def prepare_for_command_output!
+      return unless @pending_command_reset
+
+      reset_for_command!
+      pager.begin_command!(anchor: output.lines.length)
+      @pending_command_reset = false
     end
 
     # When the pager is active, the last output row is reserved for the pager

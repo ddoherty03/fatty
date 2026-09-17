@@ -346,6 +346,12 @@ module Fatty
         stage_window(win)
       end
 
+      def clear_physical_screen!
+        ::Curses.clear
+        invalidate!
+        self
+      end
+
       def begin_frame
       end
 
@@ -522,11 +528,13 @@ module Fatty
           start_y = 0 if start_y < 0
 
           (start_y...height).each do |y|
+            visible_line = lines[y]
             draw_output_row(
               win,
-              line: lines[y],
+              line: visible_line.text,
+              fragments: visible_line.fragments,
               y: y,
-              abs_line: viewport.top + y,
+              abs_line: visible_line.number - 1,
               highlights: highlights,
             )
           end
@@ -535,11 +543,13 @@ module Fatty
           count = height if count > height
 
           (0...count).each do |y|
+            visible_line = lines[y]
             draw_output_row(
               win,
-              line: lines[y],
+              line: visible_line.text,
+              fragments: visible_line.fragments,
               y: y,
-              abs_line: viewport.top + y,
+              abs_line: visible_line.number - 1,
               highlights: highlights,
             )
           end
@@ -618,6 +628,7 @@ module Fatty
           draw_output_row(
             win,
             line: visible_line.text,
+            fragments: visible_line.fragments,
             y: y,
             abs_line: visible_line.number - 1,
             highlights: highlights,
@@ -628,7 +639,7 @@ module Fatty
         stage_window(win)
       end
 
-      def draw_output_row(win, line:, y:, abs_line:, highlights:, line_number: nil, line_number_width: nil)
+      def draw_output_row(win, line:, fragments: nil, y:, abs_line:, highlights:, line_number: nil, line_number_width: nil)
         base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
         line_number_attr = base_attr | ::Curses::A_DIM
         hi_attr = pair_attr(:match_current, fallback: ::Curses::A_REVERSE)
@@ -656,9 +667,7 @@ module Fatty
           [from.to_i, to.to_i, attr]
         end
 
-        slices = build_line_slices(line.to_s, ranges: curses_ranges) do |style|
-          ansi_style_attr(style, fallback: base_attr)
-        end
+        slices = output_slices(line, fragments: fragments, ranges: curses_ranges, base_attr: base_attr)
         render_slices(win, slices)
         win.clrtoeol
       end
@@ -726,6 +735,55 @@ module Fatty
           end
           pos = seg_to
         end
+        slices
+      end
+
+      def output_slices(line, fragments:, ranges:, base_attr:)
+        fragments = Array(fragments)
+        return build_line_slices(line.to_s, ranges: ranges) { |style|
+          ansi_style_attr(style, fallback: base_attr)
+        } if fragments.empty?
+
+        slices = []
+        offset = 0
+
+        fragments.each do |fragment|
+          role = fragment.role
+          role = :output unless role && palette[role]
+
+          fragment_attr = pair_attr(role, fallback: base_attr)
+          text = fragment.text.to_s
+          fragment_end = offset + Fatty::Ansi.plain_text(text).length
+
+          fragment_ranges =
+            Array(ranges).filter_map do |from, to, attr|
+            clipped_from = [from, offset].max
+            clipped_to = [to, fragment_end].min
+            next unless clipped_from < clipped_to
+
+            [
+              clipped_from - offset,
+              clipped_to - offset,
+              attr,
+            ]
+          end
+
+          fragment_slices =
+            build_line_slices(text, ranges: fragment_ranges) do |style|
+            ansi_style_attr(
+              style,
+              fallback: fragment_attr,
+              fallback_role: role,
+            )
+          end
+
+          fragment_slices.each do |attr, slice_text|
+            emit_slice(slices, attr, slice_text)
+          end
+
+          offset = fragment_end
+        end
+
         slices
       end
 

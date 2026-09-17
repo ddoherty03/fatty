@@ -11,6 +11,15 @@ using Fatty::CoreExt::String
 
 prompt = Fatty::Prompt.new { "#{Dir.pwd}> " }
 history_ctx_proc = -> { { pwd: Dir.pwd } }
+append_text = lambda do |args|
+  if args.length == 1 && File.file?(File.expand_path(args.first))
+    File.read(File.expand_path(args.first))
+  elsif args.empty?
+    "Fatty output role test\n"
+  else
+    "#{args.join(' ')}\n"
+  end
+end
 
 on_accept_proc = lambda do |line, env|
   cmd, *args = Shellwords.split(line)
@@ -107,17 +116,17 @@ on_accept_proc = lambda do |line, env|
       "Demo menu",
       choices: {
         "Write to output pane" => proc { |env|
-          env.append("menu: wrote this from MenuEnv#output\n")
-          :output_written
-        },
+      env.append("menu: wrote this from MenuEnv#output\n")
+      :output_written
+    },
         "Show status message" => proc { |env|
-          env.status("menu: status set from MenuEnv#status")
-          :status_written
-        },
+      env.status("menu: status set from MenuEnv#status")
+      :status_written
+    },
         "Show markdown" => proc { |env|
-          env.markdown("\# Your Choices\n\n- one\n- two\n- three\n")
-          :markdown_written
-        },
+      env.markdown("\# Your Choices\n\n- one\n- two\n- three\n")
+      :markdown_written
+    },
       },
     )
     if result.nil?
@@ -125,6 +134,34 @@ on_accept_proc = lambda do |line, env|
     else
       env.append("menu: result #{result.inspect}\n")
     end
+  when "append", "append_good", "append_info", "append_warn", "append_error",
+    "append_now", "append_now_good", "append_now_info", "append_now_warn", "append_now_error"
+    role =
+      case cmd
+      when /_good\z/  then :good
+      when /_info\z/  then :info
+      when /_warn\z/  then :warn
+      when /_error\z/ then :error
+      end
+    text = append_text.call(args)
+    if cmd.start_with?("append_now")
+      env.append_now(text, role: role)
+    else
+      env.append(text, role: role)
+    end
+    nil
+  when "append_roles"
+    env.append("GOOD\n", role: :good)
+    env.append("INFO\n", role: :info)
+    env.append("WARN\n", role: :warn)
+    env.append("ERROR\n", role: :error)
+    nil
+  when "append_now_roles"
+    env.append_now("GOOD\n", role: :good)
+    env.append_now("INFO\n", role: :info)
+    env.append_now("WARN\n", role: :warn)
+    env.append_now("ERROR\n", role: :error)
+    nil
   when "info"
     message = args.empty? ? "Information message" : args.join(" ")
     message = message.gsub(/ ?~~ ?/, "\n")
@@ -386,6 +423,18 @@ end
 cutes = cutes.compact.sort_by(&:downcase).uniq
 
 builtins = %w[
+  append
+  append_good
+  append_info
+  append_now
+  append_now_error
+  append_now_good
+  append_now_info
+  append_now_roles
+  append_now_warn
+  append_error
+  append_roles
+  append_warn
   cd
   choose
   choosevals

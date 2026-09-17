@@ -74,7 +74,7 @@ module Fatty
           info: :output,
           good: :info,
           warn: :info,
-          error: :warn,
+          error: :info,
 
           pager_status: :status,
           line_number: :output,

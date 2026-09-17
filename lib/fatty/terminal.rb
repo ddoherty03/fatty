@@ -97,6 +97,7 @@ module Fatty
       @last_render_time = nil
       @restore_cursor_after_render = true
       @render_count = 0
+      @deferred_render = false
       @deferred_count = 0
     end
 
@@ -139,6 +140,18 @@ module Fatty
       preflight!
       start_curses!
       install_default_sessions!
+
+      if (warning = Fatty::Themes::Manager.warning)
+        apply_command(
+          Command.session(
+            :alert,
+            :show,
+            role: :warn,
+            text: warning,
+          ),
+        )
+      end
+
       Fatty.debug("@sessions: #{@sessions.map(&:id).join('==')}")
 
       @running = true
@@ -149,6 +162,9 @@ module Fatty
       loop_count = 0
       while @running
         loop_count += 1
+        deferred_render = @deferred_render
+        @deferred_render = false
+        render_frame if deferred_render
         @session_dirty = false
         @immediate_render = false
         if (cmd = event_source.next_event)
@@ -177,15 +193,16 @@ module Fatty
 
     # --- Suspension  ------------------------------------------------
 
-    # Suspend fatty and run the block in the normal terminal, then restore
-    # fatty's terminal on exit.
     def suspend
-      stop_curses!
+      ctx.suspend
       yield
     ensure
-      start_curses!
-      refresh_layout!
+      ctx.resume
+      reconcile_terminal_size!
+      renderer.invalidate!
+      renderer.clear_physical_screen! if renderer.context.truecolor
       render_frame
+      @deferred_render = true
     end
 
     # A command is either bound for this Terminal or it's meant to be
@@ -460,9 +477,9 @@ module Fatty
       command.action == :resize
     end
 
-    def handle_resize
-      rows = ::Curses.lines
-      cols = ::Curses.cols
+    def handle_resize(rows: nil, cols: nil)
+      rows ||= ::Curses.lines
+      cols ||= ::Curses.cols
       size = [rows, cols]
 
       return [] if size == @last_handled_resize_size
@@ -508,6 +525,22 @@ module Fatty
       []
     ensure
       @inside_resize_term = false if did_resize_term
+    end
+
+    def reconcile_terminal_size!
+      return unless @screen && @ctx
+
+      rows, cols = STDOUT.winsize
+      return if rows.to_i <= 0 || cols.to_i <= 0
+
+      if [rows, cols] == [@screen.rows, @screen.cols]
+        @ctx.apply_layout(@screen)
+        renderer.screen = @screen
+      else
+        handle_resize(rows:, cols:)
+      end
+    rescue SystemCallError, IOError
+      nil
     end
 
     # --- Initialization ---------------------------------------------------------

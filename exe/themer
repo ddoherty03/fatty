@@ -1,0 +1,273 @@
+#!/usr/bin/env ruby
+# -*- mode: ruby -*-
+
+# frozen_string_literal: true
+
+require "optparse"
+require "fatty"
+
+ROLE_HUES = {
+  good: 130.0,
+  info: 210.0,
+  warn: 45.0,
+  error: 0.0,
+}.freeze
+
+TARGET_CONTRAST = 5.0
+
+def normalize_hex(value)
+  hex = value.to_s.delete_prefix("#")
+  raise ArgumentError, "invalid RGB color: #{value.inspect}" unless hex.match?(/\A[0-9a-fA-F]{6}\z/)
+
+  "##{hex.downcase}"
+end
+
+def hex_color?(value)
+  value.to_s.match?(/\A#?[0-9a-fA-F]{6}\z/)
+end
+
+def hex_to_rgb(hex)
+  hex = normalize_hex(hex).delete_prefix("#")
+  [
+    hex[0, 2].to_i(16),
+    hex[2, 2].to_i(16),
+    hex[4, 2].to_i(16),
+  ]
+end
+
+def rgb_to_hex(rgb)
+  format("#%02x%02x%02x", *rgb)
+end
+
+def srgb_component(value)
+  value /= 255.0
+
+  if value <= 0.04045
+    value / 12.92
+  else
+    ((value + 0.055) / 1.055)**2.4
+  end
+end
+
+def luminance(rgb)
+  red, green, blue = rgb.map { |value| srgb_component(value) }
+
+  (0.2126 * red) +
+    (0.7152 * green) +
+    (0.0722 * blue)
+end
+
+def contrast_ratio(first, second)
+  first_luminance = luminance(first)
+  second_luminance = luminance(second)
+
+  light, dark = [first_luminance, second_luminance].max,
+                [first_luminance, second_luminance].min
+
+  (light + 0.05) / (dark + 0.05)
+end
+
+def hsl_to_rgb(hue, saturation, lightness)
+  chroma = (1 - (2 * lightness - 1).abs) * saturation
+  section = hue / 60.0
+  intermediate = chroma * (1 - ((section % 2) - 1).abs)
+
+  red, green, blue =
+    case section
+    when 0...1 then [chroma, intermediate, 0]
+    when 1...2 then [intermediate, chroma, 0]
+    when 2...3 then [0, chroma, intermediate]
+    when 3...4 then [0, intermediate, chroma]
+    when 4...5 then [intermediate, 0, chroma]
+    else [chroma, 0, intermediate]
+    end
+
+  offset = lightness - chroma / 2
+
+  [red, green, blue].map do |value|
+    ((value + offset) * 255).round.clamp(0, 255)
+  end
+end
+
+def suggested_color(background, hue, target: TARGET_CONTRAST)
+  background_rgb = hex_to_rgb(background)
+  background_luminance = luminance(background_rgb)
+  saturation = 0.65
+
+  lightness_values =
+    if background_luminance < 0.5
+      (35..90).map { |value| value / 100.0 }
+    else
+      (65).downto(10).map { |value| value / 100.0 }
+    end
+
+  best_rgb = nil
+  best_ratio = 0.0
+
+  lightness_values.each do |lightness|
+    rgb = hsl_to_rgb(hue, saturation, lightness)
+    ratio = contrast_ratio(rgb, background_rgb)
+
+    if ratio > best_ratio
+      best_rgb = rgb
+      best_ratio = ratio
+    end
+
+    return [rgb_to_hex(rgb), ratio] if ratio >= target
+  end
+
+  [rgb_to_hex(best_rgb), best_ratio]
+end
+
+def theme_background(name)
+  theme = Fatty::Themes::Manager.fetch(name)
+  background = theme.dig(:roles, :output, :bg)
+
+  unless background
+    raise ArgumentError,
+          "theme #{name.inspect} has no resolved output background"
+  end
+
+  rgb = Fatty::Color.rgb(background)
+
+  unless rgb
+    raise ArgumentError,
+          "cannot resolve output background #{background.inspect} for theme #{name.inspect}"
+  end
+
+  rgb_to_hex(rgb)
+rescue Fatty::Themes::ResolveError => e
+  raise ArgumentError, e.message
+end
+
+def current_roles(name, background)
+  theme = Fatty::Themes::Manager.fetch(name)
+  background_rgb = hex_to_rgb(background)
+
+  ROLE_HUES.keys.to_h do |role|
+    foreground = theme.dig(:roles, role, :fg)
+    rgb = Fatty::Color.rgb(foreground)
+
+    data =
+      if rgb
+        ratio = contrast_ratio(rgb, background_rgb)
+
+        {
+          hex: rgb_to_hex(rgb),
+          contrast: ratio,
+          status: ratio >= TARGET_CONTRAST ? "OK" : "LOW",
+        }
+      else
+        {
+          hex: foreground.to_s,
+          contrast: nil,
+          status: "UNKNOWN",
+        }
+      end
+
+    [role, data]
+  end
+end
+
+def print_yaml(suggestions)
+  suggestions.each do |role, data|
+    puts "#{role}:"
+    puts "  fg: #{data[:hex].inspect}\n\n"
+  end
+end
+
+def print_roles(title, roles, status: false)
+  puts title
+  puts
+
+  roles.each do |role, data|
+    if data[:contrast]
+      line = format(
+        "%-6s %-8s contrast %.2f",
+        role,
+        data[:hex],
+        data[:contrast],
+      )
+      line += "  #{data[:status]}" if status
+      puts line
+    else
+      puts format(
+             "%-6s %-8s contrast unknown%s",
+             role,
+             data[:hex],
+             status ? "  #{data[:status]}" : "",
+           )
+    end
+  end
+end
+
+def print_report(source:, background:, current: nil, suggestions:)
+  puts source
+  puts "Output background: #{background}"
+  puts
+
+  if current
+    print_roles("Current semantic roles:", current, status: true)
+    puts
+  end
+
+  print_roles("Suggested semantic roles:", suggestions)
+end
+
+options = {
+  yaml: false,
+}
+
+OptionParser.new do |parser|
+  parser.banner = "Usage: themer THEME|RGB [options]"
+
+  parser.on("--yaml", "Output role definitions as YAML") do
+    options[:yaml] = true
+  end
+end.parse!
+
+argument = ARGV.shift
+
+unless argument
+  warn "Usage: themer THEME|RGB [--yaml]"
+  exit 1
+end
+
+begin
+  current = nil
+  if hex_color?(argument)
+    background = normalize_hex(argument)
+    source = "Background: #{background}"
+  else
+    background = theme_background(argument)
+    source = "Theme: #{argument}"
+    current = current_roles(argument, background)
+  end
+
+  suggestions =
+    ROLE_HUES.to_h do |role, hue|
+      hex, ratio = suggested_color(background, hue)
+
+      [
+        role,
+        {
+          hex: hex,
+          contrast: ratio,
+        },
+      ]
+    end
+
+  if options[:yaml]
+    print_yaml(suggestions)
+  else
+    print_report(
+      source: source,
+      background: background,
+      current: current,
+      suggestions: suggestions,
+    )
+  end
+rescue ArgumentError => e
+  warn e.message
+  exit 1
+end

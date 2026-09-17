@@ -1,16 +1,8 @@
 # frozen_string_literal: true
 
-require "spec_helper"
-
 module Fatty
   RSpec.describe OutputApi do
-    let(:palette) { :palette }
-    let(:renderer) {
-      instance_double(
-        Fatty::Renderer,
-        palette: palette,
-      )
-    }
+    let(:renderer) { instance_double(Fatty::Renderer) }
     let(:terminal) do
       term = instance_double(Fatty::Terminal, renderer: renderer)
       allow(term).to receive(:apply_command)
@@ -48,35 +40,48 @@ module Fatty
         expect(env.commands.first.payload.fetch(:text)).to eq("hello")
       end
 
-      context "with a role palette" do
-        let(:palette) do
-          {
-            good: {
-              fg_rgb: [0, 255, 0],
-              bg_rgb: nil,
-              attrs: [],
-            },
-          }
-        end
-
-        it "styles output using a theme role" do
+      context "with a role" do
+        it "queues the role with the output" do
           env.append("hello", role: :good)
 
           expect(env.commands.first.payload)
             .to eq(
-                  text: "\e[0m\e[38;2;0;255;0mhello\e[0m",
+                  text: "hello",
                   follow: true,
+                  role: :good,
                 )
         end
 
-        it "leaves output unchanged when the role is unknown" do
+        it "preserves the role on multiline output" do
+          env.append("one\ntwo\nthree", role: :good)
+
+          expect(env.commands.first.payload)
+            .to eq(
+                  text: "one\ntwo\nthree",
+                  follow: true,
+                  role: :good,
+                )
+        end
+
+        it "preserves an unknown role for later resolution" do
           env.append("hello", role: :missing)
 
           expect(env.commands.first.payload)
             .to eq(
                   text: "hello",
                   follow: true,
+                  role: :missing,
                 )
+        end
+
+        it "preserves queue order" do
+          env.append("one")
+          env.append("two", follow: false)
+
+          expect(env.commands.map { |command| command.payload.fetch(:text) })
+            .to eq(["one", "two"])
+          expect(env.commands.map { |command| command.payload.fetch(:follow) })
+            .to eq([true, false])
         end
       end
     end
@@ -127,18 +132,8 @@ module Fatty
                       ))
       end
 
-      context "with a role palette" do
-        let(:palette) do
-          {
-            good: {
-              fg_rgb: [0, 255, 0],
-              bg_rgb: nil,
-              attrs: [],
-            },
-          }
-        end
-
-        it "styles output using a theme role" do
+      context "with a role" do
+        it "applies the output command with the role" do
           env.append_now("hello", role: :good)
 
           expect(terminal)
@@ -147,8 +142,9 @@ module Fatty
                     have_attributes(
                       action: :append,
                       payload: {
-                        text: "\e[0m\e[38;2;0;255;0mhello\e[0m",
+                        text: "hello",
                         follow: true,
+                        role: :good,
                       },
                     ),
                   )
@@ -157,11 +153,15 @@ module Fatty
     end
 
     describe "#markdown" do
+      let(:palette) { :palette }
+      let(:renderer) {
+        instance_double(
+          Fatty::Renderer,
+          palette: palette,
+        )
+      }
+
       it "renders markdown, queues the rendered output, and returns nil" do
-        allow(Fatty::Markdown)
-          .to receive(:render)
-                .with("**hello**", palette: :palette)
-                .and_return("rendered")
         allow(Fatty::Markdown)
           .to receive(:render)
                 .with(
@@ -180,16 +180,6 @@ module Fatty
         expect(env.commands.first.action).to eq(:append)
         expect(env.commands.first.payload).to eq(text: "rendered", follow: true)
       end
-    end
-
-    it "preserves queue order" do
-      env.append("one")
-      env.append("two", follow: false)
-
-      expect(env.commands.map { |command| command.payload.fetch(:text) })
-        .to eq(["one", "two"])
-      expect(env.commands.map { |command| command.payload.fetch(:follow) })
-        .to eq([true, false])
     end
   end
 end

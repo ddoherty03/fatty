@@ -150,6 +150,26 @@ module Fatty
 
         expect(Config.config[:theme]).to eq("wordperfect")
       end
+
+      it "persists preferences in the configured app directory" do
+        app_dir = File.join(ENV["XDG_CONFIG_HOME"], "byr-fatty")
+        write_cfg(app_dir, "config", "log:\n  level: info\n")
+        Config.app_config_dir = app_dir
+
+        expect(Config.set_preference(:theme, :nordic)).to be(true)
+        expect(YAML.load_file(File.join(app_dir, "config.yml"), symbolize_names: true)).to include(
+          log: { level: "info" },
+          theme: "nordic",
+        )
+      end
+
+      it "persists preferences in the global user config without an app config directory" do
+        expect(Config.set_preference(:theme, :nordic)).to be(true)
+        expect(YAML.load_file(File.join(ENV["XDG_CONFIG_HOME"], progname, "config.yml"), symbolize_names: true)).to include(
+          theme: "nordic",
+        )
+        expect(Config.config[:theme]).to eq("nordic")
+      end
     end
 
     describe "keydefs.yml" do

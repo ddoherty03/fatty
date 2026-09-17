@@ -148,6 +148,35 @@ module Fatty
       File.join(app_user_config_dir, "#{name}.yml")
     end
 
+    # Persist a user-adjustable preference in the current application's config
+    # file.  Preferences are kept in the app layer so applications using Fatty
+    # do not overwrite one another's selections.  When no app layer is
+    # configured, use Fatty's global user config.
+    def self.set_preference(name, value)
+      path = app_config_path || File.join(user_config_dir, "config.yml")
+
+      config = if app_config_path
+                 read_app("config")
+               elsif File.exist?(path)
+                 YAML.safe_load_file(
+                   path,
+                   aliases: true,
+                   permitted_classes: [Date, DateTime, Time],
+                   symbolize_names: true,
+                 ) || {}
+               else
+                 {}
+               end
+      config[name.to_sym] = value
+      FileUtils.mkdir_p(File.dirname(path))
+      File.write(path, YAML.dump(yaml_safe_value(config)))
+      reset_reader!
+      true
+    rescue StandardError => e
+      Fatty.warn("Could not save preference #{name.inspect}: #{e.class}: #{e.message}", tag: :config)
+      false
+    end
+
     # The per-app themes directory, either under
     # ~/.config/fatty/apps/<app_name>/themes (by default) or under the themes
     # directory in the config directory the library consumer sets in
@@ -216,7 +245,12 @@ module Fatty
       return {} unless path
       return {} unless File.exist?(path)
 
-      YAML.load_file(path, symbolize_names: true) || {}
+      YAML.safe_load_file(
+        path,
+        aliases: true,
+        permitted_classes: [Date, DateTime, Time],
+        symbolize_names: true,
+      ) || {}
     end
 
     def self.merge_config(base, overlay)
@@ -256,6 +290,19 @@ module Fatty
       value || {}
     end
 
+    def self.yaml_safe_value(value)
+      case value
+      when Hash
+        value.to_h { |key, item| [key.to_s, yaml_safe_value(item)] }
+      when Array
+        value.map { |item| yaml_safe_value(item) }
+      when Symbol
+        value.to_s
+      else
+        value
+      end
+    end
+
     def self.normalize_app_name(name)
       text = name.to_s.strip
       text.empty? ? nil : text
@@ -269,6 +316,7 @@ module Fatty
     private_class_method :merge_config
     private_class_method :blank_config?
     private_class_method :normalize_config_value
+    private_class_method :yaml_safe_value
     private_class_method :normalize_app_name
   end
 end

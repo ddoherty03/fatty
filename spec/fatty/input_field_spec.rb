@@ -127,6 +127,22 @@ module Fatty
         expect(field.state[3]).to eq("ld")
       end
 
+      it "evaluates completion candidates once when syncing an autosuggestion" do
+        calls = 0
+        field = field_with(
+          "fo",
+          completion_proc: lambda do |_buffer|
+            calls += 1
+            ["fold", "format"]
+          end,
+        )
+
+        field.sync_virtual_suffix!
+
+        expect(calls).to eq(1)
+        expect(field.state[3]).to eq("ld")
+      end
+
       it "cycles completion candidates without changing real buffer text" do
         field = field_with(
           "fo",

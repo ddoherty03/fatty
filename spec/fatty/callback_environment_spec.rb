@@ -8,6 +8,7 @@ module Fatty
         Fatty::Terminal,
         renderer: renderer,
         apply_command: nil,
+        suspend: nil,
       )
     }
     let(:env) { Fatty::CallbackEnvironment.new(terminal: terminal, output_id: :output) }
@@ -112,6 +113,22 @@ module Fatty
         env.check_interrupt!
 
         expect(terminal).to have_received(:interrupt_pending?).twice
+      end
+    end
+
+    describe "#suspend" do
+      it "suspends the terminal while executing the block" do
+        allow(terminal).to receive(:suspend).and_yield
+
+        called = false
+        result = env.suspend do
+          called = true
+          :done
+        end
+
+        expect(called).to be(true)
+        expect(result).to eq(:done)
+        expect(terminal).to have_received(:suspend)
       end
     end
   end

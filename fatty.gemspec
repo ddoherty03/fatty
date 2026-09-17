@@ -43,4 +43,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rouge"
   spec.add_dependency "unicode-display_width", "~> 2.5"
   spec.add_dependency "yaml"
+  spec.add_dependency "fiddle"
 end

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-# spec/spec_helper.rb
 # My config is in .simplecov
 require "simplecov"
+SimpleCov.start
 
 require "bundler/setup"
 require "fatty"

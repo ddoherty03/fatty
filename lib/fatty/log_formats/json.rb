@@ -5,7 +5,7 @@ module Fatty
     class JsonFormatter < ::Logger::Formatter
       def call(level, time, progname, msg)
         rec = {
-          t: time.utc.iso8601(6),
+          t: time.getlocal.iso8601(6),
           sev: level,
           prog: progname
         }

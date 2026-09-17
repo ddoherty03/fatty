@@ -301,6 +301,19 @@ module Fatty
 
         expect(commands).to eq([])
       end
+
+      it "forwards resize to its output session" do
+        session = Fatty::ShellSession.new
+        init_shell_session(session)
+        commands = session.update(Fatty::Command.session(session.id, :resize))
+
+        expect(commands.size).to eq(1)
+
+        command = commands.first
+        expect(command.target).to eq(session.output_session.id)
+        expect(command.action).to eq(:resize)
+        expect(command.payload).to eq({})
+      end
     end
 
     describe "#view" do

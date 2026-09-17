@@ -12,3 +12,4 @@
 coverage
 /spec/tmp/
 /lib/fatty/markdown/ox-gfm-markdown.md
+/AGENTS.md

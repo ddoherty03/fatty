@@ -27,24 +27,20 @@ region:
   bg: default
   attrs: [reverse]
 
-info:
-  fg: default
-  bg: default
-
 good:
-  fg: default
-  bg: default
+  fg: green
   attrs: [bold]
 
+info:
+  fg: blue
+
 warn:
-  fg: default
-  bg: default
-  attrs: [reverse]
+  fg: yellow
+  attrs: [bold]
 
 error:
-  fg: default
-  bg: default
-  attrs: [bold, reverse]
+  fg: red
+  attrs: [bold]
 
 pager_status:
   fg: default

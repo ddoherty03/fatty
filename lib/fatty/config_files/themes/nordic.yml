@@ -23,21 +23,29 @@ region:
   fg: "#2e3440"
   bg: "#88c0d0"
 
+# good:
+#   fg: "#22ee00"
+
+# info:
+#   fg: "#33deff"
+
+# warn:
+#   fg: "#d78700"
+
+# error:
+#   fg: "#d700af"
+
 good:
-  fg: "green"
-  bg: "#2e3440"
+  fg: "#28bd41"
 
 info:
-  fg: "#d8dee9"
-  bg: "#2e3440"
+  fg: "#74abe2"
 
 warn:
-  fg: "#2e3440"
-  bg: "#ebcb8b"
+  fg: "#caa22b"
 
 error:
-  fg: "#eceff4"
-  bg: "#bf616a"
+  fg: "#e78d8d"
 
 pager_status:
   fg: "black"

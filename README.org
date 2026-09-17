@@ -773,6 +773,24 @@ If you want a value associated with the user's cancellation of the chooser
 with C-c or C-g, set =cancel_value:= to that value.
 
 
+*** =suspend(&block)=
+
+The =suspend= method temporarily gives control of the terminal to the
+application while the supplied block runs.  When the block finishes, Fatty
+restores its terminal state and redraws the interface.
+
+This is useful for running interactive terminal programs such as editors,
+debuggers, shells, or other programs that need direct access to the terminal.
+
+#+begin_src ruby :tangle no
+  env.suspend do
+    system(ENV.fetch("EDITOR", "vi"), filename)
+  end
+#+end_src
+
+The value of the block is returned by =suspend=.  Terminal state is restored
+even if the block exits by raising an exception.
+
 *** =environment=
 This returns a =Hash= of runtime conditions detected by =Fatty=:
 
@@ -805,6 +823,10 @@ The environment report also includes a nested =:curses= hash:
 | =:colors=           | Number of colors available to curses                   |
 | =:color_pairs=      | Number of color pairs available to curses              |
 | =:can_change_color= | Whether curses can redefine color values               |
+
+** Terminal Methods
+*** =Teminal#suspend(&block)=
+Return control to the launching terminal, execute the given block, and return.
 
 * Default Interaction
 ** Parts of the Screen
@@ -2134,3 +2156,75 @@ Or you can group them under =markdown= without the =markdown_= prefix:
       bg: navy
       attrs: [underline]
 #+end_src
+
+*** The =themer= helper
+
+Choosing readable colors for the semantic roles---=good=, =info=, =warn=, and
+=error=---is not trivial.  The =themer= utility can suggest suitable foreground
+colors based on a theme's output background.
+
+For an existing theme, =themer= also reports the contrast of the current role
+colors and flags those that fall below its target contrast.
+
+Pass it either the name of an existing theme:
+
+#+begin_src sh :tangle no
+  themer nordic
+#+end_src
+
+#+begin_example
+Theme: nordic
+Output background: #2e3440
+
+Current semantic roles:
+
+good   #22ee00  contrast 7.91  OK
+info   #33deff  contrast 7.75  OK
+warn   #d78700  contrast 4.37  LOW
+error  #d700af  contrast 2.68  LOW
+
+Suggested semantic roles:
+
+good   #28bd41  contrast 5.02
+info   #74abe2  contrast 5.15
+warn   #caa22b  contrast 5.18
+error  #e78d8d  contrast 5.11
+#+end_example
+
+or a hexadecimal background color when developing a new theme:
+
+#+begin_src sh :tangle no
+  themer '#2e3440'
+#+end_src
+
+#+begin_example
+Background: #2e3440
+Output background: #2e3440
+
+Suggested semantic roles:
+
+good   #28bd41  contrast 5.02
+info   #74abe2  contrast 5.15
+warn   #caa22b  contrast 5.18
+error  #e78d8d  contrast 5.11
+#+end_example
+
+You can get the suggestions in YAML form by giving the =--yaml= flag:
+
+#+begin_src sh :tangle no
+  themer --yaml '#2e3440'
+#+end_src
+
+#+begin_example
+good:
+  fg: "#28bd41"
+
+info:
+  fg: "#74abe2"
+
+warn:
+  fg: "#caa22b"
+
+error:
+  fg: "#e78d8d"
+#+end_example

@@ -1,9 +1,16 @@
 # frozen_string_literal: true
 
 require "curses"
+require "fiddle/import"
 
 module Fatty
   module Curses
+    module Native
+      extend Fiddle::Importer
+
+      dlload Fiddle.dlopen(nil)
+      extern "int endwin()"
+    end
     # Context represents the active curses environment.
     #
     # It owns:
@@ -133,6 +140,26 @@ module Fatty
         self
       end
 
+      def suspend
+        return unless @started
+
+        ::Curses.def_prog_mode
+        disable_bracketed_paste!
+        ::Curses.curs_set(1)
+        Native.endwin
+        nil
+      end
+
+      def resume
+        return unless @started
+
+        ::Curses.reset_prog_mode
+        ::Curses.refresh
+        touch_windows!
+        enable_bracketed_paste!
+        nil
+      end
+
       def close
         close_windows
         if @started
@@ -144,6 +171,14 @@ module Fatty
           ::Curses.close_screen
         end
         @started = false
+      end
+
+      def touch_windows!
+        [@output_win, @status_win, @input_win, @alert_win].each do |win|
+          win.touch if win&.respond_to?(:touch)
+        end
+        ::Curses.stdscr.touch if ::Curses.respond_to?(:stdscr) && ::Curses.stdscr.respond_to?(:touch)
+        nil
       end
 
       # Map a Fatty::Ansi::Style to a curses attribute.

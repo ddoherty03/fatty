@@ -555,11 +555,11 @@ module Fatty
           Fatty::Logger.logger = nil
 
           example.run
-        ensure
-          Fatty::Config.reader = old_reader
-          Fatty::Config.progname = old_progname
-          Fatty::Logger.logger = old_logger
-          ENV["XDG_CONFIG_HOME"] = old_xdg
+          ensure
+            Fatty::Config.reader = old_reader
+            Fatty::Config.progname = old_progname
+            Fatty::Logger.logger = old_logger
+            ENV["XDG_CONFIG_HOME"] = old_xdg
         end
       end
 
@@ -641,13 +641,16 @@ module Fatty
     end
 
     describe "#suspend" do
-      it "stops curses, yields, restarts curses, refreshes layout, and renders" do
+      it "suspends curses, yields, resumes curses, invalidates the renderer, and renders" do
         t = terminal
+        ctx = instance_double(Fatty::Curses::Context)
         yielded = false
 
-        allow(t).to receive(:stop_curses!)
-        allow(t).to receive(:start_curses!)
-        allow(t).to receive(:refresh_layout!)
+        t.instance_variable_set(:@ctx, ctx)
+
+        allow(ctx).to receive(:suspend)
+        allow(ctx).to receive(:resume)
+        allow(t.renderer).to receive(:invalidate!)
         allow(t).to receive(:render_frame)
 
         t.suspend do
@@ -655,18 +658,22 @@ module Fatty
         end
 
         expect(yielded).to be(true)
-        expect(t).to have_received(:stop_curses!)
-        expect(t).to have_received(:start_curses!)
-        expect(t).to have_received(:refresh_layout!)
+        expect(ctx).to have_received(:suspend)
+        expect(ctx).to have_received(:resume)
+        expect(t.renderer).to have_received(:invalidate!)
         expect(t).to have_received(:render_frame)
+        expect(t.instance_variable_get(:@deferred_render)).to be(true)
       end
 
-      it "restores curses and redraws when the block raises" do
+      it "resumes curses, invalidates the renderer, and redraws when the block raises" do
         t = terminal
+        ctx = instance_double(Fatty::Curses::Context)
 
-        allow(t).to receive(:stop_curses!)
-        allow(t).to receive(:start_curses!)
-        allow(t).to receive(:refresh_layout!)
+        t.instance_variable_set(:@ctx, ctx)
+
+        allow(ctx).to receive(:suspend)
+        allow(ctx).to receive(:resume)
+        allow(t.renderer).to receive(:invalidate!)
         allow(t).to receive(:render_frame)
 
         expect {
@@ -675,10 +682,11 @@ module Fatty
           end
         }.to raise_error(RuntimeError, "boom")
 
-        expect(t).to have_received(:stop_curses!)
-        expect(t).to have_received(:start_curses!)
-        expect(t).to have_received(:refresh_layout!)
+        expect(ctx).to have_received(:suspend)
+        expect(ctx).to have_received(:resume)
+        expect(t.renderer).to have_received(:invalidate!)
         expect(t).to have_received(:render_frame)
+        expect(t.instance_variable_get(:@deferred_render)).to be(true)
       end
     end
   end

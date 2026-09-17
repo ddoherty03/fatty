@@ -24,20 +24,16 @@ region:
   bg: "#b58900"
 
 good:
-  fg: "green"
-  bg: "#002b36"
+  fg: "#25ad3b"
 
 info:
-  fg: "#839496"
-  bg: "#002b36"
+  fg: "#5b9cdc"
 
 warn:
-  fg: "#002b36"
-  bg: "#cb4b16"
+  fg: "#b59126"
 
 error:
-  fg: "#fdf6e3"
-  bg: "red"
+  fg: "#e27878"
 
 pager_status:
   fg: "black"
