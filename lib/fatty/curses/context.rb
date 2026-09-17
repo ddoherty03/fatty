@@ -155,6 +155,7 @@ module Fatty
 
         ::Curses.reset_prog_mode
         ::Curses.refresh
+        touch_windows!
         enable_bracketed_paste!
         nil
       end
@@ -170,6 +171,14 @@ module Fatty
           ::Curses.close_screen
         end
         @started = false
+      end
+
+      def touch_windows!
+        [@output_win, @status_win, @input_win, @alert_win].each do |win|
+          win.touch if win&.respond_to?(:touch)
+        end
+        ::Curses.stdscr.touch if ::Curses.respond_to?(:stdscr) && ::Curses.stdscr.respond_to?(:touch)
+        nil
       end
 
       # Map a Fatty::Ansi::Style to a curses attribute.

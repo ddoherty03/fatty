@@ -135,6 +135,29 @@ module Fatty
           .to eq(["cmd 1", "cmd 2", "cmd 3", "cmd 4"])
       end
 
+      it "preserves prior output when a command produces no output" do
+        session = Fatty::OutputSession.new
+        init_output_session(session)
+        update(session, :append, text: "prior output\n", follow: false)
+
+        update(session, :begin_command)
+        update(session, :finish_command)
+
+        expect(session.output.lines).to eq(["prior output"])
+      end
+
+      it "clears prior output when a command produces output" do
+        session = Fatty::OutputSession.new
+        init_output_session(session)
+        update(session, :append, text: "prior output\n", follow: false)
+
+        update(session, :begin_command)
+        update(session, :append, text: "new output\n", follow: false)
+        update(session, :finish_command)
+
+        expect(session.output.lines).to eq(["new output"])
+      end
+
       it "handles :quit_paging" do
         session = Fatty::OutputSession.new
         init_output_session(session, rows: 4)

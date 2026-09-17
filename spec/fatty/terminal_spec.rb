@@ -662,6 +662,7 @@ module Fatty
         expect(ctx).to have_received(:resume)
         expect(t.renderer).to have_received(:invalidate!)
         expect(t).to have_received(:render_frame)
+        expect(t.instance_variable_get(:@deferred_render)).to be(true)
       end
 
       it "resumes curses, invalidates the renderer, and redraws when the block raises" do
@@ -685,6 +686,7 @@ module Fatty
         expect(ctx).to have_received(:resume)
         expect(t.renderer).to have_received(:invalidate!)
         expect(t).to have_received(:render_frame)
+        expect(t.instance_variable_get(:@deferred_render)).to be(true)
       end
     end
   end

@@ -24,6 +24,7 @@ module Fatty
       @line_numbers = false
       @narrow_query = nil
       @visible_lines = nil
+      @pending_command_reset = false
       mode = Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
       @default_output_mode = mode
       @pager = Fatty::Pager.new(output: @output, viewport: @viewport, mode: mode, lines: -> { visible_lines })
@@ -52,6 +53,7 @@ module Fatty
             []
           end
         when :append
+          prepare_for_command_output!
           case payload[:mode]
           when :scrolling
             pager.toggle_paging_mode if pager.mode == :paging
@@ -86,11 +88,15 @@ module Fatty
           resize_output!
           []
         when :begin_command
-          reset_for_command!
-          pager.begin_command!(anchor: output.lines.length)
+          @narrow_query = nil
+          invalidate_visible_lines!
+          @pending_command_reset = true
           []
         when :finish_command
-          pager.finish_command!
+          unless @pending_command_reset
+            pager.finish_command!
+          end
+          @pending_command_reset = false
           []
         when :quit_paging
           pager.quit
@@ -507,6 +513,14 @@ module Fatty
       @narrow_query = nil
       mode = @default_output_mode # Fatty::Config.config.dig(:output, :mode)&.to_sym || :paging
       @pager.reset!(mode: mode)
+    end
+
+    def prepare_for_command_output!
+      return unless @pending_command_reset
+
+      reset_for_command!
+      pager.begin_command!(anchor: output.lines.length)
+      @pending_command_reset = false
     end
 
     # When the pager is active, the last output row is reserved for the pager
