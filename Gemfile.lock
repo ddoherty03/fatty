@@ -12,7 +12,7 @@ GIT
 PATH
   remote: .
   specs:
-    fatty (0.99.8.3)
+    fatty (0.99.8.4)
       curses (~> 1.4)
       fat_config (>= 0.8.0)
       fiddle
@@ -212,7 +212,7 @@ CHECKSUMS
   erb (6.0.7) sha256=c5ca6dc25b0ef974a44dc8f59fe847577122483b1968a38dec305c60bf91ee92
   fat_config (0.8.0) sha256=5648b33d5eba414276ea064d9dec99fb853dfac4b5e003636b45b47bf2858dde
   fat_core (7.2.0) sha256=940379cc8d38a832b03067ff33ef39350ebbbc20ae6d253166badf2a56043d17
-  fatty (0.99.8.3)
+  fatty (0.99.8.4)
   fiddle (1.1.8) sha256=7fa8ee3627271497f3add5503acdbc3f40b32f610fc1cf49634f083ef3f32eee
   forwardable (1.4.0) sha256=f1cd40cc9812937980e1c76f1aa053660990a7c9b6a98fc37d945468afcce838
   gem_docs (0.3.1) sha256=cdd4ec7f65e15e12947f8b8db0d9dea7cc0603c3415c06526263cdab8e32ea65
