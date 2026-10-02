@@ -2,6 +2,10 @@ name: solarized_dark
 inherit: null
 markdown_code_theme: solarized_dark
 
+markdown_h2:
+  fg: "#b58900"
+  attrs: [bold]
+
 output:
   fg: "#839496"
   bg: "#002b36"

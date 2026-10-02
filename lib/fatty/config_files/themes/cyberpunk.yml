@@ -81,7 +81,7 @@ markdown_h1:
   attrs: [bold]
 
 markdown_h2:
-  fg: "#00d7ff"
+  fg: "#ffff00"
   bg: "#000000"
   attrs: [bold]
 

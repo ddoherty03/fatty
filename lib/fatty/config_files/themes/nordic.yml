@@ -2,6 +2,10 @@ name: nordic
 inherit: null
 markdown_code_theme: monokai
 
+markdown_h2:
+  fg: "#88c0d0"
+  attrs: [bold]
+
 output:
   fg: "#d8dee9"
   bg: "#2e3440"

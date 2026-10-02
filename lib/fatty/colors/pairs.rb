@@ -37,6 +37,10 @@ module Fatty
       POPUP_FRAME     = 33
       POPUP_COUNTS    = 34
 
+      MARKDOWN_H1 = 35
+      MARKDOWN_H2 = 36
+      MARKDOWN_TABLE_HEADER = 37
+
       # Role -> pair id mapping for iteration.
       ROLE_TO_PAIR = {
         output: OUTPUT,
@@ -69,6 +73,10 @@ module Fatty
         popup_input: POPUP_INPUT,
         popup_frame: POPUP_FRAME,
         popup_counts: POPUP_COUNTS,
+
+        markdown_h1: MARKDOWN_H1,
+        markdown_h2: MARKDOWN_H2,
+        markdown_table_header: MARKDOWN_TABLE_HEADER,
       }.freeze
     end
   end
