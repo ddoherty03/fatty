@@ -2,9 +2,10 @@
 
 module Fatty
   module Markdown
-    def self.render(text, width: 80, palette: nil, theme: nil, truecolor: false) #
+    def self.render(text, width: 80, palette: nil, theme: nil, truecolor: false, table_widths: nil, table_borders: false)
       markdown = Redcarpet::Markdown.new(
-        Fatty::AnsiRenderer.new(width: width, palette: palette, theme: theme, truecolor: truecolor),
+        Fatty::AnsiRenderer.new(width: width, palette: palette, theme: theme, truecolor: truecolor,
+                               table_widths: table_widths, table_borders: table_borders),
         tables: true,
         fenced_code_blocks: true,
         autolink: true,

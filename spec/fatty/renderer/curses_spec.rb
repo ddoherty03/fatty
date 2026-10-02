@@ -108,6 +108,31 @@ module Fatty
 
     it_behaves_like "renderer interface"
 
+    it "renders semantic Markdown headings and table headers with their own color pairs" do
+      roles = [:markdown_h1, :markdown_h2, :markdown_table_header]
+      roles.each do |role|
+        palette[role] = { pair: Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(role), attrs: [:bold] }
+      end
+      allow(::Curses).to receive(:color_pair) { |pair| pair }
+      allow(screen).to receive(:output_rect).and_return(instance_double(Screen::Rect, rows: 6, cols: 20))
+      terminal = instance_double(Fatty::Terminal, renderer: renderer, screen: screen)
+      session = Fatty::OutputSession.new
+      session.init(terminal: terminal)
+      session.update(Fatty::Command.session(session.id, :resize))
+      roles.each do |role|
+        session.update(Fatty::Command.session(session.id, :append, text: "#{role}\n", role: role, follow: false))
+      end
+
+      renderer.render_output(session)
+
+      roles.each do |role|
+        index = output_win.writes.index([:addstr, role.to_s])
+        expect(index).not_to be_nil
+        attr = output_win.writes[0...index].reverse.find { |operation, _| operation == :attrset }.last
+        expect(attr).to eq(Fatty::Colors::Pairs::ROLE_TO_PAIR.fetch(role) | ::Curses::A_BOLD)
+      end
+    end
+
     it "marks unused rows when repeated searches scroll near the end of output" do
       rect = instance_double(Screen::Rect, rows: 6, cols: 20)
       allow(screen).to receive(:output_rect).and_return(rect)

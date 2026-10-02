@@ -4,6 +4,27 @@ require "spec_helper"
 
 module Fatty
   RSpec.describe AnsiRenderer do
+    it "renders requested table widths with top, middle, and bottom borders" do
+      text = Fatty::Markdown.render(
+        "| Key | Action |\n| --- | --- |\n| a | bol |\n",
+        table_widths: [8, 20],
+        table_borders: true,
+      )
+
+      rows = Fatty::Ansi.strip(text).lines.map(&:chomp).reject(&:empty?)
+      expect(rows.map(&:length).uniq).to eq([37])
+      expect(rows.first).to start_with("  ┌").and end_with("┐")
+      expect(rows[2]).to start_with("  ├").and end_with("┤")
+      expect(rows.last).to start_with("  └").and end_with("┘")
+    end
+
+    it "decodes entities inside table cells without treating them as Markdown separators" do
+      text = Fatty::Markdown.render("| Key | Meaning |\n| --- | --- |\n| &#124; | A &amp; B |\n")
+
+      expect(Fatty::Ansi.strip(text)).to include("│ |", "A & B")
+      expect(text).not_to include("&#124;", "&amp;")
+    end
+
     describe "#autolink" do
       it "emits dim for markdown URL roles with dim attrs" do
         renderer = AnsiRenderer.new(

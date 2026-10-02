@@ -69,6 +69,11 @@ module Fatty
       Command.terminal(:cycle_theme)
     end
 
+    desc "Display current keybindings in a temporary pager"
+    action :show_keybindings do
+      Command.terminal(:push_modal, session: KeybindingsSession.new(keymap: keymap), owner: self)
+    end
+
     desc "Choose a theme from a popup"
     action :choose_theme do
       Command.terminal(:choose_theme)
@@ -168,6 +173,7 @@ require_relative "session/popup_session"
 require_relative "session/search_session"
 require_relative "session/isearch_session"
 require_relative "session/output_session"
+require_relative "session/keybindings_session"
 require_relative "session/shell_session"
 require_relative 'session/prompt_session'
 require_relative 'session/keytest_session'

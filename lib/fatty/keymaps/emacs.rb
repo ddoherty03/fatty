@@ -4,6 +4,7 @@ module Fatty
   module Keymaps
     def self.emacs
       map = KeyMap.new
+      map.bind(context: :terminal, key: :'?', meta: true, action: :show_keybindings)
 
       # Motion
       map.bind(key: :f, ctrl: true, action: :move_right)

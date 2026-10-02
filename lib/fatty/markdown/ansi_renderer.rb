@@ -7,12 +7,14 @@ module Fatty
   class AnsiRenderer < Redcarpet::Render::Base
     HARD_BREAK = "\uE000"
 
-    def initialize(width: 80, palette: nil, theme: nil, truecolor: false)
+    def initialize(width: 80, palette: nil, theme: nil, truecolor: false, table_widths: nil, table_borders: false)
       super()
       @width = width.to_i
       @palette = palette || {}
       @theme = theme || {}
       @truecolor = truecolor
+      @table_widths = table_widths
+      @table_borders = table_borders
     end
 
     def block_code(code, language)
@@ -35,6 +37,10 @@ module Fatty
     def normal_text(text)
       text = render_inline_html(CGI.unescapeHTML(text.to_s))
       text
+    end
+
+    def entity(text)
+      CGI.unescapeHTML(text.to_s)
     end
 
     def raw_html(html)
@@ -186,6 +192,10 @@ module Fatty
         end
       end
 
+      if @table_borders
+        rendered.unshift(render_table_separator(widths, joints: ["┌", "┬", "┐"]))
+        rendered << render_table_separator(widths, joints: ["└", "┴", "┘"])
+      end
       rendered.join("\n") + "\n\n"
     end
 
@@ -207,7 +217,7 @@ module Fatty
         end
       end
 
-      widths
+      widths.each_with_index.map { |width, index| [width, Array(@table_widths)[index].to_i].max }
     end
 
     def render_table_row_cells(row, widths, header: false)
@@ -220,12 +230,12 @@ module Fatty
       "  │ #{cells.join(' │ ')} │"
     end
 
-    def render_table_separator(widths)
+    def render_table_separator(widths, joints: @table_borders ? ["├", "┼", "┤"] : [TABLE_BAR, TABLE_BAR, TABLE_BAR])
       parts = widths.map do |width|
         TABLE_DASH * (width + 2)
       end
 
-      "  #{TABLE_BAR}#{parts.join(TABLE_BAR)}#{TABLE_BAR}"
+      "  #{joints[0]}#{parts.join(joints[1])}#{joints[2]}"
     end
 
     def pad_visible(text, width)

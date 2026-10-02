@@ -990,6 +990,11 @@ Alerts are short-lived, non-scrolling messages shown below the input field. They
 
 ## Command-line Editing
 
+Press `M-?` (Alt-?, or Escape followed by ?) to browse the current
+keybindings, including user overrides and action descriptions. The help
+uses the usual pager controls, including search. Press `q` to return to
+the previous output, pager position, and unfinished command line.
+
 `fatty` aims to have a full-featured command-line editor for editing a single line of text that is sent to the `on_accept` proc for the `Terminal`. The default keybindings are based on Emacs keybindings, but they are fully customizable. Implementing `vim`-like keybindings is not currently possible because `fatty` has no notion of editing "modes" as would be required for any kind of a modal editor&#x2014;at least not yet. Maybe some day.
 
 

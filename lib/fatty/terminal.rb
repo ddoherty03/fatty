@@ -150,6 +150,8 @@ module Fatty
             text: warning,
           ),
         )
+      elsif (hint = keybinding_help_hint)
+        apply_command(Command.session(:alert, :show, role: :info, text: hint))
       end
 
       Fatty.debug("@sessions: #{@sessions.map(&:id).join('==')}")
@@ -260,8 +262,8 @@ module Fatty
       focused_session&.view
       status_session.view
       alert_session.view
-      if (top = @modal_stack.last)
-        top[:session].view
+      @modal_stack.each do |entry|
+        entry[:session].view
       end
       if @restore_cursor_after_render
         restore_active_cursor
@@ -464,8 +466,8 @@ module Fatty
       renderer.screen = screen
       apply_command(Command.session(:status, :resize))
       apply_command(Command.session(:focused, :resize))
-      if (top = @modal_stack.last)
-        apply_command(Command.session(top[:session].id, :resize))
+      @modal_stack.each do |entry|
+        apply_command(Command.session(entry[:session].id, :resize))
       end
       renderer.sync_backgrounds! if renderer.context.truecolor
       renderer.invalidate!
@@ -516,8 +518,8 @@ module Fatty
         out.resize_output! if out.respond_to?(:resize_output!)
       end
 
-      if (top = @modal_stack.last)
-        session = top[:session]
+      @modal_stack.each do |entry|
+        session = entry[:session]
         cmds = session.handle_resize
         apply_commands(cmds)
       end
@@ -550,6 +552,23 @@ module Fatty
     # Curses, the Logger, installing key definitions and mappings, and
     # installing themes.
     #
+    def keybinding_help_hint
+      map = shell_session&.keymap
+      return unless map
+
+      gesture = map.bindings.values.flat_map(&:keys).uniq.find do |key|
+        next unless key.is_a?(KeyGesture)
+
+        event = KeyEvent.new(key: key.key, ctrl: key.ctrl, meta: key.meta, shift: key.shift)
+        binding = map.resolve(event, contexts: [:input, :text, :terminal])
+        Array(binding).first == :show_keybindings
+      end
+      return unless gesture
+
+      label = KeyEvent.key_to_str(key: gesture.key, ctrl: gesture.ctrl, meta: gesture.meta, shift: gesture.shift)
+      "Press #{label} for keybinding help."
+    end
+
     def preflight!
       Fatty::Config.configure_app(
         app_name: @app_name,

@@ -155,6 +155,42 @@ module Fatty
     end
 
     describe "#go" do
+      [nil, "Unknown theme; using terminal"].each do |warning|
+        it "shows #{warning ? 'the startup warning instead of help' : 'a startup keybinding help hint'}" do
+          t = terminal
+          map = Fatty::Keymaps.emacs
+          t.instance_variable_set(:@shell_session, instance_double(Fatty::ShellSession, keymap: map))
+          install_session(t, TerminalSpecSession.new(id: :shell), focus: true)
+          allow(t).to receive(:preflight!)
+          allow(t).to receive(:start_curses!)
+          allow(t).to receive(:stop_curses!)
+          allow(t).to receive(:install_default_sessions!)
+          allow(Fatty::Themes::Manager).to receive(:warning).and_return(warning)
+          allow(t).to receive(:event_source).and_return(double("EventSource", next_event: Command.terminal(:quit)))
+
+          t.go
+
+          alerts = t.alert_session.updates.select { |command| command.action == :show }
+          expect(alerts.map(&:payload)).to eq([
+            { role: warning ? :warn : :info, text: warning || "Press M-? for keybinding help." },
+          ])
+        end
+      end
+
+      it "uses the effective help binding and omits the hint if help is unbound" do
+        t = terminal
+        map = Fatty::KeyMap.new
+        map.bind(context: :terminal, key: :'?', meta: true, action: :show_keybindings)
+        map.bind(context: :input, key: :'?', meta: true, action: :complete)
+        map.bind(context: :input, key: :h, meta: true, action: :show_keybindings)
+        t.instance_variable_set(:@shell_session, instance_double(Fatty::ShellSession, keymap: map))
+
+        expect(t.send(:keybinding_help_hint)).to eq("Press M-h for keybinding help.")
+
+        map.bind(context: :input, key: :h, meta: true, action: :complete)
+        expect(t.send(:keybinding_help_hint)).to be_nil
+      end
+
       it "starts curses, applies events, renders dirty frames, and stops curses" do
         t = terminal
         shell = install_session(t, TerminalSpecSession.new(id: :shell), focus: true)
@@ -329,6 +365,60 @@ module Fatty
         t.apply_command(Fatty::Command.terminal(:pop_modal))
 
         expect(t.modal_active?).to be(false)
+      end
+    end
+
+    describe "keybinding help" do
+      [false, true].each do |paging|
+        it "restores shell output and unfinished input with paging #{paging}" do
+          t = terminal
+          screen = Fatty::Screen.new(rows: 24, cols: 80)
+          t.instance_variable_set(:@screen, screen)
+          t.renderer.screen = screen
+          allow(t.renderer).to receive(:theme_version).and_return(0)
+          allow(t.renderer).to receive(:render_output)
+          allow(t.renderer).to receive(:render_pager_field)
+          allow(t.renderer).to receive(:render_input_field)
+          allow(t.renderer).to receive(:clear_input_field)
+          allow(t.renderer).to receive(:restore_output_cursor)
+          shell = install_session(t, Fatty::ShellSession.new, focus: true)
+          shell.init(terminal: t).each { |command| t.apply_command(command) }
+          text = (1..60).map { |n| "original output #{n}" }.join("\n")
+          t.apply_command(Command.session(shell.output_session.id, :append, text: text, follow: false))
+          if paging
+            shell.output_session.pager.set_to_paging
+            shell.output_session.pager.search_set!(pattern: "output 40", regex: false, direction: :forward)
+          else
+            shell.output_session.pager.quit
+          end
+          shell.field.buffer.insert("unfinished command")
+          original_state = shell.output_session.state
+
+          t.apply_command(Command.session(:active, :key, event: key(:'?', meta: true)))
+          help = t.send(:active_session)
+          expect(help).to be_a(Fatty::KeybindingsSession)
+          expect(Fatty::Ansi.strip(help.output.lines.first)).to eq("Current keybindings")
+          expect(help.pager_active?).to be(true)
+          t.apply_command(Command.session(:active, :key, event: key(:space)))
+          expect(help.viewport.top).to be > 0
+
+          t.apply_command(Command.session(:active, :key, event: key(:/)))
+          expect(t.send(:active_session)).to be_a(Fatty::SearchSession)
+          expect(t.renderer).to receive(:render_output).with(help, viewport: anything)
+          t.render_frame
+          "page_down".each_char do |char|
+            t.apply_command(Command.session(:active, :key, event: key(char.to_sym, text: char)))
+          end
+          t.apply_command(Command.session(:active, :key, event: key(:enter)))
+          expect(t.send(:active_session)).to equal(help)
+          expect(help.pager.search_pattern).to eq("page_down")
+
+          t.apply_command(Command.session(:active, :key, event: key(:q)))
+          expect(t.send(:active_session)).to equal(shell)
+          expect(shell.output_session.state).to eq(original_state)
+          expect(shell.field.buffer.text).to eq("unfinished command")
+          expect(t.send(:find_session, help.id)).to be_nil
+        end
       end
     end
 
@@ -626,6 +716,7 @@ module Fatty
         allow(t).to receive(:stop_curses!)
         allow(t).to receive(:persist_sessions!)
         allow(t).to receive(:render_frame)
+        allow(t).to receive(:apply_command)
         allow(t).to receive(:event_source).and_return(event_source)
         allow(event_source).to receive(:next_event).and_raise(stop_error)
         allow(t).to receive(:install_session) do |session, **_kwargs|

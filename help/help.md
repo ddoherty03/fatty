@@ -60,6 +60,11 @@ Here are the commands builtin to `fatty`
 
 ## Keybindings
 
+Press `M-?` (Alt-?, or Escape followed by ?) to browse the current
+keybindings, including user overrides and action descriptions. Use the
+usual pager controls to scroll and search; `q` restores the previous output
+and unfinished command line.
+
 The following tables explain the keybindings available in \`fatty\` in different contexts. Named keys are indicated by \`:name\` and key categories, such as \`<digits>\` are indicated with brackets.
 
 
