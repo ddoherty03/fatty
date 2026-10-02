@@ -49,15 +49,18 @@ module Fatty
         it "restores curses and bracketed paste mode" do
           context = Fatty::Curses::Context.new
           context.instance_variable_set(:@started, true)
+          stdscr = instance_double(::Curses::Window, touch: nil)
 
           allow(context).to receive(:enable_bracketed_paste!)
           allow(::Curses).to receive(:reset_prog_mode)
           allow(::Curses).to receive(:refresh)
+          allow(::Curses).to receive(:stdscr).and_return(stdscr)
 
           context.resume
 
           expect(::Curses).to have_received(:reset_prog_mode).ordered
           expect(::Curses).to have_received(:refresh).ordered
+          expect(stdscr).to have_received(:touch)
           expect(context).to have_received(:enable_bracketed_paste!)
         end
       end

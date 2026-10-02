@@ -69,6 +69,27 @@ module Fatty
 
     it_behaves_like "renderer interface"
 
+    it "marks only rows past the output within the viewport" do
+      session = Fatty::OutputSession.new
+      session.init(terminal: terminal)
+      session.update(Fatty::Command.session(session.id, :append, text: "first\n\nlast", follow: false))
+      viewport = Fatty::Viewport.new(height: 5)
+      allow(renderer).to receive(:queue_ansi_segments_line)
+
+      renderer.render_output(session, viewport: viewport)
+
+      screen.output_rect.rows.times do |y|
+        expected = ["first", "", "last", "~", "~"][y].to_s
+        expect(renderer).to have_received(:queue_ansi_segments_line).with(
+          row: screen.output_rect.row + y,
+          col: screen.output_rect.col,
+          width: screen.output_rect.cols,
+          segments: satisfy { |segments| segments.map { |segment| segment[:text] }.join == expected },
+          fill_role: :output,
+        )
+      end
+    end
+
     it "renders status with truecolor foreground and status background" do
       out = StringIO.new
       original_stdout = $stdout

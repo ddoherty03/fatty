@@ -21,6 +21,7 @@ class CursesRendererSpecWindow
   def addstr(text) = @writes << [:addstr, text]
   def noutrefresh = @writes << [:noutrefresh]
   def clrtoeol = @writes << [:clrtoeol]
+  def scrl(delta) = @writes << [:scrl, delta]
 end
 
 class CursesRendererSpecPopupWindow < CursesRendererSpecWindow
@@ -106,6 +107,55 @@ module Fatty
     end
 
     it_behaves_like "renderer interface"
+
+    it "marks unused rows when repeated searches scroll near the end of output" do
+      rect = instance_double(Screen::Rect, rows: 6, cols: 20)
+      allow(screen).to receive(:output_rect).and_return(rect)
+      allow(::Curses).to receive(:color_pair) { |pair| pair }
+      terminal = instance_double(Fatty::Terminal, renderer: renderer, screen: screen)
+      session = Fatty::OutputSession.new
+      session.init(terminal: terminal)
+      session.update(Fatty::Command.session(session.id, :resize))
+      text = (1..12).map { |n| n >= 8 ? "file#{n}.yml" : "line #{n}" }.join("\n")
+      session.update(Fatty::Command.session(session.id, :append, text: text, follow: false))
+      session.pager.search_set!(pattern: "yml", regex: false, direction: :forward)
+      renderer.render_output(session)
+
+      4.times do
+        session.pager.search_repeat_next!
+        output_win.writes.clear
+        renderer.render_output(session)
+      end
+
+      expect(output_win.writes).to include([:scrl, 1])
+      expect(output_win.writes).to include([:setpos, 5, 0], [:clrtoeol])
+      expect(output_win.writes).to include([:addstr, "~"])
+      expect(session.viewport.slice(session.visible_lines).map(&:text))
+        .to eq(["file9.yml", "file10.yml", "file11.yml", "file12.yml"])
+    end
+
+    it "marks only rows past the output, leaving actual empty lines blank" do
+      rect = instance_double(Screen::Rect, rows: 6, cols: 20)
+      allow(screen).to receive(:output_rect).and_return(rect)
+      allow(::Curses).to receive(:color_pair) { |pair| pair }
+      terminal = instance_double(Fatty::Terminal, renderer: renderer, screen: screen)
+      session = Fatty::OutputSession.new
+      session.init(terminal: terminal)
+      session.update(Fatty::Command.session(session.id, :resize))
+      session.update(Fatty::Command.session(session.id, :append, text: "first\n\nlast", follow: false))
+
+      renderer.render_output(session)
+
+      rows = {}
+      row = nil
+      output_win.writes.each do |operation, value|
+        row = value if operation == :setpos
+        (rows[row] ||= +"") << value if operation == :addstr
+      end
+      expect(rows.fetch(1, "")).to eq("")
+      expect(rows.values.count("~")).to eq(3)
+      expect(rows.values_at(3, 4, 5)).to eq(["~", "~", "~"])
+    end
 
     it "renders status segment arrays without collapsing them with to_s" do
       allow(curses_context).to receive(:status_win).and_return(status_win)

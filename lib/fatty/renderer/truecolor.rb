@@ -510,7 +510,7 @@ module Fatty
 
         rect.rows.times do |y|
           visible_line = lines[y]
-          text = visible_line&.text.to_s
+          text = visible_line ? visible_line.text : (y < viewport.height ? "~" : "")
           abs_line = visible_line ? visible_line.number - 1 : nil
           ranges = highlight_ranges_for_line(highlights, abs_line)
           segments = []

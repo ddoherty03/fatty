@@ -523,27 +523,16 @@ module Fatty
         base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
         win.attrset(base_attr)
         win.scrl(delta)
-        if delta.positive?
-          start_y = height - delta
-          start_y = 0 if start_y < 0
-
-          (start_y...height).each do |y|
-            visible_line = lines[y]
-            draw_output_row(
-              win,
-              line: visible_line.text,
-              fragments: visible_line.fragments,
-              y: y,
-              abs_line: visible_line.number - 1,
-              highlights: highlights,
-            )
+        exposed_rows =
+          if delta.positive?
+            [height - delta, 0].max...height
+          else
+            0...[-delta, height].min
           end
-        else
-          count = -delta
-          count = height if count > height
 
-          (0...count).each do |y|
-            visible_line = lines[y]
+        exposed_rows.each do |y|
+          visible_line = lines[y]
+          if visible_line
             draw_output_row(
               win,
               line: visible_line.text,
@@ -552,6 +541,11 @@ module Fatty
               abs_line: visible_line.number - 1,
               highlights: highlights,
             )
+          else
+            win.setpos(y, 0)
+            win.attrset(base_attr)
+            win.addstr("~")
+            win.clrtoeol
           end
         end
         stage_window(win)
@@ -624,15 +618,16 @@ module Fatty
         win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
         win.erase
 
-        lines.each_with_index do |visible_line, y|
+        viewport.height.times do |y|
+          visible_line = lines[y]
           draw_output_row(
             win,
-            line: visible_line.text,
-            fragments: visible_line.fragments,
+            line: visible_line ? visible_line.text : "~",
+            fragments: visible_line&.fragments,
             y: y,
-            abs_line: visible_line.number - 1,
+            abs_line: visible_line ? visible_line.number - 1 : nil,
             highlights: highlights,
-            line_number: visible_line.number,
+            line_number: visible_line&.number,
             line_number_width: line_number_width,
           )
         end
