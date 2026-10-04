@@ -21,6 +21,7 @@
   - [The Callback API](#org5f103bb)
     - [`append(text, follow: true, role: nil)`](#orgf90a804)
     - [`append_now(text, follow: true, mode: nil, role: nil)`](#org96421ae)
+    - [`clear_now`](#org4e94048)
     - [`markdown(text)`](#orge61ad54)
     - [`status(text, role: :info)`](#org8d20d95)
     - [`good(text, replace: false, render: true)`](#org4430a3b)
@@ -476,6 +477,13 @@ Like `append`, but display output as it is produced rather than wait for a full 
 Setting the mode to `:scrolling` or `:paging` determines whether the output is scrolled continuously or paused on each page of output.
 
 You can specify a "role" of `:good`, `:info`, `:warn`, or `:error` to color the output according to the current theme's coloring scheme for those roles. Those role names can be symbols or strings.
+
+
+<a id="org4e94048"></a>
+
+### `clear_now`
+
+Clear the callback's output pane and redraw immediately. Use this before displaying a fresh report or starting the next step of a guided workflow. This affects output already displayed; queued `append` commands remain queued, just as they do when calling `append_now`.
 
 
 <a id="orge61ad54"></a>

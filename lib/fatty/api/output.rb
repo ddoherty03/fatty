@@ -26,6 +26,12 @@ module Fatty
       nil
     end
 
+    def clear_now
+      terminal.apply_command(Command.session(output_id, :clear))
+      terminal.render_frame
+      nil
+    end
+
     def markdown(text)
       md = Fatty::Markdown.render(
         text,

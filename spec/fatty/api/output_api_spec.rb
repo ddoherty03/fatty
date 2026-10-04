@@ -152,6 +152,21 @@ module Fatty
       end
     end
 
+    describe "#clear_now" do
+      it "clears its own output session before redrawing, without queuing the clear" do
+        callback = Fatty::CallbackEnvironment.new(terminal: terminal, output_id: :custom_output)
+        callback.append("queued output")
+        expect(terminal).to receive(:apply_command).with(
+          have_attributes(target: :custom_output, action: :clear, payload: {}),
+        ).ordered
+        expect(terminal).to receive(:render_frame).ordered
+
+        expect(callback.clear_now).to be_nil
+        expect(callback.commands.length).to eq(1)
+        expect(callback.commands.first.action).to eq(:append)
+      end
+    end
+
     describe "#markdown" do
       let(:palette) { :palette }
       let(:renderer) {

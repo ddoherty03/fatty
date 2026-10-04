@@ -396,6 +396,12 @@ You can specify a "role" of =:good=, =:info=, =:warn=, or =:error= to color
 the output according to the current theme's coloring scheme for those roles.
 Those role names can be symbols or strings.
 
+*** =clear_now=
+Clear the callback's output pane and redraw immediately. Use this before
+displaying a fresh report or starting the next step of a guided workflow.
+This affects output already displayed; queued =append= commands remain queued,
+just as they do when calling =append_now=.
+
 *** =markdown(text)=
 Render the given text as markdown source according to the current theme then
 =append= the result to the output pane.

@@ -6,6 +6,11 @@
    user would find useful.
 5. Give each heading a version number and an inactive date (C-c ! is useful here).
 
+* Version 0.99.8.6 [2026-10-04 Sun]
+
+- Fix the truecolor display going blank after returning from an external command.
+- Add =clear_now= to clear and immediately redraw the output pane from a callback.
+
 * Version 1.0.0
 Initial stable release.
 
