@@ -732,6 +732,22 @@ module Fatty
     end
 
     describe "#suspend" do
+      it "flushes rebuilt curses windows before repainting truecolor after suspension" do
+        t = terminal
+        ctx = instance_double(Fatty::Curses::Context, suspend: nil, resume: nil)
+        input = instance_double(::Curses::Window)
+        t.instance_variable_set(:@ctx, ctx)
+        allow(t.renderer.context).to receive(:truecolor).and_return(true)
+        allow(t.renderer).to receive(:invalidate!)
+        expect(t).to receive(:reconcile_terminal_size!).ordered
+        expect(ctx).to receive(:input_win).ordered.and_return(input)
+        expect(input).to receive(:refresh).ordered
+        expect(t.renderer).to receive(:clear_physical_screen!).ordered
+        expect(t).to receive(:render_frame).ordered
+
+        expect(t.suspend { :completed }).to eq(:completed)
+      end
+
       it "suspends curses, yields, resumes curses, invalidates the renderer, and renders" do
         t = terminal
         ctx = instance_double(Fatty::Curses::Context)

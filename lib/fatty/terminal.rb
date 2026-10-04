@@ -202,7 +202,12 @@ module Fatty
       ctx.resume
       reconcile_terminal_size!
       renderer.invalidate!
-      renderer.clear_physical_screen! if renderer.context.truecolor
+      if renderer.context.truecolor
+        # Layout reconciliation rebuilds the input window. Its first getch
+        # would refresh curses' blank backing screen over the ANSI frame.
+        ctx.input_win&.refresh
+        renderer.clear_physical_screen!
+      end
       render_frame
       @deferred_render = true
     end
