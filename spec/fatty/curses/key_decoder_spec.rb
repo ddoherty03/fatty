@@ -19,6 +19,33 @@ module Fatty
         { terminal: term }
       end
 
+      describe "raw sequence definitions" do
+        ["\e", "\e[", "\e[99~x", "\e[200~", "\e[201~"].each do |sequence|
+          it "ignores an invalid or reserved sequence #{sequence.inspect}" do
+            allow(Fatty::Config).to receive(:keydefs).and_return(
+              { xterm: { sequences: { invalid: { sequence: sequence, key: "oops" } } } },
+            )
+            expect(Fatty).to receive(:warn).with(/Ignoring keydefs sequence/, tag: :keycode)
+            decoder = KeyDecoder.new(env: env)
+            expect(decoder.decode(27).key).to eq(:escape)
+            expect(decoder.decode([27, "[", "99~"]).uncoded?).to be(true)
+          end
+        end
+
+        it "ignores invalid modifier values while loading other definitions" do
+          allow(Fatty::Config).to receive(:keydefs).and_return(
+            { xterm: { sequences: {
+              invalid: { sequence: "\e[99~", key: "oops", meta: "false" },
+              valid: { sequence: "\e[98~", key: "extra" },
+            } } },
+          )
+          expect(Fatty).to receive(:warn).with(/boolean/, tag: :keycode)
+          decoder = KeyDecoder.new(env: env)
+          expect(decoder.decode([27, "[", "99~"]).uncoded?).to be(true)
+          expect(decoder.decode([27, "[", "98~"]).key).to eq(:extra)
+        end
+      end
+
       describe "#decode" do
         it "decodes raw DEL as Backspace without terminal-specific keydefs" do
           allow(Fatty::Config).to receive(:keydefs).and_return(nil)

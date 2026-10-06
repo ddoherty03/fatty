@@ -9,6 +9,10 @@ module Fatty
     # :ctrl, and :meta, in the KeyEvent so that the KeyMap can assign different
     # actions to the modified keys.
     class KeyDecoder
+      CSI_CURSOR_KEYS = { 'A' => :up, 'B' => :down, 'C' => :right, 'D' => :left,
+                          'H' => :home, 'F' => :end }.freeze
+      CSI_TILDE_KEYS = { '1' => :home, '2' => :insert, '3' => :delete, '4' => :end,
+                         '5' => :page_up, '6' => :page_down, '7' => :home, '8' => :end }.freeze
       SS3_TO_EVENT = {
         "j" => KeyEvent.new(key: :keypad_multiply),
         "k" => KeyEvent.new(key: :keypad_plus),
@@ -34,6 +38,7 @@ module Fatty
       def initialize(env: Env.detect)
         @env = env
         @map = {}
+        @sequence_map = {}
         load_builtin_map
         load_user_config
       end
@@ -46,7 +51,9 @@ module Fatty
         result =
           case raw
           when Array
-            if raw.length == 3 && ss3_sequence?(raw)
+            if raw.length == 3 && raw[0] == 27 && raw[1] == '['
+              decode_csi(raw)
+            elsif raw.length == 3 && ss3_sequence?(raw)
               decode_ss3(raw)
             else
               decode_meta(raw)
@@ -61,6 +68,30 @@ module Fatty
       private
 
       # simplecov:disable
+
+      def decode_csi(raw)
+        if (spec = @sequence_map["\e[#{raw.last}"])
+          return KeyEvent.new(**spec, raw: raw)
+        end
+
+        if (match = raw.last.match(/\A(?:1(?:;(\d+))?)?([ABCDHF])\z/))
+          key = CSI_CURSOR_KEYS.fetch(match[2])
+          modifier = match[1]
+        elsif (match = raw.last.match(/\A([1-8])(?:;(\d+))?~\z/))
+          key = CSI_TILDE_KEYS.fetch(match[1])
+          modifier = match[2]
+        end
+        modifier = (modifier || '1').to_i
+        if key && modifier.between?(1, 16)
+          bits = modifier - 1
+          KeyEvent.new(key: key, raw: raw,
+                       shift: (bits & 1).positive?, meta: (bits & 10).positive?,
+                       ctrl: (bits & 4).positive?)
+        else
+          # Preserve one nonprinting unknown event for the normal key alert.
+          KeyEvent.new(key: "\e[#{raw.last}".inspect, raw: raw)
+        end
+      end
 
       def ss3_sequence?(raw)
         raw[0] == 27 && raw[1] == "O"
@@ -202,7 +233,37 @@ module Fatty
         return unless section
 
         section.each do |code, spec|
-          register_user_keydef(code.to_i, spec)
+          if code.to_s == "sequences"
+            register_user_sequences(spec)
+          else
+            register_user_keydef(code, spec)
+          end
+        end
+      end
+
+      # Labels survive config-key normalization; the sequence stays a value.
+      def register_user_sequences(definitions)
+        unless definitions.is_a?(Hash)
+          Fatty.warn("keydefs sequences must be a mapping of labels to definitions", tag: :keycode)
+          return
+        end
+
+        definitions.each do |label, value|
+          begin
+            spec = normalize_spec(value)
+            sequence = spec.delete(:sequence)
+            unless sequence.is_a?(String) && sequence.match?(/\A\e\[[0-?]*[ -\/]*[@-~]\z/) &&
+                   sequence.bytesize <= 66 && !["\e[200~", "\e[201~"].include?(sequence)
+              raise ArgumentError, "sequence must be a complete CSI key sequence (not a paste delimiter)"
+            end
+            unless spec[:key].is_a?(Symbol) && (spec.keys - [:key, :ctrl, :meta, :shift]).empty? &&
+                   [:ctrl, :meta, :shift].all? { |flag| !spec.key?(flag) || [true, false].include?(spec[flag]) }
+              raise ArgumentError, "supply a key name and optional boolean ctrl/meta/shift modifiers"
+            end
+            @sequence_map[sequence] = spec
+          rescue ArgumentError => e
+            Fatty.warn("Ignoring keydefs sequence #{label.inspect}: #{e.message}", tag: :keycode)
+          end
         end
       end
 

@@ -67,6 +67,13 @@ module Fatty
       end
     end
 
+    it "retains numeric keydef suggestions for unknown curses codes" do
+      event = KeyEvent.new(key: 999, raw: [27, 999], meta: true)
+      expect(event.code).to eq(999)
+      expect(event.suggested_snippet("xterm")).to include("999:")
+      expect(event.suggested_snippet("xterm")).not_to include("sequences:")
+    end
+
     describe "value identity" do
       it "treats key+modifiers as identity (ignores raw/text)" do
         a = KeyEvent.new(key: :x, ctrl: true, meta: false, shift: false, raw: 24, text: nil)

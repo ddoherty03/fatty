@@ -1472,6 +1472,30 @@ tags:
 
 Most keys are named correctly by curses. Some terminal emulators, multiplexers, or keyboard modes emit numeric keycodes that curses does not name usefully. The `keydefs.yml` file lets you assign names and modifiers to those numeric codes.
 
+Fatty also recognizes raw CSI navigation sequences, including modified arrows, Home/End, Insert/Delete, and PageUp/PageDown. An unsupported complete CSI sequence is reported as an undefined key, rather than inserted into the input line. To name one, copy the suggestion from `keytest` into `keydefs.yml`. For example (replace `xterm` with the detected terminal and the example bytes with yours):
+
+```yaml
+xterm:
+  sequences:
+    custom_navigation:
+      sequence: "\e[99~"
+      key: custom_navigation
+      meta: true
+```
+
+Use double quotes for `sequence` so YAML decodes `\e` as Escape. The label `custom_navigation` identifies the entry for merging configuration layers; use a distinct label for each sequence. Store the bytes in the `sequence` value, not as a YAML key. Numeric definitions may coexist with `sequences` under the same terminal. Sequence definitions override built-in CSI recognition, apply only to that terminal, and leave a standalone Escape unchanged. Paste delimiters cannot be redefined. Invalid sequence entries are ignored with a logged warning. Modifiers default to false; supplied modifiers must be YAML booleans.
+
+Then assign the named key an action in `keybindings.yml`, for example:
+
+```yaml
+- key: custom_navigation
+  meta: true
+  context: input
+  action: move_word_right
+```
+
+Use the same key name and modifiers in both files, and restart the application. Alternatively, naming the sequence `right` with `meta: true` uses the existing Emacs-style word-right binding. Already recognized but unbound keys need only an entry in `keybindings.yml`.
+
 When Fatty runs inside `tmux`, key definitions are looked up under `tmux`, not under the outer terminal emulator. `tmux` translates the outer terminal's input before Fatty sees it, so keycodes observed inside `tmux` may differ from keycodes observed directly under GNOME Terminal, Kitty, Alacritty, or another terminal. Use `keytest` in the same environment where the application will normally run. The same comment applies to `screen`.
 
 A key definition is terminal-specific. For example:

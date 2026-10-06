@@ -143,6 +143,8 @@ module Fatty
           seq = "[" + suffix
           if seq == BRACKETED_PASTE_START
             [:paste, read_bracketed_paste]
+          elsif suffix.match?(/[\x40-\x7e]\z/)
+            [ch, '[', suffix]
           else
             push_pending_raw(*suffix.chars.reverse)
             push_pending_raw(nxt)
@@ -260,14 +262,20 @@ module Fatty
         suffix = +""
         done = false
 
-        until done
-          ch = with_window_timeout(0) { window.getch }
+        until done || suffix.length >= 64
+          ch = with_window_timeout(escape_lookahead_ms) { window.getch }
 
           if ch == -1 || !ch
             done = true
           else
-            suffix << raw_char_to_s(ch)
-            done = true if suffix.end_with?("~")
+            char = raw_char_to_s(ch)
+            if char.bytesize != 1 || !char.ord.between?(0x20, 0x7e)
+              push_pending_raw(ch)
+              done = true
+            else
+              suffix << char
+              done = char.ord.between?(0x40, 0x7e)
+            end
           end
         end
 

@@ -89,6 +89,8 @@ module Fatty
     end
 
     def code
+      return if csi_sequence
+
       case raw
       when Integer
         raw
@@ -162,6 +164,12 @@ module Fatty
     end
 
     private
+
+    def csi_sequence
+      return unless raw.is_a?(Array) && raw.length == 3 && raw[0] == 27 && raw[1] == "["
+
+      "\e[#{raw.last}"
+    end
 
     def bytes_from_raw(value)
       case value
@@ -293,6 +301,29 @@ module Fatty
     end
 
     def suggested_keydef(terminal_name)
+      if (sequence = csi_sequence)
+        return <<~TEXT
+
+          No key name is associated with sequence #{sequence.inspect}.
+
+          Suggested keydefs.yml entry (choose a name and modifiers):
+
+          ............>8 snip here 8<....................
+          #{terminal_name}:
+            sequences:
+              custom_key:
+                sequence: #{sequence.inspect}
+                key: key_name
+                shift: false
+                ctrl: false
+                meta: false
+          ............>8 snip here 8<....................
+
+          Use a distinct label for each sequence. Bind the key name in keybindings.yml,
+          then restart the application to load your changes.
+        TEXT
+      end
+
       return "" unless code
 
       <<~TEXT

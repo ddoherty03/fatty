@@ -21,7 +21,7 @@ module Fatty
       @config = read_layered("config")
     end
 
-    # Read in the keydefs.yml config file that maps numeric keycodes returned
+    # Read in the keydefs.yml config file that maps numeric keycodes and raw CSI sequences returned
     # by curses but not assigned a key name.  This merges in the per-app
     # keydefs.yml as well.
     def self.keydefs

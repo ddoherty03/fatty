@@ -158,6 +158,120 @@ module Fatty
         end
       end
 
+      describe "raw CSI keyboard input" do
+        def source_for(raw)
+          input = double('input window')
+          allow(input).to receive(:timeout=)
+          allow(input).to receive(:getch).and_return(*raw, nil)
+          EventSource.new(context: instance_double(Context, input_win: input), poll_ms: 10)
+        end
+
+        before do
+          allow(Fatty::Config).to receive(:config).and_return({ esc_delay: 10 })
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
+        end
+
+        { 'D' => :left, 'C' => :right }.each do |suffix, key|
+          [false, true].each do |integer_bytes|
+            it "decodes Meta-#{key} with #{integer_bytes ? 'integer' : 'string'} bytes without inserting the sequence" do
+              chars = "[1;3#{suffix}".chars
+              chars = chars.map(&:ord) if integer_bytes
+              source = source_for([27, *chars, 'x'])
+
+              event = source.next_event.payload.fetch(:event)
+              expect(event.key).to eq(key)
+              expect(event.meta?).to be(true)
+              expect(event.ctrl?).to be(false)
+              expect(event.text).to be_nil
+              expect(Fatty::Keymaps.emacs.resolve(event)).to eq(key == :left ? :move_word_left : :move_word_right)
+              expect(source.next_event.payload.fetch(:event).text).to eq('x')
+              expect(source.next_event).to be_nil
+            end
+          end
+        end
+
+        it 'decodes combined shift, control and meta modifiers' do
+          event = source_for([27, *'[1;8D'.chars]).next_event.payload.fetch(:event)
+          expect(event.key).to eq(:left)
+          expect(event.shift?).to be(true)
+          expect(event.ctrl?).to be(true)
+          expect(event.meta?).to be(true)
+        end
+
+        { '1' => :home, '2' => :insert, '3' => :delete, '4' => :end,
+          '5' => :page_up, '6' => :page_down, '7' => :home, '8' => :end }.each do |code, key|
+          it "decodes navigation sequence #{code}~ and its modifier combinations" do
+            (1..16).each do |modifier|
+              sequence = modifier == 1 ? "[#{code}~" : "[#{code};#{modifier}~"
+              source = source_for([27, *sequence.chars, 'x'])
+              event = source.next_event.payload.fetch(:event)
+              bits = modifier - 1
+              expect(event.key).to eq(key)
+              expect(event.shift?).to eq((bits & 1).positive?)
+              expect(event.meta?).to eq((bits & 10).positive?)
+              expect(event.ctrl?).to eq((bits & 4).positive?)
+              expect(event.text).to be_nil
+              expect(source.next_event.payload.fetch(:event).text).to eq('x')
+            end
+          end
+        end
+
+        { 'H' => :home, 'F' => :end }.each do |code, key|
+          it "decodes Meta-#{key} in cursor-key form" do
+            event = source_for([27, *"[1;3#{code}".chars]).next_event.payload.fetch(:event)
+            expect(event.key).to eq(key)
+            expect(event.meta?).to be(true)
+            expect(event.text).to be_nil
+          end
+        end
+
+        it 'uses a configured sequence through the input reader and preserves pasted bytes' do
+          terminal = Fatty::Env.detect[:terminal]
+          allow(Fatty::Config).to receive(:keydefs).and_return(
+            { terminal => { sequences: { extra: { sequence: "\e[99~", key: "right", meta: true } } } },
+          )
+          source = source_for([27, *"[99~".chars, 27, *"[200~\e[99~\e[201~".chars, 'x'])
+          event = source.next_event.payload.fetch(:event)
+          expect(Fatty::Keymaps.emacs.resolve(event)).to eq(:move_word_right)
+          paste = source.next_event
+          expect(paste.action).to eq(:terminal_paste)
+          expect(paste.payload[:text]).to eq("\e[99~")
+          expect(source.next_event.payload.fetch(:event).text).to eq('x')
+        end
+
+        it 'preserves normal curses arrows' do
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
+          event = source_for([::Curses::KEY_LEFT]).next_event.payload.fetch(:event)
+          expect(event.key).to eq(:left)
+          expect(event.meta?).to be(false)
+        end
+
+        it 'preserves bracketed paste as literal text, including escape sequences' do
+          text = "hello\e[1;3D\n"
+          source = source_for([27, *"[200~#{text}\e[201~".chars, 'x'])
+          command = source.next_event
+          expect(command.action).to eq(:terminal_paste)
+          expect(command.payload[:text]).to eq(text)
+          expect(source.next_event.payload.fetch(:event).text).to eq('x')
+        end
+
+        it 'reports an unsupported complete CSI sequence as one undefined key without text' do
+          source = source_for([27, *'[99~'.chars, 'x'])
+          event = source.next_event.payload.fetch(:event)
+          expect(event.uncoded?).to be(true)
+          expect(event.text).to be_nil
+          expect(event.key).to include('[99~')
+          expect(source.next_event.payload.fetch(:event).text).to eq('x')
+        end
+
+        it 'preserves a partial sequence and a following curses key' do
+          source = source_for([27, '[', '1', ';', ::Curses::KEY_LEFT])
+          expect(source.next_event.payload.fetch(:event).key).to eq(:escape)
+          expect(3.times.map { source.next_event.payload.fetch(:event).text }.join).to eq('[1;')
+          expect(source.next_event.payload.fetch(:event).key).to eq(:left)
+        end
+      end
+
       describe "#interrupt_pending?" do
         it "recognizes C-c" do
           allow(source).to receive(:read_event)

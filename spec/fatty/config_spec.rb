@@ -71,6 +71,54 @@ module Fatty
       end
     end
 
+    describe "raw CSI key definitions" do
+      it "loads the suggested snippet through the real reader without remapping Escape" do
+        event = KeyEvent.new(key: "unknown", raw: [27, "[", "99~"])
+        snippet = event.suggested_snippet("xterm").split("............>8 snip here 8<....................")[1]
+        write_cfg(File.join(ENV["XDG_CONFIG_HOME"], progname), "keydefs", snippet)
+        decoder = Fatty::Curses::KeyDecoder.new(env: { terminal: :xterm })
+        decoded = decoder.decode(event.raw)
+        expect(decoded.key).to eq(:key_name)
+        expect(decoded.raw).to eq(event.raw)
+        expect(decoded.text).to be_nil
+        expect(decoded.ctrl?).to be(false)
+        expect(decoder.decode(27).key).to eq(:escape)
+        expect(event.code).to be_nil
+      end
+
+      it "merges named sequences across config layers and keeps numeric definitions" do
+        write_cfg(File.join(ENV["XDG_CONFIG_HOME"], progname), "keydefs", <<~'YAML')
+          xterm:
+            555:
+              key: delete
+            sequences:
+              custom_left:
+                sequence: "\e[1;3D"
+                key: left
+                meta: true
+              custom_extra:
+                sequence: "\e[99-~"
+                key: extra
+        YAML
+        write_cfg(File.join(ENV["XDG_CONFIG_HOME"], progname, "apps", "byr"), "keydefs", <<~'YAML')
+          xterm:
+            sequences:
+              custom_left:
+                key: right
+        YAML
+        Config.configure_app(app_name: "byr")
+        decoder = Fatty::Curses::KeyDecoder.new(env: { terminal: :xterm })
+        event = decoder.decode([27, "[", "1;3D"])
+        expect(event.key).to eq(:right)
+        expect(event.meta?).to be(true)
+        expect(Fatty::Keymaps.emacs.resolve(event)).to eq(:move_word_right)
+        expect(decoder.decode([27, "[", "99-~"]).key).to eq(:extra)
+        expect(decoder.decode(555).key).to eq(:delete)
+        other = Fatty::Curses::KeyDecoder.new(env: { terminal: :other })
+        expect(other.decode([27, "[", "99-~"]).uncoded?).to be(true)
+      end
+    end
+
     describe "config.yml" do
       it "loads a valid config.yml" do
         write_cfg(
