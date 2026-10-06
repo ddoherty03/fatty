@@ -540,6 +540,8 @@ module Fatty
       # Special case for TAB.  Curses::KEY_CTRL_I may not get defined on all
       # platforms.
       9 => Fatty::KeyEvent.new(key: :tab, raw: 9),
+      # Some terminals return the raw DEL byte instead of KEY_BACKSPACE.
+      127 => Fatty::KeyEvent.new(key: :backspace, raw: 127),
       ::Curses::KEY_RESIZE => Fatty::KeyEvent.new(key: :resize, raw: ::Curses::KEY_RESIZE),
       ::Curses::KEY_BTAB => Fatty::KeyEvent.new(key: :tab, shift: true, raw: ::Curses::KEY_BTAB),
       ::Curses::KEY_BACKSPACE => Fatty::KeyEvent.new(key: :backspace, raw: ::Curses::KEY_BACKSPACE),

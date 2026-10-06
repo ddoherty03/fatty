@@ -20,6 +20,42 @@ module Fatty
       end
 
       describe "#decode" do
+        it "decodes raw DEL as Backspace without terminal-specific keydefs" do
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
+          event = KeyDecoder.new(env: env(:xfce4_terminal)).decode(127)
+
+          expect(event.key).to eq(:backspace)
+          expect(event.raw).to eq(127)
+          expect(event.text).to be_nil
+          expect(event.ctrl?).to be(false)
+        end
+
+        it "decodes escape-prefixed DEL as Meta-Backspace" do
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
+          event = KeyDecoder.new(env: env(:xfce4_terminal)).decode([27, 127])
+
+          expect(event.key).to eq(:backspace)
+          expect(event.meta?).to be(true)
+          expect(event.raw).to eq([27, 127])
+          expect(event.text).to be_nil
+        end
+
+        it "keeps the forward Delete key distinct from Backspace" do
+          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
+          decoder = KeyDecoder.new(env: env)
+
+          expect(decoder.decode(::Curses::KEY_DC).key).to eq(:delete)
+          expect(decoder.decode(127).key).to eq(:backspace)
+        end
+
+        it "lets terminal keydefs override the raw DEL mapping" do
+          allow(Fatty::Config).to receive(:keydefs).and_return(
+            { 'xterm' => { '127' => { 'key' => 'delete' } } },
+          )
+
+          expect(KeyDecoder.new(env: env).decode(127).key).to eq(:delete)
+        end
+
         it "returns nil for nil keydefs config" do
           stub_builtin_map
           allow(Fatty::Config).to receive(:keydefs).and_return(nil)

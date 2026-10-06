@@ -6,6 +6,12 @@
    user would find useful.
 5. Give each heading a version number and an inactive date (C-c ! is useful here).
 
+* Version 0.99.8.7 [2026-10-06 Tue]
+
+- Recognize Backspace and Meta-Backspace when terminals send raw DEL (127),
+  including FreeBSD's XFCE terminal, without requiring custom key definitions.
+- Preserve the forward Delete key and user-defined key mappings.
+
 * Version 0.99.8.6 [2026-10-04 Sun]
 
 - Fix the truecolor display going blank after returning from an external command.

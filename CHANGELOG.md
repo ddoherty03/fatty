@@ -1,5 +1,14 @@
+- [Version 0.99.8.7 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-06 Tue]</span></span>](#orgee233c7)
 - [Version 0.99.8.6 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-04 Sun]</span></span>](#org6dd444e)
 - [Version 1.0.0](#org8b76846)
+
+
+<a id="orgee233c7"></a>
+
+# Version 0.99.8.7 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-06 Tue]</span></span>
+
+-   Recognize Backspace and Meta-Backspace when terminals send raw DEL (127), including FreeBSD's XFCE terminal, without requiring custom key definitions.
+-   Preserve the forward Delete key and user-defined key mappings.
 
 
 <a id="org6dd444e"></a>
