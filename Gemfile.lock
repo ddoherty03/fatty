@@ -12,7 +12,7 @@ GIT
 PATH
   remote: .
   specs:
-    fatty (0.99.10.0)
+    fatty (0.99.11.0)
       curses (~> 1.4)
       fat_config (>= 0.8.0)
       fiddle
@@ -64,9 +64,9 @@ GEM
       stringio (>= 3.1.2)
     fiddle (1.1.8)
     forwardable (1.4.0)
-    gem_docs (0.3.1)
+    gem_docs (0.4.0)
       rake
-      yard
+      yard (>= 0.9.28)
     i18n (1.15.2)
       concurrent-ruby (~> 1.0)
     inifile (3.0.0)
@@ -184,7 +184,7 @@ PLATFORMS
 DEPENDENCIES
   debug (>= 1.0.0)
   fatty!
-  gem_docs (>= 0.3.1)
+  gem_docs (>= 0.4.0)
   irb
   prime
   pry
@@ -212,10 +212,10 @@ CHECKSUMS
   erb (6.0.7) sha256=c5ca6dc25b0ef974a44dc8f59fe847577122483b1968a38dec305c60bf91ee92
   fat_config (0.8.0) sha256=5648b33d5eba414276ea064d9dec99fb853dfac4b5e003636b45b47bf2858dde
   fat_core (7.2.0) sha256=940379cc8d38a832b03067ff33ef39350ebbbc20ae6d253166badf2a56043d17
-  fatty (0.99.10.0)
+  fatty (0.99.11.0)
   fiddle (1.1.8) sha256=7fa8ee3627271497f3add5503acdbc3f40b32f610fc1cf49634f083ef3f32eee
   forwardable (1.4.0) sha256=f1cd40cc9812937980e1c76f1aa053660990a7c9b6a98fc37d945468afcce838
-  gem_docs (0.3.1) sha256=cdd4ec7f65e15e12947f8b8db0d9dea7cc0603c3415c06526263cdab8e32ea65
+  gem_docs (0.4.0) sha256=d7922d3122e6e6d3b9bd91a7a1e02ab90130b243123611da3f8a7c027fbd8d4b
   i18n (1.15.2) sha256=00f9eb62412fe593b2a65a97daa75300d37abb8f7202ec748e94b6d46a9dd1b5
   inifile (3.0.0) sha256=b103eb3655ec93cc626cf2de00950e91f7e69b8398842968e17e1815cfacbfb0
   io-console (0.8.2) sha256=d6e3ae7a7cc7574f4b8893b4fca2162e57a825b223a177b7afa236c5ef9814cc
