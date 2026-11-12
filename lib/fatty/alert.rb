@@ -6,7 +6,7 @@ module Fatty
 
     # Return a new Alert object
     #
-    # @param message [String]
+    # @param text [String]
     # @param role [:good, :info, :warn, :error]
     # @param details [Hash|String]
     # @param sticky [Boolean]
