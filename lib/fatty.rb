@@ -14,7 +14,7 @@ require 'debug'
 # Gem Overview (extracted from README.org by gem_docs)
 #
 # * Introduction
-# ~Fatty~ aims to provide a full-featured command-line environment that provides:
+# ~Fatty~ aims to provide a full-featured command-line REPL environment that provides:
 #
 # 1. an editing command-line input,
 # 2. a history facility,

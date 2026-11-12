@@ -27,6 +27,23 @@ module Fatty
     end
 
     describe ".configure" do
+      it "rotates oversized logs and retains twenty files without splitting records" do
+        custom = File.join(ENV.fetch("XDG_STATE_HOME"), "rotation.log")
+        allow(Fatty::Config).to receive(:config).and_return(log: { file: custom, level: 'info' })
+        logger = Fatty::Logger.configure
+        22.times do |index|
+          File.truncate(custom, 5 * 1024 * 1024 + 1)
+          logger.info("rotation-record-#{index}")
+        end
+        expect(Dir.glob("#{custom}*").size).to eq(20)
+        expect(File.read(custom)).to include("rotation-record-21")
+        expect(File.read("#{custom}.0")).to include("rotation-record-20")
+        expect(File.exist?("#{custom}.18")).to be(true)
+        expect(File.exist?("#{custom}.19")).to be(false)
+      ensure
+        logger&.close
+      end
+
       it "creates the log file under XDG_STATE_HOME when no config path is set" do
         # Ensure config doesn't specify a path
         allow(Fatty::Config).to receive(:config).and_return({ log: { level: 'info', format: 'json' } })

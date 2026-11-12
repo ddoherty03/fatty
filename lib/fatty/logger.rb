@@ -32,9 +32,8 @@ module Fatty
         return self.logger = nil
       end
 
-      io = File.open(path, "a")
-      io.sync = true
-      self.logger = ::Logger.new(io)
+      # Keep individual logs manageable for inspection: current file plus 19 archives.
+      self.logger = ::Logger.new(path, 20, 5 * 1024 * 1024)
       self.path = path
       logger.level = severity(cfg.dig(:log, :level))
       logger.formatter =
