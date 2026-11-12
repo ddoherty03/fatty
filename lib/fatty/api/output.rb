@@ -33,17 +33,25 @@ module Fatty
     end
 
     def markdown(text)
-      md = Fatty::Markdown.render(
+      append(render_markdown(text))
+      nil
+    end
+
+    def markdown_now(text)
+      append_now(render_markdown(text))
+      nil
+    end
+
+    private
+
+    def render_markdown(text)
+      Fatty::Markdown.render(
         text,
         palette: markdown_palette,
         theme: markdown_theme,
         truecolor: markdown_truecolor?,
       )
-      append(md)
-      nil
     end
-
-    private
 
     def markdown_palette
       terminal.renderer.palette if terminal.respond_to?(:renderer) && terminal.renderer

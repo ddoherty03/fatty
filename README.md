@@ -23,6 +23,7 @@
     - [`append_now(text, follow: true, mode: nil, role: nil)`](#org96421ae)
     - [`clear_now`](#org4e94048)
     - [`markdown(text)`](#orge61ad54)
+    - [`markdown_now(text)`](#markdown-now)
     - [`status(text, role: :info)`](#org8d20d95)
     - [`good(text, replace: false, render: true)`](#org4430a3b)
     - [`info(text, replace: false, render: true)`](#org60083e9)
@@ -362,7 +363,7 @@ The `on_accept` callback can send text to the output pane in three ways:
 
 1.  by returning a value from the callback;
 2.  by calling `append` or `markdown` on the callback environment; or
-3.  by calling `append_now` on the callback environment.
+3.  by calling `append_now` or `markdown_now` on the callback environment.
 
 A returned `String` is the simplest output mechanism. It is displayed after the callback finishes:
 
@@ -374,9 +375,9 @@ Fatty::Terminal.new(
 
 Calls to `append` and `markdown` also queue output until the callback finishes. If a callback both calls `append` or `markdown` and returns a `String`, the queued output is displayed first and the returned string is displayed after it.
 
-Calls to `append_now` are different. They append text and immediately render a frame, so the user can see output while the callback is still running. Use `append_now` for long-running callbacks that should stream progress to the output pane.
+Calls to `append_now` and `markdown_now` are different. They append text and immediately render a frame, so the user can see output while the callback is still running. Use `append_now` for long-running callbacks that should stream progress to the output pane.
 
-At the end of the callback, `Fatty` finishes the command and updates the pager state. Output produced with `append_now` may therefore appear during the callback, while output from `append`, `markdown`, and the callback's return value appears after the callback returns.
+At the end of the callback, `Fatty` finishes the command and updates the pager state. Output produced with `append_now` or `markdown_now` may therefore appear during the callback, while output from `append`, `markdown`, and the callback's return value appears after the callback returns.
 
 
 <a id="org34665cc"></a>
@@ -504,6 +505,16 @@ will render as
 This line has a forced line break
 and this should appear on the next line.
 ```
+
+
+<a id="markdown-now"></a>
+
+### `markdown_now(text)`
+
+Render Markdown using the current theme, then call `append_now` to display it
+immediately. Like `markdown`, this returns `nil`. Previously queued output
+remains queued. Use this when Markdown should be visible before a prompt or
+while a callback is still running.
 
 
 <a id="org8d20d95"></a>

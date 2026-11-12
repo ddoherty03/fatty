@@ -196,5 +196,31 @@ module Fatty
         expect(env.commands.first.payload).to eq(text: "rendered", follow: true)
       end
     end
+
+    describe "#markdown_now" do
+      let(:renderer) { instance_double(Fatty::Renderer, palette: :palette) }
+
+      it "renders markdown and immediately appends and redraws without flushing queued output" do
+        env.append("queued output")
+        expect(Fatty::Markdown).to receive(:render).with(
+          "**hello**",
+          palette: :palette,
+          theme: anything,
+          truecolor: false,
+        ).and_return("rendered")
+        expect(terminal).to receive(:apply_command).with(
+          have_attributes(
+            target: :output,
+            action: :append,
+            payload: { text: "rendered", follow: true },
+          ),
+        ).ordered
+        expect(terminal).to receive(:render_frame).ordered
+
+        expect(env.markdown_now("**hello**")).to be_nil
+        expect(env.commands.length).to eq(1)
+        expect(env.commands.first.payload.fetch(:text)).to eq("queued output")
+      end
+    end
   end
 end
