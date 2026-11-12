@@ -1,10 +1,21 @@
 #+OPTIONS: toc:4 H:4
+#+PROPERTY: header-args :eval never
 #+PROPERTY: header-args:ruby :results value :colnames no :hlines yes :exports both :dir "./"
-#+PROPERTY: header-args:ruby+ :wrap example :session fatty_session :eval yes
+#+PROPERTY: header-args:ruby+ :wrap example :session fatty_session
 #+PROPERTY: header-args:ruby+ :prologue "$:.unshift('./lib') unless $:.first == './lib'; require 'fatty'"
 #+PROPERTY: header-args:ruby+ :ruby "bundle exec irb"
 #+PROPERTY: header-args:sh :exports code :eval no
 #+PROPERTY: header-args:bash :exports code :eval no
+
+#+BEGIN_EXPORT markdown
+[![CI](https://github.com/ddoherty03/fatty/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/ddoherty03/fatty/actions/workflows/main.yml)
+#+END_EXPORT
+
+
+# gem_docs:version begin
+Version: 0.99.11.0
+# gem_docs:version end
+
 
 * Introduction
 ~Fatty~ aims to provide a full-featured command-line environment that provides:
