@@ -9,17 +9,30 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+    runs-on: ${{ matrix.os }}
+    name: Ruby ${{ matrix.ruby }} / ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
         ruby:
-          - '4.0.0'
+          # Minor versions select the latest patch available on the runner.
+          - '3.2' # Keep testing the minimum supported by fatty.gemspec.
+          - '3.3'
+          - '3.4'
+          - '4.0'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
+      - name: Resolve dependencies for each Ruby version
+        # The development lockfile can contain gems requiring a newer Ruby.
+        shell: bash
+        run: rm -f Gemfile.lock
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
