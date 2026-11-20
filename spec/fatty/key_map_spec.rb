@@ -3,8 +3,6 @@
 require 'spec_helper'
 require "fatty/keymaps/emacs"
 
-# frozen_string_literal: true
-
 module Fatty
   RSpec.describe KeyMap do
     def ev(key, ctrl: false, meta: false, shift: false)
