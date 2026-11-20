@@ -18,43 +18,6 @@ Version: 0.99.12.0
 
 #+TOC: headlines 4
 
-* Native Windows status
-
-Native Windows support is experimental. Fatty requires =fat_config >= 0.8.1=
-for Windows configuration paths. Keyboard input and output have been smoke-tested
-with RubyInstaller 3.4 and curses 1.7.0 on Windows 11 over OpenSSH.
-The bundled PDCurses backend exposes no mouse API; mouse input is disabled.
-Fatty includes PDCurses definitions for modified navigation/editing keys,
-Alt letters/digits/punctuation, modified keypad keys, and Shift/Ctrl/Alt
-F1–F12. Native Windows Alt is displayed as Meta (=M-=). These definitions
-name keys; the normal keymap determines their actions. User =keydefs.yml=
-overrides still apply. Windows or the terminal can intercept shortcuts, and
-Fatty cannot recover modifiers that the backend does not report.
-For suspension, Fatty prefers =Curses.endwin= when available, retaining its
-native-symbol fallback for existing Unix gems. The stock Windows curses gem
-has neither interface; it raises =Fatty::Curses::Native::SuspensionUnavailable=
-before changing terminal modes. A local curses patch exposes the portable
-method and passes repeated suspension tests on Windows and Linux. The patch
-is available at https://github.com/ddoherty03/curses/tree/preserve-screen-suspension.
-With that binding, both renderers have passed interactive child-input,
-suspend/resume, immediate redraw, and clean-exit checks over Windows OpenSSH.
-Fatty keeps PDCurses and ANSI output on the standard Windows console buffer;
-this means PDCurses does not save and restore a separate pre-Fatty screen.
-ANSI writes temporarily enable Windows virtual-terminal processing, because
-PDCurses changes the console output mode during its own drawing. The input
-backing window is refreshed before ANSI rendering so the first key read does
-not erase the prompt.
-
-The demo and default shell session suspend the terminal around external
-commands. On native Windows, captured output uses a temporary file rather
-than Open3's threaded pipe reader, which stalled in native console testing.
-Commands use Ruby's normal Windows command resolution (including cmd.exe
-built-ins such as =dir=), not PowerShell aliases. Temporary output is removed
-after reading; exit status is retained.
-Normal startup does not load Ruby's debugger. For debugging, explicitly load
-=debug= in your development launcher. Windows support remains experimental
-pending broader application testing.
-
 * Introduction
 ~Fatty~ aims to provide a full-featured command-line environment that provides:
 
@@ -2332,3 +2295,54 @@ warn:
 error:
   fg: "#e78d8d"
 #+end_example
+
+* Windows status
+Native Windows support is experimental.  The following are notes on the
+Windows implementation.
+
+- Fatty requires =fat_config >= 0.8.1= for Windows configuration paths.
+
+- Keyboard input and output have been smoke-tested with RubyInstaller
+  3.4 and curses 1.7.0 on Windows 11 over OpenSSH.
+
+- The bundled PDCurses backend exposes no mouse API; mouse input is
+  disabled.
+
+- Fatty includes PDCurses definitions for modified navigation/editing
+  keys, Alt letters/digits/punctuation, modified keypad keys, and
+  Shift/Ctrl/Alt F1–F12. Native Windows Alt is displayed as Meta
+  (=M-=). These definitions name keys; the normal keymap determines
+  their actions. User =keydefs.yml= overrides still apply. Windows or
+  the terminal can intercept shortcuts, and Fatty cannot recover
+  modifiers that the backend does not report.
+
+- For suspension, Fatty prefers =Curses.endwin= when available,
+  retaining its native-symbol fallback for existing Unix gems. The stock
+  Windows curses gem has neither interface; it raises
+  =Fatty::Curses::Native::SuspensionUnavailable= before changing
+  terminal modes. A local curses patch exposes the portable method and
+  passes repeated suspension tests on Windows and Linux. The patch is
+  available at
+  https://github.com/ddoherty03/curses/tree/preserve-screen-suspension. With
+  that binding, both renderers have passed interactive child-input,
+  suspend/resume, immediate redraw, and clean-exit checks over Windows
+  OpenSSH.
+
+- Fatty keeps PDCurses and ANSI output on the standard Windows console
+  buffer; this means PDCurses does not save and restore a separate
+  pre-Fatty screen. ANSI writes temporarily enable Windows
+  virtual-terminal processing, because PDCurses changes the console
+  output mode during its own drawing. The input backing window is
+  refreshed before ANSI rendering so the first key read does not erase the prompt.
+
+- The demo and default shell session suspend the terminal around
+  external commands. On native Windows, captured output uses a temporary
+  file rather than Open3's threaded pipe reader, which stalled in native
+  console testing. Commands use Ruby's normal Windows command resolution
+  (including cmd.exe built-ins such as =dir=), not PowerShell
+  aliases. Temporary output is removed after reading; exit status is
+  retained.
+
+- Normal startup does not load Ruby's debugger. For debugging,
+  explicitly load =debug= in your development launcher. Windows support
+  remains experimental pending broader application testing.
