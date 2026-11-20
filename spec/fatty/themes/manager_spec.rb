@@ -20,8 +20,7 @@ RSpec.describe Fatty::Themes::Manager do
   end
 
   it "does not persist an unknown theme" do
-    allow(Fatty::Themes::Manager).to receive(:theme_names).and_return([:terminal])
-    allow(Fatty::Themes::Manager).to receive(:current).and_return(:terminal)
+    allow(Fatty::Themes::Manager).to receive_messages(theme_names: [:terminal], current: :terminal)
     expect(Fatty::Config).not_to receive(:set_preference)
 
     expect(Fatty::Themes::Manager.set(:missing)).to eq(:terminal)

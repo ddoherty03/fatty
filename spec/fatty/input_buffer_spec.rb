@@ -14,14 +14,14 @@ module Fatty
     it "represents itself with #to_s method no mark" do
       b.insert("abcd efgh ijkl mnop qrst uv wxyz")
       b.move_word_left
-      expect(b.to_s).to match(/\|wxyz/)
-      expect(b.inspect).to match(/\|wxyz/)
+      expect(b.to_s).to include('|wxyz')
+      expect(b.inspect).to include('|wxyz')
       b.bol
-      expect(b.to_s).to match(/\|abcd /)
-      expect(b.inspect).to match(/\|abcd /)
+      expect(b.to_s).to include('|abcd ')
+      expect(b.inspect).to include('|abcd ')
       b.eol
-      expect(b.to_s).to match(/wxyz\|/)
-      expect(b.inspect).to match(/wxyz\|/)
+      expect(b.to_s).to include('wxyz|')
+      expect(b.inspect).to include('wxyz|')
     end
 
     it "represents itself with #to_s method with mark" do
@@ -31,8 +31,8 @@ module Fatty
       b.set_mark
       b.move_word_right
       b.move_word_right
-      expect(b.to_s).to match(/abcd\[ efgh ijkl\]\|/)
-      expect(b.inspect).to match(/abcd\[ efgh ijkl\]\|/)
+      expect(b.to_s).to include('abcd[ efgh ijkl]|')
+      expect(b.inspect).to include('abcd[ efgh ijkl]|')
     end
 
     it "inserts at cursor and advances cursor" do

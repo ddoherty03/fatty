@@ -8,16 +8,16 @@ module Fatty
     # user overrides. Do not infer extra modifiers the backend did not report.
     module PDCursesKeys
       OFFSETS = {
-        0x97 => { key: :"0", meta: true }, # ALT_0
-        0x98 => { key: :"1", meta: true }, # ALT_1
-        0x99 => { key: :"2", meta: true }, # ALT_2
-        0x9a => { key: :"3", meta: true }, # ALT_3
-        0x9b => { key: :"4", meta: true }, # ALT_4
-        0x9c => { key: :"5", meta: true }, # ALT_5
-        0x9d => { key: :"6", meta: true }, # ALT_6
-        0x9e => { key: :"7", meta: true }, # ALT_7
-        0x9f => { key: :"8", meta: true }, # ALT_8
-        0xa0 => { key: :"9", meta: true }, # ALT_9
+        0x97 => { key: :'0', meta: true }, # ALT_0
+        0x98 => { key: :'1', meta: true }, # ALT_1
+        0x99 => { key: :'2', meta: true }, # ALT_2
+        0x9a => { key: :'3', meta: true }, # ALT_3
+        0x9b => { key: :'4', meta: true }, # ALT_4
+        0x9c => { key: :'5', meta: true }, # ALT_5
+        0x9d => { key: :'6', meta: true }, # ALT_6
+        0x9e => { key: :'7', meta: true }, # ALT_7
+        0x9f => { key: :'8', meta: true }, # ALT_8
+        0xa0 => { key: :'9', meta: true }, # ALT_9
         0xa1 => { key: :a, meta: true }, # ALT_A
         0xa2 => { key: :b, meta: true }, # ALT_B
         0xa3 => { key: :c, meta: true }, # ALT_C
@@ -137,7 +137,7 @@ module Fatty
         { shift: 12, ctrl: 24, meta: 36 }.each do |modifier, base|
           (1..12).each do |number|
             code = offset + 0x08 + base + number
-            events[code] = KeyEvent.new(key: :"f#{number}", **{modifier => true}, raw: code)
+            events[code] = KeyEvent.new(key: :"f#{number}", **{ modifier => true }, raw: code)
           end
         end
         events

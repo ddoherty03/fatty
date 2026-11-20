@@ -69,13 +69,13 @@ module Fatty
     attr_reader :shell_session, :status_session, :alert_session, :focused_session
 
     def initialize(prompt: "> ",
-                   on_accept: nil,
-                   app_name: nil,
-                   app_config_dir: nil,
-                   completion_proc: nil,
-                   history_path: :default,
-                   history_ctx: nil,
-                   env: nil)
+      on_accept: nil,
+      app_name: nil,
+      app_config_dir: nil,
+      completion_proc: nil,
+      history_path: :default,
+      history_ctx: nil,
+      env: nil)
       @prompt = Prompt.ensure(prompt)
       @on_accept = on_accept
       @app_name = app_name
@@ -357,13 +357,13 @@ module Fatty
       @status_session = Fatty::StatusSession.new(id: :status)
       install_session(@status_session)
       @shell_session = ShellSession.new(
-          id: :shell,
-          prompt: @prompt,
-          on_accept: @on_accept,
-          completion_proc: @completion_proc,
-          history_path: @history_path,
-          history_ctx: @history_ctx,
-        )
+        id: :shell,
+        prompt: @prompt,
+        on_accept: @on_accept,
+        completion_proc: @completion_proc,
+        history_path: @history_path,
+        history_ctx: @history_ctx,
+      )
       install_session(@shell_session, focus: true)
     end
 
@@ -512,7 +512,7 @@ module Fatty
       screen.resize(rows: rows, cols: cols, status_rows: @status_rows)
       Fatty.info(
         "handle_resize after=#{screen.rows}x#{screen.cols} " \
-        "output_after=#{screen.output_rect.inspect}",
+          "output_after=#{screen.output_rect.inspect}",
         tag: :resize,
       )
 
@@ -539,7 +539,7 @@ module Fatty
     def reconcile_terminal_size!
       return unless @screen && @ctx
 
-      rows, cols = STDOUT.winsize
+      rows, cols = $stdout.winsize
       return if rows.to_i <= 0 || cols.to_i <= 0
 
       if [rows, cols] == [@screen.rows, @screen.cols]
@@ -733,7 +733,8 @@ module Fatty
             :show,
             role: :info,
             text: "Theme: #{new_theme}",
-          ))
+          ),
+        )
       when :set_theme
         theme = command.payload.fetch(:theme)
         Fatty::Themes::Manager.set(theme)
@@ -744,7 +745,8 @@ module Fatty
             :show,
             role: :info,
             text: "Theme: #{theme}",
-          ))
+          ),
+        )
       when :resize
         handle_resize
       else

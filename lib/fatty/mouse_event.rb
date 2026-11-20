@@ -65,7 +65,7 @@ module Fatty
       out << "Mouse report #{status_string}:\n"
       out << "  raw:       #{raw.inspect}\n"
       out << "  button:    #{button.inspect}\n"
-      out << "  name:      #{to_s}\n"
+      out << "  name:      #{self}\n"
       out << "  x:         #{x.inspect}\n"
       out << "  y:         #{y.inspect}\n"
       out << "  modifiers: #{modifier_text}\n"
@@ -144,7 +144,7 @@ module Fatty
     def suggested_mouse_binding
       out = <<~TEXT
 
-        No action is bound to #{to_s}.
+        No action is bound to #{self}.
 
         Suggested keybindings.yml entry:
 
@@ -160,7 +160,7 @@ module Fatty
     end
 
     def yaml_desc
-      lines = ["# #{to_s}", "- button: #{button}"]
+      lines = ["# #{self}", "- button: #{button}"]
       lines << "  shift: true" if shift?
       lines << "  ctrl: true" if ctrl?
       lines << "  meta: true" if meta?

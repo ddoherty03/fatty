@@ -39,10 +39,10 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "curses", "~> 1.4"
   spec.add_dependency "fat_config", ">= 0.8.1"
+  spec.add_dependency "fiddle"
   spec.add_dependency "rainbow"
   spec.add_dependency "redcarpet"
   spec.add_dependency "rouge"
   spec.add_dependency "unicode-display_width", "~> 2.5"
   spec.add_dependency "yaml"
-  spec.add_dependency "fiddle"
 end

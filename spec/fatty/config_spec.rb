@@ -22,10 +22,10 @@ module Fatty
         ENV["XDG_CONFIG_HOME"] = tmp
         ex.run
       end
-      ensure
-        Config.dir = nil
-        Config.configure_app
-        ENV["XDG_CONFIG_HOME"] = old_xdg
+    ensure
+      Config.dir = nil
+      Config.configure_app
+      ENV["XDG_CONFIG_HOME"] = old_xdg
     end
 
     let(:progname) { 'spec_app' }
@@ -33,7 +33,7 @@ module Fatty
     describe 'path names' do
       it "returns default names of the user paths before they exist" do
         path = Config.user_config_path
-        expect(path).to match(/~\/\.config\/.*config.yml/)
+        expect(path).to match(%r{~/\.config/.*config.yml})
         path = Config.user_keydefs_path
         expect(path).to match(/keydefs.yml/)
         path = Config.user_keybindings_path
@@ -100,7 +100,7 @@ module Fatty
                 sequence: "\e[99-~"
                 key: extra
         YAML
-        write_cfg(File.join(ENV["XDG_CONFIG_HOME"], progname, "apps", "byr"), "keydefs", <<~'YAML')
+        write_cfg(File.join(ENV["XDG_CONFIG_HOME"], progname, "apps", "byr"), "keydefs", <<~YAML)
           xterm:
             sequences:
               custom_left:
@@ -213,7 +213,10 @@ module Fatty
 
       it "persists preferences in the global user config without an app config directory" do
         expect(Config.set_preference(:theme, :nordic)).to be(true)
-        expect(YAML.load_file(File.join(ENV["XDG_CONFIG_HOME"], progname, "config.yml"), symbolize_names: true)).to include(
+        expect(YAML.load_file(
+          File.join(ENV["XDG_CONFIG_HOME"], progname, "config.yml"),
+          symbolize_names: true,
+        )).to include(
           theme: "nordic",
         )
         expect(Config.config[:theme]).to eq("nordic")

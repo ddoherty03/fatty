@@ -5,7 +5,6 @@ require "ostruct"
 
 module Fatty
   RSpec.describe KeyTestSession do
-
     def init_keytest_session(session, terminal_name: "xterm-256color")
       output_rect = OpenStruct.new(row: 0, rows: 10, cols: 80)
       screen = instance_double(Fatty::Screen, output_rect: output_rect)
@@ -89,7 +88,7 @@ module Fatty
 
         allow(Fatty::KeyMap.active)
           .to receive(:bindings_for)
-          .and_return(input: :accept_line)
+                .and_return(input: :accept_line)
         ev = Fatty::KeyEvent.new(key: :enter, raw: 10)
         commands = update(session, :key, event: ev)
         expect(commands.map(&:action)).to eq([:append, :show])
@@ -143,7 +142,7 @@ module Fatty
           ev = Fatty::KeyEvent.new(key: 652, raw: 652)
           update(session, :key, event: ev)
           update(session, :key, event: ev)
-          commands = update(session, :key, event: key(:q, text: "q"))
+          update(session, :key, event: key(:q, text: "q"))
 
           files = Dir.glob(File.join(dir, "fatty-keytest-*.yml"))
           expect(files.length).to eq(1)

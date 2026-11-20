@@ -116,17 +116,17 @@ on_accept_proc = lambda do |line, env|
       "Demo menu",
       choices: {
         "Write to output pane" => proc { |env|
-      env.append("menu: wrote this from MenuEnv#output\n")
-      :output_written
-    },
+          env.append("menu: wrote this from MenuEnv#output\n")
+          :output_written
+        },
         "Show status message" => proc { |env|
-      env.status("menu: status set from MenuEnv#status")
-      :status_written
-    },
+          env.status("menu: status set from MenuEnv#status")
+          :status_written
+        },
         "Show markdown" => proc { |env|
-      env.markdown("\# Your Choices\n\n- one\n- two\n- three\n")
-      :markdown_written
-    },
+          env.markdown("# Your Choices\n\n- one\n- two\n- three\n")
+          :markdown_written
+        },
       },
     )
     if result.nil?
@@ -266,20 +266,20 @@ on_accept_proc = lambda do |line, env|
     last_remaining = nil
     begin
       loop do
-      now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      remaining = (deadline - now).ceil
-      break if remaining <= 0
+        now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        remaining = (deadline - now).ceil
+        break if remaining <= 0
 
-      if remaining != last_remaining
-        env.status(
-          "Interrupt demo: #{remaining} seconds remaining — press C-c or C-g",
-          replace: true,
-        )
-        last_remaining = remaining
+        if remaining != last_remaining
+          env.status(
+            "Interrupt demo: #{remaining} seconds remaining — press C-c or C-g",
+            replace: true,
+          )
+          last_remaining = remaining
+        end
+        env.check_interrupt!
+        sleep 0.1
       end
-      env.check_interrupt!
-      sleep 0.1
-    end
     rescue Fatty::Interrupt
       env.warn("Interrupt demo interrupted.", replace: true)
       raise
@@ -298,7 +298,6 @@ on_accept_proc = lambda do |line, env|
     env.append("rendering mode -> #{truecolor_enabled ? '24-bit RGB' : "#{available}-color indexed"}\n")
     env.append("\n")
 
-
     env.append("ANSI colors\n")
     Fatty::Color.ansi_colors.each do |name, index|
       rgb = Fatty::Color.xterm_rgb_for_index(index)
@@ -308,7 +307,7 @@ on_accept_proc = lambda do |line, env|
           requested_rgb: rgb,
           fallback_index: Fatty::Color.resolve(index, available_colors: available),
           truecolor: truecolor_enabled,
-        )
+        ),
       )
     end
 
@@ -321,7 +320,7 @@ on_accept_proc = lambda do |line, env|
           requested_rgb: rgb,
           fallback_index: Fatty::Color.resolve(index, available_colors: available),
           truecolor: truecolor_enabled,
-        )
+        ),
       )
     end
 
@@ -338,7 +337,7 @@ on_accept_proc = lambda do |line, env|
           requested_rgb: rgb,
           fallback_index: fallback_index,
           truecolor: truecolor_enabled,
-        )
+        ),
       )
     end
 
@@ -356,9 +355,9 @@ on_accept_proc = lambda do |line, env|
       out
     end
   end
-  rescue SystemCallError => ex
-    env.alert(ex.message, role: :error)
-    nil
+rescue SystemCallError => ex
+  env.alert(ex.message, role: :error)
+  nil
 end
 
 def color_swatch_line(name:, requested_rgb:, fallback_index:, truecolor:, width: 24)
@@ -398,16 +397,16 @@ def color_band_for_rgb(name:, rgb:, truecolor:, fallback_index:, width: 36)
     fg = Fatty::Color.contrasting_rgb(rgb)
 
     "\e[38;2;#{fg[0]};#{fg[1]};#{fg[2]}m" \
-    "\e[48;2;#{rgb[0]};#{rgb[1]};#{rgb[2]}m" \
-    "#{label}" \
-    "\e[0m"
+      "\e[48;2;#{rgb[0]};#{rgb[1]};#{rgb[2]}m" \
+      "#{label}" \
+      "\e[0m"
   else
     fg_index = Fatty::Color.contrasting_ansi_index(fallback_index)
 
     "\e[38;5;#{fg_index}m" \
-    "\e[48;5;#{fallback_index}m" \
-    "#{label}" \
-    "\e[0m"
+      "\e[48;5;#{fallback_index}m" \
+      "#{label}" \
+      "\e[0m"
   end
 end
 
@@ -416,7 +415,7 @@ ENV.fetch('PATH', '').split(File::PATH_SEPARATOR).each do |dir|
   next unless Dir.exist?(dir)
 
   Dir.children(dir).each do |name|
-    next if name.match?(/\A\./)
+    next if name.start_with?('.')
 
     path = File.join(dir, name)
     cutes << name if File.file?(path) && File.executable?(path)

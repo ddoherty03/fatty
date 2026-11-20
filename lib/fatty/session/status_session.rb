@@ -87,13 +87,13 @@ module Fatty
     def renderable_text(value)
       parts = value.is_a?(Array) ? value : [value]
 
-      parts.map do |part|
+      parts.map { |part|
         if part.is_a?(Hash) && part.key?(:text)
           part[:text].to_s
         else
           part.to_s
         end
-      end.join
+      }.join
     end
 
     def visible?

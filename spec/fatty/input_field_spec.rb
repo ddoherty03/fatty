@@ -49,7 +49,7 @@ module Fatty
         field = Fatty::InputField.new
         field.buffer.replace("hello")
 
-        expect(field.to_s).to match(/hello/)
+        expect(field.to_s).to include('hello')
       end
     end
 
@@ -151,7 +151,10 @@ module Fatty
           field = field_with("dir ~/blocked/")
           expect(field.path_completion_candidates).to eq([])
           expect(field.popup_completion_candidates).to eq([])
-          expect { field.sync_virtual_suffix!; field.complete! }.not_to raise_error
+          expect {
+            field.sync_virtual_suffix!
+            field.complete!
+          }.not_to raise_error
           expect(field.buffer.text).to eq("dir ~/blocked/")
           field.buffer.replace("dir ~/readable/ex")
           field.complete!
@@ -284,9 +287,9 @@ module Fatty
 
         expect(field.popup_completion_query).to eq("~/src")
         expect(field.popup_completion_candidates).to include(
-                                                       "~/src/alpha.rb",
-                                                       "~/src/beta.rb",
-                                                     )
+          "~/src/alpha.rb",
+          "~/src/beta.rb",
+        )
       end
 
       it "uses the path token as the popup completion range" do

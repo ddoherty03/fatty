@@ -119,7 +119,7 @@ module Fatty
         expect(renderer.paragraph(html_break)).to include("one\ntwo")
       end
 
-      it "wraps  ordinary source newlines" do
+      it "wraps ordinary source newlines" do
         renderer = AnsiRenderer.new(width: 80)
 
         normal_newline = "one\ntwo"

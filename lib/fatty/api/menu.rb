@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # lib/fatty/api/prompt.rb
 
 module Fatty
@@ -93,6 +95,7 @@ module Fatty
         unless action.respond_to?(:call)
           raise ArgumentError, "menu choice #{label.inspect} is not callable"
         end
+
         normalized[label.to_s] = action
       end
     end

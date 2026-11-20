@@ -5,7 +5,7 @@ require 'rbconfig'
 
 RSpec.describe 'Curses backend loading' do
   it 'loads without mouse APIs or a process-wide endwin symbol' do
-    script = <<~'RUBY'
+    script = <<~RUBY
       require 'curses'
       require 'fiddle/import'
       Curses.constants.grep(/BUTTON|MOUSE/).each { |name| Curses.send(:remove_const, name) }
@@ -33,7 +33,7 @@ RSpec.describe 'Curses backend loading' do
         abort 'ignored suspension failure'
       rescue Fatty::Curses::Native::SuspensionUnavailable
       end
-      puts 'loaded' 
+      puts 'loaded'#{' '}
     RUBY
     stdout, stderr, status = Open3.capture3(RbConfig.ruby, '-Ilib', '-e', script)
     expect(status.success?).to be(true), stderr

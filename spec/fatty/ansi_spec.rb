@@ -26,8 +26,8 @@ module Fatty
       st = style_of(segments[0])
       expect(st.fg).to be_nil
       expect(st.bg).to be_nil
-      expect(st.bold).to eq(false)
-      expect(st.reverse).to eq(false)
+      expect(st.bold).to be(false)
+      expect(st.reverse).to be(false)
     end
 
     it "splits around SGR color changes and applies foreground 16-color" do
@@ -98,20 +98,20 @@ module Fatty
       expect(segments.map { |s| text_of(s) }).to eq(["a", "b", "c", "d", "ez"])
 
       st_b = style_of(segments[1])
-      expect(st_b.bold).to eq(true)
-      expect(st_b.reverse).to eq(false)
+      expect(st_b.bold).to be(true)
+      expect(st_b.reverse).to be(false)
 
       st_c = style_of(segments[2])
-      expect(st_c.bold).to eq(true)
-      expect(st_c.reverse).to eq(true)
+      expect(st_c.bold).to be(true)
+      expect(st_c.reverse).to be(true)
 
       st_d = style_of(segments[3])
-      expect(st_d.bold).to eq(true)
-      expect(st_d.reverse).to eq(false)
+      expect(st_d.bold).to be(true)
+      expect(st_d.reverse).to be(false)
 
       st_ez = style_of(segments[4])
-      expect(st_ez.bold).to eq(false)
-      expect(st_ez.reverse).to eq(false)
+      expect(st_ez.bold).to be(false)
+      expect(st_ez.reverse).to be(false)
     end
 
     it "ignores unknown SGR codes without breaking parsing" do
@@ -122,8 +122,8 @@ module Fatty
       # unknown code should not change anything
       expect(st.fg).to be_nil
       expect(st.bg).to be_nil
-      expect(st.bold).to eq(false)
-      expect(st.reverse).to eq(false)
+      expect(st.bold).to be(false)
+      expect(st.reverse).to be(false)
     end
 
     it "treats an unrecognized ESC sequence as literal ESC" do
@@ -148,14 +148,14 @@ module Fatty
       st_a = style_of(segments[0])
       expect(st_a.fg).to eq(2)
       expect(st_a.bg).to eq(4)
-      expect(st_a.bold).to eq(true)
-      expect(st_a.reverse).to eq(false)
+      expect(st_a.bold).to be(true)
+      expect(st_a.reverse).to be(false)
 
       st_b = style_of(segments[1])
       expect(st_b.fg).to be_nil
       expect(st_b.bg).to be_nil
-      expect(st_b.bold).to eq(false)
-      expect(st_b.reverse).to eq(false)
+      expect(st_b.bold).to be(false)
+      expect(st_b.reverse).to be(false)
     end
 
     it "preserves UTF-8 characters while segmenting ANSI text" do

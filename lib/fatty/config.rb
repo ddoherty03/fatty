@@ -156,17 +156,17 @@ module Fatty
       path = app_config_path || File.join(user_config_dir, "config.yml")
 
       config = if app_config_path
-                 read_app("config")
-               elsif File.exist?(path)
-                 YAML.safe_load_file(
-                   path,
-                   aliases: true,
-                   permitted_classes: [Date, DateTime, Time],
-                   symbolize_names: true,
-                 ) || {}
-               else
-                 {}
-               end
+        read_app("config")
+      elsif File.exist?(path)
+        YAML.safe_load_file(
+          path,
+          aliases: true,
+          permitted_classes: [Date, DateTime, Time],
+          symbolize_names: true,
+        ) || {}
+      else
+        {}
+      end
       config[name.to_sym] = value
       FileUtils.mkdir_p(File.dirname(path))
       File.write(path, YAML.dump(yaml_safe_value(config)))

@@ -87,10 +87,10 @@ module Fatty
         expect(owner_command.target).to eq(:focused)
         expect(owner_command.action).to eq(:pager_search_step)
         expect(owner_command.payload).to include(
-                                           pattern: "zeta",
-                                           regex: false,
-                                           direction: :forward,
-                                         )
+          pattern: "zeta",
+          regex: false,
+          direction: :forward,
+        )
       end
 
       it "steps search backward" do
@@ -159,7 +159,7 @@ module Fatty
     describe "#view" do
       it "renders the search field on the pager status row" do
         session = Fatty::SearchSession.new
-        output_rect = instance_double("OutputRect", rows: 10)
+        output_rect = instance_double(OutputRect, rows: 10)
         screen = instance_double(Fatty::Screen, output_rect: output_rect)
         renderer = instance_double(Fatty::Renderer::Truecolor)
         terminal = instance_double(Fatty::Terminal, screen: screen, renderer: renderer)

@@ -5,32 +5,40 @@ module Fatty
     class EventSource
       MOUSE_SUPPORTED = ::Curses.respond_to?(:mousemask) && ::Curses.respond_to?(:getmouse)
 
-      MOUSE_BSTATE_BUTTON_MAP = (MOUSE_SUPPORTED ? {
-        ::Curses::BUTTON1_PRESSED => :left_pressed,
-        ::Curses::BUTTON1_RELEASED => :left_released,
-        ::Curses::BUTTON1_CLICKED => :left_clicked,
-        ::Curses::BUTTON1_DOUBLE_CLICKED => :left_double_clicked,
-        ::Curses::BUTTON1_TRIPLE_CLICKED => :left_triple_clicked,
+      MOUSE_BSTATE_BUTTON_MAP = (if MOUSE_SUPPORTED
+                                   {
+                                     ::Curses::BUTTON1_PRESSED => :left_pressed,
+                                     ::Curses::BUTTON1_RELEASED => :left_released,
+                                     ::Curses::BUTTON1_CLICKED => :left_clicked,
+                                     ::Curses::BUTTON1_DOUBLE_CLICKED => :left_double_clicked,
+                                     ::Curses::BUTTON1_TRIPLE_CLICKED => :left_triple_clicked,
 
-        ::Curses::BUTTON2_PRESSED => :middle_pressed,
-        ::Curses::BUTTON2_RELEASED => :middle_released,
-        ::Curses::BUTTON2_CLICKED => :middle_clicked,
-        ::Curses::BUTTON2_DOUBLE_CLICKED => :middle_double_clicked,
-        ::Curses::BUTTON2_TRIPLE_CLICKED => :middle_triple_clicked,
+                                     ::Curses::BUTTON2_PRESSED => :middle_pressed,
+                                     ::Curses::BUTTON2_RELEASED => :middle_released,
+                                     ::Curses::BUTTON2_CLICKED => :middle_clicked,
+                                     ::Curses::BUTTON2_DOUBLE_CLICKED => :middle_double_clicked,
+                                     ::Curses::BUTTON2_TRIPLE_CLICKED => :middle_triple_clicked,
 
-        ::Curses::BUTTON3_PRESSED => :right_pressed,
-        ::Curses::BUTTON3_RELEASED => :right_released,
-        ::Curses::BUTTON3_CLICKED => :right_clicked,
-        ::Curses::BUTTON3_DOUBLE_CLICKED => :right_double_clicked,
-        ::Curses::BUTTON3_TRIPLE_CLICKED => :right_triple_clicked
-      } : {}).freeze
+                                     ::Curses::BUTTON3_PRESSED => :right_pressed,
+                                     ::Curses::BUTTON3_RELEASED => :right_released,
+                                     ::Curses::BUTTON3_CLICKED => :right_clicked,
+                                     ::Curses::BUTTON3_DOUBLE_CLICKED => :right_double_clicked,
+                                     ::Curses::BUTTON3_TRIPLE_CLICKED => :right_triple_clicked
+                                   }
+                                 else
+                                   {}
+      end).freeze
 
       SCROLL_UP_BSTATE = MOUSE_SUPPORTED ? ::Curses::BUTTON4_PRESSED : 0
       SCROLL_DOWN_BSTATE = 0x10000000
-      MOUSE_MODIFIER_MASK = MOUSE_SUPPORTED ? (
-        ::Curses::BUTTON_CTRL |
-        ::Curses::BUTTON_ALT |
-        ::Curses::BUTTON_SHIFT) : 0
+      MOUSE_MODIFIER_MASK = if MOUSE_SUPPORTED
+        (
+              ::Curses::BUTTON_CTRL |
+              ::Curses::BUTTON_ALT |
+              ::Curses::BUTTON_SHIFT)
+      else
+        0
+      end
 
       ESCAPE_LOOKAHEAD_MS = 0
 

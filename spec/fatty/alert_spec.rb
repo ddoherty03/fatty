@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Fatty
   RSpec.describe Alert do
     it "requires the text parameter" do

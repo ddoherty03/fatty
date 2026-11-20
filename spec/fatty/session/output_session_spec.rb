@@ -324,7 +324,7 @@ module Fatty
         append_lines(session, 5)
 
         commands = session.update(
-          Fatty::Command.session(session.id, :quit_paging)
+          Fatty::Command.session(session.id, :quit_paging),
         )
 
         expect(session).not_to be_pager_active
@@ -385,7 +385,7 @@ module Fatty
             pattern: "line \\d",
             regex: true,
             direction: :forward,
-          )
+          ),
         )
 
         expect(session.highlights).to include(0)
@@ -590,8 +590,8 @@ module Fatty
         expect(session).not_to be_narrowed
         expect(session.narrow_query).to be_nil
         expect(session.visible_lines.map(&:text)).to eq(
-                                                       ["alpha", "beta", "alpha"],
-                                                     )
+          ["alpha", "beta", "alpha"],
+        )
       end
 
       it "toggles line numbers independently of narrowing" do
@@ -681,11 +681,11 @@ module Fatty
         expect(
           line.fragments.map { |fragment| [fragment.text, fragment.role] },
         ).to eq(
-               [
-                 ["ordinary ", nil],
-                 ["good", :good],
-               ],
-             )
+          [
+            ["ordinary ", nil],
+            ["good", :good],
+          ],
+        )
       end
 
       it "requires all narrowing terms but permits them in any order" do
@@ -707,11 +707,11 @@ module Fatty
 
         expect(session.visible_lines.map(&:text))
           .to eq(
-                [
-                  "alpha beta",
-                  "beta then alpha",
-                ],
-              )
+            [
+              "alpha beta",
+              "beta then alpha",
+            ],
+          )
       end
 
       it "matches visible text rather than ANSI escape sequences" do

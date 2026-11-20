@@ -634,9 +634,10 @@ module Fatty
         stage_window(win)
       end
 
-      def draw_output_row(win, line:, fragments: nil, y:, abs_line:, highlights:, line_number: nil, line_number_width: nil)
+      def draw_output_row(win, line:, fragments: nil, y:, abs_line:, highlights:, line_number: nil,
+        line_number_width: nil)
         base_attr = pair_attr(:output, fallback: ::Curses::A_NORMAL)
-        line_number_attr = base_attr | ::Curses::A_DIM
+        base_attr | ::Curses::A_DIM
         hi_attr = pair_attr(:match_current, fallback: ::Curses::A_REVERSE)
         hi2_attr = pair_attr(:match_other, fallback: hi_attr)
 
@@ -654,13 +655,13 @@ module Fatty
 
         curses_ranges =
           Array(semantic_ranges).map do |from, to, role|
-          attr =
-            case role
-            when :secondary then hi2_attr
-            else hi_attr
-            end
-          [from.to_i, to.to_i, attr]
-        end
+            attr =
+              case role
+              when :secondary then hi2_attr
+              else hi_attr
+              end
+            [from.to_i, to.to_i, attr]
+          end
 
         slices = output_slices(line, fragments: fragments, ranges: curses_ranges, base_attr: base_attr)
         render_slices(win, slices)
@@ -735,9 +736,9 @@ module Fatty
 
       def output_slices(line, fragments:, ranges:, base_attr:)
         fragments = Array(fragments)
-        return build_line_slices(line.to_s, ranges: ranges) { |style|
+        return build_line_slices(line.to_s, ranges: ranges) do |style|
           ansi_style_attr(style, fallback: base_attr)
-        } if fragments.empty?
+        end if fragments.empty?
 
         slices = []
         offset = 0
@@ -752,25 +753,25 @@ module Fatty
 
           fragment_ranges =
             Array(ranges).filter_map do |from, to, attr|
-            clipped_from = [from, offset].max
-            clipped_to = [to, fragment_end].min
-            next unless clipped_from < clipped_to
+              clipped_from = [from, offset].max
+              clipped_to = [to, fragment_end].min
+              next if clipped_from >= clipped_to
 
-            [
-              clipped_from - offset,
-              clipped_to - offset,
-              attr,
-            ]
-          end
+              [
+                clipped_from - offset,
+                clipped_to - offset,
+                attr,
+              ]
+            end
 
           fragment_slices =
             build_line_slices(text, ranges: fragment_ranges) do |style|
-            ansi_style_attr(
-              style,
-              fallback: fragment_attr,
-              fallback_role: role,
-            )
-          end
+              ansi_style_attr(
+                style,
+                fallback: fragment_attr,
+                fallback_role: role,
+              )
+            end
 
           fragment_slices.each do |attr, slice_text|
             emit_slice(slices, attr, slice_text)

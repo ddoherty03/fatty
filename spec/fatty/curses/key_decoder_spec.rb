@@ -34,10 +34,14 @@ module Fatty
 
         it "ignores invalid modifier values while loading other definitions" do
           allow(Fatty::Config).to receive(:keydefs).and_return(
-            { xterm: { sequences: {
-              invalid: { sequence: "\e[99~", key: "oops", meta: "false" },
-              valid: { sequence: "\e[98~", key: "extra" },
-            } } },
+            {
+              xterm: {
+                sequences: {
+                  invalid: { sequence: "\e[99~", key: "oops", meta: "false" },
+                  valid: { sequence: "\e[98~", key: "extra" },
+                }
+              }
+            },
           )
           expect(Fatty).to receive(:warn).with(/boolean/, tag: :keycode)
           decoder = KeyDecoder.new(env: env)
@@ -266,10 +270,10 @@ module Fatty
             .to receive(:keydefs)
                   .and_return(
                     {
-                        xterm: {
-                            "260" => { "key" => "right" }, # swap left->right
-                          },
-                        },
+                      xterm: {
+                        "260" => { "key" => "right" }, # swap left->right
+                      },
+                    },
                   )
           kd = KeyDecoder.new(env: env(:xterm))
           e  = kd.decode(260)
@@ -293,10 +297,10 @@ module Fatty
             .to receive(:keydefs)
                   .and_return(
                     {
-                        xterm: {
-                            "999" => { "key" => "home", "shift" => true, "ctrl" => false },
-                        },
+                      xterm: {
+                        "999" => { "key" => "home", "shift" => true, "ctrl" => false },
                       },
+                    },
                   )
 
           kd = KeyDecoder.new(env: env(:xterm))
@@ -314,10 +318,10 @@ module Fatty
             .to receive(:keydefs)
                   .and_return(
                     {
-                        xterm: {
-                            "260" => { "key" => "left", "ctrl" => true, "shift" => true },
-                        },
+                      xterm: {
+                        "260" => { "key" => "left", "ctrl" => true, "shift" => true },
                       },
+                    },
                   )
 
           kd = KeyDecoder.new(env: env(:xterm))
@@ -337,10 +341,10 @@ module Fatty
             .to receive(:keydefs)
                   .and_return(
                     {
-                        xterm: {
-                            "9" => { "key" => "right" },
-                        },
+                      xterm: {
+                        "9" => { "key" => "right" },
                       },
+                    },
                   )
 
           kd = KeyDecoder.new(env: env(:xterm))

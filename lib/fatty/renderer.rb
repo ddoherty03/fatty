@@ -401,12 +401,12 @@ module Fatty
       text = buf.text.to_s
       segments =
         Fatty::Ansi.segment(field.prompt_text.to_s).map do |prompt_text, style|
-        {
-          text: prompt_text,
-          role: base_role,
-          style: style,
-        }
-      end
+          {
+            text: prompt_text,
+            role: base_role,
+            style: style,
+          }
+        end
 
       region =
         if buf.respond_to?(:region_range)

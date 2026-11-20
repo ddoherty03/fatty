@@ -5,28 +5,9 @@ require_relative "../renderer_spec"
 
 module Fatty
   RSpec.describe Renderer::Truecolor do
-    it "refreshes the input backing window before drawing the first ANSI frame" do
-      input = double("input window")
-      allow(context).to receive(:input_win).and_return(input)
-      expect(input).to receive(:refresh)
-      renderer.begin_frame
+    let(:terminal) do
+      instance_double(Fatty::Terminal, renderer: renderer, screen: screen)
     end
-
-    let(:screen) do
-      Fatty::Screen.new(rows: 10, cols: 12, status_rows: 1)
-    end
-
-    let(:context) do
-      instance_double(
-        Curses::Context,
-        truecolor: true,
-        status_win: nil,
-        output_win: nil,
-        input_win: nil,
-        alert_win: nil,
-      )
-    end
-
     let(:palette) do
       {
         output: {
@@ -61,9 +42,25 @@ module Fatty
         },
       }
     end
+    let(:context) do
+      instance_double(
+        Curses::Context,
+        truecolor: true,
+        status_win: nil,
+        output_win: nil,
+        input_win: nil,
+        alert_win: nil,
+      )
+    end
+    let(:screen) do
+      Fatty::Screen.new(rows: 10, cols: 12, status_rows: 1)
+    end
 
-    let(:terminal) do
-      instance_double(Fatty::Terminal, renderer: renderer, screen: screen)
+    it "refreshes the input backing window before drawing the first ANSI frame" do
+      input = double("input window")
+      allow(context).to receive(:input_win).and_return(input)
+      expect(input).to receive(:refresh)
+      renderer.begin_frame
     end
 
     subject(:renderer) do
@@ -115,8 +112,8 @@ module Fatty
       expect(out.string).to include("38;2;0;0;0")
       expect(out.string).to include("48;2;240;248;255")
       expect(out.string).to include("Ready")
-      ensure
-        $stdout = original_stdout
+    ensure
+      $stdout = original_stdout
     end
 
     it "renders ANSI colors embedded in the input prompt" do
@@ -135,8 +132,8 @@ module Fatty
       expect(out.string).to include("red")
       expect(out.string).to include("> ")
       expect(out.string).to include("hello")
-      ensure
-        $stdout = original_stdout
+    ensure
+      $stdout = original_stdout
     end
 
     it "renders output using its semantic role" do
@@ -188,8 +185,8 @@ module Fatty
       expect(out.string).to include("Good news")
       expect(out.string).to include("38;2;0;0;0")
       expect(out.string).to include("48;2;240;248;255")
-      ensure
-        $stdout = original_stdout
+    ensure
+      $stdout = original_stdout
     end
 
     it "renders output using semantic role attributes" do
@@ -242,8 +239,8 @@ module Fatty
 
       expect(out.string).to include("Good news")
       expect(out.string).to include("\e[1;")
-      ensure
-        $stdout = original_stdout
+    ensure
+      $stdout = original_stdout
     end
 
     it "renders output with an unknown semantic role using the output role" do
@@ -294,8 +291,8 @@ module Fatty
 
       expect(out.string).to include("Visible")
       expect(out.string).to include("38;2;220;220;220")
-      ensure
-        $stdout = original_stdout
+    ensure
+      $stdout = original_stdout
     end
 
     it "renders original zero-padded line numbers for narrowed visible lines" do
@@ -338,8 +335,8 @@ module Fatty
       expect(out.string).to include("117: ")
       expect(out.string).to include("second")
       expect(out.string).to include("later")
-      ensure
-        $stdout = original_stdout
+    ensure
+      $stdout = original_stdout
     end
 
     it "renders the line-number gutter with the line_number theme role" do
@@ -381,8 +378,8 @@ module Fatty
 
       expect(out.string).to include("48;2;255;165;0")
       expect(out.string).to include("1: ")
-      ensure
-        $stdout = original_stdout
+    ensure
+      $stdout = original_stdout
     end
 
     it "does not render a gutter when line numbers are disabled" do
@@ -424,8 +421,8 @@ module Fatty
 
       expect(out.string).to include("output")
       expect(out.string).not_to include("117: ")
-      ensure
-        $stdout = original_stdout
+    ensure
+      $stdout = original_stdout
     end
 
     it "clamps restored input cursor position to the input rect width" do
@@ -444,8 +441,8 @@ module Fatty
       col = screen.input_rect.col + screen.input_rect.cols
 
       expect(out.string).to include("\e[#{row};#{col}H")
-      ensure
-        $stdout = original_stdout
+    ensure
+      $stdout = original_stdout
     end
 
     describe "#style" do
@@ -467,9 +464,9 @@ module Fatty
         )
 
         expect(result).to eq(
-                            "\e[0m\e[1m\e[38;2;255;255;0m" \
-                            "\e[48;2;10;20;30mCareful\e[0m",
-                          )
+          "\e[0m\e[1m\e[38;2;255;255;0m" \
+            "\e[48;2;10;20;30mCareful\e[0m",
+        )
       end
 
       it "returns plain text when the role is unavailable" do

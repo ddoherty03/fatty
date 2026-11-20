@@ -22,11 +22,15 @@ RSpec.describe Fatty::KeybindingsSession do
     expect(tables.count { |line| line.text.start_with?("  └") }).to eq(2)
     expect(lines.first.fragments.map(&:role)).to eq([:markdown_h1])
     ["text", "input"].each do |context|
-      expect(lines.find { |line| line.text == "In the #{context} context:" }.fragments.map(&:role)).to eq([:markdown_h2])
+      expect(lines.find { |line|
+        line.text == "In the #{context} context:"
+      }.fragments.map(&:role)).to eq([:markdown_h2])
     end
     headers = lines.select { |line| line.text.start_with?("  │ Key ") }
     expect(headers.first.text).to match(/│ Key +│ Action +│ Description +│/)
-    expect(headers.map { |line| line.fragments.map(&:role) }).to eq([[:markdown_table_header], [:markdown_table_header]])
+    expect(headers.map do |line|
+      line.fragments.map(&:role)
+    end).to eq([[:markdown_table_header], [:markdown_table_header]])
     expect(session.output.lines.join).not_to include("\e[")
   end
 

@@ -110,14 +110,14 @@ module Fatty
         apply_action(popup, :popup_accept)
 
         expect(session.history.previous_for(
-                 :popup_filter,
-                 current: "",
-                 ctx: {
-                   kind: :popup_filter,
-                   popup: :history_search,
-                   prompt: "Narrow: ",
-                 },
-               )).to eq("tty")
+          :popup_filter,
+          current: "",
+          ctx: {
+            kind: :popup_filter,
+            popup: :history_search,
+            prompt: "Narrow: ",
+          },
+        )).to eq("tty")
       end
 
       it "handles enter by submitting the current line" do
@@ -901,11 +901,11 @@ module Fatty
         end
         expect(applied.map(&:action))
           .to include(
-                :begin_command,
-                :append,
-                :finish_command,
-                :quit_paging,
-              )
+            :begin_command,
+            :append,
+            :finish_command,
+            :quit_paging,
+          )
         expect(session.terminal).to have_received(:render_frame).once
       end
     end

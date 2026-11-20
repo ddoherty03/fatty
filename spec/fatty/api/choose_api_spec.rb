@@ -59,7 +59,6 @@ module Fatty
 
         # simplecov:disable
 
-
         def capture_owner(command)
           if command.target == :terminal && command.action == :push_modal
             @owner = command.payload.fetch(:owner)
@@ -111,7 +110,7 @@ module Fatty
 
         result = env.choose(
           "Pick",
-          choices: { "One" => :one, "Two" => :two }
+          choices: { "One" => :one, "Two" => :two },
         )
 
         expect(result).to eq(:two)

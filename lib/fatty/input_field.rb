@@ -442,15 +442,15 @@ module Fatty
         Dir.children(dir_part)
           .select { |name| Gem.win_platform? ? name.downcase.start_with?(base_part.downcase) : name.start_with?(base_part) }
           .sort_by do |name|
-            full = File.join(dir_part, name)
-            hide_penalty =
-              if base_part.match?(/\A[.#]/)
-                0
-              else
-                name.match?(/\A[.#]/) ? 1 : 0
-              end
-            file_penalty = File.directory?(full) ? 0 : 1
-            [hide_penalty, file_penalty, name]
+          full = File.join(dir_part, name)
+          hide_penalty =
+            if base_part.match?(/\A[.#]/)
+              0
+            else
+              name.match?(/\A[.#]/) ? 1 : 0
+            end
+          file_penalty = File.directory?(full) ? 0 : 1
+          [hide_penalty, file_penalty, name]
         end
 
       return [] if entries.empty?
@@ -487,7 +487,7 @@ module Fatty
     def escape_path(path)
       if Gem.win_platform?
         path = path.tr("/", "\\")
-        return path.match?(/[\s&()<>|]/) ? %Q{"#{path}"} : path
+        return path.match?(/[\s&()<>|]/) ? %{"#{path}"} : path
       end
 
       path.gsub(/([ \t\n\\'"`$!#&()*;<>?\[\]\{\}|])/) { "\\#{$1}" }

@@ -111,11 +111,12 @@ module Fatty
         terminal = terminal_selecting("One")
         env = env_for(terminal)
 
-        env.menu("Choose",
+        env.menu(
+          "Choose",
           choices: {
             "One" => ->(_fatty, _label) { :one },
             "Two" => ->(_fatty, _label) { :two },
-          }
+          },
         )
 
         command = terminal.applied_commands.first
@@ -130,11 +131,14 @@ module Fatty
         env = env_for(terminal)
 
         result =
-          env.menu("Choose", choices: {
-            "One" => ->(_fatty, _label) { :one },
-            "Two" => ->(_fatty, _label) { :two },
-          },
-          cancel_value: :quit)
+          env.menu(
+            "Choose",
+            choices: {
+              "One" => ->(_fatty, _label) { :one },
+              "Two" => ->(_fatty, _label) { :two },
+            },
+                      cancel_value: :quit,
+          )
 
         expect(result).to eq(:quit)
       end
@@ -150,7 +154,7 @@ module Fatty
             {
               "One" => proc do |inner_env, _label|
                 callback_env = inner_env
-               :done
+                :done
               end,
             },
         )
@@ -187,9 +191,9 @@ module Fatty
           "Choose",
           choices: {
             "One" => proc do |inner_env|
-               inner_env.append("one")
-               inner_env.append("two", follow: false)
-             end,
+              inner_env.append("one")
+              inner_env.append("two", follow: false)
+            end,
           },
         )
 
@@ -207,9 +211,9 @@ module Fatty
           "Choose",
           choices: {
             "One" => proc do |inner_env|
-               inner_env.status("working", role: :good)
-               inner_env.append("hello")
-             end,
+              inner_env.status("working", role: :good)
+              inner_env.append("hello")
+            end,
           },
         )
         status_command = terminal.applied_commands.find do |command|

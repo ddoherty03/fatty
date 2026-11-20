@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # lib/fatty/api/prompt.rb
 
 module Fatty
@@ -47,7 +49,7 @@ module Fatty
 
       begin
         terminal.apply_command(
-          Fatty::Command.terminal(:push_modal, session: popup, owner: owner)
+          Fatty::Command.terminal(:push_modal, session: popup, owner: owner),
         )
         terminal.render_frame
 

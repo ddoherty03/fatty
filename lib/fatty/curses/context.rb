@@ -23,6 +23,7 @@ module Fatty
         result
       end
     end
+
     # Context represents the active curses environment.
     #
     # It owns:
@@ -254,10 +255,10 @@ module Fatty
 
         @ansi_pairs ||= {}
         @ansi_pair_limit ||= begin
-                               ::Curses.color_pairs.to_i
-                             rescue StandardError
-                               256
-                             end
+          ::Curses.color_pairs.to_i
+        rescue StandardError
+          256
+        end
 
         key = [fg.nil? ? -1 : fg.to_i, bg.nil? ? -1 : bg.to_i]
         cached = @ansi_pairs[key]
@@ -270,8 +271,8 @@ module Fatty
         if @ansi_pair_limit.positive? && @ansi_next_pair_id >= @ansi_pair_limit
           Fatty.debug(
             "ansi_pair_for exhausted next=#{@ansi_next_pair_id.inspect} " \
-            "limit=#{@ansi_pair_limit.inspect} fg=#{fg.inspect} bg=#{bg.inspect} " \
-            "fallback=#{fallback_pair_id.inspect}",
+              "limit=#{@ansi_pair_limit.inspect} fg=#{fg.inspect} bg=#{bg.inspect} " \
+              "fallback=#{fallback_pair_id.inspect}",
             tag: :theme,
           )
           @ansi_pairs[key] = fallback_pair_id

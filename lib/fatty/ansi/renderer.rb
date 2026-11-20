@@ -15,13 +15,13 @@ module Fatty
         spec = palette&.[](role.to_sym)
         return text.to_s unless spec
 
-        text.to_s.split(/(\n)/).map do |part|
+        text.to_s.split(/(\n)/).map { |part|
           if part == "\n"
             part
           else
             "#{sgr_for_spec(spec)}#{part}#{reset}"
           end
-        end.join
+        }.join
       end
 
       def render_line(row:, col:, width:, text:, role:, palette:)

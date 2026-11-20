@@ -645,11 +645,11 @@ module Fatty
           Fatty::Logger.logger = nil
 
           example.run
-          ensure
-            Fatty::Config.reader = old_reader
-            Fatty::Config.progname = old_progname
-            Fatty::Logger.logger = old_logger
-            ENV["XDG_CONFIG_HOME"] = old_xdg
+        ensure
+          Fatty::Config.reader = old_reader
+          Fatty::Config.progname = old_progname
+          Fatty::Logger.logger = old_logger
+          ENV["XDG_CONFIG_HOME"] = old_xdg
         end
       end
 
@@ -690,10 +690,8 @@ module Fatty
         )
 
         allow(Fatty::Config).to receive(:install_defaults!)
-        allow(Fatty::Config).to receive(:config).and_return({})
         allow(Fatty::Logger).to receive(:configure)
-        allow(Fatty::Config).to receive(:keydefs).and_return({})
-        allow(Fatty::Config).to receive(:keybindings).and_return([])
+        allow(Fatty::Config).to receive_messages(config: {}, keydefs: {}, keybindings: [])
         allow(Fatty::Themes::Manager).to receive(:load!)
 
         terminal.send(:preflight!)

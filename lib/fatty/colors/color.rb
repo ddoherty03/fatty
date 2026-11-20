@@ -109,9 +109,9 @@ module Fatty
       end
 
       def x11_colors_by_name
-        x11_colors.sort_by do |name, _rgb|
+        x11_colors.sort_by { |name, _rgb|
           color_name_sort_key(name)
-        end.to_h
+        }.to_h
       end
 
       def xterm_color_name(index)
@@ -178,9 +178,9 @@ module Fatty
             parsed = parse_hex(s)
             parsed ||= x11_rgb_for_name(s)
             parsed ||= begin
-                         ansi = ANSI_NAMES[s]
-                         xterm_rgb_for_index(ansi) unless ansi == DEFAULT_INDEX || ansi.nil?
-                       end
+              ansi = ANSI_NAMES[s]
+              xterm_rgb_for_index(ansi) unless ansi == DEFAULT_INDEX || ansi.nil?
+            end
             parsed
           end
         end

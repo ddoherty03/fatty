@@ -169,7 +169,7 @@ module Fatty
 
         expect(session.renderer)
           .to receive(:render_prompt_popup)
-          .with(session: session)
+                .with(session: session)
 
         session.view
       end

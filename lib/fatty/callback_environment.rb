@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #
 # This class provides a wrapper around components that can be handed off to
 # Terminal's on_accept method (or other callbacks) for access to Fatty's

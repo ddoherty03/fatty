@@ -52,7 +52,7 @@ module Fatty
       text.to_s
         .gsub(%r{<br\s*/?>}i, HARD_BREAK)
         .gsub(%r{<span\s+class=["']underline["']>(.*?)</span>}m) do
-          md(Regexp.last_match(1), :markdown_underline)
+        md(Regexp.last_match(1), :markdown_underline)
       end
     end
 

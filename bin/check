@@ -3,8 +3,7 @@
 
 # mode: ruby
 
-#!/usr/bin/env ruby
-# frozen_string_literal: true
+# !/usr/bin/env ruby
 
 require "yaml"
 require "optparse"
@@ -44,7 +43,7 @@ parser.parse!(ARGV)
 
 def keydefs_path
   Pathname.new(ENV["XDG_CONFIG_HOME"] || File.join(Dir.home, ".config"))
-          .join("fat_term", "keydefs.yaml")
+    .join("fat_term", "keydefs.yaml")
 end
 
 # ------------------------------------------------------------

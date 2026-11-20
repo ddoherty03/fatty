@@ -13,7 +13,7 @@ module Fatty
         )
       end
 
-      let(:window) { instance_double("window") }
+      let(:window) { instance_double(window) }
       let(:context) { instance_double(Context, input_win: window) }
       let(:key_decoder) { instance_double(KeyDecoder) }
       let(:source) do
@@ -75,7 +75,7 @@ module Fatty
 
         it "decodes ctrl scroll down as a modified mouse event" do
           mouse = instance_double(
-            "Curses::MouseEvent",
+            Curses::MouseEvent,
             bstate: EventSource::SCROLL_DOWN_BSTATE | ::Curses::BUTTON_CTRL,
             x: 12,
             y: 5,
@@ -92,7 +92,7 @@ module Fatty
 
         it "decodes ctrl scroll up as a modified mouse event" do
           mouse = instance_double(
-            "Curses::MouseEvent",
+            Curses::MouseEvent,
             bstate: ::Curses::BUTTON4_PRESSED | ::Curses::BUTTON_CTRL,
             x: 12,
             y: 5,
@@ -107,7 +107,7 @@ module Fatty
 
         it "decodes meta and shift modifiers on mouse events" do
           mouse = instance_double(
-            "Curses::MouseEvent",
+            Curses::MouseEvent,
             bstate: ::Curses::BUTTON1_CLICKED | ::Curses::BUTTON_ALT | ::Curses::BUTTON_SHIFT,
             x: 2,
             y: 8,
@@ -120,20 +120,20 @@ module Fatty
         end
 
         it "decodes escape followed by a non-CSI key as a meta sequence" do
-          window = instance_double("Window")
+          window = instance_double(Window)
           allow(window).to receive(:getch).and_return(27, "f")
           allow(window).to receive(:timeout=)
-          context = instance_double("Context", input_win: window)
+          context = instance_double(Context, input_win: window)
           source = EventSource.new(context: context, key_decoder: key_decoder, poll_ms: 10)
 
           expect(source.send(:read_raw)).to eq([27, "f"])
         end
 
         it "returns bare escape when no following key arrives during escape lookahead" do
-          window = instance_double("Window")
+          window = instance_double(Window)
           allow(window).to receive(:getch).and_return(27, -1)
           allow(window).to receive(:timeout=)
-          context = instance_double("Context", input_win: window)
+          context = instance_double(Context, input_win: window)
           source = EventSource.new(context: context, key_decoder: key_decoder, poll_ms: 10)
 
           expect(source.send(:read_raw)).to eq(27)
@@ -167,8 +167,7 @@ module Fatty
         end
 
         before do
-          allow(Fatty::Config).to receive(:config).and_return({ esc_delay: 10 })
-          allow(Fatty::Config).to receive(:keydefs).and_return(nil)
+          allow(Fatty::Config).to receive_messages(config: { esc_delay: 10 }, keydefs: nil)
         end
 
         { 'D' => :left, 'C' => :right }.each do |suffix, key|
@@ -198,8 +197,16 @@ module Fatty
           expect(event.meta?).to be(true)
         end
 
-        { '1' => :home, '2' => :insert, '3' => :delete, '4' => :end,
-          '5' => :page_up, '6' => :page_down, '7' => :home, '8' => :end }.each do |code, key|
+        {
+          '1' => :home,
+          '2' => :insert,
+          '3' => :delete,
+          '4' => :end,
+          '5' => :page_up,
+          '6' => :page_down,
+          '7' => :home,
+          '8' => :end
+        }.each do |code, key|
           it "decodes navigation sequence #{code}~ and its modifier combinations" do
             (1..16).each do |modifier|
               sequence = modifier == 1 ? "[#{code}~" : "[#{code};#{modifier}~"
@@ -267,7 +274,7 @@ module Fatty
         it 'preserves a partial sequence and a following curses key' do
           source = source_for([27, '[', '1', ';', ::Curses::KEY_LEFT])
           expect(source.next_event.payload.fetch(:event).key).to eq(:escape)
-          expect(3.times.map { source.next_event.payload.fetch(:event).text }.join).to eq('[1;')
+          expect(Array.new(3) { source.next_event.payload.fetch(:event).text }.join).to eq('[1;')
           expect(source.next_event.payload.fetch(:event).key).to eq(:left)
         end
       end

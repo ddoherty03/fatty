@@ -46,10 +46,10 @@ module Fatty
 
           expect(env.commands.first.payload)
             .to eq(
-                  text: "hello",
-                  follow: true,
-                  role: :good,
-                )
+              text: "hello",
+              follow: true,
+              role: :good,
+            )
         end
 
         it "preserves the role on multiline output" do
@@ -57,10 +57,10 @@ module Fatty
 
           expect(env.commands.first.payload)
             .to eq(
-                  text: "one\ntwo\nthree",
-                  follow: true,
-                  role: :good,
-                )
+              text: "one\ntwo\nthree",
+              follow: true,
+              role: :good,
+            )
         end
 
         it "preserves an unknown role for later resolution" do
@@ -68,10 +68,10 @@ module Fatty
 
           expect(env.commands.first.payload)
             .to eq(
-                  text: "hello",
-                  follow: true,
-                  role: :missing,
-                )
+              text: "hello",
+              follow: true,
+              role: :missing,
+            )
         end
 
         it "preserves queue order" do
@@ -94,10 +94,10 @@ module Fatty
         expect(terminal)
           .to have_received(:apply_command)
                 .with(have_attributes(
-                        target: :output,
-                        action: :append,
-                        payload: { text: "hello", follow: true },
-                      ))
+                  target: :output,
+                  action: :append,
+                  payload: { text: "hello", follow: true },
+                ))
         expect(terminal).to have_received(:render_frame)
         expect(env.commands).to be_empty
       end
@@ -107,9 +107,9 @@ module Fatty
         expect(terminal)
           .to have_received(:apply_command)
                 .with(have_attributes(
-                        action: :append,
-                        payload: { text: "hello", follow: false },
-                      ))
+                  action: :append,
+                  payload: { text: "hello", follow: false },
+                ))
       end
 
       it "honors mode" do
@@ -117,9 +117,9 @@ module Fatty
         expect(terminal)
           .to have_received(:apply_command)
                 .with(have_attributes(
-                        action: :append,
-                        payload: { text: "hello", follow: true, mode: :scrolling },
-                      ))
+                  action: :append,
+                  payload: { text: "hello", follow: true, mode: :scrolling },
+                ))
       end
 
       it "converts text to string" do
@@ -127,9 +127,9 @@ module Fatty
         expect(terminal)
           .to have_received(:apply_command)
                 .with(have_attributes(
-                        action: :append,
-                        payload: { text: "hello", follow: true },
-                      ))
+                  action: :append,
+                  payload: { text: "hello", follow: true },
+                ))
       end
 
       context "with a role" do
@@ -169,12 +169,12 @@ module Fatty
 
     describe "#markdown" do
       let(:palette) { :palette }
-      let(:renderer) {
+      let(:renderer) do
         instance_double(
           Fatty::Renderer,
           palette: palette,
         )
-      }
+      end
 
       it "renders markdown, queues the rendered output, and returns nil" do
         allow(Fatty::Markdown)

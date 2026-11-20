@@ -68,7 +68,7 @@ module Fatty
         expect(terminal).to have_received(:apply_command) do |command|
           expect(command.target).to eq(:status)
           expect(command.action).to eq(:show)
-          expect(command.payload.fetch(:text)).to match(/\AImporting \[0\/10\] 0%/)
+          expect(command.payload.fetch(:text)).to match(%r{\AImporting \[0/10\] 0%})
           expect(command.payload.fetch(:role)).to eq(:info)
         end
       end
@@ -102,7 +102,7 @@ module Fatty
         command = applied_commands.last
         expect(command.target).to eq(:status)
         expect(command.action).to eq(:show)
-        expect(command.payload.fetch(:text)).to match(/Importing \[5\/10\] 50%/)
+        expect(command.payload.fetch(:text)).to include('Importing [5/10] 50%')
       end
 
       it "renders the frame when update render is true" do
@@ -119,7 +119,7 @@ module Fatty
 
         expect(command.target).to eq(:status)
         expect(command.action).to eq(:show)
-        expect(command.payload.fetch(:text)).to match(/Complete/)
+        expect(command.payload.fetch(:text)).to include('Complete')
       end
 
       it "clears status when finished with clear" do

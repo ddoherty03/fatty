@@ -11,10 +11,24 @@ module Fatty
     # :ctrl, and :meta, in the KeyEvent so that the KeyMap can assign different
     # actions to the modified keys.
     class KeyDecoder
-      CSI_CURSOR_KEYS = { 'A' => :up, 'B' => :down, 'C' => :right, 'D' => :left,
-                          'H' => :home, 'F' => :end }.freeze
-      CSI_TILDE_KEYS = { '1' => :home, '2' => :insert, '3' => :delete, '4' => :end,
-                         '5' => :page_up, '6' => :page_down, '7' => :home, '8' => :end }.freeze
+      CSI_CURSOR_KEYS = {
+        'A' => :up,
+        'B' => :down,
+        'C' => :right,
+        'D' => :left,
+        'H' => :home,
+        'F' => :end
+      }.freeze
+      CSI_TILDE_KEYS = {
+        '1' => :home,
+        '2' => :insert,
+        '3' => :delete,
+        '4' => :end,
+        '5' => :page_up,
+        '6' => :page_down,
+        '7' => :home,
+        '8' => :end
+      }.freeze
       SS3_TO_EVENT = {
         "j" => KeyEvent.new(key: :keypad_multiply),
         "k" => KeyEvent.new(key: :keypad_plus),
@@ -87,9 +101,13 @@ module Fatty
         modifier = (modifier || '1').to_i
         if key && modifier.between?(1, 16)
           bits = modifier - 1
-          KeyEvent.new(key: key, raw: raw,
-                       shift: (bits & 1).positive?, meta: (bits & 10).positive?,
-                       ctrl: (bits & 4).positive?)
+          KeyEvent.new(
+            key: key,
+            raw: raw,
+            shift: (bits & 1).positive?,
+            meta: (bits & 10).positive?,
+            ctrl: (bits & 4).positive?,
+          )
         else
           # Preserve one nonprinting unknown event for the normal key alert.
           KeyEvent.new(key: "\e[#{raw.last}".inspect, raw: raw)
@@ -229,7 +247,7 @@ module Fatty
       # different terminal programs process keys.
       def load_user_config
         config = Fatty::Config.keydefs
-        return nil unless config
+        return unless config
 
         terminal = @env[:terminal]
         Fatty.info("KeyDecoder#load_user_config: detected terminal `#{terminal}`")
@@ -254,21 +272,20 @@ module Fatty
         end
 
         definitions.each do |label, value|
-          begin
-            spec = normalize_spec(value)
-            sequence = spec.delete(:sequence)
-            unless sequence.is_a?(String) && sequence.match?(/\A\e\[[0-?]*[ -\/]*[@-~]\z/) &&
-                   sequence.bytesize <= 66 && !["\e[200~", "\e[201~"].include?(sequence)
-              raise ArgumentError, "sequence must be a complete CSI key sequence (not a paste delimiter)"
-            end
-            unless spec[:key].is_a?(Symbol) && (spec.keys - [:key, :ctrl, :meta, :shift]).empty? &&
-                   [:ctrl, :meta, :shift].all? { |flag| !spec.key?(flag) || [true, false].include?(spec[flag]) }
-              raise ArgumentError, "supply a key name and optional boolean ctrl/meta/shift modifiers"
-            end
-            @sequence_map[sequence] = spec
-          rescue ArgumentError => e
-            Fatty.warn("Ignoring keydefs sequence #{label.inspect}: #{e.message}", tag: :keycode)
+          spec = normalize_spec(value)
+          sequence = spec.delete(:sequence)
+          unless sequence.is_a?(String) && sequence.match?(%r{\A\e\[[0-?]*[ -/]*[@-~]\z}) &&
+                 sequence.bytesize <= 66 && !["\e[200~", "\e[201~"].include?(sequence)
+            raise ArgumentError, "sequence must be a complete CSI key sequence (not a paste delimiter)"
           end
+          unless spec[:key].is_a?(Symbol) && (spec.keys - [:key, :ctrl, :meta, :shift]).empty? &&
+                 [:ctrl, :meta, :shift].all? { |flag| !spec.key?(flag) || [true, false].include?(spec[flag]) }
+            raise ArgumentError, "supply a key name and optional boolean ctrl/meta/shift modifiers"
+          end
+
+          @sequence_map[sequence] = spec
+        rescue ArgumentError => e
+          Fatty.warn("Ignoring keydefs sequence #{label.inspect}: #{e.message}", tag: :keycode)
         end
       end
 

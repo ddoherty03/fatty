@@ -62,7 +62,7 @@ module Fatty
       end
 
       it "ensures that a Proc becomes a Prompt" do
-        expect(Prompt.ensure(-> {"XX"})).to be_a(Prompt)
+        expect(Prompt.ensure(-> { "XX" })).to be_a(Prompt)
       end
 
       it "ensures that any other object becomes default '> '" do

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe Fatty::Ansi::WindowsConsole do
@@ -8,7 +9,10 @@ RSpec.describe Fatty::Ansi::WindowsConsole do
     handle = double(call: 123)
     get = double
     set = double
-    allow(get).to receive(:call) { |_, buffer| buffer.replace([16].pack("L")); 1 }
+    allow(get).to receive(:call) { |_, buffer|
+      buffer.replace([16].pack("L"))
+      1
+    }
     expect(set).to receive(:call).with(123, 21).ordered.and_return(1)
     expect(set).to receive(:call).with(123, 16).ordered.and_return(1)
     allow(Fatty::Ansi::WindowsConsole).to receive(:functions).and_return(handle: handle, get: get, set: set)

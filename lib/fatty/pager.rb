@@ -67,11 +67,11 @@ module Fatty
     end
 
     def set_to_paging
-        @mode = :paging
-        @paused = true
-        @autoscroll = false
-        @anchor = nil
-        @viewport.clamp!(lines)
+      @mode = :paging
+      @paused = true
+      @autoscroll = false
+      @anchor = nil
+      @viewport.clamp!(lines)
     end
 
     def active?
@@ -904,8 +904,8 @@ module Fatty
 
     def valid_search_match?(match)
       match.is_a?(Hash) &&
-      match[:line].is_a?(Integer) &&
-      match[:from].is_a?(Integer) &&
+        match[:line].is_a?(Integer) &&
+        match[:from].is_a?(Integer) &&
         match[:to].is_a?(Integer)
     end
   end

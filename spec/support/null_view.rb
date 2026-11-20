@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class NullView < Fatty::View
   attr_reader :renders
 

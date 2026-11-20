@@ -78,21 +78,21 @@ module Fatty
 
         expect(Actions.catalog)
           .to eq(
-                [
-                  {
-                    name: "alpha",
-                    doc: "A",
-                    on: "buffer",
-                    method: "a",
-                  },
-                  {
-                    name: "zeta",
-                    doc: "Z",
-                    on: "session",
-                    method: "z",
-                  },
-                ],
-              )
+            [
+              {
+                name: "alpha",
+                doc: "A",
+                on: "buffer",
+                method: "a",
+              },
+              {
+                name: "zeta",
+                doc: "Z",
+                on: "session",
+                method: "z",
+              },
+            ],
+          )
       end
     end
 
@@ -104,9 +104,9 @@ module Fatty
 
         expect(Actions.catalog_by_target)
           .to eq(
-                "buffer" => ["delete", "insert"],
-                "session" => ["complete"],
-              )
+            "buffer" => ["delete", "insert"],
+            "session" => ["complete"],
+          )
       end
     end
 
@@ -129,13 +129,13 @@ module Fatty
       end
 
       it "calls the registered method on the target" do
-        target = Class.new do
+        target = Class.new {
           attr_reader :called
 
           def bol
             @called = true
           end
-        end.new
+        }.new
 
         Actions.register(:bol, owner: target.class, on: :buffer)
         env = action_env(buffer: target)
@@ -146,14 +146,14 @@ module Fatty
       end
 
       it "forwards positional args and keyword args to the target method" do
-        target = Class.new do
+        target = Class.new {
           attr_reader :args, :kwargs
 
           def insert(str, count: 1)
             @args = [str]
             @kwargs = { count: count }
           end
-        end.new
+        }.new
 
         Actions.register(:insert, owner: target.class, on: :buffer)
         env = action_env(buffer: target)
@@ -165,13 +165,13 @@ module Fatty
       end
 
       it "consumes active counter when target method accepts count keyword" do
-        target = Class.new do
+        target = Class.new {
           attr_reader :count
 
           def move_right(count: 1)
             @count = count
           end
-        end.new
+        }.new
         counter = Counter.new
         counter.push_digit(7)
         env = action_env(buffer: target, counter: counter)
@@ -185,13 +185,13 @@ module Fatty
       end
 
       it "does not consume active counter when count keyword is supplied" do
-        target = Class.new do
+        target = Class.new {
           attr_reader :count
 
           def move_right(count: 1)
             @count = count
           end
-        end.new
+        }.new
         counter = Counter.new
         counter.push_digit(7)
         env = action_env(buffer: target, counter: counter)
@@ -205,13 +205,13 @@ module Fatty
       end
 
       it "does not consume active counter when target method does not accept count" do
-        target = Class.new do
+        target = Class.new {
           attr_reader :called
 
           def bol
             @called = true
           end
-        end.new
+        }.new
         counter = Counter.new
         counter.push_digit(7)
         env = action_env(buffer: target, counter: counter)
@@ -225,13 +225,13 @@ module Fatty
       end
 
       it "passes count to methods accepting keyword rest" do
-        target = Class.new do
+        target = Class.new {
           attr_reader :kwargs
 
           def flexible(**kwargs)
             @kwargs = kwargs
           end
-        end.new
+        }.new
         counter = Counter.new
         counter.push_digit(5)
         env = action_env(buffer: target, counter: counter)

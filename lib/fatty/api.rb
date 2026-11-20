@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Fatty
   module ChooseApi
     # simplecov:disable
@@ -27,13 +29,13 @@ end
 
 # simplecov:enable
 
-require_relative './api/output.rb'
-require_relative './api/status.rb'
-require_relative './api/alert.rb'
-require_relative './api/choose.rb'
-require_relative './api/prompt.rb'
-require_relative './api/progress.rb'
-require_relative './api/menu.rb'
-require_relative './api/keytest.rb'
-require_relative './api/environment.rb'
-require_relative './api/suspend.rb'
+require_relative 'api/output.rb'
+require_relative 'api/status.rb'
+require_relative 'api/alert.rb'
+require_relative 'api/choose.rb'
+require_relative 'api/prompt.rb'
+require_relative 'api/progress.rb'
+require_relative 'api/menu.rb'
+require_relative 'api/keytest.rb'
+require_relative 'api/environment.rb'
+require_relative 'api/suspend.rb'

@@ -105,8 +105,8 @@ module Fatty
         selected = payload[:items] || {}
         result =
           selected.each_with_object({}) do |(label, _), h|
-          h[label] = label_to_value.fetch(label, cancel_value)
-        end
+            h[label] = label_to_value.fetch(label, cancel_value)
+          end
         done = true
       end
       cancel_proc = -> do

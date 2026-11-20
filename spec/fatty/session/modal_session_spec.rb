@@ -88,8 +88,7 @@ module Fatty
       let(:new_win) { instance_double(::Curses::Window) }
 
       before do
-        allow(::Curses).to receive(:cols).and_return(80)
-        allow(::Curses).to receive(:lines).and_return(24)
+        allow(::Curses).to receive_messages(cols: 80, lines: 24)
         allow(::Curses::Window).to receive(:new).and_return(new_win)
       end
 

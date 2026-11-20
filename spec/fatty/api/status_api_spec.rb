@@ -35,7 +35,7 @@ module Fatty
         expect(applied_commands.first.target).to eq(:status)
         expect(applied_commands.first.action).to eq(:show)
         expect(applied_commands.first.payload).to eq(text: "Working", role: :good, append: true)
-       end
+      end
 
       it "renders status immediately by default" do
         result = env.status("Working")

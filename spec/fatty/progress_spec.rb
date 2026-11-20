@@ -71,11 +71,11 @@ module Fatty
 
       it "uses 1 for a malformed total" do
         p = Progress.new(
-            terminal: terminal,
-            label: "Importing",
-            total: "ten",
-            style: :percent,
-          )
+          terminal: terminal,
+          label: "Importing",
+          total: "ten",
+          style: :percent,
+        )
         expect(p.total).to eq(1)
       end
 

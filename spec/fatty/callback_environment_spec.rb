@@ -3,14 +3,14 @@
 module Fatty
   RSpec.describe CallbackEnvironment do
     let(:renderer) { instance_double(Fatty::Renderer, palette: nil) }
-    let(:terminal) {
+    let(:terminal) do
       instance_double(
         Fatty::Terminal,
         renderer: renderer,
         apply_command: nil,
         suspend: nil,
       )
-    }
+    end
     let(:env) { Fatty::CallbackEnvironment.new(terminal: terminal, output_id: :output) }
 
     before do

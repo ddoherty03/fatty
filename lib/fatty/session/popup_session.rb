@@ -21,25 +21,25 @@ module Fatty
     # - order: :as_given (default) or :reverse (presentation order).
     # - current: :preserve (default), :top, :bottom (how the current behaves after refresh).
     def initialize(
-          source:,
-          title: nil,
-          message: nil,
-          prompt: "Narrow: ",
-          keymap: Keymaps.emacs,
-          matcher: nil,
-          order: :as_given,
-          kind: nil,
-          current: :preserve,
-          initial_query: nil,
-          show_counts: true,
-          show_filter: true,
-          selection_mode: :single,
-          history: nil,
-          history_kind: :popup_filter,
-          history_ctx: nil,
-          save_history: true,
-          validate_unique_labels: false
-        )
+      source:,
+      title: nil,
+      message: nil,
+      prompt: "Narrow: ",
+      keymap: Keymaps.emacs,
+      matcher: nil,
+      order: :as_given,
+      kind: nil,
+      current: :preserve,
+      initial_query: nil,
+      show_counts: true,
+      show_filter: true,
+      selection_mode: :single,
+      history: nil,
+      history_kind: :popup_filter,
+      history_ctx: nil,
+      save_history: true,
+      validate_unique_labels: false
+    )
       super(keymap: keymap)
       @source = source
       @title = title&.to_s
@@ -649,8 +649,8 @@ module Fatty
     end
 
     def selected_result_hash
-      selected_items_in_source_order.each_with_object({}) do |item, h|
-        h[item_label(item)] = item_value(item)
+      selected_items_in_source_order.to_h do |item|
+        [item_label(item), item_value(item)]
       end
     end
   end

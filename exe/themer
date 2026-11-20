@@ -61,8 +61,8 @@ def contrast_ratio(first, second)
   first_luminance = luminance(first)
   second_luminance = luminance(second)
 
-  light, dark = [first_luminance, second_luminance].max,
-                [first_luminance, second_luminance].min
+  light = [first_luminance, second_luminance].max
+  dark = [first_luminance, second_luminance].min
 
   (light + 0.05) / (dark + 0.05)
 end
@@ -98,7 +98,7 @@ def suggested_color(background, hue, target: TARGET_CONTRAST)
     if background_luminance < 0.5
       (35..90).map { |value| value / 100.0 }
     else
-      (65).downto(10).map { |value| value / 100.0 }
+      65.downto(10).map { |value| value / 100.0 }
     end
 
   best_rgb = nil
@@ -192,11 +192,11 @@ def print_roles(title, roles, status: false)
       puts line
     else
       puts format(
-             "%-6s %-8s contrast unknown%s",
-             role,
-             data[:hex],
-             status ? "  #{data[:status]}" : "",
-           )
+        "%-6s %-8s contrast unknown%s",
+        role,
+        data[:hex],
+        status ? "  #{data[:status]}" : "",
+      )
     end
   end
 end
@@ -218,13 +218,13 @@ options = {
   yaml: false,
 }
 
-OptionParser.new do |parser|
+OptionParser.new { |parser|
   parser.banner = "Usage: themer THEME|RGB [options]"
 
   parser.on("--yaml", "Output role definitions as YAML") do
     options[:yaml] = true
   end
-end.parse!
+}.parse!
 
 argument = ARGV.shift
 

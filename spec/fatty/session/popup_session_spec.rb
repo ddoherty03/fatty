@@ -53,7 +53,7 @@ module Fatty
       it "initializes from a static source" do
         session = PopUpSession.new(
           title: "Pick one",
-          source: %w[alpha beta gamma]
+          source: %w[alpha beta gamma],
         )
 
         expect(session.title).to eq("Pick one")
@@ -62,7 +62,7 @@ module Fatty
 
       it "initializes from a callable source" do
         session = PopUpSession.new(
-          source: ->(_filter) { %w[alpha beta] }
+          source: ->(_filter) { %w[alpha beta] },
         )
 
         expect(session.items).to eq(%w[alpha beta])

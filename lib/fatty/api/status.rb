@@ -15,7 +15,7 @@ module Fatty
           text: text,
           role: role,
           append: !replace,
-        )
+        ),
       )
       terminal.without_cursor_restore do
         terminal.render_frame

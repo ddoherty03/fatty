@@ -8,7 +8,8 @@ module Fatty
 
     attr_reader :field, :history, :output_session, :on_accept
 
-    def initialize(id: nil, prompt: "sh> ", on_accept: nil, completion_proc: nil, history_ctx: nil, history_path: :default)
+    def initialize(id: nil, prompt: "sh> ", on_accept: nil, completion_proc: nil, history_ctx: nil,
+      history_path: :default)
       keymap = Keymaps.emacs
       super(
         id: :shell,
@@ -404,14 +405,14 @@ module Fatty
         alert_cmd(
           :error,
           "Undefined key: #{ev.key} " \
-          "(edit config in 'keydefs.yml' to name)",
+            "(edit config in 'keydefs.yml' to name)",
           ev: ev,
         )
       else
         alert_cmd(
           :warn,
           "Unbound key: #{ev} " \
-          "(edit config in 'keybindings.yml' to bind)",
+            "(edit config in 'keybindings.yml' to bind)",
           ev: ev,
         )
       end

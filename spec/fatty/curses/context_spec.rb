@@ -56,7 +56,8 @@ module Fatty
           context = Fatty::Curses::Context.new
           context.instance_variable_set(:@started, true)
           allow(Fatty::Curses::Native).to receive(:prepare_suspend!).and_raise(
-            Fatty::Curses::Native::SuspensionUnavailable, 'no endwin')
+            Fatty::Curses::Native::SuspensionUnavailable, 'no endwin'
+          )
           expect(::Curses).not_to receive(:def_prog_mode)
           expect(context).not_to receive(:disable_bracketed_paste!)
           expect(::Curses).not_to receive(:close_screen)

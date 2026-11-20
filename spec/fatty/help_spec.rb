@@ -36,7 +36,7 @@ RSpec.describe Fatty::Help do
 
   it "keeps punctuation keys literal and wraps tables to the requested width" do
     map = Fatty::KeyMap.new
-    [:'|', :'`', :'*', :'_', :'<'].each do |key|
+    [:'|', :'`', :'*', :_, :'<'].each do |key|
       map.bind(context: :input, key: key, action: :move_right)
     end
 

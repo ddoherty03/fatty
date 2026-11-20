@@ -175,12 +175,12 @@ module Fatty
         km.bind_mouse(context: :popup, button: :scroll_down, ctrl: true, action: :popup_page_down)
         bindings = km.bindings_for(mouse(:scroll_down, ctrl: true))
         expect(bindings).to eq(
-                              paging: :page_down,
-                              popup: :popup_page_down,
-                            )
+          paging: :page_down,
+          popup: :popup_page_down,
+        )
       end
 
-      it "binds  meta digits as count digits in paging context" do
+      it "binds meta digits as count digits in paging context" do
         keymap = Fatty::Keymaps.emacs
 
         (0..9).each do |number|

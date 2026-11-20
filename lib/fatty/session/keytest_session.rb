@@ -75,7 +75,8 @@ module Fatty
                 :append,
                 text: text,
                 follow: true,
-                mode: :scrolling),
+                mode: :scrolling,
+              ),
               show_quit_status_command,
             ]
           end

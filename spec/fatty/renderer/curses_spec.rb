@@ -271,8 +271,7 @@ module Fatty
     it "renders ANSI-colored prompt segments through curses attributes" do
       win = CursesRendererSpecWindow.new(maxx: 20)
 
-      allow(curses_context).to receive(:input_win).and_return(win)
-      allow(curses_context).to receive(:ansi_pair_for).and_return(64)
+      allow(curses_context).to receive_messages(input_win: win, ansi_pair_for: 64)
       allow(::Curses).to receive(:colors).and_return(256)
       allow(::Curses).to receive(:color_pair) { |pair| pair }
       allow(::Curses).to receive(:color_pair).with(64).and_return(0x6400)

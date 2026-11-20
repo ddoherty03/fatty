@@ -1,23 +1,37 @@
 # frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe Fatty::Curses::PDCursesKeys do
   # Independent representative values from the PDCurses headers, covering
   # each group and both key-offset conventions.
   samples = {
-    0xea => [:up, :meta], 0xe8 => [:page_down, :meta],
-    0xed => [:left, :meta], 0xeb => [:down, :meta],
-    0xe6 => [:home, :meta], 0xe9 => [:end, :meta],
-    0xdf => [:insert, :meta], 0xde => [:delete, :meta],
-    0xe0 => [:up, :ctrl], 0xbd => [:page_up, :ctrl],
-    0x10f => [:delete, :ctrl], 0x123 => [:up, :shift],
-    0x124 => [:down, :shift], 0xa6 => [:f, :meta],
-    0x9a => [:"3", :meta], 0xf7 => [:/, :meta],
-    0x110 => [:"\\", :meta], 0xcc => [:keypad_enter, :ctrl],
-    0x10e => [:keypad_9, :meta], 0x113 => [:keypad_divide, :shift],
-    0x15 => [:f1, :shift], 0x20 => [:f12, :shift],
-    0x21 => [:f1, :ctrl], 0x2c => [:f12, :ctrl],
-    0x2d => [:f1, :meta], 0x38 => [:f12, :meta],
+    0xea => [:up, :meta],
+    0xe8 => [:page_down, :meta],
+    0xed => [:left, :meta],
+    0xeb => [:down, :meta],
+    0xe6 => [:home, :meta],
+    0xe9 => [:end, :meta],
+    0xdf => [:insert, :meta],
+    0xde => [:delete, :meta],
+    0xe0 => [:up, :ctrl],
+    0xbd => [:page_up, :ctrl],
+    0x10f => [:delete, :ctrl],
+    0x123 => [:up, :shift],
+    0x124 => [:down, :shift],
+    0xa6 => [:f, :meta],
+    0x9a => [:'3', :meta],
+    0xf7 => [:/, :meta],
+    0x110 => [:'\\', :meta],
+    0xcc => [:keypad_enter, :ctrl],
+    0x10e => [:keypad_9, :meta],
+    0x113 => [:keypad_divide, :shift],
+    0x15 => [:f1, :shift],
+    0x20 => [:f12, :shift],
+    0x21 => [:f1, :ctrl],
+    0x2c => [:f12, :ctrl],
+    0x2d => [:f1, :meta],
+    0x38 => [:f12, :meta],
   }
   [0xec00, 0x100].each do |offset|
     samples.each do |relative, (key, modifier)|

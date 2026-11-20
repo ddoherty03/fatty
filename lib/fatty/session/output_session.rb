@@ -287,9 +287,7 @@ module Fatty
       Fatty::Ansi.segment(text.to_s).map(&:first).join
     end
 
-    def narrow_query
-      @narrow_query
-    end
+    attr_reader :narrow_query
 
     def narrowed?
       !@narrow_query.nil?
@@ -331,8 +329,8 @@ module Fatty
       overlap = prev_lines.length - delta
 
       delta.positive? &&
-      delta < curr_viewport[1] &&
-      overlap.positive? &&
+        delta < curr_viewport[1] &&
+        overlap.positive? &&
         prev_lines.drop(delta) == curr_lines.take(overlap)
     end
 

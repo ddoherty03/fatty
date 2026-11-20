@@ -11,7 +11,7 @@ module Fatty
     def id = :prompt
 
     def initialize(initial: "", prompt: "> ", title: "Prompt", message: nil, kind: nil,
-                   history_ctx: nil, history_path: :default, history: nil, save_history: true)
+      history_ctx: nil, history_path: :default, history: nil, save_history: true)
       super(keymap: Keymaps.emacs)
       @title = title&.to_s
       @message = message&.to_s

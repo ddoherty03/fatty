@@ -21,7 +21,7 @@ module Fatty
       unicode_bar
       braille_bar
       spinner
-      ].freeze
+    ].freeze
 
     DEFAULT_LABEL = "Progress"
     DEFAULT_ROLE = :info
@@ -170,7 +170,7 @@ module Fatty
             :show,
             text: render_text,
             role: role,
-          )
+          ),
         )
         terminal.render_frame if render
       end

@@ -54,19 +54,27 @@ module Fatty
     end
 
     def self.keybindings(keymap, width: 83)
-      lines = ["# Current keybindings", "",
-               "Fatty is the terminal user-interface library used by this application. " \
-                 "It provides command-line editing, output paging and search, and interactive prompts and menus.", "",
-               "Use the pager to browse or search; quit paging to return.", "",
-               "The tables below show the loaded keybindings for each context, including user overrides. " \
-                 "Keys use Emacs-like notation: C- means hold Control, M- means hold Alt (also called Meta), " \
-                 "and C-M- means hold both. Shift may be indicated by the final key name, as in M-R, " \
-                 "or by an explicit S- prefix, as in M-S-r. Both examples mean Alt-Shift-R. " \
-                 "Printable characters insert text in text-entry contexts.", "",
-               "The Action column gives the name of the Fatty action bound to each key. " \
-                 "These names are useful when customizing keybindings or working on Fatty itself."]
+      lines = [
+        "# Current keybindings",
+        "",
+        "Fatty is the terminal user-interface library used by this application. " \
+          "It provides command-line editing, output paging and search, and interactive prompts and menus.",
+        "",
+        "Use the pager to browse or search; quit paging to return.",
+        "",
+        "The tables below show the loaded keybindings for each context, including user overrides. " \
+          "Keys use Emacs-like notation: C- means hold Control, M- means hold Alt (also called Meta), " \
+          "and C-M- means hold both. Shift may be indicated by the final key name, as in M-R, " \
+          "or by an explicit S- prefix, as in M-S-r. Both examples mean Alt-Shift-R. " \
+          "Printable characters insert text in text-entry contexts.",
+        "",
+        "The Action column gives the name of the Fatty action bound to each key. " \
+          "These names are useful when customizing keybindings or working on Fatty itself."
+      ]
       key_width, action_width, description_width = keybinding_column_widths(width)
-      keymap.bindings.sort_by { |context, _| [[:text, :input].index(context) || 2, context.to_s] }.each do |context, bindings|
+      keymap.bindings.sort_by { |context, _|
+        [[:text, :input].index(context) || 2, context.to_s]
+      }.each do |context, bindings|
         description = CONTEXT_DESCRIPTIONS.fetch(context) do
           "This context is supplied by the application or a custom keymap. Its bindings " \
             "apply when the application activates it; the application determines how " \
@@ -109,9 +117,7 @@ module Fatty
           lines << line
           line = +""
         end
-        while word.length > width
-          lines << word.slice!(0, width)
-        end
+        lines << word.slice!(0, width) while word.length > width
         line << " " unless line.empty?
         line << word
       end

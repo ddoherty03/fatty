@@ -25,7 +25,6 @@ module Fatty
       nil
     end
 
-
     # Append text to the output buffer. Text may contain complete lines,
     # partial lines, or both. Returns the number of lines trimmed.  The
     # Terminal can use this to adjust the Viewport.

@@ -87,9 +87,9 @@ module Fatty
         expect(owner_command.target).to eq(:focused)
         expect(owner_command.action).to eq(:pager_isearch_update)
         expect(owner_command.payload).to include(
-                                           pattern: "hello world ",
-                                           direction: :forward,
-                                         )
+          pattern: "hello world ",
+          direction: :forward,
+        )
       end
 
       it "cancels the incremental search" do
@@ -141,7 +141,7 @@ module Fatty
 
         expect(session.field.buffer.text).to eq("needle")
         expect(commands.map(&:action)).to eq(
-          [:send_modal_owner, :send_modal_owner]
+          [:send_modal_owner, :send_modal_owner],
         )
 
         preview_command = commands.first.payload.fetch(:command)
@@ -196,7 +196,7 @@ module Fatty
     describe "#view" do
       it "renders the incremental search field on the pager status row" do
         session = Fatty::ISearchSession.new
-        output_rect = instance_double("OutputRect", rows: 10)
+        output_rect = instance_double(OutputRect, rows: 10)
         screen = instance_double(Fatty::Screen, output_rect: output_rect)
         renderer = instance_double(Fatty::Renderer::Truecolor)
         terminal = instance_double(Fatty::Terminal, screen: screen, renderer: renderer)
@@ -206,10 +206,10 @@ module Fatty
           .to receive(:show_cursor)
         expect(renderer)
           .to receive(:render_pager_field)
-          .with(session.field, row: 9, role: :search_input)
+                .with(session.field, row: 9, role: :search_input)
         expect(renderer)
           .to receive(:restore_output_cursor)
-          .with(session.field, row: 9)
+                .with(session.field, row: 9)
         session.view
       end
     end
