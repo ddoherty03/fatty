@@ -13,7 +13,7 @@ module Fatty
         )
       end
 
-      let(:window) { instance_double(window) }
+      let(:window) { instance_double(::Curses::Window) }
       let(:context) { instance_double(Context, input_win: window) }
       let(:key_decoder) { instance_double(KeyDecoder) }
       let(:source) do
@@ -75,7 +75,7 @@ module Fatty
 
         it "decodes ctrl scroll down as a modified mouse event" do
           mouse = instance_double(
-            Curses::MouseEvent,
+            ::Curses::MouseEvent,
             bstate: EventSource::SCROLL_DOWN_BSTATE | ::Curses::BUTTON_CTRL,
             x: 12,
             y: 5,
@@ -92,7 +92,7 @@ module Fatty
 
         it "decodes ctrl scroll up as a modified mouse event" do
           mouse = instance_double(
-            Curses::MouseEvent,
+            ::Curses::MouseEvent,
             bstate: ::Curses::BUTTON4_PRESSED | ::Curses::BUTTON_CTRL,
             x: 12,
             y: 5,
@@ -107,7 +107,7 @@ module Fatty
 
         it "decodes meta and shift modifiers on mouse events" do
           mouse = instance_double(
-            Curses::MouseEvent,
+            ::Curses::MouseEvent,
             bstate: ::Curses::BUTTON1_CLICKED | ::Curses::BUTTON_ALT | ::Curses::BUTTON_SHIFT,
             x: 2,
             y: 8,
@@ -120,7 +120,7 @@ module Fatty
         end
 
         it "decodes escape followed by a non-CSI key as a meta sequence" do
-          window = instance_double(Window)
+          window = instance_double(::Curses::Window)
           allow(window).to receive(:getch).and_return(27, "f")
           allow(window).to receive(:timeout=)
           context = instance_double(Context, input_win: window)
@@ -130,7 +130,7 @@ module Fatty
         end
 
         it "returns bare escape when no following key arrives during escape lookahead" do
-          window = instance_double(Window)
+          window = instance_double(::Curses::Window)
           allow(window).to receive(:getch).and_return(27, -1)
           allow(window).to receive(:timeout=)
           context = instance_double(Context, input_win: window)

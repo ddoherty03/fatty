@@ -1,6 +1,9 @@
 inherit_gem:
   rubocop-ddoherty: 'config/default.yml'
 
+RSpec/MessageSpies:
+  Enabled: false
+
 AllCops:
   Include:
     - 'lib/**/*'

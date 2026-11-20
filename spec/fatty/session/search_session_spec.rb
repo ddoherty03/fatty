@@ -159,7 +159,7 @@ module Fatty
     describe "#view" do
       it "renders the search field on the pager status row" do
         session = Fatty::SearchSession.new
-        output_rect = instance_double(OutputRect, rows: 10)
+        output_rect = Fatty::Screen::Rect.new(rows: 10)
         screen = instance_double(Fatty::Screen, output_rect: output_rect)
         renderer = instance_double(Fatty::Renderer::Truecolor)
         terminal = instance_double(Fatty::Terminal, screen: screen, renderer: renderer)
