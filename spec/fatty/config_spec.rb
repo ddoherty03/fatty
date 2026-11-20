@@ -40,8 +40,8 @@ module Fatty
         expect(path).to match(/keybindings.yml/)
       end
 
-      it "returns the actual name of the user path after its exists" do
-        write_cfg(
+      it "returns the actual name of the user path after it exists" do
+        expected_path = write_cfg(
           File.join(ENV["XDG_CONFIG_HOME"], progname),
           "config",
           <<~YAML,
@@ -51,7 +51,7 @@ module Fatty
           YAML
         )
         path = Config.user_config_path
-        expect(path).to match(/tmp.*config.yml/)
+        expect(path).to eq(expected_path)
       end
 
       it "returns file from an explicitly set user directory after its exists" do
