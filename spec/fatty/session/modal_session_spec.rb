@@ -4,14 +4,17 @@ require "spec_helper"
 
 module Fatty
   RSpec.describe ModalSession do
-    class TestModalSession < Fatty::ModalSession
-      def initialize
-        super(keymap: Fatty::Keymaps.emacs)
-      end
+    before do
+      stub_const("Fatty::TestModalSession", Class.new(Fatty::ModalSession) do
+        def initialize
+          super(keymap: Fatty::Keymaps.emacs)
+        end
 
-      def geometry(cols:, rows:)
-        [20, 6]
-      end
+        def geometry(cols:, rows:)
+          [20, 6]
+        end
+      end)
+      session.init(terminal: terminal)
     end
 
     let(:session) { TestModalSession.new }
@@ -46,10 +49,6 @@ module Fatty
         Fatty::Terminal,
         renderer: renderer,
       )
-    end
-
-    before do
-      session.init(terminal: terminal)
     end
 
     describe "#geometry" do

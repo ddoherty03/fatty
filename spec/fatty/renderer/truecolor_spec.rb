@@ -57,7 +57,7 @@ module Fatty
     end
 
     it "refreshes the input backing window before drawing the first ANSI frame" do
-      input = double("input window")
+      input = instance_double(::Curses::Window)
       allow(context).to receive(:input_win).and_return(input)
       expect(input).to receive(:refresh)
       renderer.begin_frame

@@ -34,25 +34,25 @@ RSpec.describe Fatty::Search do
   describe ".compile_regexp" do
     it "builds a regex that matches all terms in any order" do
       re = Fatty::Search.compile_regexp("foo bar", regex: false)
-      expect("foo xxx bar").to match(re)
-      expect("bar xxx foo").to match(re)
-      expect("foo xxx baz").not_to match(re)
+      expect(re.match?("foo xxx bar")).to be(true)
+      expect(re.match?("bar xxx foo")).to be(true)
+      expect(re.match?("foo xxx baz")).to be(false)
     end
 
     it "is case-insensitive when pattern has no uppercase letters" do
       re = Fatty::Search.compile_regexp("foo", regex: false)
-      expect("FOO").to match(re)
+      expect(re.match?("FOO")).to be(true)
     end
 
     it "is case-sensitive when pattern includes uppercase letters" do
       re = Fatty::Search.compile_regexp("Foo", regex: false)
-      expect("Foo").to match(re)
-      expect("foo").not_to match(re)
+      expect(re.match?("Foo")).to be(true)
+      expect(re.match?("foo")).to be(false)
     end
 
     it "passes regex patterns through unchanged when regex is true" do
       re = Fatty::Search.compile_regexp("f.o", regex: true)
-      expect("foo").to match(re)
+      expect(re.match?("foo")).to be(true)
     end
   end
 end

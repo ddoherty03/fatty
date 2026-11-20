@@ -66,9 +66,7 @@ module Fatty
       end
 
       it "ensures that any other object becomes default '> '" do
-        class Junk2
-        end
-        expect(Prompt.ensure(Junk2.new).text).to eq('> ')
+        expect(Prompt.ensure(Object.new).text).to eq('> ')
       end
 
       it "round-trips ensure through initialize" do

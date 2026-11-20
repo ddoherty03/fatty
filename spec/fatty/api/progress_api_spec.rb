@@ -4,13 +4,6 @@ require "spec_helper"
 
 module Fatty
   RSpec.describe ProgressApi do
-    let(:terminal) do
-      instance_double(
-        Fatty::Terminal,
-        apply_command: nil,
-        render_frame: nil,
-      )
-    end
     let(:env) do
       Fatty::CallbackEnvironment.new(
         terminal: terminal,

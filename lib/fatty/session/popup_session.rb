@@ -45,7 +45,7 @@ module Fatty
       @title = title&.to_s
       @message = message&.to_s
       @prompt = Prompt.ensure(prompt)
-      @matcher = matcher || method(:default_matcher)
+      @matcher = matcher || method(:default_matcher?)
       @order = order.to_sym
       @kind = kind&.to_sym
       @current_policy = current.to_sym
@@ -402,7 +402,7 @@ module Fatty
       apply_order!
       validate_unique_labels!(@items) if @validate_unique_labels
 
-      matcher = @matcher || method(:default_matcher)
+      matcher = @matcher || method(:default_matcher?)
       @filtered =
         if q.empty?
           @items
@@ -610,7 +610,7 @@ module Fatty
       end
     end
 
-    def default_matcher(item, query)
+    def default_matcher?(item, query)
       Fatty::Search.match_all_terms?(item, query)
     end
 

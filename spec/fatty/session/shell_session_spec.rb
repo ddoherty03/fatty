@@ -630,7 +630,7 @@ module Fatty
         end
       end
 
-      it "commits a sole completion candidate" do
+      it "commits a sole completion candidate before session initialization" do
         Dir.mktmpdir("fatty_shell_history") do |dir|
           history_path = File.join(dir, "history.jsonl")
           session = Fatty::ShellSession.new(
@@ -768,7 +768,7 @@ module Fatty
         expect(session.field.buffer.text).to eq("clear ")
       end
 
-      it "commits a sole completion candidate" do
+      it "commits a sole completion candidate after session initialization" do
         Dir.mktmpdir("fatty_shell_history") do |dir|
           history_path = File.join(dir, "history.jsonl")
           session = Fatty::ShellSession.new(

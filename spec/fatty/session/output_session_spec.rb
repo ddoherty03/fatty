@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
-require "ostruct"
 require "spec_helper"
 
 module Fatty
   RSpec.describe OutputSession do
     def init_output_session(session, rows: 5, cols: 80, theme_version: 0)
-      output_rect = OpenStruct.new(row: 0, rows: rows, cols: cols)
+      output_rect = Fatty::Screen::Rect.new(row: 0, rows: rows, cols: cols)
       screen = instance_double(Fatty::Screen, output_rect: output_rect)
       renderer = instance_double(Fatty::Renderer, screen: screen, theme_version: theme_version)
       terminal = instance_double(Fatty::Terminal, screen: screen, renderer: renderer)

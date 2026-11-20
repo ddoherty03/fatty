@@ -72,8 +72,9 @@ module Fatty
           "These names are useful when customizing keybindings or working on Fatty itself."
       ]
       key_width, action_width, description_width = keybinding_column_widths(width)
+      first_contexts = [:text, :input]
       keymap.bindings.sort_by { |context, _|
-        [[:text, :input].index(context) || 2, context.to_s]
+        [first_contexts.index(context) || 2, context.to_s]
       }.each do |context, bindings|
         description = CONTEXT_DESCRIPTIONS.fetch(context) do
           "This context is supplied by the application or a custom keymap. Its bindings " \
@@ -95,7 +96,8 @@ module Fatty
           actions = wrap_cell(action, action_width)
           descriptions = wrap_cell(description, description_width)
           [keys.length, actions.length, descriptions.length].max.times do |index|
-            lines << "| #{escape_cell(keys[index])} | #{escape_cell(actions[index])} | #{escape_cell(descriptions[index])} |"
+            lines << "| #{escape_cell(keys[index])} | #{escape_cell(actions[index])} | " \
+              "#{escape_cell(descriptions[index])} |"
           end
         end
       end
@@ -104,8 +106,8 @@ module Fatty
 
     def self.keybinding_column_widths(width)
       width = [width, 83].min
-      key_width = [[width / 6, 12].min, 3].max
-      action_width = [[width - 12 - key_width - 11, 27].min, 6].max
+      key_width = (width / 6).clamp(3, 12)
+      action_width = (width - 12 - key_width - 11).clamp(6, 27)
       [key_width, action_width, [width - 12 - key_width - action_width, 11].max]
     end
 

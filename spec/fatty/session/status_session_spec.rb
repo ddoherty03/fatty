@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
-require "ostruct"
-
 module Fatty
   RSpec.describe StatusSession do
     def init_status_session(session, rows: 1, cols: 80, theme_version: 0)
-      status_rect = OpenStruct.new(row: 20, rows: rows, cols: cols)
+      status_rect = Fatty::Screen::Rect.new(row: 20, rows: rows, cols: cols)
       screen = instance_double(Fatty::Screen, cols: cols, status_rect: status_rect)
       renderer = instance_double(
         Fatty::Renderer,

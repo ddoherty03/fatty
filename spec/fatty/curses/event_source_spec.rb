@@ -160,7 +160,7 @@ module Fatty
 
       describe "raw CSI keyboard input" do
         def source_for(raw)
-          input = double('input window')
+          input = instance_double(::Curses::Window)
           allow(input).to receive(:timeout=)
           allow(input).to receive(:getch).and_return(*raw, nil)
           EventSource.new(context: instance_double(Context, input_win: input), poll_ms: 10)
@@ -170,9 +170,10 @@ module Fatty
           allow(Fatty::Config).to receive_messages(config: { esc_delay: 10 }, keydefs: nil)
         end
 
+        byte_formats = [false, true]
         { 'D' => :left, 'C' => :right }.each do |suffix, key|
-          [false, true].each do |integer_bytes|
-            it "decodes Meta-#{key} with #{integer_bytes ? 'integer' : 'string'} bytes without inserting the sequence" do
+          byte_formats.each do |integer_bytes|
+            it "decodes Meta-#{key} with #{integer_bytes ? 'integer' : 'string'} bytes without inserting text" do
               chars = "[1;3#{suffix}".chars
               chars = chars.map(&:ord) if integer_bytes
               source = source_for([27, *chars, 'x'])

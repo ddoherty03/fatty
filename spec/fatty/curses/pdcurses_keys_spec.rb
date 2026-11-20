@@ -33,6 +33,8 @@ RSpec.describe Fatty::Curses::PDCursesKeys do
     0x2d => [:f1, :meta],
     0x38 => [:f12, :meta],
   }
+  let(:modifier_flags) { [:ctrl, :meta, :shift] }
+
   [0xec00, 0x100].each do |offset|
     samples.each do |relative, (key, modifier)|
       it "decodes #{modifier}-#{key} at offset #{offset}" do
@@ -42,7 +44,7 @@ RSpec.describe Fatty::Curses::PDCursesKeys do
         event = Fatty::Curses::KeyDecoder.new.decode(offset + relative)
         expect(event.key).to eq(key)
         expect(event.raw).to eq(offset + relative)
-        [:ctrl, :meta, :shift].each { |flag| expect(event.public_send(:"#{flag}?")).to eq(flag == modifier) }
+        modifier_flags.each { |flag| expect(event.public_send(:"#{flag}?")).to eq(flag == modifier) }
       end
     end
   end

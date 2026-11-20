@@ -271,15 +271,18 @@ module Fatty
           return
         end
 
+        paste_delimiters = ["\e[200~", "\e[201~"]
+        modifiers = [:ctrl, :meta, :shift]
+        allowed_keys = [:key, *modifiers]
         definitions.each do |label, value|
           spec = normalize_spec(value)
           sequence = spec.delete(:sequence)
           unless sequence.is_a?(String) && sequence.match?(%r{\A\e\[[0-?]*[ -/]*[@-~]\z}) &&
-                 sequence.bytesize <= 66 && !["\e[200~", "\e[201~"].include?(sequence)
+                 sequence.bytesize <= 66 && !paste_delimiters.include?(sequence)
             raise ArgumentError, "sequence must be a complete CSI key sequence (not a paste delimiter)"
           end
-          unless spec[:key].is_a?(Symbol) && (spec.keys - [:key, :ctrl, :meta, :shift]).empty? &&
-                 [:ctrl, :meta, :shift].all? { |flag| !spec.key?(flag) || [true, false].include?(spec[flag]) }
+          unless spec[:key].is_a?(Symbol) && (spec.keys - allowed_keys).empty? &&
+                 modifiers.all? { |flag| !spec.key?(flag) || spec[flag] == true || spec[flag] == false }
             raise ArgumentError, "supply a key name and optional boolean ctrl/meta/shift modifiers"
           end
 

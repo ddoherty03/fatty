@@ -4,101 +4,104 @@ require "spec_helper"
 
 module Fatty
   RSpec.describe Terminal do
-    class TerminalSpecContext
-      attr_reader :truecolor
+    before do
+      stub_const("Fatty::TerminalSpecContext", Class.new do
+        attr_reader :truecolor
 
-      def initialize(truecolor: false)
-        @truecolor = truecolor
-      end
-    end
+        def initialize(truecolor: false)
+          @truecolor = truecolor
+        end
+      end)
 
-    class TerminalSpecSession
-      attr_reader :id, :updates, :views, :ticks, :inits, :closes, :persists
-      attr_accessor :init_commands, :update_commands, :tick_result
+      stub_const("Fatty::TerminalSpecSession", Class.new do
+        attr_reader :id, :updates, :views, :ticks, :inits, :closes, :persists
+        attr_accessor :init_commands, :update_commands, :tick_result
 
-      def initialize(id:)
-        @id = id
-        @updates = []
-        @views = 0
-        @ticks = 0
-        @inits = 0
-        @closes = 0
-        @persists = 0
-        @init_commands = []
-        @update_commands = []
-        @tick_result = false
-      end
+        def initialize(id:)
+          @id = id
+          @updates = []
+          @views = 0
+          @ticks = 0
+          @inits = 0
+          @closes = 0
+          @persists = 0
+          @init_commands = []
+          @update_commands = []
+          @tick_result = false
+        end
 
-      def init(terminal:)
-        @terminal = terminal
-        @inits += 1
-        init_commands
-      end
+        def init(terminal:)
+          @terminal = terminal
+          @inits += 1
+          init_commands
+        end
 
-      def update(command)
-        updates << command
-        update_commands
-      end
+        def update(command)
+          updates << command
+          update_commands
+        end
 
-      def view
-        @views += 1
-      end
+        def view
+          @views += 1
+        end
 
-      def tick
-        @ticks += 1
-        tick_result
-      end
+        def tick
+          @ticks += 1
+          tick_result
+        end
 
-      def close
-        @closes += 1
-      end
+        def close
+          @closes += 1
+        end
 
-      def persist!
-        @persists += 1
-      end
-    end
+        def persist!
+          @persists += 1
+        end
+      end)
 
-    class TerminalSpecRenderer
-      attr_accessor :screen
-      attr_reader :begins, :finishes, :invalidations, :themes, :restored_fields
+      stub_const("Fatty::TerminalSpecRenderer", Class.new do
+        attr_accessor :screen
+        attr_reader :begins, :finishes, :invalidations, :themes, :restored_fields
 
-      def initialize
-        @begins = 0
-        @finishes = 0
-        @invalidations = 0
-        @themes = []
-        @restored_fields = []
-      end
+        def initialize
+          @begins = 0
+          @finishes = 0
+          @invalidations = 0
+          @themes = []
+          @restored_fields = []
+        end
 
-      def begin_frame
-        @begins += 1
-      end
+        def begin_frame
+          @begins += 1
+        end
 
-      def finish_frame
-        @finishes += 1
-      end
+        def finish_frame
+          @finishes += 1
+        end
 
-      def invalidate!
-        @invalidations += 1
-      end
+        def invalidate!
+          @invalidations += 1
+        end
 
-      def apply_theme!(theme)
-        @themes << theme
-      end
+        def apply_theme!(theme)
+          @themes << theme
+        end
 
-      def restore_cursor(field)
-        @restored_fields << field
-      end
+        def restore_cursor(field)
+          @restored_fields << field
+        end
 
-      def context
-        @context ||= TerminalSpecContext.new(truecolor: false)
-      end
+        def context
+          @context ||= TerminalSpecContext.new(truecolor: false)
+        end
 
-      def hide_cursor
-      end
+        def hide_cursor
+        end
 
-      def show_cursor
-      end
+        def show_cursor
+        end
+      end)
+      allow(::Curses).to receive(:curs_set)
     end
 
     def terminal
@@ -128,10 +131,6 @@ module Fatty
       terminal.instance_variable_get(:@sessions_by_id)[session.id] = session
       terminal.instance_variable_set(:@focused_session, session) if focus
       session
-    end
-
-    before do
-      allow(::Curses).to receive(:curs_set)
     end
 
     describe "#inspect" do
@@ -166,7 +165,8 @@ module Fatty
           allow(t).to receive(:stop_curses!)
           allow(t).to receive(:install_default_sessions!)
           allow(Fatty::Themes::Manager).to receive(:warning).and_return(warning)
-          allow(t).to receive(:event_source).and_return(double("EventSource", next_event: Command.terminal(:quit)))
+          source = instance_double(Fatty::Curses::EventSource, next_event: Command.terminal(:quit))
+          allow(t).to receive(:event_source).and_return(source)
 
           t.go
 
@@ -194,7 +194,7 @@ module Fatty
       it "starts curses, applies events, renders dirty frames, and stops curses" do
         t = terminal
         shell = install_session(t, TerminalSpecSession.new(id: :shell), focus: true)
-        event_source = double("EventSource", next_event: Fatty::Command.session(:active, :custom))
+        event_source = instance_double(Fatty::Curses::EventSource, next_event: Fatty::Command.session(:active, :custom))
         allow(t).to receive(:start_curses!)
         allow(t).to receive(:stop_curses!)
         allow(t).to receive(:install_default_sessions!)
@@ -217,7 +217,7 @@ module Fatty
       it "ticks and renders even when there is no event" do
         t = terminal
         shell = install_session(t, TerminalSpecSession.new(id: :shell), focus: true)
-        event_source = double("EventSource", next_event: nil)
+        event_source = instance_double(Fatty::Curses::EventSource, next_event: nil)
 
         allow(t).to receive(:start_curses!)
         allow(t).to receive(:stop_curses!)
@@ -241,7 +241,7 @@ module Fatty
       it "stops curses even when the loop raises" do
         t = terminal
         install_session(t, TerminalSpecSession.new(id: :shell), focus: true)
-        event_source = double("EventSource")
+        event_source = instance_double(Fatty::Curses::EventSource)
 
         allow(t).to receive(:start_curses!)
         allow(t).to receive(:stop_curses!)
@@ -256,7 +256,7 @@ module Fatty
       it "defers scrolling renders before the throttle interval expires" do
         t = terminal
         shell = install_session(t, TerminalSpecSession.new(id: :shell), focus: true)
-        event_source = double("EventSource", next_event: nil)
+        event_source = instance_double(Fatty::Curses::EventSource, next_event: nil)
 
         allow(t).to receive(:install_default_sessions!)
         allow(t).to receive(:start_curses!)
@@ -278,7 +278,7 @@ module Fatty
       it "renders deferred scrolling output after the throttle interval" do
         t = terminal
         shell = install_session(t, TerminalSpecSession.new(id: :shell), focus: true)
-        event_source = double("EventSource", next_event: nil)
+        event_source = instance_double(Fatty::Curses::EventSource, next_event: nil)
 
         allow(t).to receive(:start_curses!)
         allow(t).to receive(:stop_curses!)
@@ -707,7 +707,7 @@ module Fatty
         history_ctx = -> { { pwd: "/tmp/demo" } }
         t = Fatty::Terminal.new(history_ctx: history_ctx)
         shell = nil
-        event_source = double("EventSource")
+        event_source = instance_double(Fatty::Curses::EventSource)
 
         allow(t).to receive(:preflight!)
         allow(t).to receive(:start_curses!)

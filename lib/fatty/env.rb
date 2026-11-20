@@ -20,6 +20,17 @@ module Fatty
       }
     end
 
+    def truecolor_detected?
+      colorterm = ENV["COLORTERM"].to_s
+      term = ENV["TERM"].to_s
+      term_program = ENV["TERM_PROGRAM"].to_s
+
+      colorterm.match?(/truecolor|24bit/i) ||
+        term.match?(/truecolor|24bit|direct/i) ||
+        term.match?(/kitty|wezterm|alacritty|ghostty|foot/i) ||
+        term_program.match?(/kitty|wezterm|alacritty|ghostty|iTerm/i)
+    end
+
     private
 
     # -----------------------
@@ -74,17 +85,6 @@ module Fatty
       else
         "unknown"
       end
-    end
-
-    def self.truecolor_detected?
-      colorterm = ENV["COLORTERM"].to_s
-      term = ENV["TERM"].to_s
-      term_program = ENV["TERM_PROGRAM"].to_s
-
-      colorterm.match?(/truecolor|24bit/i) ||
-        term.match?(/truecolor|24bit|direct/i) ||
-        term.match?(/kitty|wezterm|alacritty|ghostty|foot/i) ||
-        term_program.match?(/kitty|wezterm|alacritty|ghostty|iTerm/i)
     end
 
     def tmux?

@@ -228,7 +228,8 @@ end
 #         )
 
 #         expect(commands).to eq([
-#           [:terminal, :send_modal_owner, [:cmd, :prompt_result, { kind: nil, text: "four score and seven years ago" }]],
+#           [:terminal, :send_modal_owner,
+#            [:cmd, :prompt_result, { kind: nil, text: "four score and seven years ago" }]],
 #           [:terminal, :pop_modal],
 #         ])
 

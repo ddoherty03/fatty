@@ -432,7 +432,8 @@ module Fatty
         x
       end
 
-      def dist2(r1, g1, b1, r2, g2, b2)
+      # Two RGB triples keep callers explicit about the color components.
+      def dist2(r1, g1, b1, r2, g2, b2) # rubocop:disable Metrics/ParameterLists
         dr = r1 - r2
         dg = g1 - g2
         db = b1 - b2
@@ -452,30 +453,6 @@ module Fatty
           @x11_table_path = path
         end
         @x11_table
-      end
-
-      def load_x11_rgb_txt(path)
-        table = {}
-
-        if File.file?(path)
-          File.foreach(path) do |line|
-            next if line.strip.empty?
-            next if line.lstrip.start_with?("!")
-
-            # Format: R G B <name...>
-            parts = line.strip.split(/\s+/)
-            next if parts.length < 4
-
-            r = parts[0].to_i
-            g = parts[1].to_i
-            b = parts[2].to_i
-            name = parts[3..].join(" ")
-            key = normalize_name(name)
-            table[key] = [r, g, b]
-          end
-        end
-
-        table
       end
 
       def load_x11_rgb_txt(path)

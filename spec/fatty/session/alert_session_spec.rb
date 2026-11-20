@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
-require "ostruct"
 require "spec_helper"
 
 module Fatty
   RSpec.describe AlertSession do
     def init_alert_session(session, row: 23, cols: 80, theme_version: 0)
-      alert_rect = OpenStruct.new(row: row, cols: cols)
+      alert_rect = Fatty::Screen::Rect.new(row: row, cols: cols)
       screen = instance_double(Fatty::Screen, alert_rect: alert_rect)
       renderer = instance_double(
         Fatty::Renderer,

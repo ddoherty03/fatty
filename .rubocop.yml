@@ -6,10 +6,43 @@ RSpec/MessageSpies:
 
 AllCops:
   Include:
-    - 'lib/**/*'
-    - 'spec/**/*'
+    - 'lib/**/*.rb'
+    - 'spec/**/*.rb'
   Exclude:
     - 'test/tmp/**/*'
     - 'spec/tmp/**/*'
     - 'spec/.examples*'
     - 'vendor/bundle/**/*'
+
+# Specs mirror source directories, including API/session namespaces and acronyms.
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+# Expectations can both verify a call and supply the response needed by its caller.
+RSpec/StubbedMock:
+  Enabled: false
+
+# These methods perform work or implement hooks; they are not predicate queries.
+Naming/PredicateMethod:
+  AllowedMethods:
+    - call
+    - tick
+    - tick_active_session
+    - transpose_words_once
+
+# This file installs related patches in both Warning and Fatty::Curses.
+Style/OneClassPerFile:
+  Exclude:
+    - 'lib/fatty/curses/patch.rb'
+
+# Capture a whole frame once, then inspect several independent ANSI properties.
+RSpec/ExpectOutput:
+  Exclude:
+    - 'spec/fatty/renderer/truecolor_spec.rb'
+
+# Integration checks cover behavior across classes or the packaged executable.
+RSpec/DescribeClass:
+  Exclude:
+    - 'spec/fatty/backspace_bindings_spec.rb'
+    - 'spec/fatty/curses/backend_loading_spec.rb'
+    - 'spec/fatty/demo_packaging_spec.rb'

@@ -439,8 +439,9 @@ module Fatty
       # files, but not if the prefix starts with '.' or '#', then treat hidden
       # files normally.
       entries =
-        Dir.children(dir_part)
-          .select { |name| Gem.win_platform? ? name.downcase.start_with?(base_part.downcase) : name.start_with?(base_part) }
+        Dir.children(dir_part).select { |name|
+          Gem.win_platform? ? name.downcase.start_with?(base_part.downcase) : name.start_with?(base_part)
+        }
           .sort_by do |name|
           full = File.join(dir_part, name)
           hide_penalty =

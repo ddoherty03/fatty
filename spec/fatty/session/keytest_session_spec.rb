@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
 require "tmpdir"
-require "ostruct"
 
 module Fatty
   RSpec.describe KeyTestSession do
     def init_keytest_session(session, terminal_name: "xterm-256color")
-      output_rect = OpenStruct.new(row: 0, rows: 10, cols: 80)
+      output_rect = Fatty::Screen::Rect.new(row: 0, rows: 10, cols: 80)
       screen = instance_double(Fatty::Screen, output_rect: output_rect)
       renderer = instance_double(Fatty::Renderer, screen: screen, theme_version: 0)
       env = { terminal: terminal_name }

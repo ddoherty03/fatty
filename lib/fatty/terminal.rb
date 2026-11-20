@@ -104,7 +104,8 @@ module Fatty
     end
 
     def inspect
-      "Terminal: prompt: #{@prompt}; history: #{@history_path}; sessions size: #{@sessions.size} active: #{active_session.id}"
+      "Terminal: prompt: #{@prompt}; history: #{@history_path}; " \
+        "sessions size: #{@sessions.size} active: #{active_session.id}"
     end
 
     def to_s
