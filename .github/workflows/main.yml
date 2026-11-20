@@ -24,6 +24,7 @@ jobs:
           - '3.3'
           - '3.4'
           - '4.0'
+          # Add '4.1' here once stable; ruby-head provides early coverage.
 
     steps:
       - uses: actions/checkout@v6
@@ -56,3 +57,21 @@ jobs:
           bundler-cache: true
       - name: Run RuboCop
         run: bundle exec rubocop
+
+  ruby-head:
+    name: Ruby head (experimental)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Resolve dependencies for Ruby head
+        run: rm -f Gemfile.lock
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby-head
+          bundler-cache: true
+      - name: Run specs
+        run: bundle exec rake spec
