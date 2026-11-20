@@ -15,7 +15,11 @@ module Fatty
       Dir.mktmpdir("fatty_log_spec") do |dir|
         ENV["XDG_STATE_HOME"] = dir
         Fatty::Config.progname = progname
-        ex.run
+        begin
+          ex.run
+        ensure
+          Logger.logger&.close unless Logger.logger.equal?(old_logger)
+        end
       end
     ensure
       Logger.logger = old_logger
@@ -32,7 +36,8 @@ module Fatty
         allow(Fatty::Config).to receive(:config).and_return(log: { file: custom, level: 'info' })
         logger = Fatty::Logger.configure
         22.times do |index|
-          File.truncate(custom, 5 * 1024 * 1024 + 1)
+          # Use the existing handle: Windows denies truncating an open log.
+          logger << (" " * (5 * 1024 * 1024 + 1))
           logger.info("rotation-record-#{index}")
         end
         expect(Dir.glob("#{custom}*").size).to eq(20)

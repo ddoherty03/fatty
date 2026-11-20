@@ -2,7 +2,7 @@
 
 require "spec_helper"
 require "rbconfig"
-require "shellwords"
+require "tmpdir"
 
 RSpec.describe Fatty::Shell do
   it "preserves Windows paths in demo arguments, including quoted trailing separators" do
@@ -15,10 +15,15 @@ RSpec.describe Fatty::Shell do
 
   it "captures both streams and preserves failure status on the Windows path" do
     allow(Gem).to receive(:win_platform?).and_return(true)
-    command = [RbConfig.ruby, "-e", 'STDOUT.write("out"); STDERR.write("err"); exit 7'].shelljoin
-    output, status = Fatty::Shell.capture(command)
-    expect(output).to include("out", "err")
-    expect(status.exitstatus).to eq(7)
+    Dir.mktmpdir("fatty_shell") do |dir|
+      script = File.join(dir, "capture output.rb")
+      File.write(script, 'STDOUT.write("out"); STDERR.write("err"); exit 7')
+      # Double-quoted paths work with both cmd.exe and POSIX shells.
+      command = %("#{RbConfig.ruby}" "#{script}")
+      output, status = Fatty::Shell.capture(command)
+      expect(output).to include("out", "err")
+      expect(status.exitstatus).to eq(7)
+    end
   end
 
   it "retains Open3 on Unix" do

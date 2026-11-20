@@ -119,6 +119,7 @@ module Fatty
         allow(Dir).to receive(:exist?).with("C:/").and_return(true)
         allow(Dir).to receive(:children).with("C:/").and_return(["Users", "Windows"])
         allow(File).to receive(:directory?).with("C:/Users").and_return(true)
+        allow(File).to receive(:directory?).with("C:/Windows").and_return(false)
         expect(field_with('dir C:\\').path_completion_candidates).to eq(["C:\\Users\\", "C:\\Windows"])
         expect(field_with('dir C:').path_completion_candidates).to eq(["C:\\Users\\", "C:\\Windows"])
         ['dir C:', 'dir C:\\'].each do |line|
@@ -158,7 +159,7 @@ module Fatty
           expect(field.buffer.text).to eq("dir ~/blocked/")
           field.buffer.replace("dir ~/readable/ex")
           field.complete!
-          expect(field.buffer.text).to eq("dir ~/readable/example.txt")
+          expect(field.buffer.text).to eq(native_completion_path("dir ~/readable/example.txt"))
         end
       end
 
@@ -285,10 +286,10 @@ module Fatty
         File.write(File.join(tmpdir, "src", "beta.rb"), "x")
         field = field_with("ls -l ~/src")
 
-        expect(field.popup_completion_query).to eq("~/src")
+        expect(field.popup_completion_query).to eq(native_completion_path("~/src"))
         expect(field.popup_completion_candidates).to include(
-          "~/src/alpha.rb",
-          "~/src/beta.rb",
+          native_completion_path("~/src/alpha.rb"),
+          native_completion_path("~/src/beta.rb"),
         )
       end
 
@@ -310,7 +311,8 @@ module Fatty
         expect(field.popup_completion_candidates).to include("bundle exec rspec")
       end
 
-      it "escapes spaces in rendered path popup candidates" do
+      it "escapes spaces in Unix path popup candidates" do
+        allow(Gem).to receive(:win_platform?).and_return(false)
         FileUtils.mkdir_p(File.join(tmpdir, "My Dir"))
         File.write(File.join(tmpdir, "My Dir", "file name.txt"), "x")
         field = field_with("cat ~/My\\ Dir/")

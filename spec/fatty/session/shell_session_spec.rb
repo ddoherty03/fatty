@@ -158,7 +158,7 @@ module Fatty
           commands = apply_action(session, :completion_popup)
           popup = commands.first.payload.fetch(:session)
 
-          item = popup.displayed.find { |candidate| candidate.end_with?("/bin/") }
+          item = popup.displayed.find { |candidate| candidate.end_with?(native_completion_path("/bin/")) }
 
           result = update(
             session,
@@ -171,8 +171,8 @@ module Fatty
 
           expect(result).to eq([])
           expect(popup.field.buffer.text).to eq("")
-          expect(popup.displayed).to include("#{dir}/usr/bin/ruby")
-          expect(popup.title).to include("#{dir}/usr/bin/")
+          expect(popup.displayed).to include(native_completion_path("#{dir}/usr/bin/ruby"))
+          expect(popup.title).to include(native_completion_path("#{dir}/usr/bin/"))
         end
       end
 
@@ -202,8 +202,8 @@ module Fatty
 
           expect(result).to eq([])
           expect(popup.field.buffer.text).to eq("")
-          expect(popup.displayed).to include("#{dir}/usr/lib/")
-          expect(popup.title).to include("#{dir}/usr/")
+          expect(popup.displayed).to include(native_completion_path("#{dir}/usr/lib/"))
+          expect(popup.title).to include(native_completion_path("#{dir}/usr/"))
         end
       end
 
@@ -225,7 +225,7 @@ module Fatty
             session,
             :popup_tab,
             kind: :completion,
-            item: "#{dir}/usr/bin/",
+            item: popup.displayed.find { |candidate| candidate.end_with?(native_completion_path("/bin/")) },
             query: "",
             session: popup,
           )
@@ -234,11 +234,11 @@ module Fatty
             session,
             :popup_result,
             kind: :completion,
-            item: "#{dir}/usr/bin/ruby",
+            item: popup.displayed.find { |candidate| candidate.end_with?(native_completion_path("/ruby")) },
           )
 
           expect(result).to eq([])
-          expect(session.field.buffer.text).to eq("#{dir}/usr/bin/ruby")
+          expect(session.field.buffer.text).to eq(native_completion_path("#{dir}/usr/bin/ruby"))
         end
       end
 
@@ -723,7 +723,7 @@ module Fatty
           commands = apply_action(session, :completion_popup)
           popup = commands.first.payload.fetch(:session)
 
-          item = popup.displayed.find { |candidate| candidate.end_with?("tmp/") }
+          item = popup.displayed.find { |candidate| candidate.end_with?(native_completion_path("tmp/")) }
 
           result = update(
             session,
@@ -733,7 +733,7 @@ module Fatty
           )
 
           expect(result).to eq([])
-          expect(session.field.buffer.text).to eq("ls -l ~/Downloads/tmp/")
+          expect(session.field.buffer.text).to eq(native_completion_path("ls -l ~/Downloads/tmp/"))
         end
       end
 
@@ -750,7 +750,7 @@ module Fatty
           result = apply_action(session, :completion_popup)
 
           expect(result).to eq([])
-          expect(session.field.buffer.text).to eq("ls -l ~/Downloads/")
+          expect(session.field.buffer.text).to eq(native_completion_path("ls -l ~/Downloads/"))
         end
       end
 
@@ -800,7 +800,7 @@ module Fatty
           result = apply_action(session, :complete)
 
           expect(result).to eq([])
-          expect(session.field.buffer.text).to eq("~/Downloads/")
+          expect(session.field.buffer.text).to eq(native_completion_path("~/Downloads/"))
           expect(session.field.state[3]).to eq("")
         end
       end

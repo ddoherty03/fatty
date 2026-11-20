@@ -697,7 +697,7 @@ module Fatty
         terminal.send(:preflight!)
 
         expect(Fatty::Config.app_name).to eq("byr")
-        expect(Fatty::Config.app_config_dir).to eq("/tmp/byr/fatty")
+        expect(Fatty::Config.app_config_dir).to eq(File.expand_path("/tmp/byr/fatty"))
       end
     end
 

@@ -25,6 +25,25 @@ module Fatty
       end
 
       describe "event handling" do
+        # Exercise mouse decoding even when the installed backend has no mouse API.
+        before(:each, :mouse_backend) do
+          stub_const("Curses::MouseEvent", Struct.new(:bstate, :x, :y, keyword_init: true))
+          stub_const("Curses::BUTTON1_CLICKED", 0x00000004)
+          stub_const("Curses::BUTTON4_PRESSED", 0x00010000)
+          stub_const("Curses::BUTTON_CTRL", 0x02000000)
+          stub_const("Curses::BUTTON_ALT", 0x04000000)
+          stub_const("Curses::BUTTON_SHIFT", 0x08000000)
+          stub_const("Fatty::Curses::EventSource::SCROLL_UP_BSTATE", ::Curses::BUTTON4_PRESSED)
+          stub_const(
+            "Fatty::Curses::EventSource::MOUSE_MODIFIER_MASK",
+            ::Curses::BUTTON_CTRL | ::Curses::BUTTON_ALT | ::Curses::BUTTON_SHIFT,
+          )
+          stub_const(
+            "Fatty::Curses::EventSource::MOUSE_BSTATE_BUTTON_MAP",
+            { ::Curses::BUTTON1_CLICKED => :left_clicked },
+          )
+        end
+
         it "returns a :cmd paste message when read_raw returns paste data" do
           allow(source).to receive(:read_raw).and_return([:paste, "hello\nworld\n"])
           event = source.next_event
@@ -73,7 +92,7 @@ module Fatty
           expect(ev.mouse?).to be true
         end
 
-        it "decodes ctrl scroll down as a modified mouse event" do
+        it "decodes ctrl scroll down as a modified mouse event", :mouse_backend do
           mouse = instance_double(
             ::Curses::MouseEvent,
             bstate: EventSource::SCROLL_DOWN_BSTATE | ::Curses::BUTTON_CTRL,
@@ -90,7 +109,7 @@ module Fatty
           expect(event.y).to eq(5)
         end
 
-        it "decodes ctrl scroll up as a modified mouse event" do
+        it "decodes ctrl scroll up as a modified mouse event", :mouse_backend do
           mouse = instance_double(
             ::Curses::MouseEvent,
             bstate: ::Curses::BUTTON4_PRESSED | ::Curses::BUTTON_CTRL,
@@ -105,7 +124,7 @@ module Fatty
           expect(event.shift).to be false
         end
 
-        it "decodes meta and shift modifiers on mouse events" do
+        it "decodes meta and shift modifiers on mouse events", :mouse_backend do
           mouse = instance_double(
             ::Curses::MouseEvent,
             bstate: ::Curses::BUTTON1_CLICKED | ::Curses::BUTTON_ALT | ::Curses::BUTTON_SHIFT,
@@ -139,7 +158,7 @@ module Fatty
           expect(source.send(:read_raw)).to eq(27)
         end
 
-        it "strips mouse modifiers before resolving the wheel button" do
+        it "strips mouse modifiers before resolving the wheel button", :mouse_backend do
           bstate = ::Curses::BUTTON4_PRESSED |
                    ::Curses::BUTTON_CTRL |
                    ::Curses::BUTTON_ALT |
@@ -148,13 +167,13 @@ module Fatty
           expect(source.send(:mouse_button_from_bstate, bstate)).to eq(:scroll_up)
         end
 
-        it "strips mouse modifiers before resolving the opposite wheel button" do
-          bstate = EventSource::SCROLL_UP_BSTATE |
+        it "strips mouse modifiers before resolving the opposite wheel button", :mouse_backend do
+          bstate = EventSource::SCROLL_DOWN_BSTATE |
                    ::Curses::BUTTON_CTRL |
                    ::Curses::BUTTON_ALT |
                    ::Curses::BUTTON_SHIFT
 
-          expect(source.send(:mouse_button_from_bstate, bstate)).to eq(:scroll_up)
+          expect(source.send(:mouse_button_from_bstate, bstate)).to eq(:scroll_down)
         end
       end
 

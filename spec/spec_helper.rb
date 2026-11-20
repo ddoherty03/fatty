@@ -63,3 +63,8 @@ def stub_curses_window(rows: 24, cols: 80)
   allow(Curses::Window).to receive(:new).and_return(win)
   win
 end
+
+# Completion inserts shell-native separators, unlike File.join's portable paths.
+def native_completion_path(path)
+  Gem.win_platform? ? path.tr("/", "\\") : path
+end

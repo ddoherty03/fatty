@@ -6,7 +6,7 @@ module Fatty
       # Helper to stub a small built-in map without depending on curses.
       def stub_builtin_map
         stub_const(
-          "Fatty::CURSES_TO_EVENT",
+          "Fatty::Curses::CURSES_TO_EVENT",
           {
             9 => KeyEvent.new(key: :tab, raw: 9),
             260 => KeyEvent.new(key: :left, raw: 260),

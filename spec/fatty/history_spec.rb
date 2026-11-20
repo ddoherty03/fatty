@@ -20,11 +20,13 @@ module Fatty
     end
 
     describe "main methods" do
-      let(:hist_path) { "/tmp/spec_history" }
+      let(:history_dir) { Dir.mktmpdir("fatty_history") }
+      let(:hist_path) { File.join(history_dir, "history") }
       let(:hist) { History.new(path: hist_path, max: 5) }
 
+      after { FileUtils.remove_entry(history_dir) }
+
       before do
-        FileUtils.rm_f(hist_path)
         FileUtils.touch(hist_path)
       end
 
