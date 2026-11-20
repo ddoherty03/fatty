@@ -22,7 +22,7 @@ append_text = lambda do |args|
 end
 
 on_accept_proc = lambda do |line, env|
-  cmd, *args = Shellwords.split(line)
+  cmd, *args = Fatty::Shell.split_arguments(line)
   case cmd
   when "cd"
     dir = args.first || ENV["HOME"]
@@ -347,13 +347,15 @@ on_accept_proc = lambda do |line, env|
     env.markdown(Fatty::Help.text)
   else
     unless line.match?(/\A\s*\z/)
-      out, _ = Open3.capture2e(line)
+      out = nil
+      begin
+        env.terminal.suspend { out, _ = Fatty::Shell.capture(line) }
+      rescue Errno::ENOENT
+        env.alert("Command not found (#{line})", role: :error)
+      end
       out
     end
   end
-  rescue Errno::ENOENT
-    env.alert("Command not found (#{line})", role: :error)
-    nil
   rescue SystemCallError => ex
     env.alert(ex.message, role: :error)
     nil
@@ -410,7 +412,7 @@ def color_band_for_rgb(name:, rgb:, truecolor:, fallback_index:, width: 36)
 end
 
 cutes = []
-ENV['PATH'].split(':').each do |dir|
+ENV.fetch('PATH', '').split(File::PATH_SEPARATOR).each do |dir|
   next unless Dir.exist?(dir)
 
   Dir.children(dir).each do |name|
@@ -441,6 +443,7 @@ builtins = %w[
   choose_multi
   choosevals_multi
   colors
+  environment
   help
   info
   interrupt

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "io/console"
+
 require_relative 'terminal/popup_owner'
 
 module Fatty

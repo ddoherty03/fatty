@@ -431,6 +431,7 @@ module Fatty
         session = Fatty::ShellSession.new
         init_shell_session(session)
 
+        expect(session.terminal).to receive(:suspend).and_yield
         session.field.buffer.replace("echo hello")
         commands = apply_action(session, :submit_line)
         expect(session.terminal)
@@ -671,6 +672,25 @@ module Fatty
         expect(session.field.buffer.text).to eq("git sta")
         expect(session.field.state[3]).to eq("tus")
         expect(session.field.autosuggestion).to eq("git status")
+      end
+
+      it "opens and filters Windows path completions through the F2 binding" do
+        allow(Gem).to receive(:win_platform?).and_return(true)
+        Dir.mktmpdir("fatty_windows_popup") do |dir|
+          FileUtils.mkdir_p(File.join(dir, "Downloads", "one"))
+          FileUtils.mkdir_p(File.join(dir, "Downloads", "two"))
+          allow(Dir).to receive(:home).and_return(dir)
+          session = Fatty::ShellSession.new
+          init_shell_session(session)
+          session.field.buffer.replace('dir ~\\Downloads\\')
+          event = Fatty::KeyEvent.new(key: :f2)
+          action = Fatty::Keymaps.emacs.resolve(event, contexts: [:input, :text, :terminal])
+          commands = apply_action(session, action)
+          popup = commands.first.payload.fetch(:session)
+          expect(popup.displayed).to include('~\\Downloads\\one\\', '~\\Downloads\\two\\')
+          update(session, :popup_result, kind: :completion, item: '~\\Downloads\\one\\')
+          expect(session.field.buffer.text).to eq('dir ~\\Downloads\\one\\')
+        end
       end
 
       it "opens completion popup for multiple candidates" do

@@ -115,6 +115,7 @@ For example, `M-8 M-0 #` will insert 80 '#' characters at the cursor.
 | :tab       | Suggest the next completion                           |
 | S-:tab     | Suggest the prior completion                          |
 | M-:tab     | Popup all completions based on input-so-far           |
+| :f2        | Popup completions (alternative to Alt-Tab) |
 |            |                                                       |
 
 *** Paging Context

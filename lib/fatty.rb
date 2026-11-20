@@ -9,8 +9,6 @@ require "rainbow"
 require "redcarpet"
 require "strscan"
 
-require 'debug'
-
 # Gem Overview (extracted from README.org by gem_docs)
 #
 # * Introduction
@@ -45,6 +43,7 @@ module Fatty
   require_relative "fatty/version"
   require_relative "fatty/core_ext"
   require_relative "fatty/env"
+  require_relative "fatty/shell"
   require_relative "fatty/config"
   require_relative "fatty/logger"
   require_relative "fatty/counter"

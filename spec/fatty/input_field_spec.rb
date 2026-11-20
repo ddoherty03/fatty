@@ -109,6 +109,56 @@ module Fatty
         )
       end
 
+      it "completes Windows drive roots, backslashes, and case-insensitive prefixes" do
+        allow(Gem).to receive(:win_platform?).and_return(true)
+        allow(File).to receive(:dirname).and_call_original
+        allow(File).to receive(:dirname).with("C:/us").and_return("C:/")
+        allow(File).to receive(:directory?).and_call_original
+        allow(Dir).to receive(:exist?).and_call_original
+        allow(Dir).to receive(:children).and_call_original
+        allow(Dir).to receive(:exist?).with("C:/").and_return(true)
+        allow(Dir).to receive(:children).with("C:/").and_return(["Users", "Windows"])
+        allow(File).to receive(:directory?).with("C:/Users").and_return(true)
+        expect(field_with('dir C:\\').path_completion_candidates).to eq(["C:\\Users\\", "C:\\Windows"])
+        expect(field_with('dir C:').path_completion_candidates).to eq(["C:\\Users\\", "C:\\Windows"])
+        ['dir C:', 'dir C:\\'].each do |line|
+          field = field_with(line)
+          field.cycle_completion!
+          expect(field.buffer.virtual_suffix).not_to be_empty
+          expect(field.popup_completion_query).to eq(line.delete_prefix("dir ").tr("/", "\\"))
+          expect(field.popup_completion_candidates).to include("C:\\Users\\")
+        end
+        expect(field_with('dir C:\\us').path_completion_candidates).to eq(["C:\\Users\\"])
+      end
+
+      it "completes quoted Windows paths containing spaces" do
+        allow(Gem).to receive(:win_platform?).and_return(true)
+        FileUtils.mkdir_p(File.join(tmpdir, "My Dir"))
+        File.write(File.join(tmpdir, "My Dir", "file name.txt"), "x")
+        field = field_with('markdown "~\\My Dir\\fi')
+        expect(field.path_completion_candidates).to eq(['"~\My Dir\file name.txt"'])
+        field.complete!
+        expect(field.buffer.text).to eq('markdown "~\My Dir\file name.txt"')
+      end
+
+      [Errno::EACCES, Errno::EPERM, Errno::ENOENT].each do |error|
+        it "keeps completion usable after a directory lookup raises #{error}" do
+          FileUtils.mkdir_p(File.join(tmpdir, "blocked"))
+          FileUtils.mkdir_p(File.join(tmpdir, "readable"))
+          File.write(File.join(tmpdir, "readable", "example.txt"), "ok")
+          allow(Dir).to receive(:children).and_call_original
+          allow(Dir).to receive(:children).with(File.join(tmpdir, "blocked/")).and_raise(error)
+          field = field_with("dir ~/blocked/")
+          expect(field.path_completion_candidates).to eq([])
+          expect(field.popup_completion_candidates).to eq([])
+          expect { field.sync_virtual_suffix!; field.complete! }.not_to raise_error
+          expect(field.buffer.text).to eq("dir ~/blocked/")
+          field.buffer.replace("dir ~/readable/ex")
+          field.complete!
+          expect(field.buffer.text).to eq("dir ~/readable/example.txt")
+        end
+      end
+
       it "returns nil autosuggestion when there are no candidates" do
         field = field_with("no-match", completion_proc: ->(_buffer) { [] })
         field.sync_virtual_suffix!

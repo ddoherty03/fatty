@@ -3,6 +3,31 @@
 module Fatty
   module Curses
     RSpec.describe Context do
+      describe "screen initialization" do
+        it "uses the standard console buffer for Windows PDCurses and restores the environment" do
+          stub_const('RUBY_PLATFORM', 'x64-mingw-ucrt')
+          stub_const('Curses::VERSION', 'PDCursesMod 4.5.4')
+          original = ENV['PDC_RESTORE_SCREEN']
+          ENV['PDC_RESTORE_SCREEN'] = '1'
+          expect(::Curses).to receive(:init_screen) do
+            expect(ENV['PDC_RESTORE_SCREEN']).to eq('0')
+          end
+          Fatty::Curses::Context.new.send(:initialize_screen!)
+          expect(ENV['PDC_RESTORE_SCREEN']).to eq('1')
+        ensure
+          ENV['PDC_RESTORE_SCREEN'] = original
+        end
+
+        it "does not change screen selection on ncurses" do
+          stub_const('Curses::VERSION', 'ncurses 6.5')
+          original = ENV['PDC_RESTORE_SCREEN']
+          expect(::Curses).to receive(:init_screen) do
+            expect(ENV['PDC_RESTORE_SCREEN']).to eq(original)
+          end
+          Fatty::Curses::Context.new.send(:initialize_screen!)
+        end
+      end
+
       describe "#close" do
         it "restores normal terminal modes before closing curses" do
           context = Fatty::Curses::Context.new
@@ -27,6 +52,17 @@ module Fatty
       end
 
       describe "#suspend" do
+        it "rejects unsupported suspension before changing terminal modes" do
+          context = Fatty::Curses::Context.new
+          context.instance_variable_set(:@started, true)
+          allow(Fatty::Curses::Native).to receive(:prepare_suspend!).and_raise(
+            Fatty::Curses::Native::SuspensionUnavailable, 'no endwin')
+          expect(::Curses).not_to receive(:def_prog_mode)
+          expect(context).not_to receive(:disable_bracketed_paste!)
+          expect(::Curses).not_to receive(:close_screen)
+          expect { context.suspend }.to raise_error(Fatty::Curses::Native::SuspensionUnavailable)
+        end
+
         it "saves curses program mode and returns the terminal to shell mode" do
           context = Fatty::Curses::Context.new
           context.instance_variable_set(:@started, true)
@@ -34,6 +70,7 @@ module Fatty
           allow(context).to receive(:disable_bracketed_paste!)
           allow(::Curses).to receive(:def_prog_mode)
           allow(::Curses).to receive(:curs_set)
+          allow(Fatty::Curses::Native).to receive(:prepare_suspend!)
           allow(Fatty::Curses::Native).to receive(:endwin)
 
           context.suspend

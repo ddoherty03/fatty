@@ -389,7 +389,8 @@ module Fatty
 
     def run_default_command(line)
       commands = [Command.session(output_session.id, :append, text: "$ #{line}\n", follow: true)]
-      out, status = Open3.capture2e(line)
+      out = status = nil
+      terminal.suspend { out, status = Fatty::Shell.capture(line) }
       if status&.exitstatus && status.exitstatus != 0
         out << "\n[exit #{status.exitstatus}]\n"
       end
@@ -488,11 +489,14 @@ module Fatty
     end
 
     def completion_path_item?(item)
-      item.to_s.end_with?("/")
+      s = item.to_s
+      s = s.delete_prefix('"').delete_suffix('"').tr("\\", "/") if Gem.win_platform?
+      s.end_with?("/")
     end
 
     def parent_completion_path(path)
       s = path.to_s
+      s = s.delete_prefix('"').delete_suffix('"').tr("\\", "/") if Gem.win_platform?
       return if s.empty?
 
       s = s[0...-1] if s.end_with?("/") && s.length > 1
@@ -500,6 +504,7 @@ module Fatty
       return unless slash
 
       parent = s[0..slash]
+      parent = parent.tr("/", "\\") if Gem.win_platform?
       return if parent == path
 
       parent

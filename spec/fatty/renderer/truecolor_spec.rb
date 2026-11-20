@@ -5,6 +5,13 @@ require_relative "../renderer_spec"
 
 module Fatty
   RSpec.describe Renderer::Truecolor do
+    it "refreshes the input backing window before drawing the first ANSI frame" do
+      input = double("input window")
+      allow(context).to receive(:input_win).and_return(input)
+      expect(input).to receive(:refresh)
+      renderer.begin_frame
+    end
+
     let(:screen) do
       Fatty::Screen.new(rows: 10, cols: 12, status_rows: 1)
     end

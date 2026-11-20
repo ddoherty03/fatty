@@ -6,10 +6,22 @@ require "fiddle/import"
 module Fatty
   module Curses
     module Native
-      extend Fiddle::Importer
+      class SuspensionUnavailable < StandardError; end
 
-      dlload Fiddle.dlopen(nil)
-      extern "int endwin()"
+      def self.prepare_suspend!
+        return ::Curses.method(:endwin) if ::Curses.respond_to?(:endwin)
+
+        @endwin ||= Fiddle::Function.new(Fiddle.dlopen(nil)['endwin'], [], Fiddle::TYPE_INT)
+      rescue Fiddle::DLError => e
+        raise SuspensionUnavailable, "This curses backend cannot temporarily suspend its screen: #{e.message}"
+      end
+
+      def self.endwin
+        result = prepare_suspend!.call
+        raise SuspensionUnavailable, "The curses backend failed to suspend" if result == false || result == -1
+
+        result
+      end
     end
     # Context represents the active curses environment.
     #
@@ -41,14 +53,14 @@ module Fatty
         return self if @started
 
         configure_escape_delay!
-        ::Curses.init_screen
+        initialize_screen!
         MouseConstants.ensure!
 
         ::Curses.raw
         ::Curses.noecho
         ::Curses.curs_set(1)
         ::Curses.stdscr.keypad(true)
-        ::Curses.mousemask(::Curses::ALL_MOUSE_EVENTS)
+        ::Curses.mousemask(::Curses::ALL_MOUSE_EVENTS) if ::Curses.respond_to?(:mousemask)
         enable_bracketed_paste!
         setup_colors
         @truecolor = truecolor_enabled?
@@ -143,6 +155,7 @@ module Fatty
       def suspend
         return unless @started
 
+        Native.prepare_suspend!
         ::Curses.def_prog_mode
         disable_bracketed_paste!
         ::Curses.curs_set(1)
@@ -285,6 +298,22 @@ module Fatty
       end
 
       private
+
+      # PDCurses otherwise draws to a private Windows console buffer while
+      # Ruby's ANSI output still targets the original standard-output buffer.
+      def initialize_screen!
+        unless RUBY_PLATFORM.match?(/mingw|mswin/) && ::Curses::VERSION.start_with?('PDCurses')
+          return ::Curses.init_screen
+        end
+
+        previous = ENV['PDC_RESTORE_SCREEN']
+        begin
+          ENV['PDC_RESTORE_SCREEN'] = '0'
+          ::Curses.init_screen
+        ensure
+          ENV['PDC_RESTORE_SCREEN'] = previous
+        end
+      end
 
       # simplecov:disable
 

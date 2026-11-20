@@ -29,6 +29,7 @@ Gem::Specification.new do |spec|
       "README.org",
       "help/help.md",
       "exe/*",
+      "examples/markdown/*.md",
       "lib/**/*",
     ].select { |path| File.file?(path) }.sort
   end
@@ -37,7 +38,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "curses", "~> 1.4"
-  spec.add_dependency "fat_config", ">=0.8.0"
+  spec.add_dependency "fat_config", ">= 0.8.1"
   spec.add_dependency "rainbow"
   spec.add_dependency "redcarpet"
   spec.add_dependency "rouge"

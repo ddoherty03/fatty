@@ -3,7 +3,9 @@
 module Fatty
   module Curses
     class EventSource
-      MOUSE_BSTATE_BUTTON_MAP = {
+      MOUSE_SUPPORTED = ::Curses.respond_to?(:mousemask) && ::Curses.respond_to?(:getmouse)
+
+      MOUSE_BSTATE_BUTTON_MAP = (MOUSE_SUPPORTED ? {
         ::Curses::BUTTON1_PRESSED => :left_pressed,
         ::Curses::BUTTON1_RELEASED => :left_released,
         ::Curses::BUTTON1_CLICKED => :left_clicked,
@@ -21,14 +23,14 @@ module Fatty
         ::Curses::BUTTON3_CLICKED => :right_clicked,
         ::Curses::BUTTON3_DOUBLE_CLICKED => :right_double_clicked,
         ::Curses::BUTTON3_TRIPLE_CLICKED => :right_triple_clicked
-      }.freeze
+      } : {}).freeze
 
-      SCROLL_UP_BSTATE = ::Curses::BUTTON4_PRESSED
+      SCROLL_UP_BSTATE = MOUSE_SUPPORTED ? ::Curses::BUTTON4_PRESSED : 0
       SCROLL_DOWN_BSTATE = 0x10000000
-      MOUSE_MODIFIER_MASK =
+      MOUSE_MODIFIER_MASK = MOUSE_SUPPORTED ? (
         ::Curses::BUTTON_CTRL |
         ::Curses::BUTTON_ALT |
-        ::Curses::BUTTON_SHIFT
+        ::Curses::BUTTON_SHIFT) : 0
 
       ESCAPE_LOOKAHEAD_MS = 0
 
@@ -123,7 +125,7 @@ module Fatty
 
         log_keycode(ch)
 
-        if ch.is_a?(Integer) && ch == ::Curses::KEY_MOUSE
+        if MOUSE_SUPPORTED && ch.is_a?(Integer) && ch == ::Curses::KEY_MOUSE
           mouse = ::Curses.getmouse
           Fatty.debug("EventSource#read_raw: bstate=#{mouse&.bstate}", tag: :mouse)
           return decode_mouse(mouse)

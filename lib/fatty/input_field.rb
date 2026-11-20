@@ -193,7 +193,10 @@ module Fatty
     end
 
     def popup_completion_query
-      path_completion_prefix || buffer.completion_prefix
+      prefix = path_completion_prefix
+      return buffer.completion_prefix unless prefix
+
+      Gem.win_platform? ? unescape_path(prefix).tr("/", "\\") : prefix
     end
 
     def popup_completion_path?
@@ -305,7 +308,7 @@ module Fatty
       (history_autosuggestions + completion_suggestions)
         .compact
         .map(&:to_s)
-        .select { |candidate| candidate.start_with?(base) }
+        .select { |candidate| completion_extends?(candidate, base) }
         .reject { |candidate| candidate == buffer.text.to_s }
         .uniq
     end
@@ -365,6 +368,8 @@ module Fatty
       s = prefix.to_s
       return false if s.empty?
 
+      return true if Gem.win_platform? && s.match?(/\A[A-Za-z]:/)
+
       s.start_with?("/", "~/", "./", "../") || s.include?("/")
     end
 
@@ -391,7 +396,8 @@ module Fatty
       until scanner.eos?
         next if scanner.scan(/\s+/)
 
-        if (token = scanner.scan(/(?:\\.|[^\s\\])+/))
+        token_pattern = Gem.win_platform? ? /"[^"]*(?:"|\z)|'[^']*(?:'|\z)|[^\s]+/ : /(?:\\.|[^\s\\])+/
+        if (token = scanner.scan(token_pattern))
           last_token = [scanner.pos - token.length, scanner.pos]
         else
           scanner.getch
@@ -410,6 +416,7 @@ module Fatty
 
     def rendered_path_candidates(prefix)
       raw_prefix = unescape_path(prefix)
+      raw_prefix += "/" if Gem.win_platform? && raw_prefix.match?(/\A[A-Za-z]:\z/)
       expanded = expand_path_prefix(raw_prefix)
       return [] if expanded.nil? || expanded.empty?
 
@@ -433,7 +440,7 @@ module Fatty
       # files normally.
       entries =
         Dir.children(dir_part)
-          .select { |name| name.start_with?(base_part) }
+          .select { |name| Gem.win_platform? ? name.downcase.start_with?(base_part.downcase) : name.start_with?(base_part) }
           .sort_by do |name|
             full = File.join(dir_part, name)
             hide_penalty =
@@ -471,13 +478,32 @@ module Fatty
         rendered += "/" if File.directory?(full) && !rendered.end_with?("/")
         escape_path(rendered)
       end
+    rescue SystemCallError
+      # Completion is opportunistic: permissions, removed directories, and
+      # unavailable drives must not terminate input or automatic suggestions.
+      []
     end
 
     def escape_path(path)
+      if Gem.win_platform?
+        path = path.tr("/", "\\")
+        return path.match?(/[\s&()<>|]/) ? %Q{"#{path}"} : path
+      end
+
       path.gsub(/([ \t\n\\'"`$!#&()*;<>?\[\]\{\}|])/) { "\\#{$1}" }
     end
 
     def unescape_path(path)
+      if Gem.win_platform?
+        text = path.to_s
+        if text.start_with?('"', "'")
+          quote = text[0]
+          text = text[1..]
+          text = text.delete_suffix(quote)
+        end
+        return text.tr("\\", "/")
+      end
+
       path.to_s.gsub(/\\(.)/, '\1')
     end
 
@@ -509,11 +535,21 @@ module Fatty
       "#{before}#{replacement}#{after}"
     end
 
+    # Windows path candidates use forward slashes and filesystem casing.
+    # Comparing literally hides the cycling preview for a typed backslash.
+    def completion_extends?(candidate, prefix)
+      if Gem.win_platform? && path_completion_range
+        candidate.tr("\\", "/").downcase.start_with?(prefix.tr("\\", "/").downcase)
+      else
+        candidate.start_with?(prefix)
+      end
+    end
+
     def autosuggestion_visible?
       suggestion = autosuggestion.to_s
       text = buffer.text.to_s
       return false if suggestion.empty?
-      return false unless suggestion.start_with?(text)
+      return false unless completion_extends?(suggestion, text)
 
       suggestion != text
     end
@@ -522,10 +558,10 @@ module Fatty
       suggestion = autosuggestion.to_s
       text = buffer.text.to_s
       return "" if suggestion.empty?
-      return "" unless suggestion.start_with?(text)
+      return "" unless completion_extends?(suggestion, text)
       return "" if suggestion == text
 
-      suggestion.delete_prefix(text)
+      suggestion[text.length..]
     end
 
     def accept_autosuggestion!
@@ -540,6 +576,7 @@ module Fatty
       return if prefix.nil? || prefix.empty?
 
       raw_prefix = unescape_path(prefix)
+      raw_prefix += "/" if Gem.win_platform? && raw_prefix.match?(/\A[A-Za-z]:\z/)
       expanded = expand_path_prefix(raw_prefix)
       return prefix unless File.directory?(expanded)
 

@@ -105,6 +105,8 @@ module Fatty
       }.freeze
 
       def self.ensure!
+        return unless ::Curses.respond_to?(:mousemask) && ::Curses.respond_to?(:getmouse)
+
         CONSTANTS.each do |name, value|
           next if ::Curses.const_defined?(name)
 

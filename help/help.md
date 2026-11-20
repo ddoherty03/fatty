@@ -132,6 +132,7 @@ When editing the input line or text input for widgets like the \`prompt\`, \`fat
 | :tab       | Suggest the next completion                            |
 | S-:tab     | Suggest the prior completion                           |
 | M-:tab     | Popup all completions based on input-so-far            |
+| :f2        | Popup completions (alternative to Alt-Tab) |
 |            |                                                        |
 
 

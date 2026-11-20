@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "pdcurses_keys"
+
 module Fatty
   module Curses
     # The KeyDecoder class is responsible for converting raw key events returned
@@ -40,6 +42,7 @@ module Fatty
         @map = {}
         @sequence_map = {}
         load_builtin_map
+        load_pdcurses_map
         load_user_config
       end
 
@@ -156,6 +159,8 @@ module Fatty
 
       # Decode a raw input returned as a single character rather than an Array.
       def decode_single(ch)
+        ch = 8 if ch == "\b" # Some curses builds return BS as a string.
+
         if ch.is_a?(Integer) && @map.key?(ch)
           Fatty.debug("#{self.class}#decode_single: #{ch} found in @map -> #{@map[ch]}", tag: :keycode)
           ev = @map[ch]
@@ -292,6 +297,13 @@ module Fatty
           @map[code] = event
           Fatty.debug("KeyDecoder#load_builtin_map: system keydef: code: #{code} -> event: #{event}", tag: :keycode)
         end
+      end
+
+      # Derive the wide/narrow key offset from a public curses constant.
+      def load_pdcurses_map
+        return unless ::Curses::VERSION.start_with?("PDCurses")
+
+        @map.merge!(PDCursesKeys.events(::Curses::KEY_BACKSPACE - 0x07))
       end
 
       # Make sure the user config Hash uses symbols for its keys.  Return the

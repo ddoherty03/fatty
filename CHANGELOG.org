@@ -6,6 +6,24 @@
    user would find useful.
 5. Give each heading a version number and an inactive date (C-c ! is useful here).
 
+* Unreleased
+- Complete Windows backslash paths, quoted filenames, and case-insensitive prefixes.
+- Ship the markdown demo files and report missing files accurately.
+- Include Windows modified navigation, keypad, function-key, and Alt-character definitions.
+- Recognize native Windows Alt-Backspace as delete-previous-word.
+- Accept Control-h as Backspace in text fields, including Windows consoles.
+- Show the truecolor prompt immediately at startup and preserve Windows ANSI colors.
+- Avoid a Windows hang when capturing shell-command output such as dir.
+- Fix Windows truecolor output appearing only after leaving the interface.
+- Stop loading the Ruby debugger during normal startup, avoiding a Windows
+  shutdown hang. Load console sizing support explicitly.
+- Prefer the portable Curses.endwin binding for suspension when available.
+- Require fat_config 0.8.1 for Windows configuration paths.
+- Allow keyboard-only operation when curses has no mouse support.
+- Report unsupported terminal suspension when requested instead of failing
+  while loading Fatty.
+- Recognize Windows PATH separators in the demonstration shell.
+
 * Version 0.99.10.0 and 0.99.11.0
 - Rotate log files after 5M; keep 20
 - Add markdown_now for immediate rendering of markdown to output.

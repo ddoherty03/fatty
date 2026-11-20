@@ -209,6 +209,9 @@ module Fatty
       end
 
       def begin_frame
+        # getch refreshes a touched curses input window. Do that before ANSI
+        # painting, otherwise the first read erases the freshly drawn prompt.
+        context.input_win&.refresh
         @pending_ansi_draws = []
       end
 

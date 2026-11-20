@@ -56,6 +56,7 @@ module Fatty
     def detect_terminal_program
       return "tmux"     if ENV.key?("TMUX")
       return "screen"   if ENV.key?("STY")
+      return "windows-terminal" unless ENV["WT_SESSION"].to_s.empty?
       return "konsole"  if ENV.key?("KONSOLE_VERSION")
       return "kitty"    if ENV.key?("KITTY_WINDOW_ID")
       return "wezterm"  if ENV["TERM_PROGRAM"]&.downcase == "wezterm"

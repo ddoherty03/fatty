@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "windows_console"
+
 module Fatty
   module Ansi
     class Renderer
@@ -86,8 +88,10 @@ module Fatty
         if defined?(::Curses) && ::Curses.respond_to?(:putp)
           ::Curses.putp(text)
         else
-          io.write(text)
-          io.flush
+          WindowsConsole.with_ansi(io) do
+            io.write(text)
+            io.flush
+          end
         end
 
         nil

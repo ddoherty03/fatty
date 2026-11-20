@@ -13,6 +13,7 @@ module Fatty
 
     def clear_terminal_env!
       %w[
+        WT_SESSION
         TERM
         TERM_PROGRAM
         TERM_PROGRAM_VERSION
@@ -70,6 +71,24 @@ module Fatty
 
         expect(info.fetch(:terminal)).to eq("screen")
         expect(info.fetch(:screen)).to be(true)
+      end
+
+      it "detects Windows Terminal without Unix terminal variables" do
+        ENV["WT_SESSION"] = "test-session"
+        expect(Env.detect.fetch(:terminal)).to eq("windows-terminal")
+      end
+
+      it "ignores an empty Windows Terminal indicator" do
+        ENV["WT_SESSION"] = ""
+        expect(Env.detect.fetch(:terminal)).to eq("unknown")
+      end
+
+      it "preserves multiplexer identity inside Windows Terminal" do
+        ENV["WT_SESSION"] = "test-session"
+        ENV["STY"] = "123.screen"
+        expect(Env.detect.fetch(:terminal)).to eq("screen")
+        ENV["TMUX"] = "/tmp/tmux"
+        expect(Env.detect.fetch(:terminal)).to eq("tmux")
       end
 
       it "detects ssh session state" do
