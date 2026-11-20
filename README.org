@@ -1,4 +1,4 @@
-#+OPTIONS: toc:4 H:4
+#+OPTIONS: toc:nil H:4
 #+PROPERTY: header-args :eval never
 #+PROPERTY: header-args:ruby :results value :colnames no :hlines yes :exports both :dir "./"
 #+PROPERTY: header-args:ruby+ :wrap example :session fatty_session
@@ -16,6 +16,7 @@
 Version: 0.99.11.0
 # gem_docs:version end
 
+#+TOC: headlines 4
 
 * Native Windows status
 
