@@ -13,7 +13,7 @@
 
 
 # gem_docs:version begin
-Version: 0.99.11.0
+Version: 0.99.12.0
 # gem_docs:version end
 
 #+TOC: headlines 4

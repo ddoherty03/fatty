@@ -12,7 +12,7 @@ require "strscan"
 # Gem Overview (extracted from README.org by gem_docs)
 #
 # * Introduction
-# ~Fatty~ aims to provide a full-featured command-line environment that provides:
+# atty~ aims to provide a full-featured command-line environment that provides:
 #
 # 1. an emacs-like editing command-line input, including undo/redo and kill/yank
 # 2. a history facility,
@@ -39,6 +39,8 @@ require "strscan"
 # ~truecolor~ sequences for low-level rendering and is surprisingly snappy.
 #
 # ~Fatty~ is /not/ a terminal emulator but runs on top of one.
+#
+# *
 module Fatty
   require_relative "fatty/version"
   require_relative "fatty/core_ext"
