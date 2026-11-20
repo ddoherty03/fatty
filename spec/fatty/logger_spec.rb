@@ -51,7 +51,7 @@ module Fatty
         logger = Logger.configure
         expect(logger).to be_a(::Logger)
 
-        path = File.join(ENV.fetch("XDG_STATE_HOME"), "#{progname}", "#{progname}.log")
+        path = File.join(ENV.fetch("XDG_STATE_HOME"), progname.to_s, "#{progname}.log")
         expect(File.exist?(path)).to be(true)
         expect(File.readable?(path)).to be(true)
         expect(File.writable?(path)).to be(true)
@@ -166,25 +166,24 @@ module Fatty
 
       it "formats as: <iso8601(local time)> <SEV> <progname> <msg>\\n" do
         fmt = Logger::TextFormatter.new
-        t   = Time.local(2026, 2, 3, 12, 34, 56, 123_456) # stable
+        t   = Time.local(2026, 2, 3, 12, 34, 56, 123_456)
 
-        line = fmt.call("INFO", t, "fatty_spec", "hello")
+        # Pass UTC to verify conversion back to the runner's local timezone.
+        line = fmt.call("INFO", t.getutc, "fatty_spec", "hello")
 
-        expect(line).to start_with("2026-02-03T12:34:56.123456-06:00 INFO fatty_spec hello")
-        expect(line).to end_with("\n")
+        expect(line).to eq("#{t.iso8601(6)} INFO fatty_spec hello\n")
       end
 
       it "writes plain text lines to the log file" do
-        path = File.join("/tmp", "text_#{$$}.log")
-        allow(Fatty::Config).to receive(:progname).and_return("fatty_spec")
-        allow(Fatty::Config).to receive(:config).and_return({
-                                                                log: {
-                                                                  file: path,
-                                                                  level: :debug,
-                                                                  format: :text,
-                                                                  tags: [:all],
-                                                                },
-                                                              })
+        path = File.join(ENV.fetch("XDG_STATE_HOME"), "text.log")
+        allow(Fatty::Config).to receive_messages(progname: "fatty_spec", config: {
+          log: {
+            file: path,
+            level: :debug,
+            format: :text,
+            tags: [:all],
+          },
+        })
 
         Logger.configure
         Logger.log("evt", level: :info, tag: :render, foo: 1, bar: [2, 4, 6])
@@ -193,11 +192,11 @@ module Fatty
         expect(lines.first).to match(/INFO.*fatty_spec/)
         expect(lines.first).to include("[render]")
         expect(lines.first).to include("evt")
-        expect(lines.last).to include("foo:")
-        expect(lines.last).to include("1")
-        expect(lines.last).to include("bar:")
-        expect(lines.last).to include("2")
-        expect(lines.last).to include("6")
+        # Pretty-printing uses either keyword or hash-rocket symbol notation.
+        expect(lines.last).to match(/(?:foo:|:foo\s*=>)\s*1/)
+        expect(lines.last).to match(/(?:bar:|:bar\s*=>)\s*\[2, 4, 6\]/)
+      ensure
+        Logger.logger&.close
       end
     end
 
@@ -214,9 +213,9 @@ module Fatty
 
     describe ".log (tag filtering + payload)" do
       it "writes a JSON line including envelope fields and payload fields when tag is allowed" do
-        allow(Fatty::Config).
-          to receive(:config)
-               .and_return({ log: { tags: [:all] } })
+        allow(Fatty::Config)
+          .to receive(:config)
+                .and_return({ log: { tags: [:all] } })
 
         Logger.configure
         path = File.join(ENV.fetch("XDG_STATE_HOME"), progname, "#{progname}.log")
@@ -241,8 +240,8 @@ module Fatty
         allow(Fatty::Config)
           .to receive(:config)
                 .and_return({
-                              log: { tags: [:keybinding] }
-                            })
+                  log: { tags: [:keybinding] }
+                })
         Logger.configure
         path = File.join(ENV.fetch("XDG_STATE_HOME"), "fatty", "fatty.log")
         Logger.log(:nope, level: :info, tag: :render, x: 1)
@@ -255,8 +254,8 @@ module Fatty
         allow(Fatty::Config)
           .to receive(:config)
                 .and_return({
-                              log: { tags: [:keybinding] }
-                            })
+                  log: { tags: [:keybinding] }
+                })
 
         Logger.configure
         path = File.join(ENV.fetch("XDG_STATE_HOME"), progname, "#{progname}.log")
