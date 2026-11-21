@@ -1,32 +1,30 @@
-- [Unreleased](#orgcf68a0c)
-- [Version 0.99.10.0 and 0.99.11.0](#org6089e3e)
-- [Version 0.99.9.0](#org9bfc742)
-- [Version 0.99.8.7 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-06 Tue]</span></span>](#orgc10f16e)
-- [Version 0.99.8.6 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-04 Sun]</span></span>](#org3c058eb)
-- [Version 1.0.0](#org4297ad4)
+- [Version 0.99.12.0 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-21 Sat]</span></span>](#orgae66900)
+- [Version 0.99.10.0 and 0.99.11.0](#org8f9fac3)
+- [Version 0.99.9.0](#orge31338c)
+- [Version 0.99.8.7 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-06 Tue]</span></span>](#orgb3de1a3)
+- [Version 0.99.8.6 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-04 Sun]</span></span>](#org473832b)
+- [Version 1.0.0](#org6d98f2e)
 
 
-<a id="orgcf68a0c"></a>
+<a id="orgae66900"></a>
 
-# Unreleased
+# Version 0.99.12.0 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-21 Sat]</span></span>
 
--   Complete Windows backslash paths, quoted filenames, and case-insensitive prefixes.
--   Ship the markdown demo files and report missing files accurately.
--   Include Windows modified navigation, keypad, function-key, and Alt-character definitions.
--   Recognize native Windows Alt-Backspace as delete-previous-word.
--   Accept Control-h as Backspace in text fields, including Windows consoles.
--   Show the truecolor prompt immediately at startup and preserve Windows ANSI colors.
--   Avoid a Windows hang when capturing shell-command output such as dir.
--   Fix Windows truecolor output appearing only after leaving the interface.
--   Stop loading the Ruby debugger during normal startup, avoiding a Windows shutdown hang. Load console sizing support explicitly.
--   Prefer the portable Curses.endwin binding for suspension when available.
--   Require fat\_config 0.8.1 for Windows configuration paths.
--   Allow keyboard-only operation when curses has no mouse support.
--   Report unsupported terminal suspension when requested instead of failing while loading Fatty.
--   Recognize Windows PATH separators in the demonstration shell.
+-   Improve Windows support, with all demo commands tested on Windows 11.
+-   Complete Windows paths with backslashes, quoted filenames, and case-insensitive matching.
+-   Recognize combined Control/Alt keyboard shortcuts while preserving AltGr text entry.
+-   Improve Backspace, navigation, function-key, and numeric-keypad handling, including keypad Enter.
+-   Detect truecolor support in Windows Terminal.
+-   Fix missing or delayed Windows prompts and colors.
+-   Fix Windows hangs during shell commands and shutdown.
+-   Display Windows shell output containing accented characters without crashing.
+-   Support terminal suspension with the patched Windows curses build; report clearly when suspension is unavailable.
+-   Allow keyboard-only operation when mouse support is unavailable.
+-   Include the Markdown demo files in the installed gem.
+-   Require fat\_config 0.8.1 or later for Windows configuration paths.
 
 
-<a id="org6089e3e"></a>
+<a id="org8f9fac3"></a>
 
 # Version 0.99.10.0 and 0.99.11.0
 
@@ -34,7 +32,7 @@
 -   Add markdown\_now for immediate rendering of markdown to output.
 
 
-<a id="org9bfc742"></a>
+<a id="orge31338c"></a>
 
 # Version 0.99.9.0
 
@@ -43,7 +41,7 @@ Handle raw CSI sequences and extend keydefs.yml to handle them.
 Fatty recognizes raw CSI navigation sequences, including modified arrows, Home/End, Insert/Delete, and PageUp/PageDown. An unsupported complete CSI sequence is reported as an undefined key, rather than
 
 
-<a id="orgc10f16e"></a>
+<a id="orgb3de1a3"></a>
 
 # Version 0.99.8.7 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-06 Tue]</span></span>
 
@@ -51,7 +49,7 @@ Fatty recognizes raw CSI navigation sequences, including modified arrows, Home/E
 -   Preserve the forward Delete key and user-defined key mappings.
 
 
-<a id="org3c058eb"></a>
+<a id="org473832b"></a>
 
 # Version 0.99.8.6 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-04 Sun]</span></span>
 
@@ -59,7 +57,7 @@ Fatty recognizes raw CSI navigation sequences, including modified arrows, Home/E
 -   Add `clear_now` to clear and immediately redraw the output pane from a callback.
 
 
-<a id="org4297ad4"></a>
+<a id="org6d98f2e"></a>
 
 # Version 1.0.0
 
