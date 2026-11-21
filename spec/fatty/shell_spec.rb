@@ -26,6 +26,24 @@ RSpec.describe Fatty::Shell do
     end
   end
 
+  it "converts Windows code-page output while preserving UTF-8 and exit status" do
+    allow(Gem).to receive(:win_platform?).and_return(true)
+    allow(Fatty::Shell).to receive(:windows_output_encoding).and_return(Encoding.find("CP437"))
+    Dir.mktmpdir("fatty_shell_encoding") do |dir|
+      script = File.join(dir, "capture.rb")
+      [[99, 97, 102, 130, 13, 10], [99, 97, 102, 195, 169, 13, 10]].each do |bytes|
+        File.write(script, "STDOUT.binmode; STDOUT.write(#{bytes.inspect}.pack('C*')); exit 7")
+        output, status = Fatty::Shell.capture(%("#{RbConfig.ruby}" "#{script}"))
+        expect(output).to eq("café\n")
+        expect(output.encoding).to eq(Encoding::UTF_8)
+        expect(status.exitstatus).to eq(7)
+        buffer = Fatty::OutputBuffer.new
+        buffer.append(output)
+        expect(buffer.lines).to eq(["café"])
+      end
+    end
+  end
+
   it "retains Open3 on Unix" do
     allow(Gem).to receive(:win_platform?).and_return(false)
     expect(Open3).to receive(:capture2e).with("echo hello").and_return(["hello", :status])

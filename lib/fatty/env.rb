@@ -25,7 +25,8 @@ module Fatty
       term = ENV["TERM"].to_s
       term_program = ENV["TERM_PROGRAM"].to_s
 
-      colorterm.match?(/truecolor|24bit/i) ||
+      (!ENV["WT_SESSION"].to_s.empty? && !tmux? && !screen?) ||
+        colorterm.match?(/truecolor|24bit/i) ||
         term.match?(/truecolor|24bit|direct/i) ||
         term.match?(/kitty|wezterm|alacritty|ghostty|foot/i) ||
         term_program.match?(/kitty|wezterm|alacritty|ghostty|iTerm/i)
@@ -49,7 +50,7 @@ module Fatty
 
     def arch
       case RUBY_PLATFORM
-      when /x86_64/ then :x86_64
+      when /x86_64|x64|amd64/i then :x86_64
       when /arm64|aarch64/ then :arm64
       else :unknown
       end

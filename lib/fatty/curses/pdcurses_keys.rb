@@ -8,6 +8,13 @@ module Fatty
     # user overrides. Do not infer extra modifiers the backend did not report.
     module PDCursesKeys
       OFFSETS = {
+        0xca => { key: :keypad_divide, text: "/" }, # PADSLASH
+        0xcb => { key: :keypad_enter }, # PADENTER
+        0xce => { key: :keypad_decimal, text: "." }, # PADSTOP
+        0xcf => { key: :keypad_multiply, text: "*" }, # PADSTAR
+        0xd0 => { key: :keypad_minus, text: "-" }, # PADMINUS
+        0xd1 => { key: :keypad_plus, text: "+" }, # PADPLUS
+        0xfa => { key: :keypad_0, text: "0" }, # PAD0
         0x97 => { key: :'0', meta: true }, # ALT_0
         0x98 => { key: :'1', meta: true }, # ALT_1
         0x99 => { key: :'2', meta: true }, # ALT_2

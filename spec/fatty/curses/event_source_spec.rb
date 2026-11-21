@@ -24,6 +24,211 @@ module Fatty
         )
       end
 
+      before do
+        # These specs use fake windows; never consult an uninitialized native screen.
+        allow(::Curses).to receive(:save_key_modifiers) if ::Curses.respond_to?(:save_key_modifiers)
+        allow(::Curses).to receive(:get_key_modifiers).and_return(0) if ::Curses.respond_to?(:get_key_modifiers)
+      end
+
+      describe "PDCurses modifier flags" do
+        let(:key_decoder) { KeyDecoder.new }
+        let(:flags) { 6 } # Control + Alt
+        let(:raw_code) { 0xec00 + 0xbd } # CTL_PGUP in the Unicode build
+
+        before do
+          backend = Module.new do
+            def self.save_key_modifiers(_enabled); end
+
+            def self.get_key_modifiers # rubocop:disable Naming/AccessorMethodName
+              0
+            end
+          end
+          stub_const("Curses", backend, transfer_nested_constants: true)
+          stub_const("Curses::VERSION", "PDCurses test")
+          stub_const("Curses::KEY_BACKSPACE", 0xec07)
+          stub_const("Curses::PDC_KEY_MODIFIER_SHIFT", 1)
+          stub_const("Curses::PDC_KEY_MODIFIER_CONTROL", 2)
+          stub_const("Curses::PDC_KEY_MODIFIER_ALT", 4)
+          allow(::Curses).to receive(:save_key_modifiers)
+          allow(::Curses).to receive(:get_key_modifiers).and_return(flags)
+          allow(WindowsKeyboard).to receive(:altgr_character?).and_return(false)
+          allow(WindowsKeyboard).to receive(:altgr_character?).with("@").and_return(true)
+          allow(Fatty::Config).to receive(:keydefs).and_return({})
+          allow(window).to receive(:timeout=)
+          allow(window).to receive(:getch).and_return(raw_code)
+        end
+
+        it "retains Control and Alt on Page Up without mutating the decoder map" do
+          event = source.next_event.payload.fetch(:event)
+          expect(event.to_s).to eq("C-M-page_up")
+          expect(event.raw).to eq(raw_code)
+          expect(key_decoder.decode(raw_code).to_s).to eq("C-page_up")
+          expect(::Curses).to have_received(:save_key_modifiers).with(true)
+        end
+
+        context "with all three modifiers" do
+          let(:flags) { 7 }
+
+          it "retains Shift as well" do
+            expect(source.next_event.payload.fetch(:event).to_s).to eq("C-M-S-page_up")
+          end
+        end
+
+        context "with a function key" do
+          let(:raw_code) { 0xec00 + 0x08 + 24 + 1 }
+
+          it "retains the combined modifiers" do
+            expect(source.next_event.payload.fetch(:event).to_s).to eq("C-M-f1")
+          end
+        end
+
+        context "with printable AltGr text" do
+          let(:raw_code) { "@" }
+
+          it "preserves self-inserting text" do
+            event = source.next_event.payload.fetch(:event)
+            expect(event.text).to eq("@")
+            expect(event.ctrl?).to be(false)
+            expect(event.meta?).to be(false)
+          end
+        end
+
+        [
+          ["p", 0, "p", "p"],
+          [16, 2, "C-p", nil],
+          [0xec00 + 0xb0, 4, "M-p", nil],
+          [16, 6, "C-M-p", nil],
+          ["p", 4, "M-p", nil],
+          ["p", 6, "C-M-p", nil],
+          ["P", 5, "M-P", nil],
+        ].each do |raw, modifiers, name, text|
+          context "with #{name} reported as #{raw.inspect}" do
+            let(:raw_code) { raw }
+            let(:flags) { modifiers }
+
+            it "retains the key and modifiers with the correct insertion behavior" do
+              event = source.next_event.payload.fetch(:event)
+              expect(event.to_s).to eq(name)
+              expect(event.text).to eq(text)
+            end
+          end
+        end
+
+        context "with modified keypad Enter" do
+          let(:raw_code) { 0xeccc }
+          let(:flags) { 6 }
+
+          it "retains both Control and Alt" do
+            expect(source.next_event.payload.fetch(:event).to_s).to eq("C-M-keypad_enter")
+          end
+        end
+
+        context "with a native Alt-keypad-7 code" do
+          let(:raw_code) { 0xed0c }
+          let(:flags) { 4 }
+
+          it "keeps the keypad key distinct from Ctrl-G" do
+            expect(source.next_event.payload.fetch(:event).to_s).to eq("M-keypad_7")
+          end
+        end
+
+        context "with Ctrl-Backspace" do
+          let(:raw_code) { 127 }
+          let(:flags) { 2 }
+
+          it "recovers Control on the DEL character used by Windows" do
+            expect(source.next_event.payload.fetch(:event).to_s).to eq("C-backspace")
+          end
+        end
+
+        context "with Ctrl-Alt-Backspace" do
+          let(:raw_code) { 127 }
+          let(:flags) { 6 }
+
+          it "recovers both modifiers" do
+            expect(source.next_event.payload.fetch(:event).to_s).to eq("C-M-backspace")
+          end
+        end
+
+        context "with Alt-Backspace" do
+          let(:raw_code) { 0xec00 + 0xf8 }
+          let(:flags) { 4 }
+
+          it "preserves the modifier already encoded in the keycode" do
+            expect(source.next_event.payload.fetch(:event).to_s).to eq("M-backspace")
+          end
+        end
+
+        context "with an unmodified BS character" do
+          let(:raw_code) { 8 }
+          let(:flags) { 0 }
+
+          it "preserves the established Ctrl-H alias" do
+            expect(source.next_event.payload.fetch(:event).to_s).to eq("C-h")
+          end
+        end
+
+        context "with Ctrl-backtick" do
+          let(:flags) { 2 }
+          let(:raw_code) { "`" }
+
+          it "recovers Control from the character's separate flags" do
+            event = source.next_event.payload.fetch(:event)
+            expect(event.to_s).to eq("C-`")
+            expect(event.text).to be_nil
+          end
+        end
+
+        context "with Ctrl-Alt-backtick on a layout where backtick needs no AltGr" do
+          let(:flags) { 6 }
+          let(:raw_code) { "`" }
+
+          it "keeps both shortcut modifiers" do
+            event = source.next_event.payload.fetch(:event)
+            expect(event.to_s).to eq("C-M-`")
+            expect(event.text).to be_nil
+          end
+        end
+
+        context "with an integer Ctrl-backtick" do
+          let(:flags) { 2 }
+          let(:raw_code) { 96 }
+
+          it "recovers Control for integer character input too" do
+            expect(source.next_event.payload.fetch(:event).to_s).to eq("C-`")
+          end
+        end
+
+        context "with a plain backtick" do
+          let(:flags) { 0 }
+          let(:raw_code) { "`" }
+
+          it "keeps the character self-inserting" do
+            event = source.next_event.payload.fetch(:event)
+            expect(event.text).to eq("`")
+            expect(event.ctrl?).to be(false)
+          end
+        end
+
+        context "with a shifted printable character" do
+          let(:flags) { 1 }
+          let(:raw_code) { "~" }
+
+          it "keeps Shift represented by the character" do
+            event = source.next_event.payload.fetch(:event)
+            expect(event.text).to eq("~")
+            expect(event.shift?).to be(false)
+          end
+        end
+
+        it "does not carry the prior chord into the next event" do
+          source.next_event
+          allow(window).to receive(:getch).and_return(::Curses::KEY_PPAGE)
+          allow(::Curses).to receive(:get_key_modifiers).and_return(0)
+          expect(source.next_event.payload.fetch(:event).to_s).to eq("page_up")
+        end
+      end
+
       describe "event handling" do
         # Exercise mouse decoding even when the installed backend has no mouse API.
         before(:each, :mouse_backend) do

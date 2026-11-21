@@ -11,6 +11,16 @@ module Fatty
         expect(buffer.lines).to eq(["one", "two"])
       end
 
+      it "replaces malformed UTF-8 without losing lines or roles" do
+        buffer = Fatty::OutputBuffer.new
+        text = "bad\xff\nnext"
+        buffer.append(text, role: :warn)
+        expect(buffer.lines).to eq(["bad�", "next"])
+        expect(buffer.fragments_for(0).first.text).to eq("bad�")
+        expect(buffer.fragments_for(0).first.role).to eq(:warn)
+        expect(text.valid_encoding?).to be(false)
+      end
+
       it "stores role fragments" do
         buffer = Fatty::OutputBuffer.new
 

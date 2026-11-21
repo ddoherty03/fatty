@@ -2305,6 +2305,14 @@ Windows implementation.
 - Keyboard input and output have been smoke-tested with RubyInstaller
   3.4 and curses 1.7.0 on Windows 11 over OpenSSH.
 
+- All demo commands have also been manually exercised on the Windows
+  desktop with the patched curses build described below. Combined keyboard
+  modifiers and keypad Enter are supported. Windows Alt+numpad character
+  entry still applies (for example, Alt+keypad-7 produces Ctrl-G), and
+  hardware-specific keys that Windows does not deliver remain unavailable.
+  Captured shell output is converted to UTF-8, including legacy code-page
+  output from =dir=.
+
 - The bundled PDCurses backend exposes no mouse API; mouse input is
   disabled.
 

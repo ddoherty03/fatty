@@ -13,6 +13,23 @@ module Fatty
       Fatty::MouseEvent.new(button: button, ctrl: ctrl, meta: meta, shift: shift)
     end
 
+    it "gives keypad Enter the same default acceptance actions as Enter" do
+      km = Fatty::Keymaps.emacs
+      {
+        input: :submit_line,
+        prompt: :prompt_accept,
+        popup: :popup_accept,
+        search: :search_accept,
+        isearch: :isearch_accept,
+      }.each do |context, action|
+        expect(km.resolve(ev(:keypad_enter), contexts: [context])).to eq(action)
+      end
+      expect(km.resolve(ev(:keypad_enter, ctrl: true), contexts: [:input])).to be_nil
+      km.bind(context: :input, key: :keypad_enter, action: :custom_submit)
+      expect(km.resolve(ev(:keypad_enter), contexts: [:input])).to eq(:custom_submit)
+      expect(km.resolve(ev(:enter), contexts: [:input])).to eq(:submit_line)
+    end
+
     describe "#bind / #resolve" do
       it "returns nil when resolving nil event" do
         km = KeyMap.new

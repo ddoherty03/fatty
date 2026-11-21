@@ -30,7 +30,7 @@ module Fatty
     # Terminal can use this to adjust the Viewport.
     def append(text, role: nil)
       ntrimmed = 0
-      str = text.to_s
+      str = text.to_s.encode(Encoding::UTF_8, invalid: :replace, undef: :replace)
       return ntrimmed if str.empty?
 
       str.split(/(\n)/).each do |part|

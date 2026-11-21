@@ -2390,6 +2390,8 @@ Native Windows support is experimental. The following are notes on the Windows i
 
 -   Keyboard input and output have been smoke-tested with RubyInstaller 3.4 and curses 1.7.0 on Windows 11 over OpenSSH.
 
+-   All demo commands have also been manually exercised on the Windows desktop with the patched curses build described below. Combined keyboard modifiers and keypad Enter are supported. Windows Alt+numpad character entry still applies (for example, Alt+keypad-7 produces Ctrl-G), and hardware-specific keys that Windows does not deliver remain unavailable. Captured shell output is converted to UTF-8, including legacy code-page output from `dir`.
+
 -   The bundled PDCurses backend exposes no mouse API; mouse input is disabled.
 
 -   Fatty includes PDCurses definitions for modified navigation/editing keys, Alt letters/digits/punctuation, modified keypad keys, and Shift/Ctrl/Alt F1–F12. Native Windows Alt is displayed as Meta (`M-`). These definitions name keys; the normal keymap determines their actions. User `keydefs.yml` overrides still apply. Windows or the terminal can intercept shortcuts, and Fatty cannot recover modifiers that the backend does not report.

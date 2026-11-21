@@ -49,6 +49,20 @@ RSpec.describe Fatty::Curses::PDCursesKeys do
     end
   end
 
+  it "decodes keypad Enter and gives plain keypad operators self-inserting text" do
+    allow(Fatty::Config).to receive(:keydefs).and_return(nil)
+    stub_const("Curses::VERSION", "PDCursesMod 4.5.4")
+    stub_const("Curses::KEY_BACKSPACE", 0xec07)
+    decoder = Fatty::Curses::KeyDecoder.new
+    expect(decoder.decode(0xeccb).key).to eq(:keypad_enter)
+    expect(decoder.decode(0xeccb).text).to be_nil
+    { 0xca => "/", 0xce => ".", 0xcf => "*", 0xd0 => "-", 0xd1 => "+", 0xfa => "0" }.each do |offset, text|
+      event = decoder.decode(0xec00 + offset)
+      expect(event.text).to eq(text)
+      expect(Fatty::KeyMap.new.resolve_action(event, contexts: [:text])).to eq([:self_insert, [text]])
+    end
+  end
+
   it "leaves unknown codes undefined and leaves actions to the keymap" do
     allow(Fatty::Config).to receive(:keydefs).and_return(nil)
     stub_const("Curses::VERSION", "PDCursesMod 4.5.4")

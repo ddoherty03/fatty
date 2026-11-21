@@ -84,6 +84,7 @@ module Fatty
       map.bind(context: :popup, key: :g, ctrl: true, action: :popup_cancel)
       map.bind(context: :popup, key: :escape, action: :popup_cancel)
       map.bind(context: :popup, key: :enter, action: :popup_accept)
+      map.bind(context: :popup, key: :keypad_enter, action: :popup_accept)
       map.bind(context: :popup, key: :return, action: :popup_accept)
       map.bind(context: :popup, key: :up, action: :popup_prev)
       map.bind(context: :popup, key: :down, action: :popup_next)
@@ -114,6 +115,7 @@ module Fatty
       map.bind(context: :prompt, key: :g, ctrl: true, action: :prompt_cancel)
       map.bind(context: :prompt, key: :escape, action: :prompt_cancel)
       map.bind(context: :prompt, key: :enter, action: :prompt_accept)
+      map.bind(context: :prompt, key: :keypad_enter, action: :prompt_accept)
       map.bind(context: :prompt, key: :return, action: :prompt_accept)
       map.bind(context: :prompt, key: :j, ctrl: true, action: :prompt_accept)
 
@@ -131,6 +133,7 @@ module Fatty
       map.bind(context: :terminal, key: :c, ctrl: true, action: :interrupt)
       map.bind(context: :input, key: :d, ctrl: true, action: :interrupt_if_empty)
       map.bind(context: :input, key: :enter, action: :submit_line)
+      map.bind(context: :input, key: :keypad_enter, action: :submit_line)
       map.bind(context: :input, key: :return, action: :submit_line)
       map.bind(context: :input, key: :j, ctrl: true, action: :submit_line)
       map.bind(context: :input, key: :j, ctrl: true, meta: true, action: :submit_and_scroll)
@@ -189,6 +192,7 @@ module Fatty
 
       # I-search controls (within ISearchSession)
       map.bind(context: :isearch, key: :enter, action: :isearch_accept)
+      map.bind(context: :isearch, key: :keypad_enter, action: :isearch_accept)
       map.bind(context: :isearch, key: :return, action: :isearch_accept)
       map.bind(context: :isearch, key: :j, ctrl: true, action: :isearch_accept)
       map.bind(context: :isearch, key: :s, ctrl: true, action: :isearch_next)
@@ -203,6 +207,7 @@ module Fatty
 
       # Search controls (within SearchSession)
       map.bind(context: :search, key: :enter, action: :search_accept)
+      map.bind(context: :search, key: :keypad_enter, action: :search_accept)
       map.bind(context: :search, key: :return, action: :search_accept)
       map.bind(context: :search, key: :j, ctrl: true, action: :search_accept)
       map.bind(context: :search, key: :s, ctrl: true, action: :search_step_forward)

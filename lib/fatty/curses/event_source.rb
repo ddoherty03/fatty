@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "windows_keyboard"
+
 module Fatty
   module Curses
     class EventSource
@@ -52,6 +54,7 @@ module Fatty
         @key_decoder = key_decoder || KeyDecoder.new
         @poll_ms = poll_ms.to_i
         configure_input_polling!
+        configure_key_modifiers!
       end
 
       def next_event
@@ -82,6 +85,7 @@ module Fatty
           # operation instead of decoding them as individual key events.
           Command.session(:active, :terminal_paste, text: raw.last)
         elsif (ev = @key_decoder.decode(raw))
+          ev = apply_key_modifiers(ev, raw)
           if ev.key == :resize
             Command.terminal(:resize)
           else
@@ -117,6 +121,51 @@ module Fatty
         # Make getch return nil periodically so Terminal can keep rendering,
         # which allows output to animate smoothly.
         win.timeout = @poll_ms if win.respond_to?(:timeout=)
+      end
+
+      # PDCurses chooses one modified keycode even when several modifiers are
+      # held. Its separate flags retain the full chord for the last getch.
+      def configure_key_modifiers!
+        @pdc_key_modifiers = ::Curses::VERSION.start_with?("PDCurses") &&
+                             ::Curses.respond_to?(:save_key_modifiers) &&
+                             ::Curses.respond_to?(:get_key_modifiers)
+        ::Curses.save_key_modifiers(true) if @pdc_key_modifiers
+      end
+
+      def apply_key_modifiers(event, raw)
+        return event unless @pdc_key_modifiers
+
+        if (raw.is_a?(String) || raw.is_a?(Integer)) && event.text&.match?(/\A[[:print:]]\z/)
+          return apply_printable_modifiers(event)
+        end
+        return event unless raw.is_a?(Integer)
+
+        character_chord = event.key.to_s.length == 1 && (event.ctrl? || event.meta?)
+        special_key = event.key.to_s.match?(
+          /\A(?:up|down|left|right|home|end|page_up|page_down|insert|delete|backspace|keypad_\w+|f\d+)\z/,
+        )
+        return event unless character_chord || special_key
+
+        flags = ::Curses.get_key_modifiers
+        KeyEvent.new(
+          key: event.key,
+          text: event.text,
+          raw: event.raw || raw,
+          ctrl: event.ctrl? || (flags & ::Curses::PDC_KEY_MODIFIER_CONTROL).positive?,
+          meta: event.meta? || (flags & ::Curses::PDC_KEY_MODIFIER_ALT).positive?,
+          shift: event.shift? || (flags & ::Curses::PDC_KEY_MODIFIER_SHIFT).positive?,
+        )
+      end
+
+      def apply_printable_modifiers(event)
+        flags = ::Curses.get_key_modifiers
+        ctrl = (flags & ::Curses::PDC_KEY_MODIFIER_CONTROL).positive?
+        alt = (flags & ::Curses::PDC_KEY_MODIFIER_ALT).positive?
+        # Shift is already represented by the character (~ rather than `).
+        return event unless ctrl || alt
+        return event if ctrl && alt && WindowsKeyboard.altgr_character?(event.text)
+
+        KeyEvent.new(key: event.key, raw: event.raw, ctrl: ctrl, meta: alt, shift: event.shift?)
       end
 
       def read_raw(timeout_ms: @poll_ms)

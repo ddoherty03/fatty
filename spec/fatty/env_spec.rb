@@ -55,6 +55,33 @@ module Fatty
         expect(info.fetch(:ruby_platform)).to eq(RUBY_PLATFORM)
       end
 
+      it "recognizes the architecture of native Windows Ruby" do
+        stub_const("RUBY_PLATFORM", "x64-mingw-ucrt")
+        expect(Env.detect.fetch(:arch)).to eq(:x86_64)
+        expect(Env.detect.fetch(:os)).to eq(:windows)
+      end
+
+      it "detects truecolor in Windows Terminal without Unix indicators" do
+        ENV["WT_SESSION"] = "test-session"
+        expect(Env.truecolor_detected?).to be(true)
+      end
+
+      it "does not infer truecolor from an empty Windows Terminal indicator" do
+        ENV["WT_SESSION"] = ""
+        expect(Env.truecolor_detected?).to be(false)
+      end
+
+      it "requires a multiplexer to advertise truecolor independently" do
+        ENV["WT_SESSION"] = "test-session"
+        ENV["STY"] = "123.screen"
+        expect(Env.truecolor_detected?).to be(false)
+        ENV.delete("STY")
+        ENV["TMUX"] = "/tmp/tmux"
+        expect(Env.truecolor_detected?).to be(false)
+        ENV["COLORTERM"] = "truecolor"
+        expect(Env.truecolor_detected?).to be(true)
+      end
+
       it "detects tmux terminal and session state" do
         ENV["TMUX"] = "/tmp/tmux"
 
