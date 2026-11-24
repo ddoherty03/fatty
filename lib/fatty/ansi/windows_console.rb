@@ -24,6 +24,32 @@ module Fatty
         end
       end
 
+      # External programs need ordinary processed output, wrapping and ANSI.
+      # PDCurses can leave these disabled even after endwin. Configure both
+      # streams for the whole child command, then restore before curses resumes.
+      def self.with_shell_output
+        return yield unless Gem.win_platform?
+
+        api = functions
+        saved = []
+        begin
+          [-11, -12].each do |stream|
+            handle = api[:handle].call(stream)
+            next if saved.any? { |entry| entry.first == handle }
+
+            buffer = [0].pack("L")
+            next if api[:get].call(handle, buffer).zero?
+
+            mode = buffer.unpack1("L")
+            shell_mode = (mode | 0x0007) & ~0x0008
+            saved << [handle, mode] unless api[:set].call(handle, shell_mode).zero?
+          end
+          yield
+        ensure
+          saved.reverse_each { |handle, mode| api[:set].call(handle, mode) }
+        end
+      end
+
       def self.functions
         @functions ||= begin
           library = Fiddle.dlopen("kernel32.dll")

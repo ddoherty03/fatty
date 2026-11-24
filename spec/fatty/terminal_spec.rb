@@ -153,6 +153,12 @@ module Fatty
       end
     end
 
+    it "enables ANSI processing for shutdown reset sequences" do
+      t = terminal
+      expect(Fatty::Ansi::WindowsConsole).to receive(:with_ansi).and_yield
+      expect { t.send(:stop_curses!) }.to output("\e[0m\e[0 q").to_stdout
+    end
+
     describe "#go" do
       [nil, "Unknown theme; using terminal"].each do |warning|
         it "shows #{warning ? 'the startup warning instead of help' : 'a startup keybinding help hint'}" do

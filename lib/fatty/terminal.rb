@@ -200,7 +200,7 @@ module Fatty
 
     def suspend
       ctx.suspend
-      yield
+      Fatty::Ansi::WindowsConsole.with_shell_output { yield }
     ensure
       ctx.resume
       reconcile_terminal_size!
@@ -652,9 +652,11 @@ module Fatty
       @ctx&.close
     ensure
       begin
-        $stdout.write("\e[0m")  # SGR reset
-        $stdout.write("\e[0 q") # DECSCUSR: restore terminal default cursor
-        $stdout.flush
+        Fatty::Ansi::WindowsConsole.with_ansi($stdout) do
+          $stdout.write("\e[0m")  # SGR reset
+          $stdout.write("\e[0 q") # DECSCUSR: restore terminal default cursor
+          $stdout.flush
+        end
       rescue StandardError
         # best-effort cleanup
       end
