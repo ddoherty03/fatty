@@ -28,6 +28,41 @@ module Fatty
         end
       end
 
+      describe "bracketed paste console output" do
+        { enable_bracketed_paste!: "\e[?2004h", disable_bracketed_paste!: "\e[?2004l" }.each do |method, sequence|
+          it "enables Windows VT processing through the flush for #{method}" do
+            allow(Gem).to receive(:win_platform?).and_return(true)
+            mode = 16
+            handle = double(call: 123)
+            get = double
+            allow(get).to receive(:call) { |_, buffer|
+              buffer.replace([mode].pack("L"))
+              1
+            }
+            set = double
+            allow(set).to receive(:call) { |_, value|
+              mode = value
+              1
+            }
+            allow(Fatty::Ansi::WindowsConsole).to receive(:functions).and_return(handle: handle, get: get, set: set)
+            expect {
+              allow($stdout).to receive(:tty?).and_return(true)
+              expect($stdout).to receive(:write).with(sequence).and_wrap_original do |original, text|
+                expect(mode & 5).to eq(5)
+                original.call(text)
+              end
+              expect($stdout).to receive(:flush).and_wrap_original do |original|
+                expect(mode & 5).to eq(5)
+                original.call
+              end
+              Fatty::Curses::Context.new.send(method)
+            }.to output(sequence).to_stdout
+
+            expect(mode).to eq(16)
+          end
+        end
+      end
+
       describe "#close" do
         it "restores normal terminal modes before closing curses" do
           context = Fatty::Curses::Context.new

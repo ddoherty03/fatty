@@ -2,6 +2,7 @@
 
 require "fatty-curses"
 require "fiddle/import"
+require_relative "../ansi/windows_console"
 
 module Fatty
   module Curses
@@ -337,14 +338,18 @@ module Fatty
       end
 
       def enable_bracketed_paste!
-        $stdout.write("\e[?2004h")
-        $stdout.flush
+        Fatty::Ansi::WindowsConsole.with_ansi($stdout) do
+          $stdout.write("\e[?2004h")
+          $stdout.flush
+        end
         nil
       end
 
       def disable_bracketed_paste!
-        $stdout.write("\e[?2004l")
-        $stdout.flush
+        Fatty::Ansi::WindowsConsole.with_ansi($stdout) do
+          $stdout.write("\e[?2004l")
+          $stdout.flush
+        end
         nil
       end
     end
