@@ -32,17 +32,17 @@ module Fatty
 
         api = functions
         saved = []
+        buffer = [0].pack("L")
         begin
           [-11, -12].each do |stream|
             handle = api[:handle].call(stream)
             next if saved.any? { |entry| entry.first == handle }
 
-            buffer = [0].pack("L")
             next if api[:get].call(handle, buffer).zero?
 
             mode = buffer.unpack1("L")
             shell_mode = (mode | 0x0007) & ~0x0008
-            saved << [handle, mode] unless api[:set].call(handle, shell_mode).zero?
+            saved << [handle, mode] if api[:set].call(handle, shell_mode).nonzero?
           end
           yield
         ensure

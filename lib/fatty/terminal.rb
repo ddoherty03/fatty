@@ -198,9 +198,9 @@ module Fatty
 
     # --- Suspension  ------------------------------------------------
 
-    def suspend
+    def suspend(&block)
       ctx.suspend
-      Fatty::Ansi::WindowsConsole.with_shell_output { yield }
+      Fatty::Ansi::WindowsConsole.with_shell_output(&block)
     ensure
       ctx.resume
       reconcile_terminal_size!

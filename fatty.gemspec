@@ -37,8 +37,8 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "fatty-curses", "~> 1.7.0", ">= 1.7.0.1"
   spec.add_dependency "fat_config", ">= 0.8.1"
+  spec.add_dependency "fatty-curses", "~> 1.7.0", ">= 1.7.0.1"
   spec.add_dependency "fiddle"
   spec.add_dependency "rainbow"
   spec.add_dependency "redcarpet"
