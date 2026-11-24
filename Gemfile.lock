@@ -12,9 +12,9 @@ GIT
 PATH
   remote: .
   specs:
-    fatty (0.99.12.0)
-      curses (~> 1.4)
+    fatty (0.99.12.1)
       fat_config (>= 0.8.1)
+      fatty-curses (~> 1.7.0, >= 1.7.0.1)
       fiddle
       rainbow
       redcarpet
@@ -44,7 +44,6 @@ GEM
     coderay (1.1.3)
     concurrent-ruby (1.3.8)
     connection_pool (3.0.2)
-    curses (1.6.0)
     damerau-levenshtein (1.3.3)
     debug (1.11.1)
       irb (~> 1.10)
@@ -62,6 +61,7 @@ GEM
       damerau-levenshtein
       ostruct
       stringio (>= 3.1.2)
+    fatty-curses (1.7.0.1)
     fiddle (1.1.8)
     forwardable (1.4.0)
     gem_docs (0.4.0)
@@ -204,7 +204,6 @@ CHECKSUMS
   coderay (1.1.3) sha256=dc530018a4684512f8f38143cd2a096c9f02a1fc2459edcfe534787a7fc77d4b
   concurrent-ruby (1.3.8) sha256=b2f1be836e968ccc78ccfce277ea79c72a88633f22306782c16ff23fb415d1e1
   connection_pool (3.0.2) sha256=33fff5ba71a12d2aa26cb72b1db8bba2a1a01823559fb01d29eb74c286e62e0a
-  curses (1.6.0) sha256=26cf27fd523ad0f4bc00a9c05f0fe9ccb1dfcc1a8521c739fe14c8f6e34078e2
   damerau-levenshtein (1.3.3) sha256=d4320a5fc2aeaa5c023a7c6c45cb4acd4f03a9241c7735c8a7da3eee2ff2407e
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
@@ -212,7 +211,8 @@ CHECKSUMS
   erb (6.0.7) sha256=c5ca6dc25b0ef974a44dc8f59fe847577122483b1968a38dec305c60bf91ee92
   fat_config (0.8.1) sha256=afe9ef3d6501e6462f367410790f6f17d0588f8c448c3daceddff56fa48c71bc
   fat_core (7.2.0) sha256=940379cc8d38a832b03067ff33ef39350ebbbc20ae6d253166badf2a56043d17
-  fatty (0.99.12.0)
+  fatty (0.99.12.1)
+  fatty-curses (1.7.0.1) sha256=f8da5f2f81d2ca663f47c54794e74f49c5a55e1f57ba393e9a4f185cbe26cfbd
   fiddle (1.1.8) sha256=7fa8ee3627271497f3add5503acdbc3f40b32f610fc1cf49634f083ef3f32eee
   forwardable (1.4.0) sha256=f1cd40cc9812937980e1c76f1aa053660990a7c9b6a98fc37d945468afcce838
   gem_docs (0.4.0) sha256=d7922d3122e6e6d3b9bd91a7a1e02ab90130b243123611da3f8a7c027fbd8d4b

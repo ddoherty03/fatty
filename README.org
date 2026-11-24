@@ -13,7 +13,7 @@
 
 
 # gem_docs:version begin
-Version: 0.99.12.0
+Version: 0.99.12.1
 # gem_docs:version end
 
 #+TOC: headlines 4
@@ -2300,10 +2300,9 @@ error:
 All demo commands have been tested on Windows 11 with RubyInstaller 3.4.
 Compared with Linux, the following differences apply:
 
-- Windows currently requires a patched curses build for temporarily
-  handing the terminal to external commands and interactive programs.
-  The patch is available at:
-  https://github.com/ddoherty03/curses/tree/preserve-screen-suspension
+- Windows uses the automatically installed =fatty-curses= dependency for
+  temporarily handing the terminal to external commands and interactive
+  programs.
 
 - Mouse input is unavailable with the Windows curses build tested.
 
@@ -2321,3 +2320,19 @@ Compared with Linux, the following differences apply:
 
 - Exiting Fatty does not restore a saved copy of the screen that was
   visible before startup.
+
+** Curses dependency
+Fatty depends on =fatty-curses=, our fork of ruby/curses with the
+=Curses.endwin= API needed for temporary terminal suspension. RubyGems
+installs it automatically with Fatty or a Byr release that requires
+Fatty 0.99.12.1 or later. No separate curses installation or Git checkout
+is needed.
+
+Windows requires RubyInstaller with DevKit to build the bundled PDCursesMod
+extension. Unix systems need their usual curses development libraries.
+The fork keeps the =Curses= Ruby API; applications can explicitly load it
+with =require "fatty-curses"=. Stock =curses= may remain installed for other
+applications, but should not be loaded alongside the fork in one process.
+
+Source and upstream patch information:
+https://github.com/ddoherty03/fatty-curses

@@ -1,12 +1,22 @@
-- [Version 0.99.12.0 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-21 Sat]</span></span>](#orgae66900)
-- [Version 0.99.10.0 and 0.99.11.0](#org8f9fac3)
-- [Version 0.99.9.0](#orge31338c)
-- [Version 0.99.8.7 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-06 Tue]</span></span>](#orgb3de1a3)
-- [Version 0.99.8.6 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-04 Sun]</span></span>](#org473832b)
-- [Version 1.0.0](#org6d98f2e)
+- [Version 0.99.12.1 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-24 Tue]</span></span>](#orgeefda95)
+- [Version 0.99.12.0 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-21 Sat]</span></span>](#orgdcc452a)
+- [Version 0.99.10.0 and 0.99.11.0](#org3a5b17a)
+- [Version 0.99.9.0](#org4f0ffcb)
+- [Version 0.99.8.7 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-06 Tue]</span></span>](#org0e750a0)
+- [Version 0.99.8.6 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-04 Sun]</span></span>](#orgfa8712d)
+- [Version 1.0.0](#orgdc42413)
 
 
-<a id="orgae66900"></a>
+<a id="orgeefda95"></a>
+
+# Version 0.99.12.1 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-24 Tue]</span></span>
+
+-   Install the patched curses binding automatically through fatty-curses; no separate fork installation is needed for Windows suspension.
+-   Restore normal colors, line breaks, and wrapping for external Windows commands while Fatty is suspended.
+-   Avoid printing a stray cursor-reset character when exiting on Windows.
+
+
+<a id="orgdcc452a"></a>
 
 # Version 0.99.12.0 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-21 Sat]</span></span>
 
@@ -24,7 +34,7 @@
 -   Require fat\_config 0.8.1 or later for Windows configuration paths.
 
 
-<a id="org8f9fac3"></a>
+<a id="org3a5b17a"></a>
 
 # Version 0.99.10.0 and 0.99.11.0
 
@@ -32,7 +42,7 @@
 -   Add markdown\_now for immediate rendering of markdown to output.
 
 
-<a id="orge31338c"></a>
+<a id="org4f0ffcb"></a>
 
 # Version 0.99.9.0
 
@@ -41,7 +51,7 @@ Handle raw CSI sequences and extend keydefs.yml to handle them.
 Fatty recognizes raw CSI navigation sequences, including modified arrows, Home/End, Insert/Delete, and PageUp/PageDown. An unsupported complete CSI sequence is reported as an undefined key, rather than
 
 
-<a id="orgb3de1a3"></a>
+<a id="org0e750a0"></a>
 
 # Version 0.99.8.7 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-06 Tue]</span></span>
 
@@ -49,7 +59,7 @@ Fatty recognizes raw CSI navigation sequences, including modified arrows, Home/E
 -   Preserve the forward Delete key and user-defined key mappings.
 
 
-<a id="org473832b"></a>
+<a id="orgfa8712d"></a>
 
 # Version 0.99.8.6 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-04 Sun]</span></span>
 
@@ -57,7 +67,7 @@ Fatty recognizes raw CSI navigation sequences, including modified arrows, Home/E
 -   Add `clear_now` to clear and immediately redraw the output pane from a callback.
 
 
-<a id="org6d98f2e"></a>
+<a id="orgdc42413"></a>
 
 # Version 1.0.0
 

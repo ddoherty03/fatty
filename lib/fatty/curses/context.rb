@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "curses"
+require "fatty-curses"
 require "fiddle/import"
 
 module Fatty

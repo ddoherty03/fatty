@@ -6,7 +6,7 @@ require 'rbconfig'
 RSpec.describe 'Curses backend loading' do
   it 'loads without mouse APIs or a process-wide endwin symbol' do
     script = <<~RUBY
-      require 'curses'
+      require 'fatty-curses'
       require 'fiddle/import'
       Curses.constants.grep(/BUTTON|MOUSE/).each { |name| Curses.send(:remove_const, name) }
       [:mousemask, :getmouse].each do |name|

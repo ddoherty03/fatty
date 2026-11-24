@@ -516,7 +516,7 @@
 
 # require_relative "../../key_event"
 
-require 'curses'
+require 'fatty-curses'
 
 module Fatty
   module Curses

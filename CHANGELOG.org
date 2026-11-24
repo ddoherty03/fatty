@@ -6,6 +6,13 @@
    user would find useful.
 5. Give each heading a version number and an inactive date (C-c ! is useful here).
 
+* Version 0.99.12.1 [2026-11-24 Tue]
+- Install the patched curses binding automatically through fatty-curses;
+  no separate fork installation is needed for Windows suspension.
+- Restore normal colors, line breaks, and wrapping for external Windows
+  commands while Fatty is suspended.
+- Avoid printing a stray cursor-reset character when exiting on Windows.
+
 * Version 0.99.12.0 [2026-11-21 Sat]
 - Improve Windows support, with all demo commands tested on Windows 11.
 - Complete Windows paths with backslashes, quoted filenames, and
