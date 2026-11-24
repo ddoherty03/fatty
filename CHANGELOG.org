@@ -6,6 +6,9 @@
    user would find useful.
 5. Give each heading a version number and an inactive date (C-c ! is useful here).
 
+* Version 0.99.12.2 [2026-11-24 Tue]
+- fixed errant bracketed-paste code leak in Windows
+
 * Version 0.99.12.1 [2026-11-24 Tue]
 - Install the patched curses binding automatically through fatty-curses;
   no separate fork installation is needed for Windows suspension.
