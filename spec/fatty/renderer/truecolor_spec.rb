@@ -179,9 +179,13 @@ module Fatty
       $stdout = out
 
       renderer.begin_frame
+      allow(renderer).to receive(:queue_ansi_segments_line).and_call_original
+      expect(renderer).to receive(:queue_ansi_segments_line).with(
+        hash_including(segments: array_including(hash_including(text: "Good news")), fill_role: :good)).and_call_original
       renderer.render_output(session)
       renderer.finish_frame
 
+      expect(renderer.send(:output_fill_role, visible_lines.first.fragments)).to eq(:good)
       expect(out.string).to include("Good news")
       expect(out.string).to include("38;2;0;0;0")
       expect(out.string).to include("48;2;240;248;255")

@@ -665,7 +665,12 @@ module Fatty
 
         slices = output_slices(line, fragments: fragments, ranges: curses_ranges, base_attr: base_attr)
         render_slices(win, slices)
+        fill_attr = pair_attr(output_fill_role(fragments), fallback: base_attr)
+        win.bkgdset(fill_attr) if win.respond_to?(:bkgdset)
+        win.attrset(fill_attr)
         win.clrtoeol
+        win.bkgdset(base_attr) if win.respond_to?(:bkgdset)
+        win.attrset(base_attr)
       end
 
       # Build a draw plan for a single output line.

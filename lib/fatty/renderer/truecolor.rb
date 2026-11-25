@@ -542,7 +542,7 @@ module Fatty
             col: rect.col,
             width: rect.cols,
             segments: segments,
-            fill_role: :output,
+            fill_role: output_fill_role(visible_line&.fragments),
           )
         end
       end

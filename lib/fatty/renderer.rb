@@ -123,6 +123,14 @@ module Fatty
 
     protected
 
+    # Whole-line status messages carry their background through the blank tail.
+    # Mixed-role text and inline highlighting keep the output background.
+    def output_fill_role(fragments)
+      roles = Array(fragments).reject { |fragment| fragment.text.to_s.empty? }.map(&:role).uniq
+      role = roles.one? ? roles.first : nil
+      %i[good info warn error].include?(role) && palette[role] ? role : :output
+    end
+
     # simplecov:disable
 
     def alert_role(role)

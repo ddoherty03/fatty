@@ -108,6 +108,17 @@ module Fatty
 
     it_behaves_like "renderer interface"
 
+    it "fills the tail of a warning row and restores the ordinary output background" do
+      palette[:warn] = { pair: 73, attrs: [] }
+      allow(::Curses).to receive(:color_pair) { |pair| pair }
+      fragment = Fatty::OutputBuffer::Fragment.new(text: "Missing tool", role: :warn)
+      renderer.send(:draw_output_row, output_win, line: fragment.text, fragments: [fragment],
+        y: 0, abs_line: 0, highlights: nil)
+      clear = output_win.writes.index([:clrtoeol])
+      expect(output_win.writes[0...clear].reverse.find { |op, _| op == :bkgdset }).to eq([:bkgdset, 73])
+      expect(output_win.writes[clear + 1]).to eq([:bkgdset, palette[:output][:pair]])
+    end
+
     it "renders semantic Markdown headings and table headers with their own color pairs" do
       roles = [:markdown_h1, :markdown_h2, :markdown_table_header]
       roles.each do |role|
