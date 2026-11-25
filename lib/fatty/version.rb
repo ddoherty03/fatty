@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module Fatty
-  VERSION = "0.99.12.2"
+  VERSION = "0.99.12.3"
 end

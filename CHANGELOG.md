@@ -1,13 +1,29 @@
-- [Version 0.99.12.1 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-24 Tue]</span></span>](#orgeefda95)
-- [Version 0.99.12.0 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-21 Sat]</span></span>](#orgdcc452a)
-- [Version 0.99.10.0 and 0.99.11.0](#org3a5b17a)
-- [Version 0.99.9.0](#org4f0ffcb)
-- [Version 0.99.8.7 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-06 Tue]</span></span>](#org0e750a0)
-- [Version 0.99.8.6 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-04 Sun]</span></span>](#orgfa8712d)
-- [Version 1.0.0](#orgdc42413)
+- [Version 0.99.12.3 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-25 Wed]</span></span>](#org5d61d13)
+- [Version 0.99.12.2 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-24 Tue]</span></span>](#org3bf07b2)
+- [Version 0.99.12.1 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-24 Tue]</span></span>](#orge84b49b)
+- [Version 0.99.12.0 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-21 Sat]</span></span>](#org1eee0ba)
+- [Version 0.99.10.0 and 0.99.11.0](#orge6e3081)
+- [Version 0.99.9.0](#orgd8ab04c)
+- [Version 0.99.8.7 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-06 Tue]</span></span>](#orgb216665)
+- [Version 0.99.8.6 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-04 Sun]</span></span>](#orgd7bfd1f)
+- [Version 1.0.0](#orgd2c3fe6)
 
 
-<a id="orgeefda95"></a>
+<a id="org5d61d13"></a>
+
+# Version 0.99.12.3 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-25 Wed]</span></span>
+
+-   fixed failure of full-width background for certain messages to output.
+
+
+<a id="org3bf07b2"></a>
+
+# Version 0.99.12.2 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-24 Tue]</span></span>
+
+-   fixed errant bracketed-paste code leak in Windows
+
+
+<a id="orge84b49b"></a>
 
 # Version 0.99.12.1 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-24 Tue]</span></span>
 
@@ -16,7 +32,7 @@
 -   Avoid printing a stray cursor-reset character when exiting on Windows.
 
 
-<a id="orgdcc452a"></a>
+<a id="org1eee0ba"></a>
 
 # Version 0.99.12.0 <span class="timestamp-wrapper"><span class="timestamp">[2026-11-21 Sat]</span></span>
 
@@ -34,7 +50,7 @@
 -   Require fat\_config 0.8.1 or later for Windows configuration paths.
 
 
-<a id="org3a5b17a"></a>
+<a id="orge6e3081"></a>
 
 # Version 0.99.10.0 and 0.99.11.0
 
@@ -42,7 +58,7 @@
 -   Add markdown\_now for immediate rendering of markdown to output.
 
 
-<a id="org4f0ffcb"></a>
+<a id="orgd8ab04c"></a>
 
 # Version 0.99.9.0
 
@@ -51,7 +67,7 @@ Handle raw CSI sequences and extend keydefs.yml to handle them.
 Fatty recognizes raw CSI navigation sequences, including modified arrows, Home/End, Insert/Delete, and PageUp/PageDown. An unsupported complete CSI sequence is reported as an undefined key, rather than
 
 
-<a id="org0e750a0"></a>
+<a id="orgb216665"></a>
 
 # Version 0.99.8.7 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-06 Tue]</span></span>
 
@@ -59,7 +75,7 @@ Fatty recognizes raw CSI navigation sequences, including modified arrows, Home/E
 -   Preserve the forward Delete key and user-defined key mappings.
 
 
-<a id="orgfa8712d"></a>
+<a id="orgd7bfd1f"></a>
 
 # Version 0.99.8.6 <span class="timestamp-wrapper"><span class="timestamp">[2026-10-04 Sun]</span></span>
 
@@ -67,7 +83,7 @@ Fatty recognizes raw CSI navigation sequences, including modified arrows, Home/E
 -   Add `clear_now` to clear and immediately redraw the output pane from a callback.
 
 
-<a id="orgdc42413"></a>
+<a id="orgd2c3fe6"></a>
 
 # Version 1.0.0
 
