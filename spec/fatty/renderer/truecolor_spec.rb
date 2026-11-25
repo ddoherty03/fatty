@@ -181,7 +181,11 @@ module Fatty
       renderer.begin_frame
       allow(renderer).to receive(:queue_ansi_segments_line).and_call_original
       expect(renderer).to receive(:queue_ansi_segments_line).with(
-        hash_including(segments: array_including(hash_including(text: "Good news")), fill_role: :good)).and_call_original
+        hash_including(
+          segments: array_including(hash_including(text: "Good news")),
+          fill_role: :good,
+        ),
+      ).and_call_original
       renderer.render_output(session)
       renderer.finish_frame
 
