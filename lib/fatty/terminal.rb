@@ -209,8 +209,10 @@ module Fatty
         # Layout reconciliation rebuilds the input window. Its first getch
         # would refresh curses' blank backing screen over the ANSI frame.
         ctx.input_win&.refresh
-        renderer.clear_physical_screen!
       end
+      # External commands can change cells behind curses' physical-screen cache.
+      # A logical repaint alone may leave unchanged blank cells unpainted.
+      renderer.clear_physical_screen!
       render_frame
       @deferred_render = true
     end

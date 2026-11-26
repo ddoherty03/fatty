@@ -348,6 +348,8 @@ module Fatty
 
       def clear_physical_screen!
         ::Curses.clear
+        # clear marks stdscr; staging our other windows alone does not flush it.
+        ::Curses.refresh
         invalidate!
         self
       end

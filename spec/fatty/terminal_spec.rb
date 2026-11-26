@@ -83,6 +83,9 @@ module Fatty
           @invalidations += 1
         end
 
+        def clear_physical_screen!
+        end
+
         def apply_theme!(theme)
           @themes << theme
         end
@@ -736,6 +739,18 @@ module Fatty
     end
 
     describe "#suspend" do
+      it "clears the physical curses screen after an external command before repainting" do
+        t = terminal
+        ctx = instance_double(Fatty::Curses::Context, suspend: nil, resume: nil)
+        t.instance_variable_set(:@ctx, ctx)
+        allow(t.renderer.context).to receive(:truecolor).and_return(false)
+        allow(t.renderer).to receive(:invalidate!)
+        expect(t).to receive(:reconcile_terminal_size!).ordered
+        expect(t.renderer).to receive(:clear_physical_screen!).ordered
+        expect(t).to receive(:render_frame).ordered
+        t.suspend { :completed }
+      end
+
       it "flushes rebuilt curses windows before repainting truecolor after suspension" do
         t = terminal
         ctx = instance_double(Fatty::Curses::Context, suspend: nil, resume: nil)

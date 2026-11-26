@@ -108,6 +108,13 @@ module Fatty
 
     it_behaves_like "renderer interface"
 
+    it "flushes the physical clear before drawing a replacement frame" do
+      expect(::Curses).to receive(:clear).ordered
+      expect(::Curses).to receive(:refresh).ordered
+      expect(renderer).to receive(:invalidate!).ordered
+      renderer.clear_physical_screen!
+    end
+
     it "fills the tail of a warning row and restores the ordinary output background" do
       palette[:warn] = { pair: 73, attrs: [] }
       allow(::Curses).to receive(:color_pair) { |pair| pair }
