@@ -30,6 +30,26 @@ module Fatty
         allow(::Curses).to receive(:get_key_modifiers).and_return(0) if ::Curses.respond_to?(:get_key_modifiers)
       end
 
+      describe "modal input windows" do
+        it "polls the current modal and returns to shell input after it closes" do
+          modal = instance_double(::Curses::Window)
+          selected = modal
+          [window, modal].each do |win|
+            allow(win).to receive(:timeout=)
+            allow(win).to receive(:getch).and_return(nil)
+          end
+          allow(modal).to receive(:keypad)
+          input = EventSource.new(context: context, window_provider: -> { selected })
+          input.next_event
+          expect(modal).to have_received(:getch).once
+          expect(modal).to have_received(:keypad).with(true).at_least(:once)
+          expect(window).not_to have_received(:getch)
+          selected = nil
+          input.next_event
+          expect(window).to have_received(:getch).once
+        end
+      end
+
       describe "PDCurses modifier flags" do
         let(:key_decoder) { KeyDecoder.new }
         let(:flags) { 6 } # Control + Alt

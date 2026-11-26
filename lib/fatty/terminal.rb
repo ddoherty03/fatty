@@ -628,8 +628,22 @@ module Fatty
       @env ||= Fatty::Env.detect
       key_decoder = Fatty::Curses::KeyDecoder.new(env: @env)
       @event_source =
-        Fatty::Curses::EventSource.new(context: @ctx, key_decoder: key_decoder, poll_ms: 50)
+        Fatty::Curses::EventSource.new(
+          context: @ctx,
+          key_decoder: key_decoder,
+          poll_ms: 50,
+          window_provider: -> { modal_input_window },
+        )
       self
+    end
+
+    # PDCurses wgetch moves the physical cursor to the window being read.
+    # Read from the top modal so polling cannot repaint the shell over it.
+    # Truecolor paints with ANSI and must keep its existing curses input window.
+    def modal_input_window
+      return if @ctx.truecolor
+
+      @modal_stack.last&.fetch(:session)&.win
     end
 
     # --- Shutdown ---------------------------------------------------------

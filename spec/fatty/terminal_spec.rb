@@ -817,3 +817,20 @@ module Fatty
     end
   end
 end
+
+RSpec.describe Fatty::Terminal do
+  it "reads input from the top curses modal only" do
+    terminal = Fatty::Terminal.allocate
+    first = instance_double(Fatty::PromptSession, win: :first_window)
+    top = instance_double(Fatty::PromptSession, win: :top_window)
+    context = instance_double(Fatty::Curses::Context, truecolor: false)
+    terminal.instance_variable_set(:@ctx, context)
+    terminal.instance_variable_set(:@modal_stack, [{ session: first }, { session: top }])
+    expect(terminal.send(:modal_input_window)).to eq(:top_window)
+    allow(context).to receive(:truecolor).and_return(true)
+    expect(terminal.send(:modal_input_window)).to be_nil
+    allow(context).to receive(:truecolor).and_return(false)
+    terminal.instance_variable_set(:@modal_stack, [])
+    expect(terminal.send(:modal_input_window)).to be_nil
+  end
+end

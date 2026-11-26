@@ -49,8 +49,9 @@ module Fatty
 
       attr_reader :context, :key_decoder
 
-      def initialize(context: Context.new, key_decoder: nil, poll_ms: 200)
+      def initialize(context: Context.new, key_decoder: nil, poll_ms: 200, window_provider: nil)
         @context = context
+        @window_provider = window_provider
         @key_decoder = key_decoder || KeyDecoder.new
         @poll_ms = poll_ms.to_i
         configure_input_polling!
@@ -111,7 +112,13 @@ module Fatty
       end
 
       def window
-        context.input_win
+        modal_window = @window_provider&.call
+        if modal_window
+          modal_window.keypad(true)
+          modal_window
+        else
+          context.input_win
+        end
       end
 
       def configure_input_polling!
