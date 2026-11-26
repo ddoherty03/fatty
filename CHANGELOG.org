@@ -6,6 +6,9 @@
    user would find useful.
 5. Give each heading a version number and an inactive date (C-c ! is useful here).
 
+* Version 0.99.12.4 [2026-11-26 Thu]
+- further tweaks to terminal background restore manifested in Windows terminal
+
 * Version 0.99.12.3 [2026-11-25 Wed]
 - fixed failure of full-width background for certain messages to output.
 
