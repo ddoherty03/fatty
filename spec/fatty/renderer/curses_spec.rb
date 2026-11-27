@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../renderer_spec"
+require_relative "../../support/renderer_interface"
 
 class CursesRendererSpecWindow
   attr_reader :writes
