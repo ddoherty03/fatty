@@ -815,22 +815,35 @@ module Fatty
         expect(t.instance_variable_get(:@deferred_render)).to be(true)
       end
     end
-  end
-end
 
-RSpec.describe Fatty::Terminal do
-  it "reads input from the top curses modal only" do
-    terminal = Fatty::Terminal.allocate
-    first = instance_double(Fatty::PromptSession, win: :first_window)
-    top = instance_double(Fatty::PromptSession, win: :top_window)
-    context = instance_double(Fatty::Curses::Context, truecolor: false)
-    terminal.instance_variable_set(:@ctx, context)
-    terminal.instance_variable_set(:@modal_stack, [{ session: first }, { session: top }])
-    expect(terminal.send(:modal_input_window)).to eq(:top_window)
-    allow(context).to receive(:truecolor).and_return(true)
-    expect(terminal.send(:modal_input_window)).to be_nil
-    allow(context).to receive(:truecolor).and_return(false)
-    terminal.instance_variable_set(:@modal_stack, [])
-    expect(terminal.send(:modal_input_window)).to be_nil
+    it "reads input from the top curses modal only" do
+      terminal = Fatty::Terminal.allocate
+      first = instance_double(Fatty::PromptSession, win: :first_window)
+      top = instance_double(Fatty::PromptSession, win: :top_window)
+      context = instance_double(Fatty::Curses::Context, truecolor: false)
+      terminal.instance_variable_set(:@ctx, context)
+      terminal.instance_variable_set(:@modal_stack, [{ session: first }, { session: top }])
+      expect(terminal.send(:modal_input_window)).to eq(:top_window)
+      allow(context).to receive(:truecolor).and_return(true)
+      expect(terminal.send(:modal_input_window)).to be_nil
+      allow(context).to receive(:truecolor).and_return(false)
+      terminal.instance_variable_set(:@modal_stack, [])
+      expect(terminal.send(:modal_input_window)).to be_nil
+    end
+
+    [
+      Fatty::KeybindingsSession,
+      Fatty::KeyTestSession,
+      Fatty::SearchSession,
+      Fatty::ISearchSession,
+      Fatty::AlertSession
+    ].each do |session_class|
+      it "uses the normal input window for #{session_class} without a popup window" do
+        terminal = Fatty::Terminal.allocate
+        terminal.instance_variable_set(:@ctx, instance_double(Fatty::Curses::Context, truecolor: false))
+        terminal.instance_variable_set(:@modal_stack, [{ session: session_class.allocate }])
+        expect(terminal.send(:modal_input_window)).to be_nil
+      end
+    end
   end
 end

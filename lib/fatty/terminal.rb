@@ -643,7 +643,9 @@ module Fatty
     def modal_input_window
       return if @ctx.truecolor
 
-      @modal_stack.last&.fetch(:session)&.win
+      session = @modal_stack.last&.fetch(:session)
+      # Paging/help/search sessions can be modal without owning a popup window.
+      session.win if session.respond_to?(:win)
     end
 
     # --- Shutdown ---------------------------------------------------------

@@ -6,6 +6,11 @@
    user would find useful.
 5. Give each heading a version number and an inactive date (C-c ! is useful here).
 
+* Version 0.99.12.6 [2026-11-27 Fri]
+- Keybindings help---and several other modal screens---don’t own a popup
+  window. The fix now falls back to the normal input window for those
+  screens
+
 * Version 0.99.12.5 [2026-11-26 Thu]
 - fix losing of cursor in popups during scrolling.
 
